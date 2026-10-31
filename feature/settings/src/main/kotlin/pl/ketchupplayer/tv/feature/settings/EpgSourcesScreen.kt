@@ -32,10 +32,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Button
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.ListItem
-import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Switch
 import androidx.tv.material3.Text
-import androidx.tv.material3.darkColorScheme
+import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.model.EpgSource
 import pl.ketchupplayer.tv.core.model.EpgSourceKind
 import pl.ketchupplayer.tv.core.ui.touchClickable
@@ -59,16 +58,16 @@ fun EpgSourcesScreen(
 ) {
     // BACK: najpierw zamyka formularz, dopiero potem wychodzi z ekranu.
     BackHandler { if (state.form != null) onEvent(EpgSourcesEvent.Cancel) else onBack() }
-    MaterialTheme(colorScheme = darkColorScheme()) {
+    KetchupTheme {
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .background(Color(0xFF0B1220))
+                    .background(KetchupTheme.colors.background)
                     .padding(horizontal = 48.dp, vertical = 27.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text(stringResource(R.string.epg_sources_title), fontSize = 32.sp, color = Color.White)
+            Text(stringResource(R.string.epg_sources_title), fontSize = 32.sp, color = KetchupTheme.colors.textPrimary)
             if (state.form == null) {
                 SourceList(state.sources, onEvent)
             } else {
@@ -174,11 +173,11 @@ private fun Field(
     modifier: Modifier = Modifier,
 ) {
     Column {
-        Text(label, fontSize = 14.sp, color = Color(0xFFB8C0CC))
+        Text(label, fontSize = 14.sp, color = KetchupTheme.colors.textSecondary)
         Box(
             Modifier
                 .fillMaxWidth()
-                .border(2.dp, Color(0xFF5A667A), RoundedCornerShape(8.dp))
+                .border(2.dp, KetchupTheme.colors.textSecondary, RoundedCornerShape(KetchupTheme.colors.cornerRadius))
                 .padding(12.dp),
         ) {
             BasicTextField(
@@ -187,8 +186,8 @@ private fun Field(
                 singleLine = true,
                 textStyle =
                     androidx.compose.ui.text
-                        .TextStyle(color = Color.White, fontSize = 20.sp),
-                cursorBrush = SolidColor(Color.White),
+                        .TextStyle(color = KetchupTheme.colors.textPrimary, fontSize = 20.sp),
+                cursorBrush = SolidColor(KetchupTheme.colors.accent),
                 modifier = modifier.fillMaxWidth(),
             )
         }
