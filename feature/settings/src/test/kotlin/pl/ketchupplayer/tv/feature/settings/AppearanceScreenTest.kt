@@ -22,6 +22,7 @@ import org.robolectric.annotation.GraphicsMode
 import pl.ketchupplayer.tv.core.designsystem.AccentChoice
 import pl.ketchupplayer.tv.core.designsystem.AccentId
 import pl.ketchupplayer.tv.core.designsystem.AccentWarning
+import pl.ketchupplayer.tv.core.designsystem.DeviceClass
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.designsystem.ThemeId
 
@@ -37,7 +38,7 @@ class AppearanceScreenTest {
 
     @Test
     fun screenshotWyglad() {
-        compose.setContent { KetchupTheme { AppearanceScreen(AppearanceUiState(), {}, {}) } }
+        compose.setContent { KetchupTheme(device = DeviceClass.TV) { AppearanceScreen(AppearanceUiState(), {}, {}) } }
         compose.onRoot().captureRoboImage("src/test/screenshots/appearance.png")
     }
 
@@ -45,7 +46,13 @@ class AppearanceScreenTest {
     fun screenshotEdytoraWlasnegoKoloru() {
         val editor = CustomEditor("#8844CC", 270f, 0.55f, 0.5f, warnings = setOf(AccentWarning.LOOKS_LIKE_ERROR_RED))
         val state = AppearanceUiState(ThemeId.BORDO, AccentChoice.Custom(0xFF8844CCL), editor)
-        compose.setContent { KetchupTheme(ThemeId.BORDO, state.accent) { AppearanceScreen(state, {}, {}) } }
+        compose.setContent {
+            KetchupTheme(
+                ThemeId.BORDO,
+                state.accent,
+                DeviceClass.TV,
+            ) { AppearanceScreen(state, {}, {}) }
+        }
         compose.onRoot().captureRoboImage("src/test/screenshots/appearance_custom.png")
     }
 
@@ -53,7 +60,14 @@ class AppearanceScreenTest {
     @Test
     fun dpadWybierzMotyw() {
         val events = mutableListOf<AppearanceEvent>()
-        compose.setContent { KetchupTheme { AppearanceScreen(AppearanceUiState(), { events += it }, {}) } }
+        compose.setContent {
+            KetchupTheme(device = DeviceClass.TV) {
+                AppearanceScreen(AppearanceUiState(), {
+                    events +=
+                        it
+                }, {})
+            }
+        }
         compose.waitForIdle()
         key(Key.DirectionRight)
         key(Key.DirectionCenter)
@@ -64,7 +78,14 @@ class AppearanceScreenTest {
     @Test
     fun dotykWybieraAkcentIOtwieraEdytor() {
         val events = mutableListOf<AppearanceEvent>()
-        compose.setContent { KetchupTheme { AppearanceScreen(AppearanceUiState(), { events += it }, {}) } }
+        compose.setContent {
+            KetchupTheme(device = DeviceClass.TV) {
+                AppearanceScreen(AppearanceUiState(), {
+                    events +=
+                        it
+                }, {})
+            }
+        }
         compose.onNodeWithText("Fiolet").performClick()
         compose.onNodeWithText("Własny…").performClick()
         assertEquals(
@@ -79,7 +100,7 @@ class AppearanceScreenTest {
         val events = mutableListOf<AppearanceEvent>()
         val editor = CustomEditor("#8844CC", 270f, 0.5f, 0.5f)
         val state = AppearanceUiState(editor = editor)
-        compose.setContent { KetchupTheme { AppearanceScreen(state, { events += it }, {}) } }
+        compose.setContent { KetchupTheme(device = DeviceClass.TV) { AppearanceScreen(state, { events += it }, {}) } }
         compose.waitForIdle()
         compose.onNodeWithTag("slider_hue").requestFocus()
         key(Key.DirectionRight)
@@ -97,7 +118,11 @@ class AppearanceScreenTest {
         val events = mutableListOf<AppearanceEvent>()
         var backs = 0
         val state = AppearanceUiState(editor = CustomEditor("#8844CC", 270f, 0.5f, 0.5f))
-        compose.setContent { KetchupTheme { AppearanceScreen(state, { events += it }, { backs++ }) } }
+        compose.setContent {
+            KetchupTheme(
+                device = DeviceClass.TV,
+            ) { AppearanceScreen(state, { events += it }, { backs++ }) }
+        }
         compose.waitForIdle()
         compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         assertEquals(listOf<AppearanceEvent>(AppearanceEvent.CloseCustom), events)

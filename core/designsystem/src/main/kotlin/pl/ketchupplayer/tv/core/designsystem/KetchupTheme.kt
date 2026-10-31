@@ -49,12 +49,19 @@ private fun PaletteTokens.toColors(
     cornerRadius = cornerRadiusDp.dp,
 )
 
+private val LocalDeviceClass = staticCompositionLocalOf { DeviceClass.TV }
+
 private val LocalKetchupColors =
     staticCompositionLocalOf<KetchupColors> {
         error("KetchupTheme nie jest ustawiony")
     }
 
 object KetchupTheme {
+    val device: DeviceClass
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalDeviceClass.current
+
     val colors: KetchupColors
         @Composable
         @ReadOnlyComposable
@@ -67,6 +74,7 @@ object KetchupTheme {
 fun KetchupTheme(
     theme: ThemeId = ThemeId.GRANAT,
     accent: AccentChoice = AccentChoice.Preset(theme.defaultAccent),
+    device: DeviceClass = rememberDeviceClass(),
     content: @Composable () -> Unit,
 ) {
     val colors =
@@ -97,7 +105,7 @@ fun KetchupTheme(
                 scrim = colors.scrim,
             )
         }
-    CompositionLocalProvider(LocalKetchupColors provides colors) {
+    CompositionLocalProvider(LocalKetchupColors provides colors, LocalDeviceClass provides device) {
         MaterialTheme(colorScheme = scheme, content = content)
     }
 }

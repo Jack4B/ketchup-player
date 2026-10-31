@@ -1,19 +1,16 @@
 package pl.ketchupplayer.tv.feature.settings
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,19 +22,21 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.Button
 import androidx.tv.material3.ExperimentalTvMaterial3Api
-import androidx.tv.material3.ListItem
 import androidx.tv.material3.Switch
 import androidx.tv.material3.Text
+import pl.ketchupplayer.tv.core.designsystem.KetchupButton
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
+import pl.ketchupplayer.tv.core.designsystem.ScreenScaffold
+import pl.ketchupplayer.tv.core.designsystem.ScreenTitle
+import pl.ketchupplayer.tv.core.designsystem.SettingsListItem
 import pl.ketchupplayer.tv.core.model.EpgSource
 import pl.ketchupplayer.tv.core.model.EpgSourceKind
-import pl.ketchupplayer.tv.core.ui.touchClickable
 
 /** Punkt wejścia: spina ViewModel (Hilt) z bezstanowym ekranem. */
 @Composable
@@ -58,15 +57,8 @@ fun EpgSourcesScreen(
 ) {
     // BACK: najpierw zamyka formularz, dopiero potem wychodzi z ekranu.
     BackHandler { if (state.form != null) onEvent(EpgSourcesEvent.Cancel) else onBack() }
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(KetchupTheme.colors.background)
-                .padding(horizontal = 48.dp, vertical = 27.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text(stringResource(R.string.epg_sources_title), fontSize = 32.sp, color = KetchupTheme.colors.textPrimary)
+    ScreenScaffold {
+        ScreenTitle(stringResource(R.string.epg_sources_title))
         if (state.form == null) {
             SourceList(state.sources, onEvent)
         } else {
@@ -84,40 +76,27 @@ private fun SourceList(
     val first = remember { FocusRequester() }
     // Lista z ViewModelu startuje pusta; fokus dopiero gdy pierwszy wiersz (z requesterem) istnieje.
     LaunchedEffect(sources.firstOrNull()?.id) { if (sources.isNotEmpty()) first.requestFocus() }
-    // Zwykła kolumna zamiast LazyColumn: lista jest krótka, a FocusRequester musi być podpięty przed requestFocus().
-    Column(
-        modifier = Modifier.verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        sources.forEach { source ->
-            val modifier = if (source == sources.first()) Modifier.focusRequester(first) else Modifier
-            ListItem(
-                selected = false,
-                onClick = { onEvent(EpgSourcesEvent.Toggle(source.id, !source.enabled)) },
-                modifier =
-                    modifier
-                        .fillMaxWidth()
-                        .touchClickable { onEvent(EpgSourcesEvent.Toggle(source.id, !source.enabled)) },
-                headlineContent = { Text(source.name) },
-                supportingContent = { Text(hint(source)) },
-                trailingContent = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Text(stringResource(if (source.enabled) R.string.epg_state_on else R.string.epg_state_off))
-                        Switch(checked = source.enabled, onCheckedChange = null)
-                    }
-                },
-            )
-        }
-        Button(
-            onClick = { onEvent(EpgSourcesEvent.StartAdd) },
-            modifier = Modifier.touchClickable { onEvent(EpgSourcesEvent.StartAdd) },
-        ) {
-            Text(stringResource(R.string.epg_add_source))
-        }
+    sources.forEachIndexed { i, source ->
+        SettingsListItem(
+            title = source.name,
+            subtitle = hint(source),
+            onClick = { onEvent(EpgSourcesEvent.Toggle(source.id, !source.enabled)) },
+            modifier = if (i == 0) Modifier.focusRequester(first) else Modifier,
+            trailing = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(
+                        stringResource(if (source.enabled) R.string.epg_state_on else R.string.epg_state_off),
+                        color = KetchupTheme.colors.textPrimary,
+                    )
+                    Switch(checked = source.enabled, onCheckedChange = null)
+                }
+            },
+        )
     }
+    KetchupButton(stringResource(R.string.epg_add_source), { onEvent(EpgSourcesEvent.StartAdd) })
 }
 
 @Composable
@@ -128,7 +107,7 @@ private fun hint(source: EpgSource): String =
         EpgSourceKind.CUSTOM_XMLTV -> source.url ?: stringResource(R.string.epg_source_custom_hint)
     }
 
-@OptIn(ExperimentalTvMaterial3Api::class)
+@OptIn(ExperimentalTvMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun AddSourceForm(
     form: AddForm,
@@ -136,22 +115,17 @@ private fun AddSourceForm(
 ) {
     val nameFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { nameFocus.requestFocus() }
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Field(stringResource(R.string.epg_field_name), form.name, {
-            onEvent(EpgSourcesEvent.NameChanged(it))
-        }, Modifier.focusRequester(nameFocus))
-        Field(stringResource(R.string.epg_field_url), form.url, { onEvent(EpgSourcesEvent.UrlChanged(it)) })
-        form.error?.let { Text(stringResource(errorRes(it)), color = Color(0xFFFF6B6B)) }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(
-                onClick = { onEvent(EpgSourcesEvent.Submit) },
-                modifier = Modifier.touchClickable { onEvent(EpgSourcesEvent.Submit) },
-            ) { Text(stringResource(R.string.epg_save)) }
-            Button(
-                onClick = { onEvent(EpgSourcesEvent.Cancel) },
-                modifier = Modifier.touchClickable { onEvent(EpgSourcesEvent.Cancel) },
-            ) { Text(stringResource(R.string.epg_cancel)) }
-        }
+    Field(
+        stringResource(R.string.epg_field_name),
+        form.name,
+        { onEvent(EpgSourcesEvent.NameChanged(it)) },
+        Modifier.focusRequester(nameFocus),
+    )
+    Field(stringResource(R.string.epg_field_url), form.url, { onEvent(EpgSourcesEvent.UrlChanged(it)) })
+    form.error?.let { Text(stringResource(errorRes(it)), color = Color(0xFFFF6B6B)) }
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        KetchupButton(stringResource(R.string.epg_save), { onEvent(EpgSourcesEvent.Submit) }, primary = true)
+        KetchupButton(stringResource(R.string.epg_cancel), { onEvent(EpgSourcesEvent.Cancel) })
     }
 }
 
@@ -170,22 +144,21 @@ private fun Field(
     onChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column {
-        Text(label, fontSize = 14.sp, color = KetchupTheme.colors.textSecondary)
+    val c = KetchupTheme.colors
+    androidx.compose.foundation.layout.Column {
+        Text(label, fontSize = 14.sp, color = c.textSecondary)
         Box(
             Modifier
                 .fillMaxWidth()
-                .border(2.dp, KetchupTheme.colors.textSecondary, RoundedCornerShape(KetchupTheme.colors.cornerRadius))
+                .border(2.dp, c.textSecondary, RoundedCornerShape(c.cornerRadius.coerceAtMost(12.dp)))
                 .padding(12.dp),
         ) {
             BasicTextField(
                 value = value,
                 onValueChange = onChange,
                 singleLine = true,
-                textStyle =
-                    androidx.compose.ui.text
-                        .TextStyle(color = KetchupTheme.colors.textPrimary, fontSize = 20.sp),
-                cursorBrush = SolidColor(KetchupTheme.colors.accent),
+                textStyle = TextStyle(color = c.textPrimary, fontSize = 20.sp),
+                cursorBrush = SolidColor(c.accent),
                 modifier = modifier.fillMaxWidth(),
             )
         }

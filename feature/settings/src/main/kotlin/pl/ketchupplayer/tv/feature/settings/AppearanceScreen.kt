@@ -5,18 +5,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,8 +38,11 @@ import androidx.tv.material3.Text
 import pl.ketchupplayer.tv.core.designsystem.AccentChoice
 import pl.ketchupplayer.tv.core.designsystem.AccentId
 import pl.ketchupplayer.tv.core.designsystem.AccentWarning
+import pl.ketchupplayer.tv.core.designsystem.DeviceClass
 import pl.ketchupplayer.tv.core.designsystem.FocusItem
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
+import pl.ketchupplayer.tv.core.designsystem.ScreenScaffold
+import pl.ketchupplayer.tv.core.designsystem.ScreenTitle
 import pl.ketchupplayer.tv.core.designsystem.StepSlider
 import pl.ketchupplayer.tv.core.designsystem.ThemeId
 
@@ -53,7 +55,7 @@ fun AppearanceRoute(
     AppearanceScreen(state, viewModel::onEvent, onBack)
 }
 
-@OptIn(ExperimentalTvMaterial3Api::class)
+@OptIn(ExperimentalTvMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun AppearanceScreen(
     state: AppearanceUiState,
@@ -65,31 +67,15 @@ fun AppearanceScreen(
     BackHandler { if (state.editor != null) onEvent(AppearanceEvent.CloseCustom) else onBack() }
     val first = remember { FocusRequester() }
     LaunchedEffect(Unit) { first.requestFocus() }
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(c.background)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 48.dp, vertical = 27.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        Text(stringResource(R.string.appearance_title), fontSize = 32.sp, color = c.textPrimary)
+    ScreenScaffold {
+        ScreenTitle(stringResource(R.string.appearance_title))
         Text(stringResource(R.string.appearance_theme), fontSize = 20.sp, color = c.textSecondary)
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            ThemeId.entries.forEachIndexed { i, theme ->
-                FocusItem(
-                    onClick = { onEvent(AppearanceEvent.SelectTheme(theme)) },
-                    selected = theme == state.theme,
-                    modifier = Modifier.width(200.dp),
-                    focusRequester = if (i == 0) first else null,
-                ) {
-                    ThemeCard(theme, theme == state.theme)
-                }
-            }
-        }
+        ThemeCards(state, onEvent, first)
         Text(stringResource(R.string.appearance_accent), fontSize = 20.sp, color = c.textSecondary)
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
             AccentId.entries.forEach { id ->
                 val selected = (state.accent as? AccentChoice.Preset)?.id == id
                 FocusItem(onClick = { onEvent(AppearanceEvent.SelectPreset(id)) }, selected = selected) {
@@ -116,6 +102,29 @@ fun AppearanceScreen(
             }
         }
         state.editor?.let { CustomEditorPanel(it, onEvent) }
+    }
+}
+
+/** Karty motywów w jednym rzędzie: TV 200 dp każda, telefon równe szerokości (pion i poziom). */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun ThemeCards(
+    state: AppearanceUiState,
+    onEvent: (AppearanceEvent) -> Unit,
+    first: FocusRequester,
+) {
+    val phone = KetchupTheme.device == DeviceClass.PHONE
+    Row(horizontalArrangement = Arrangement.spacedBy(if (phone) 8.dp else 12.dp)) {
+        ThemeId.entries.forEachIndexed { i, theme ->
+            FocusItem(
+                onClick = { onEvent(AppearanceEvent.SelectTheme(theme)) },
+                selected = theme == state.theme,
+                modifier = if (phone) Modifier.weight(1f) else Modifier.width(200.dp),
+                focusRequester = if (i == 0) first else null,
+            ) {
+                ThemeCard(theme, theme == state.theme)
+            }
+        }
     }
 }
 

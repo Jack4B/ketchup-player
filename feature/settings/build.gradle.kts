@@ -18,6 +18,7 @@ dependencies {
     implementation(libs.hilt.lifecycle)
     implementation(libs.androidx.activity.compose)
 
+    testImplementation(project(":core:testing"))
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)

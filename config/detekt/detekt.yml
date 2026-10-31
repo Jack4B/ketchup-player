@@ -7,6 +7,9 @@ empty-blocks:
   EmptyCatchBlock: { active: true, allowedExceptionNameRegex: '^$' }
 naming:
   FunctionNaming: { active: true, ignoreAnnotated: ['Composable'] }
+complexity:
+  # Funkcje @Composable mają wiele parametrów z wartościami domyślnymi (Modifier, kolory) - liczymy tylko wymagane.
+  LongParameterList: { active: true, functionThreshold: 6, constructorThreshold: 8, ignoreDefaultParameters: true }
 style:
   ReturnCount: { active: true, max: 6, excludeGuardClauses: true }
   MagicNumber: { active: false }

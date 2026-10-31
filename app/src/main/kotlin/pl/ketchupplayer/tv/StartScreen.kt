@@ -3,61 +3,82 @@ package pl.ketchupplayer.tv
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.tv.material3.Button
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
+import pl.ketchupplayer.tv.core.designsystem.DeviceClass
+import pl.ketchupplayer.tv.core.designsystem.KetchupButton
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
-import pl.ketchupplayer.tv.core.ui.touchClickable
 
-/** Pusty ekran startowy Fazy 0 (marża overscan 48×27 dp wg skilla android-tv-ui). */
+/**
+ * Ekran startowy Fazy 0. TV: marża overscan 48×27 dp, przyciski wyśrodkowane. Telefon: wcięcia systemowe,
+ * przyciski na całą szerokość (pion i poziom), przewijanie przy małej wysokości.
+ */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun StartScreen(
     onOpenEpgSources: () -> Unit = {},
     onOpenAppearance: () -> Unit = {},
 ) {
+    val c = KetchupTheme.colors
+    val first = remember { FocusRequester() }
+    LaunchedEffect(Unit) { first.requestFocus() }
+    val phone = KetchupTheme.device == DeviceClass.PHONE
+    val margins =
+        if (phone) {
+            Modifier.windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 24.dp, vertical = 16.dp)
+        } else {
+            Modifier.padding(horizontal = 48.dp, vertical = 27.dp)
+        }
     Column(
         modifier =
             Modifier
                 .fillMaxSize()
-                .background(KetchupTheme.colors.background)
-                .padding(horizontal = 48.dp, vertical = 27.dp),
-        verticalArrangement = Arrangement.Center,
+                .background(c.background)
+                .then(margins)
+                .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = stringResource(R.string.app_name),
-            fontSize = 48.sp,
-            lineHeight = 56.sp,
+            fontSize = if (phone) 40.sp else 48.sp,
+            lineHeight = if (phone) 48.sp else 56.sp,
             textAlign = TextAlign.Center,
-            color = KetchupTheme.colors.textPrimary,
+            color = c.textPrimary,
         )
         Text(
             text = stringResource(R.string.start_tagline),
             fontSize = 20.sp,
             textAlign = TextAlign.Center,
-            color = KetchupTheme.colors.textSecondary,
+            color = c.textSecondary,
         )
-        Button(
-            onClick = onOpenEpgSources,
-            modifier = Modifier.padding(top = 24.dp).touchClickable(onOpenEpgSources),
-        ) {
-            Text(stringResource(R.string.start_epg_sources))
-        }
-        Button(
-            onClick = onOpenAppearance,
-            modifier = Modifier.padding(top = 12.dp).touchClickable(onOpenAppearance),
-        ) {
-            Text(stringResource(R.string.start_appearance))
-        }
+        val buttons = Modifier.padding(top = 12.dp).widthIn(max = 420.dp).fillMaxWidth(if (phone) 1f else 0.4f)
+        KetchupButton(
+            stringResource(R.string.start_epg_sources),
+            onOpenEpgSources,
+            buttons,
+            primary = true,
+            focusRequester = first,
+        )
+        KetchupButton(stringResource(R.string.start_appearance), onOpenAppearance, buttons)
     }
 }
