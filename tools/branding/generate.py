@@ -21,7 +21,7 @@ S = 2.752
 SHIELD = tuple(int(v * S) for v in (280, 25, 722, 535))      # tarcza z napisem
 RIBBON = tuple(int(v * S) for v in (283, 385, 720, 505))      # wstęga z napisem
 CREST = tuple(int(v * S) for v in (283, 25, 720, 392))        # tarcza z postacią (bez napisu)
-HEAD = tuple(int(v * S) for v in (378, 50, 592, 262))         # głowa pomidora w goglach
+HEAD_SEARCH = tuple(int(v * S) for v in (398, 55, 590, 268))  # obszar poszukiwania głowy (bez butelki i małego pomidora)
 
 
 def remove_background(img: Image.Image) -> Image.Image:
@@ -78,12 +78,26 @@ def circle_mask(size, feather=2):
     return m.filter(ImageFilter.GaussianBlur(feather)) if feather else m
 
 
+def tomato_bbox(src_rgb: Image.Image):
+    """Obwiednia pomidora wyznaczona z pikseli (czerwień skórki + zieleń liści) w obszarze głowy.
+    Percentyle 1-99 odrzucają pojedyncze krople i glitche."""
+    x0, y0, x1, y1 = HEAD_SEARCH
+    arr = np.array(src_rgb.crop((x0, y0, x1, y1))).astype(int)
+    r, g, b = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
+    red = (r > 150) & (g < 95) & (b < 95)
+    green = (g > 110) & (r < 130) & (b < 100) & (g > r)
+    ys, xs = np.nonzero(red | green)
+    lo_x, hi_x = np.percentile(xs, [1, 99])
+    lo_y, hi_y = np.percentile(ys, [1, 99])
+    return x0 + lo_x, y0 + lo_y, x0 + hi_x, y0 + hi_y
+
+
 def make_mark(src_rgb: Image.Image) -> Image.Image:
-    """Sygnet: głowa pomidora w kole (przezroczyste tło poza kołem)."""
-    x0, y0, x1, y1 = HEAD
-    cx, cy = (x0 + x1) // 2, (y0 + y1) // 2
-    r = max(x1 - x0, y1 - y0) // 2 + 8
-    head = src_rgb.crop((cx - r, cy - r, cx + r, cy + r)).convert("RGBA")
+    """Sygnet: głowa pomidora wycentrowana według obwiedni z pikseli, w kole (przezroczyste tło poza kołem)."""
+    bx0, by0, bx1, by1 = tomato_bbox(src_rgb)
+    cx, cy = (bx0 + bx1) / 2, (by0 + by1) / 2
+    r = int(max(bx1 - bx0, by1 - by0) / 2 * 1.28)
+    head = src_rgb.crop((int(cx - r), int(cy - r), int(cx + r), int(cy + r))).convert("RGBA")
     head.putalpha(circle_mask(head.width, feather=3))
     return head
 
