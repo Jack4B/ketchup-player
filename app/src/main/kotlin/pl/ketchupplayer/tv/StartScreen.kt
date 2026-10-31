@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Button
@@ -17,6 +18,7 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import androidx.tv.material3.darkColorScheme
+import pl.ketchupplayer.tv.core.ui.touchClickable
 
 /** Pusty ekran startowy Fazy 0 (marża overscan 48×27 dp wg skilla android-tv-ui). */
 @OptIn(ExperimentalTvMaterial3Api::class)
@@ -32,9 +34,23 @@ fun StartScreen(onOpenEpgSources: () -> Unit = {}) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(text = stringResource(R.string.app_name), fontSize = 48.sp, color = Color.White)
-            Text(text = stringResource(R.string.start_tagline), fontSize = 20.sp, color = Color(0xFFB8C0CC))
-            Button(onClick = onOpenEpgSources, modifier = Modifier.padding(top = 24.dp)) {
+            Text(
+                text = stringResource(R.string.app_name),
+                fontSize = 48.sp,
+                lineHeight = 56.sp,
+                textAlign = TextAlign.Center,
+                color = Color.White,
+            )
+            Text(
+                text = stringResource(R.string.start_tagline),
+                fontSize = 20.sp,
+                textAlign = TextAlign.Center,
+                color = Color(0xFFB8C0CC),
+            )
+            Button(
+                onClick = onOpenEpgSources,
+                modifier = Modifier.padding(top = 24.dp).touchClickable(onOpenEpgSources),
+            ) {
                 Text(stringResource(R.string.start_epg_sources))
             }
         }

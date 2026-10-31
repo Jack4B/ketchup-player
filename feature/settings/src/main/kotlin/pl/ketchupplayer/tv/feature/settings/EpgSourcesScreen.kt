@@ -38,6 +38,7 @@ import androidx.tv.material3.Text
 import androidx.tv.material3.darkColorScheme
 import pl.ketchupplayer.tv.core.model.EpgSource
 import pl.ketchupplayer.tv.core.model.EpgSourceKind
+import pl.ketchupplayer.tv.core.ui.touchClickable
 
 /** Punkt wejścia: spina ViewModel (Hilt) z bezstanowym ekranem. */
 @Composable
@@ -95,7 +96,10 @@ private fun SourceList(
             ListItem(
                 selected = false,
                 onClick = { onEvent(EpgSourcesEvent.Toggle(source.id, !source.enabled)) },
-                modifier = modifier.fillMaxWidth(),
+                modifier =
+                    modifier
+                        .fillMaxWidth()
+                        .touchClickable { onEvent(EpgSourcesEvent.Toggle(source.id, !source.enabled)) },
                 headlineContent = { Text(source.name) },
                 supportingContent = { Text(hint(source)) },
                 trailingContent = {
@@ -109,7 +113,10 @@ private fun SourceList(
                 },
             )
         }
-        Button(onClick = { onEvent(EpgSourcesEvent.StartAdd) }) {
+        Button(
+            onClick = { onEvent(EpgSourcesEvent.StartAdd) },
+            modifier = Modifier.touchClickable { onEvent(EpgSourcesEvent.StartAdd) },
+        ) {
             Text(stringResource(R.string.epg_add_source))
         }
     }
@@ -138,8 +145,14 @@ private fun AddSourceForm(
         Field(stringResource(R.string.epg_field_url), form.url, { onEvent(EpgSourcesEvent.UrlChanged(it)) })
         form.error?.let { Text(stringResource(errorRes(it)), color = Color(0xFFFF6B6B)) }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(onClick = { onEvent(EpgSourcesEvent.Submit) }) { Text(stringResource(R.string.epg_save)) }
-            Button(onClick = { onEvent(EpgSourcesEvent.Cancel) }) { Text(stringResource(R.string.epg_cancel)) }
+            Button(
+                onClick = { onEvent(EpgSourcesEvent.Submit) },
+                modifier = Modifier.touchClickable { onEvent(EpgSourcesEvent.Submit) },
+            ) { Text(stringResource(R.string.epg_save)) }
+            Button(
+                onClick = { onEvent(EpgSourcesEvent.Cancel) },
+                modifier = Modifier.touchClickable { onEvent(EpgSourcesEvent.Cancel) },
+            ) { Text(stringResource(R.string.epg_cancel)) }
         }
     }
 }

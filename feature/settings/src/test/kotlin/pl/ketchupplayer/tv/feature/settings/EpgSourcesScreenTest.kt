@@ -4,7 +4,9 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -69,6 +71,19 @@ class EpgSourcesScreenTest {
                 EpgSourcesEvent.Toggle(BuiltInEpgSources.TELEMAN_ID, true),
                 EpgSourcesEvent.StartAdd,
             ),
+            events,
+        )
+    }
+
+    /** Dotyk (telefon): tapnięcie wiersza przełącza flagę, przycisk dodaje źródło. */
+    @Test
+    fun dotykPrzelaczaIDodaje() {
+        val events = mutableListOf<EpgSourcesEvent>()
+        compose.setContent { EpgSourcesScreen(EpgSourcesUiState(sources), { events += it }, {}) }
+        compose.onNodeWithText("Teleman.pl").performClick()
+        compose.onNodeWithText("Dodaj własne źródło").performClick()
+        assertEquals(
+            listOf(EpgSourcesEvent.Toggle(BuiltInEpgSources.TELEMAN_ID, false), EpgSourcesEvent.StartAdd),
             events,
         )
     }
