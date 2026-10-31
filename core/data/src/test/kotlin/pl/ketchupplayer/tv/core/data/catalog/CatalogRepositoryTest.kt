@@ -64,6 +64,22 @@ class CatalogRepositoryTest {
     private fun repo() = repoWith(fetcher)
 
     @Test
+    fun `equivalents - kanal pierwszy, potem ta sama nazwa u innych dostawcow`() =
+        runTest {
+            val repo = repo()
+            response = Result.success(list)
+            repo.addM3u("Lista A", "http://a.example.invalid/x.m3u")
+            repo.addM3u("Lista B", "http://b.example.invalid/x.m3u")
+            val all = repo.liveChannels().first().filter { it.name == "INFO24" }
+            assertEquals(2, all.size)
+            val chain = repo.equivalents(all[1].id)
+            assertEquals(all[1].id, chain.first().id)
+            assertEquals(2, chain.size)
+            assertEquals(chain.map { it.id }.distinct().size, 2)
+            assertEquals(emptyList<Any>(), repo.equivalents("brak"))
+        }
+
+    @Test
     fun `dodanie listy M3U zapisuje dostawce i kanaly`() =
         runTest {
             response = Result.success(list)

@@ -46,6 +46,13 @@ interface ChannelDao {
     @Query("SELECT * FROM channels WHERE id = :id")
     suspend fun get(id: String): ChannelEntity?
 
+    /** Ten sam kanał (po znormalizowanej nazwie) u wszystkich dostawców, wg kolejności dostawców. */
+    @Query(
+        "SELECT c.* FROM channels c JOIN providers p ON p.id = c.providerId " +
+            "WHERE c.type = 'LIVE' AND c.normName = :normName ORDER BY p.sortOrder, p.name, c.name",
+    )
+    suspend fun sameNamed(normName: String): List<ChannelEntity>
+
     @Query("SELECT id, epgId, normName FROM channels WHERE type = 'LIVE'")
     suspend fun liveEpgKeys(): List<ChannelEpgKey>
 

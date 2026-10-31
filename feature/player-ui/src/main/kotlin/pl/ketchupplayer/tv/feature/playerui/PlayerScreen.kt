@@ -43,7 +43,8 @@ fun PlayerRoute(
 ) {
     LaunchedEffect(channelId) { viewModel.start(channelId) }
     val ui by viewModel.ui.collectAsStateWithLifecycle()
-    PlayerScreen(ui, viewModel.controller, viewModel::retry, onBack)
+    val notice by viewModel.notice.collectAsStateWithLifecycle()
+    PlayerScreen(ui, viewModel.controller, viewModel::retry, onBack, notice)
 }
 
 /** Odtwarzacz pełnoekranowy. Dowolny klawisz pokazuje nakładkę z nazwą kanału na [OSD_MS]; BACK wychodzi. */
@@ -55,6 +56,7 @@ fun PlayerScreen(
     controller: PlayerController,
     onRetry: () -> Unit,
     onBack: () -> Unit,
+    notice: String? = null,
 ) {
     BackHandler(onBack = onBack)
     val playback by controller.state.collectAsStateWithLifecycle()
@@ -78,6 +80,12 @@ fun PlayerScreen(
         controller.player?.let { PlayerSurface(it, Modifier.fillMaxSize()) }
         val name = channelName(ui)
         if (osdVisible && name.isNotEmpty()) Osd(name, Modifier.align(Alignment.TopStart))
+        if (notice != null) {
+            StatusText(
+                stringResource(R.string.player_switched, notice),
+                Modifier.align(Alignment.BottomCenter).padding(bottom = 27.dp),
+            )
+        }
         when {
             failed -> ErrorPanel(ui, onRetry, onBack, Modifier.align(Alignment.Center))
             ui is PlayerUiState.Resolving ->

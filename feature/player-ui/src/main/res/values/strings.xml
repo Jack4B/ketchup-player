@@ -4,6 +4,7 @@
     <string name="player_buffering">Buforowanie…</string>
     <string name="player_error_title">Nie udało się odtworzyć kanału</string>
     <string name="player_error_unknown_channel">Nie znaleziono kanału</string>
+    <string name="player_switched">Przełączono na %1$s</string>
     <string name="player_retry">Spróbuj ponownie</string>
     <string name="player_back">Wróć</string>
 </resources>

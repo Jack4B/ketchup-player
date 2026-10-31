@@ -126,6 +126,16 @@ class RoomCatalogRepository
 
         override suspend fun channel(id: String): Channel? = channelDao.get(id)?.toModel()
 
+        override suspend fun equivalents(channelId: String): List<Channel> {
+            val first = channelDao.get(channelId) ?: return emptyList()
+            val others =
+                channelDao.sameNamed(first.normName).filter {
+                    it.id != first.id &&
+                        it.providerId != first.providerId
+                }
+            return (listOf(first) + others.distinctBy { it.providerId }).map { it.toModel() }
+        }
+
         override suspend fun resolveStream(channelId: String): Result<StreamSpec> {
             val channel =
                 channelDao.get(channelId)?.toModel() ?: return Result.failure(IllegalStateException("Nie ma kanału"))

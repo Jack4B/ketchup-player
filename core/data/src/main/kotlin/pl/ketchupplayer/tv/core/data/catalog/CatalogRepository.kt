@@ -56,6 +56,12 @@ interface CatalogRepository {
 
     suspend fun channel(id: String): Channel?
 
+    /**
+     * Łańcuch równoważnych kanałów do failoveru: [channelId] pierwszy, potem ten sam kanał (ta sama znormalizowana
+     * nazwa) u pozostałych dostawców wg ich kolejności. Zawsze zawiera przynajmniej wskazany kanał, jeśli istnieje.
+     */
+    suspend fun equivalents(channelId: String): List<Channel>
+
     /** Rozwiązuje adres odtwarzania kanału przez jego dostawcę. */
     suspend fun resolveStream(channelId: String): Result<StreamSpec>
 }

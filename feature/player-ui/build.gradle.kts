@@ -10,6 +10,7 @@ dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:designsystem"))
     api(project(":player:engine"))
+    implementation(project(":player:failover"))
     implementation(libs.media3.ui.compose)
     implementation(libs.coroutines.core)
     implementation(libs.androidx.lifecycle.runtime)
