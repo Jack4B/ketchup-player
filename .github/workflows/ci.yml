@@ -25,7 +25,7 @@ jobs:
       - name: Spotless + Detekt
         run: ./gradlew spotlessCheck detekt
       - name: Testy jednostkowe
-        run: ./gradlew testDebugUnitTest test
+        run: ./gradlew testDebugUnitTest :core:model:test :core:policy:test :epg:radar:test :provider:api:test
       - name: Roborazzi (verify; bez baseline - record)
         run: |
           if [ -n "$(find . -path '*/src/test/screenshots/*.png' -print -quit)" ]; then
