@@ -17,7 +17,7 @@ Gałąź `faza-0`, PR do `main` (link w opisie PR). Środowisko pracy: `docs/rep
 |---|---|---|
 | Aplikacja „Ketchup Player” startuje na emulatorze TV (API 34) i telefonie | ❌ niezweryfikowane | brak urządzenia/KVM w chmurze; ekran startowy tylko w Roborazzi (`app/src/test/screenshots/start_screen.png`); do sprawdzenia przez właściciela lokalnie |
 | Release z R8 działa | ⚠️ częściowo | `:app:assembleRelease` buduje się (APK ~2 MB, niepodpisany); uruchomienia na urządzeniu brak; podpis kluczem CI — nie skonfigurowany (sekrety poza repo) |
-| CI zielone | patrz PR | status checków w PR |
+| CI zielone | ✅ | run #14: https://github.com/Jack4B/ketchup-player/actions/runs/41220268049 (build-logic, reguły modułów, Spotless, Detekt, testy, Roborazzi verify, Lint, debug, release R8, gitleaks) |
 | Złamanie „feature nie zależy od feature” łamie build | ✅ | ręcznie: dodanie `:feature:home → :feature:vod` daje `Naruszone reguły zależności modułów: :feature:home -> :feature:vod`; test logiki: `ModuleRulesTest` |
 | `network_security_config`, `RedactingTree`, szkielet `SecretStore` z testami | ✅ | `RedactorTest`, `SecretStoreTest`, plik XML w `app/src/main/res/xml` |
 | Hilt, Detekt/ktlint/Lint, Roborazzi | ✅ | kroki CI; zrzuty w `*/src/test/screenshots` |
