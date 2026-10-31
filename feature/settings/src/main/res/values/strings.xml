@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="epg_sources_title">Źródła EPG</string>
+    <string name="epg_source_ovh_hint">Domyślny przewodnik XMLTV</string>
+    <string name="epg_source_teleman_hint">Opisy i oceny z teleman.pl (wyłączone domyślnie)</string>
+    <string name="epg_source_custom_hint">Własne źródło XMLTV</string>
+    <string name="epg_add_source">Dodaj własne źródło</string>
+    <string name="epg_remove_source">Usuń</string>
+    <string name="epg_field_name">Nazwa</string>
+    <string name="epg_field_url">Adres URL (http lub https)</string>
+    <string name="epg_save">Zapisz</string>
+    <string name="epg_cancel">Anuluj</string>
+    <string name="epg_error_name">Podaj nazwę (do 60 znaków)</string>
+    <string name="epg_error_url">Podaj poprawny adres http lub https</string>
+    <string name="epg_error_duplicate">Takie źródło już istnieje</string>
+    <string name="epg_state_on">Włączone</string>
+    <string name="epg_state_off">Wyłączone</string>
+</resources>
