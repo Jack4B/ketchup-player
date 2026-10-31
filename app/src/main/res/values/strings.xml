@@ -4,4 +4,6 @@
     <string name="start_tagline">Faza 0: fundament projektu</string>
     <string name="start_epg_sources">Źródła EPG</string>
     <string name="start_appearance">Wygląd</string>
+    <string name="start_live">Na żywo</string>
+    <string name="start_providers">Dostawcy</string>
 </resources>

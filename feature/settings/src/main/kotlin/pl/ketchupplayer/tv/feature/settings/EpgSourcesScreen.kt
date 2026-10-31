@@ -1,16 +1,10 @@
 package pl.ketchupplayer.tv.feature.settings
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -20,11 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.ExperimentalTvMaterial3Api
@@ -35,6 +26,7 @@ import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.designsystem.ScreenScaffold
 import pl.ketchupplayer.tv.core.designsystem.ScreenTitle
 import pl.ketchupplayer.tv.core.designsystem.SettingsListItem
+import pl.ketchupplayer.tv.core.designsystem.TextInputField
 import pl.ketchupplayer.tv.core.model.EpgSource
 import pl.ketchupplayer.tv.core.model.EpgSourceKind
 
@@ -115,13 +107,13 @@ private fun AddSourceForm(
 ) {
     val nameFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { nameFocus.requestFocus() }
-    Field(
+    TextInputField(
         stringResource(R.string.epg_field_name),
         form.name,
         { onEvent(EpgSourcesEvent.NameChanged(it)) },
         Modifier.focusRequester(nameFocus),
     )
-    Field(stringResource(R.string.epg_field_url), form.url, { onEvent(EpgSourcesEvent.UrlChanged(it)) })
+    TextInputField(stringResource(R.string.epg_field_url), form.url, { onEvent(EpgSourcesEvent.UrlChanged(it)) })
     form.error?.let { Text(stringResource(errorRes(it)), color = Color(0xFFFF6B6B)) }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         KetchupButton(stringResource(R.string.epg_save), { onEvent(EpgSourcesEvent.Submit) }, primary = true)
@@ -135,32 +127,3 @@ private fun errorRes(error: FormError): Int =
         FormError.URL -> R.string.epg_error_url
         FormError.DUPLICATE -> R.string.epg_error_duplicate
     }
-
-@OptIn(ExperimentalTvMaterial3Api::class)
-@Composable
-private fun Field(
-    label: String,
-    value: String,
-    onChange: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val c = KetchupTheme.colors
-    androidx.compose.foundation.layout.Column {
-        Text(label, fontSize = 14.sp, color = c.textSecondary)
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .border(2.dp, c.textSecondary, RoundedCornerShape(c.cornerRadius.coerceAtMost(12.dp)))
-                .padding(12.dp),
-        ) {
-            BasicTextField(
-                value = value,
-                onValueChange = onChange,
-                singleLine = true,
-                textStyle = TextStyle(color = c.textPrimary, fontSize = 20.sp),
-                cursorBrush = SolidColor(c.accent),
-                modifier = modifier.fillMaxWidth(),
-            )
-        }
-    }
-}

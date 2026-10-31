@@ -12,6 +12,7 @@ import pl.ketchupplayer.tv.core.model.ContentType
 import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.ProviderInfo
 import pl.ketchupplayer.tv.core.model.ProviderType
+import pl.ketchupplayer.tv.core.model.StreamSpec
 import pl.ketchupplayer.tv.core.network.TextFetcher
 import pl.ketchupplayer.tv.core.policy.EpgSourcePolicy
 import pl.ketchupplayer.tv.provider.api.IptvProvider
@@ -87,6 +88,15 @@ class RoomCatalogRepository
         override suspend fun remove(id: ProviderId) = providerDao.delete(id.value)
 
         override suspend fun channel(id: String): Channel? = channelDao.get(id)?.toModel()
+
+        override suspend fun resolveStream(channelId: String): Result<StreamSpec> {
+            val channel =
+                channelDao.get(channelId)?.toModel() ?: return Result.failure(IllegalStateException("Nie ma kanału"))
+            val provider =
+                providerDao.get(channel.providerId.value)
+                    ?: return Result.failure(IllegalStateException("Nie ma dostawcy"))
+            return createProvider(provider).resolveStream(channel)
+        }
 
         private fun createProvider(e: ProviderEntity): IptvProvider =
             when (ProviderType.valueOf(e.type)) {

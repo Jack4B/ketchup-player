@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import pl.ketchupplayer.tv.core.model.Channel
 import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.ProviderInfo
+import pl.ketchupplayer.tv.core.model.StreamSpec
 
 enum class AddProviderError { INVALID_NAME, INVALID_URL }
 
@@ -44,4 +45,7 @@ interface CatalogRepository {
     suspend fun remove(id: ProviderId)
 
     suspend fun channel(id: String): Channel?
+
+    /** Rozwiązuje adres odtwarzania kanału przez jego dostawcę. */
+    suspend fun resolveStream(channelId: String): Result<StreamSpec>
 }

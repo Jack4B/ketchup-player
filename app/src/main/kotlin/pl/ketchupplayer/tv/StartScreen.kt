@@ -34,10 +34,7 @@ import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
  */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun StartScreen(
-    onOpenEpgSources: () -> Unit = {},
-    onOpenAppearance: () -> Unit = {},
-) {
+fun StartScreen(onNavigate: (Destination) -> Unit = {}) {
     val c = KetchupTheme.colors
     val first = remember { FocusRequester() }
     LaunchedEffect(Unit) { first.requestFocus() }
@@ -72,13 +69,21 @@ fun StartScreen(
             color = c.textSecondary,
         )
         val buttons = Modifier.padding(top = 12.dp).widthIn(max = 420.dp).fillMaxWidth(if (phone) 1f else 0.4f)
-        KetchupButton(
-            stringResource(R.string.start_epg_sources),
-            onOpenEpgSources,
-            buttons,
-            primary = true,
-            focusRequester = first,
-        )
-        KetchupButton(stringResource(R.string.start_appearance), onOpenAppearance, buttons)
+        val entries =
+            listOf(
+                R.string.start_live to Destination.LIVE,
+                R.string.start_providers to Destination.PROVIDERS,
+                R.string.start_epg_sources to Destination.EPG_SOURCES,
+                R.string.start_appearance to Destination.APPEARANCE,
+            )
+        entries.forEachIndexed { i, (label, destination) ->
+            KetchupButton(
+                stringResource(label),
+                { onNavigate(destination) },
+                buttons,
+                primary = i == 0,
+                focusRequester = if (i == 0) first else null,
+            )
+        }
     }
 }

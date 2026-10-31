@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="providers_title">Dostawcy</string>
+    <string name="providers_empty">Nie dodano jeszcze żadnej listy. Dodaj listę M3U, aby zobaczyć kanały.</string>
+    <string name="providers_add_m3u">Dodaj listę M3U</string>
+    <string name="providers_refresh">Odśwież</string>
+    <string name="providers_remove">Usuń</string>
+    <string name="providers_save">Zapisz i pobierz</string>
+    <string name="providers_cancel">Anuluj</string>
+    <string name="providers_field_name">Nazwa listy</string>
+    <string name="providers_field_url">Adres listy M3U (http lub https)</string>
+    <string name="providers_error_name">Podaj nazwę (do 60 znaków)</string>
+    <string name="providers_error_url">Podaj poprawny adres http lub https</string>
+    <string name="providers_loading">Pobieranie listy…</string>
+    <string name="providers_summary">%1$s · %2$s</string>
+    <plurals name="providers_channels">
+        <item quantity="one">%d kanał</item>
+        <item quantity="few">%d kanały</item>
+        <item quantity="many">%d kanałów</item>
+        <item quantity="other">%d kanału</item>
+    </plurals>
+    <string name="providers_summary_error">%1$s · błąd: %2$s</string>
+    <string name="providers_saved_with_error">Lista zapisana, ale pobranie się nie udało: %1$s</string>
+</resources>

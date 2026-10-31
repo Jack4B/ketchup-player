@@ -26,6 +26,7 @@ import androidx.tv.material3.Text
 @Composable
 fun ScreenScaffold(
     modifier: Modifier = Modifier,
+    scrollable: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = KetchupTheme.colors
@@ -41,7 +42,7 @@ fun ScreenScaffold(
                 .fillMaxSize()
                 .background(c.background)
                 .then(margins)
-                .verticalScroll(rememberScrollState()),
+                .then(if (scrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier),
         verticalArrangement = Arrangement.spacedBy(14.dp),
         content = content,
     )

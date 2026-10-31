@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
@@ -40,6 +41,7 @@ fun FocusItem(
     focusedContainer: Color? = null,
     ringColor: Color? = null,
     focusScale: Float = 1.04f,
+    contentAlignment: Alignment = Alignment.TopStart,
     content: @Composable (focused: Boolean) -> Unit,
 ) {
     val c = KetchupTheme.colors
@@ -54,6 +56,7 @@ fun FocusItem(
         }
     val fill = if (focused) focusedContainer ?: c.surface3 else container ?: c.surface2
     Box(
+        contentAlignment = contentAlignment,
         modifier =
             modifier
                 .scale(scale)
