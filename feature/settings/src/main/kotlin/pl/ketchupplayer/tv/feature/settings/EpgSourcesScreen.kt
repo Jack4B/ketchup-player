@@ -10,10 +10,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -84,8 +84,12 @@ private fun SourceList(
 ) {
     val first = remember { FocusRequester() }
     LaunchedEffect(Unit) { first.requestFocus() }
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(sources, key = { it.id }) { source ->
+    // Zwykła kolumna zamiast LazyColumn: lista jest krótka, a FocusRequester musi być podpięty przed requestFocus().
+    Column(
+        modifier = Modifier.verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        sources.forEach { source ->
             val modifier = if (source == sources.first()) Modifier.focusRequester(first) else Modifier
             ListItem(
                 selected = false,
@@ -104,10 +108,8 @@ private fun SourceList(
                 },
             )
         }
-        item(key = "add") {
-            Button(onClick = { onEvent(EpgSourcesEvent.StartAdd) }) {
-                Text(stringResource(R.string.epg_add_source))
-            }
+        Button(onClick = { onEvent(EpgSourcesEvent.StartAdd) }) {
+            Text(stringResource(R.string.epg_add_source))
         }
     }
 }

@@ -2,6 +2,8 @@ import com.android.build.api.dsl.CommonExtension
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.api.tasks.testing.Test
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -28,6 +30,12 @@ internal fun Project.configureAndroid(extension: CommonExtension<*, *, *, *, *, 
         }
     }
     configureKotlin()
+    tasks.withType<Test>().configureEach {
+        testLogging {
+            events("failed")
+            exceptionFormat = TestExceptionFormat.SHORT
+        }
+    }
 }
 
 internal fun Project.configureKotlin() {
