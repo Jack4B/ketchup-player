@@ -4,11 +4,13 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
+import androidx.compose.ui.test.requestFocus
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -79,8 +81,7 @@ class AppearanceScreenTest {
         val state = AppearanceUiState(editor = editor)
         compose.setContent { KetchupTheme { AppearanceScreen(state, { events += it }, {}) } }
         compose.waitForIdle()
-        // Fokus startuje na karcie motywu; przejście do suwaka odwzorowuje nawigację DOL.
-        repeat(3) { key(Key.DirectionDown) }
+        compose.onNodeWithTag("slider_hue").requestFocus()
         key(Key.DirectionRight)
         val sliderEvents =
             events.filter {

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -26,6 +27,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
@@ -79,7 +81,8 @@ fun AppearanceScreen(
                 FocusItem(
                     onClick = { onEvent(AppearanceEvent.SelectTheme(theme)) },
                     selected = theme == state.theme,
-                    modifier = Modifier.width(200.dp).then(if (i == 0) Modifier.focusRequester(first) else Modifier),
+                    modifier = Modifier.width(200.dp),
+                    focusRequester = if (i == 0) first else null,
                 ) {
                     ThemeCard(theme, theme == state.theme)
                 }
@@ -132,8 +135,7 @@ private fun ThemeCard(
             Modifier.fillMaxWidth().height(56.dp).background(
                 Color(t.background),
                 CircleShape.let {
-                    androidx.compose.foundation.shape
-                        .RoundedCornerShape(t.cornerRadiusDp.dp.coerceAtMost(14.dp))
+                    RoundedCornerShape(t.cornerRadiusDp.dp.coerceAtMost(14.dp))
                 },
             ),
         ) {
@@ -168,52 +170,20 @@ private fun CustomEditorPanel(
 ) {
     val c = KetchupTheme.colors
     Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .background(
-                    c.surface2,
-                    androidx.compose.foundation.shape
-                        .RoundedCornerShape(c.cornerRadius),
-                ).padding(16.dp),
+        modifier = Modifier.fillMaxWidth().background(c.surface2, RoundedCornerShape(c.cornerRadius)).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text(stringResource(R.string.custom_hex), fontSize = 16.sp, color = c.textSecondary)
-        Box(
-            Modifier
-                .width(
-                    260.dp,
-                ).background(
-                    c.background,
-                    androidx.compose.foundation.shape
-                        .RoundedCornerShape(8.dp),
-                ).padding(10.dp),
-        ) {
-            BasicTextField(
-                value = e.hex,
-                onValueChange = { onEvent(AppearanceEvent.HexChanged(it)) },
-                singleLine = true,
-                textStyle = TextStyle(color = c.textPrimary, fontSize = 20.sp),
-                cursorBrush = SolidColor(c.accent),
-                modifier = Modifier.fillMaxWidth(),
-            )
+        HexField(e, onEvent)
+        LabeledSlider(R.string.custom_hue, "slider_hue", e.hue / HUE_MAX) {
+            onEvent(AppearanceEvent.HueChanged(it * HUE_MAX))
         }
-        if (e.hexError) Text(stringResource(R.string.custom_hex_error), color = Color(0xFFFF6B6B), fontSize = 16.sp)
-        LabeledSlider(R.string.custom_hue, e.hue / HUE_MAX) { onEvent(AppearanceEvent.HueChanged(it * HUE_MAX)) }
-        LabeledSlider(R.string.custom_saturation, e.saturation) { onEvent(AppearanceEvent.SaturationChanged(it)) }
-        LabeledSlider(R.string.custom_lightness, e.lightness) { onEvent(AppearanceEvent.LightnessChanged(it)) }
-        if (e.adjusted) Text(stringResource(R.string.custom_adjusted), color = c.textSecondary, fontSize = 16.sp)
-        e.warnings.forEach {
-            val res =
-                if (it ==
-                    AccentWarning.LOOKS_LIKE_NEW_EPISODE_GREEN
-                ) {
-                    R.string.custom_warn_green
-                } else {
-                    R.string.custom_warn_red
-                }
-            Text(stringResource(res), color = c.textSecondary, fontSize = 16.sp)
+        LabeledSlider(R.string.custom_saturation, "slider_saturation", e.saturation) {
+            onEvent(AppearanceEvent.SaturationChanged(it))
         }
+        LabeledSlider(R.string.custom_lightness, "slider_lightness", e.lightness) {
+            onEvent(AppearanceEvent.LightnessChanged(it))
+        }
+        EditorNotes(e)
         FocusItem(onClick = { onEvent(AppearanceEvent.CloseCustom) }, modifier = Modifier.width(160.dp)) {
             Text(
                 stringResource(R.string.custom_close),
@@ -227,14 +197,54 @@ private fun CustomEditorPanel(
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
+private fun HexField(
+    e: CustomEditor,
+    onEvent: (AppearanceEvent) -> Unit,
+) {
+    val c = KetchupTheme.colors
+    Text(stringResource(R.string.custom_hex), fontSize = 16.sp, color = c.textSecondary)
+    Box(Modifier.width(260.dp).background(c.background, RoundedCornerShape(8.dp)).padding(10.dp)) {
+        BasicTextField(
+            value = e.hex,
+            onValueChange = { onEvent(AppearanceEvent.HexChanged(it)) },
+            singleLine = true,
+            textStyle = TextStyle(color = c.textPrimary, fontSize = 20.sp),
+            cursorBrush = SolidColor(c.accent),
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+    if (e.hexError) Text(stringResource(R.string.custom_hex_error), color = Color(0xFFFF6B6B), fontSize = 16.sp)
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun EditorNotes(e: CustomEditor) {
+    val c = KetchupTheme.colors
+    if (e.adjusted) Text(stringResource(R.string.custom_adjusted), color = c.textSecondary, fontSize = 16.sp)
+    e.warnings.forEach {
+        val res =
+            if (it ==
+                AccentWarning.LOOKS_LIKE_NEW_EPISODE_GREEN
+            ) {
+                R.string.custom_warn_green
+            } else {
+                R.string.custom_warn_red
+            }
+        Text(stringResource(res), color = c.textSecondary, fontSize = 16.sp)
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
 private fun LabeledSlider(
     label: Int,
+    tag: String,
     value: Float,
     onChange: (Float) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(stringResource(label), fontSize = 16.sp, color = KetchupTheme.colors.textSecondary)
-        StepSlider(value, onChange)
+        StepSlider(value, onChange, modifier = Modifier.testTag(tag))
     }
 }
 
