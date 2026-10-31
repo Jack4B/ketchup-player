@@ -41,6 +41,7 @@ dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:datastore"))
     implementation(project(":feature:settings"))
+    implementation(libs.timber)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.splashscreen)
     implementation(libs.androidx.activity.compose)

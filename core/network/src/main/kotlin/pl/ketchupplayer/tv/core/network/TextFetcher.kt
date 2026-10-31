@@ -1,0 +1,24 @@
+package pl.ketchupplayer.tv.core.network
+
+/** Błąd pobierania: kod HTTP, IO albo zbyt duża odpowiedź. Komunikaty nie zawierają URL-i (sekrety). */
+sealed class NetworkException(
+    message: String,
+    cause: Throwable? = null,
+) : Exception(message, cause) {
+    class Http(
+        val code: Int,
+    ) : NetworkException("HTTP $code")
+
+    class Io(
+        cause: Throwable,
+    ) : NetworkException("Błąd sieci: ${cause.javaClass.simpleName}", cause)
+
+    class TooLarge(
+        val limitBytes: Long,
+    ) : NetworkException("Odpowiedź większa niż $limitBytes B")
+}
+
+/** Pobiera tekst spod adresu (listy M3U, JSON API). Implementacja: [OkHttpTextFetcher]. */
+fun interface TextFetcher {
+    suspend fun fetch(url: String): Result<String>
+}

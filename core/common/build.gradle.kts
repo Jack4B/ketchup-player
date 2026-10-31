@@ -1,8 +1,7 @@
 plugins {
-    id("ketchup.android.library")
+    id("ketchup.jvm.library")
 }
 
 dependencies {
-    api(libs.timber)
     testImplementation(libs.junit)
 }

@@ -1,0 +1,87 @@
+package pl.ketchupplayer.tv.core.network
+
+import kotlinx.coroutines.test.runTest
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
+import okio.Buffer
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import java.io.ByteArrayOutputStream
+import java.util.zip.GZIPOutputStream
+
+class OkHttpTextFetcherTest {
+    private lateinit var server: MockWebServer
+
+    @Before
+    fun start() {
+        server = MockWebServer().also { it.start() }
+    }
+
+    @After
+    fun stop() = server.shutdown()
+
+    private fun fetcher(max: Long = 1024 * 1024) = OkHttpTextFetcher(NetworkClients.stream("TestUA/1"), max)
+
+    private fun url(path: String = "/list.m3u") = server.url(path).toString()
+
+    @Test
+    fun `pobiera tekst i wysyla User-Agent`() =
+        runTest {
+            server.enqueue(MockResponse().setBody("#EXTM3U"))
+            assertEquals("#EXTM3U", fetcher().fetch(url()).getOrThrow())
+            assertEquals("TestUA/1", server.takeRequest().getHeader("User-Agent"))
+        }
+
+    @Test
+    fun `rozpakowuje surowy gzip`() =
+        runTest {
+            val gz =
+                ByteArrayOutputStream().also { o ->
+                    GZIPOutputStream(o).use { it.write("skompresowane".toByteArray()) }
+                }
+            server.enqueue(MockResponse().setBody(Buffer().write(gz.toByteArray())))
+            assertEquals("skompresowane", fetcher().fetch(url("/pltv.xml.gz")).getOrThrow())
+        }
+
+    @Test
+    fun `kod 404 daje NetworkException Http`() =
+        runTest {
+            server.enqueue(MockResponse().setResponseCode(404))
+            val err = fetcher().fetch(url()).exceptionOrNull() as NetworkException.Http
+            assertEquals(404, err.code)
+        }
+
+    @Test
+    fun `zbyt duza odpowiedz`() =
+        runTest {
+            server.enqueue(MockResponse().setBody("x".repeat(5000)))
+            assertTrue(fetcher(max = 1000).fetch(url()).exceptionOrNull() is NetworkException.TooLarge)
+        }
+
+    @Test
+    fun `przekierowanie jest wykonane`() =
+        runTest {
+            server.enqueue(MockResponse().setResponseCode(302).setHeader("Location", url("/real")))
+            server.enqueue(MockResponse().setBody("ok"))
+            assertEquals("ok", fetcher().fetch(url("/start")).getOrThrow())
+        }
+
+    @Test
+    fun `klient metadanych odrzuca HTTP bez TLS`() =
+        runTest {
+            server.enqueue(MockResponse().setBody("x"))
+            val result = OkHttpTextFetcher(NetworkClients.metadata()).fetch(url())
+            assertTrue(result.exceptionOrNull() is NetworkException.Io)
+        }
+
+    @Test
+    fun `blad polaczenia to NetworkException Io`() =
+        runTest {
+            val dead = url()
+            server.shutdown()
+            assertTrue(fetcher().fetch(dead).exceptionOrNull() is NetworkException.Io)
+        }
+}

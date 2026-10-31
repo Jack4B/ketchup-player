@@ -1,6 +1,7 @@
-package pl.ketchupplayer.tv.core.common
+package pl.ketchupplayer.tv
 
 import android.util.Log
+import pl.ketchupplayer.tv.core.common.Redactor
 import timber.log.Timber
 
 /** Timber tree, który nigdy nie zapisuje sekretów (§8.4). */

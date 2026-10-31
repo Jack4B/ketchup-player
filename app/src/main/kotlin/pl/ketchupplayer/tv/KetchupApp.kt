@@ -2,7 +2,6 @@ package pl.ketchupplayer.tv
 
 import android.app.Application
 import dagger.hilt.android.HiltAndroidApp
-import pl.ketchupplayer.tv.core.common.RedactingTree
 import timber.log.Timber
 
 @HiltAndroidApp
