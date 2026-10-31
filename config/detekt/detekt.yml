@@ -1,0 +1,12 @@
+build:
+  maxIssues: 0
+exceptions:
+  EmptyCatchBlock: { active: true }
+  SwallowedException: { active: true }
+  TooGenericExceptionCaught: { active: true }
+empty-blocks:
+  EmptyCatchBlock: { active: true, allowedExceptionNameRegex: '^$' }
+style:
+  MagicNumber: { active: false }
+  WildcardImport: { active: true }
+  MaxLineLength: { active: true, maxLineLength: 120 }
