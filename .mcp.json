@@ -1,0 +1,6 @@
+{
+  "mcpServers": {
+    "context7": { "command": "npx", "args": ["-y", "@upstash/context7-mcp"] },
+    "mobile": { "command": "npx", "args": ["-y", "@mobilenext/mobile-mcp@latest"] }
+  }
+}
