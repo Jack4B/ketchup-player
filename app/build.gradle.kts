@@ -15,8 +15,10 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
+            manifestPlaceholders["leanbackRequired"] = "false"
         }
         release {
+            manifestPlaceholders["leanbackRequired"] = "true"
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
@@ -24,6 +26,8 @@ android {
         }
     }
     buildFeatures { buildConfig = true }
+    // AAPT2 nie rozwiązuje @mipmap/ic_launcher z folderu bez -v26, mimo minSdk 28.
+    lint { disable += "ObsoleteSdkInt" }
     testOptions.unitTests.all {
         it.systemProperty("robolectric.pixelCopyRenderMode", "hardware")
     }
@@ -38,9 +42,11 @@ dependencies {
     implementation(project(":core:datastore"))
     implementation(project(":feature:settings"))
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.splashscreen)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime)
     testImplementation(libs.junit)
+    testImplementation(project(":core:testing"))
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)

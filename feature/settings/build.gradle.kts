@@ -8,6 +8,7 @@ plugins {
 dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:ui"))
+    implementation(project(":core:designsystem"))
     implementation(project(":core:data"))
     implementation(project(":core:policy"))
     implementation(libs.coroutines.core)
@@ -17,6 +18,7 @@ dependencies {
     implementation(libs.hilt.lifecycle)
     implementation(libs.androidx.activity.compose)
 
+    testImplementation(project(":core:testing"))
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
