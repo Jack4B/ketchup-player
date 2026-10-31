@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -72,22 +74,37 @@ private fun Content(
     onEvent: (LiveTvEvent) -> Unit,
     onOpenChannel: (String) -> Unit,
 ) {
+    val groupsState = rememberLazyListState()
+    LaunchedEffect(Unit) {
+        // Wybrana grupa może leżeć daleko na liście (np. 100+ grup); pozycja 0 to „Wszystkie”.
+        val index = state.groups.indexOf(state.selectedGroup)
+        if (index >= 0) groupsState.scrollToItem(index + 1)
+    }
     Row(Modifier.fillMaxWidth().fillMaxHeight(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-        LazyColumn(Modifier.width(GROUPS_WIDTH).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        LazyColumn(
+            Modifier.width(GROUPS_WIDTH).fillMaxHeight(),
+            groupsState,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             item(key = "all") {
                 GroupItem(stringResource(R.string.livetv_all_groups), state.selectedGroup == null) {
                     onEvent(LiveTvEvent.SelectGroup(null))
                 }
             }
             items(state.groups, key = { it }) { g ->
-                GroupItem(g, state.selectedGroup == g) { onEvent(LiveTvEvent.SelectGroup(g)) }
+                GroupItem(
+                    g.ifBlank {
+                        stringResource(R.string.livetv_no_group)
+                    },
+                    state.selectedGroup == g,
+                ) { onEvent(LiveTvEvent.SelectGroup(g)) }
             }
         }
         LazyColumn(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(state.channels, key = { it.id }) { ch ->
                 ChannelRow(
                     number = ch.number ?: 0,
-                    name = ch.name,
+                    name = ch.displayName,
                     onClick = { onOpenChannel(ch.id) },
                     nowPlaying = state.onAir[ch.id]?.title,
                     progress = state.onAir[ch.id]?.progressAt(state.nowMs),

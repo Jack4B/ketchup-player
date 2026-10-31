@@ -10,6 +10,8 @@ data class M3uPlaylist(
     val channels: List<Channel>,
     val epgUrl: String?,
     val skippedLines: Int,
+    /** Liczba filmów/odcinków pominiętych przy `liveOnly` (do komunikatu dla użytkownika). */
+    val omittedVod: Int = 0,
 )
 
 /**
@@ -23,11 +25,14 @@ object M3uParser {
     fun parse(
         providerId: ProviderId,
         text: String,
+        liveOnly: Boolean = false,
     ): M3uPlaylist {
         val channels = ArrayList<Channel>()
+        val acc = Accumulator(providerId, liveOnly, channels)
         var epgUrl: String? = null
         var pending: Pending? = null
         var skipped = 0
+        var omittedVod = 0
         for (raw in text.removePrefix("").lineSequence()) {
             val line = raw.trim()
             when {
@@ -37,22 +42,51 @@ object M3uParser {
                     if (pending != null) skipped++
                     pending = parseExtinf(line)
                 }
-                line.startsWith("#EXTGRP:") -> pending?.group = line.removePrefix("#EXTGRP:").trim().ifEmpty { null }
-                line.startsWith("#EXTVLCOPT:") -> pending?.let { applyVlcOpt(it, line.removePrefix("#EXTVLCOPT:")) }
-                line.startsWith("#") -> Unit
+                line.startsWith("#") -> pending?.let { applyDirective(it, line) }
                 else -> {
-                    val p = pending
-                    if (p != null && isStreamUrl(line)) {
-                        channels += p.toChannel(providerId, line, channels.size + 1)
-                    } else {
-                        skipped++
+                    when (acc.accept(pending, line)) {
+                        Outcome.SKIPPED -> skipped++
+                        Outcome.OMITTED -> omittedVod++
+                        Outcome.ADDED -> Unit
                     }
                     pending = null
                 }
             }
         }
         if (pending != null) skipped++
-        return M3uPlaylist(channels, epgUrl, skipped)
+        return M3uPlaylist(channels, epgUrl, skipped, omittedVod)
+    }
+
+    /** `#EXTGRP:` i `#EXTVLCOPT:` uzupełniają bieżący wpis; pozostałe komentarze są ignorowane. */
+    private fun applyDirective(
+        pending: Pending,
+        line: String,
+    ) {
+        when {
+            line.startsWith("#EXTGRP:") -> pending.group = line.removePrefix("#EXTGRP:").trim().ifEmpty { null }
+            line.startsWith("#EXTVLCOPT:") -> applyVlcOpt(pending, line.removePrefix("#EXTVLCOPT:"))
+        }
+    }
+
+    private enum class Outcome { ADDED, OMITTED, SKIPPED }
+
+    private class Accumulator(
+        private val providerId: ProviderId,
+        private val liveOnly: Boolean,
+        private val channels: MutableList<Channel>,
+    ) {
+        fun accept(
+            pending: Pending?,
+            line: String,
+        ): Outcome =
+            when {
+                pending == null || !isStreamUrl(line) -> Outcome.SKIPPED
+                liveOnly && detectType(line, pending.group) != ContentType.LIVE -> Outcome.OMITTED
+                else -> {
+                    channels += pending.toChannel(providerId, line, channels.size + 1)
+                    Outcome.ADDED
+                }
+            }
     }
 
     private class Pending(

@@ -2,6 +2,7 @@
 <resources>
     <string name="livetv_title">Na żywo</string>
     <string name="livetv_all_groups">Wszystkie</string>
+    <string name="livetv_no_group">Bez grupy</string>
     <string name="livetv_empty">Brak kanałów. Dodaj listę u dostawców.</string>
     <string name="livetv_open_providers">Dostawcy</string>
     <string name="livetv_loading">Ładowanie kanałów…</string>

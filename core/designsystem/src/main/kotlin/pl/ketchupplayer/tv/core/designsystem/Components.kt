@@ -105,12 +105,14 @@ fun ChannelRow(
             Text(number.toString(), fontSize = 20.sp, color = c.textSecondary, modifier = Modifier.width(48.dp))
             Box(
                 Modifier
+                    .width(72.dp)
                     .background(
                         c.channelTile,
                         RoundedCornerShape(8.dp),
-                    ).padding(horizontal = 12.dp, vertical = 6.dp),
+                    ).padding(vertical = 6.dp),
+                contentAlignment = Alignment.Center,
             ) {
-                Text(name.take(CHANNEL_TILE_CHARS), fontSize = 18.sp, color = c.channelTileText)
+                Text(tileLabel(name), fontSize = 18.sp, color = c.channelTileText)
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(name, fontSize = 20.sp, color = c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -140,7 +142,17 @@ fun ChannelRow(
 }
 
 private val CHANNEL_ROW_HEIGHT = 72.dp
-private const val CHANNEL_TILE_CHARS = 6
+private const val CHANNEL_TILE_CHARS = 4
+
+/** Etykieta kafelka: pierwsze słowo (do 4 znaków) albo inicjały, gdy to pojedynczy znak (`4 Fun TV` -> `4FT`). */
+internal fun tileLabel(name: String): String {
+    val words = name.trim().split(' ').filter { it.isNotEmpty() }
+    return when {
+        words.isEmpty() -> ""
+        words.first().length >= 2 -> words.first().take(CHANNEL_TILE_CHARS)
+        else -> words.take(3).joinToString("") { it.take(1) }
+    }
+}
 
 /** Przycisk główny (akcent, tekst #0B0B0B/biały wg kontrastu) lub drugorzędny (panel). Wysokość ≥ 56 dp. */
 @OptIn(ExperimentalTvMaterial3Api::class)

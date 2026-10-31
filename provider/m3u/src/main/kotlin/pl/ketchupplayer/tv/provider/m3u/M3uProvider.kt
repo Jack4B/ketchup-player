@@ -26,10 +26,18 @@ class M3uProvider(
     override suspend fun loadChannels(): Result<List<Channel>> =
         fetcher.fetch(url).fold(
             onSuccess = { text ->
-                val playlist = M3uParser.parse(id, text)
+                val playlist = M3uParser.parse(id, text, liveOnly = true)
                 lastEpgUrl = playlist.epgUrl
                 if (playlist.channels.isEmpty()) {
-                    Result.failure(ProviderError.BadResponse("Lista nie zawiera żadnych kanałów"))
+                    Result.failure(
+                        ProviderError.BadResponse(
+                            if (playlist.omittedVod > 0) {
+                                "Lista zawiera tylko filmy i seriale (obsługa w kolejnej wersji)"
+                            } else {
+                                "Lista nie zawiera żadnych kanałów"
+                            },
+                        ),
+                    )
                 } else {
                     Result.success(playlist.channels)
                 }

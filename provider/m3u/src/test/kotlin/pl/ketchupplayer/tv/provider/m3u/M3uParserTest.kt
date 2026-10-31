@@ -95,4 +95,17 @@ class M3uParserTest {
         assertEquals("tvp 1 hd", Channel.normalizeName("TVP-1  HD!"))
         assertEquals("lodz", Channel.normalizeName("Łódź"))
     }
+
+    @Test
+    fun `liveOnly pomija filmy i seriale po adresie`() {
+        val text =
+            "#EXTM3U\n#EXTINF:-1,Kanal\nhttp://h.example.invalid/live/u/p/1.ts\n" +
+                "#EXTINF:-1,Film\nhttp://h.example.invalid/movie/u/p/2.mp4\n" +
+                "#EXTINF:-1,Odcinek\nhttp://h.example.invalid/series/u/p/3.mp4\n"
+        val all = M3uParser.parse(ProviderId("p"), text)
+        val live = M3uParser.parse(ProviderId("p"), text, liveOnly = true)
+        assertEquals(3, all.channels.size)
+        assertEquals(listOf("Kanal"), live.channels.map { it.name })
+        assertEquals(2, live.omittedVod)
+    }
 }

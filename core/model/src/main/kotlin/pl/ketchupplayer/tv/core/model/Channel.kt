@@ -21,12 +21,22 @@ data class Channel(
     val type: ContentType = ContentType.LIVE,
     val userAgent: String? = null,
 ) {
-    /** Nazwa znormalizowana do dopasowania z EPG i wyszukiwania. */
-    val normName: String get() = normalizeName(name)
+    /** Nazwa do wyświetlania: bez przedrostka dostawcy typu `PL| ` czy `PL-VIP| `. */
+    val displayName: String get() = cleanDisplayName(name)
+
+    /** Nazwa znormalizowana (EPG, wyszukiwanie); ten sam kanał u różnych dostawców ma ten sam klucz. */
+    val normName: String get() = normalizeName(displayName)
 
     companion object {
         private val diacritics = Regex("\\p{M}+")
         private val nonAlnum = Regex("[^a-z0-9]+")
+        private val providerPrefix = Regex("^[A-Za-z0-9+& ]{1,12}(-[A-Za-z0-9+& ]{1,12})?\\|\\s*")
+
+        /** `PL-VIP| TVN 24 RAW` -> `TVN 24 RAW`; nazwa zawierająca tylko przedrostek zostaje bez zmian. */
+        fun cleanDisplayName(raw: String): String {
+            val cleaned = raw.replace(providerPrefix, "").trim()
+            return cleaned.ifEmpty { raw }
+        }
 
         /** `Wiadomości HD` -> `wiadomosci hd`; bez znaków diakrytycznych, interpunkcji i podwójnych spacji. */
         fun normalizeName(raw: String): String =
