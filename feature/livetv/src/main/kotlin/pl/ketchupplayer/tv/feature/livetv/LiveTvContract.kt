@@ -1,6 +1,7 @@
 package pl.ketchupplayer.tv.feature.livetv
 
 import pl.ketchupplayer.tv.core.model.Channel
+import pl.ketchupplayer.tv.core.model.EpgProgramme
 
 data class LiveTvUiState(
     val loading: Boolean = true,
@@ -8,6 +9,9 @@ data class LiveTvUiState(
     /** null = wszystkie grupy. */
     val selectedGroup: String? = null,
     val channels: List<Channel> = emptyList(),
+    /** Audycja trwająca teraz: id kanału -> audycja. */
+    val onAir: Map<String, EpgProgramme> = emptyMap(),
+    val nowMs: Long = 0,
 )
 
 sealed interface LiveTvEvent {

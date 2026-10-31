@@ -89,6 +89,8 @@ private fun Content(
                     number = ch.number ?: 0,
                     name = ch.name,
                     onClick = { onOpenChannel(ch.id) },
+                    nowPlaying = state.onAir[ch.id]?.title,
+                    progress = state.onAir[ch.id]?.progressAt(state.nowMs),
                     modifier = if (ch == state.channels.first()) Modifier.requestFocusWhenPlaced() else Modifier,
                 )
             }

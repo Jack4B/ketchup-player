@@ -14,12 +14,17 @@ import pl.ketchupplayer.tv.core.data.appearance.DataStoreAppearanceRepository
 import pl.ketchupplayer.tv.core.data.catalog.CatalogRepository
 import pl.ketchupplayer.tv.core.data.catalog.RoomCatalogRepository
 import pl.ketchupplayer.tv.core.data.epg.DataStoreEpgSourcesRepository
+import pl.ketchupplayer.tv.core.data.epg.EpgRepository
 import pl.ketchupplayer.tv.core.data.epg.EpgSourcesRepository
+import pl.ketchupplayer.tv.core.data.epg.RoomEpgRepository
 import pl.ketchupplayer.tv.core.database.ChannelDao
+import pl.ketchupplayer.tv.core.database.EpgDao
 import pl.ketchupplayer.tv.core.database.KetchupDatabase
 import pl.ketchupplayer.tv.core.database.ProviderDao
 import pl.ketchupplayer.tv.core.network.NetworkClients
+import pl.ketchupplayer.tv.core.network.OkHttpStreamFetcher
 import pl.ketchupplayer.tv.core.network.OkHttpTextFetcher
+import pl.ketchupplayer.tv.core.network.StreamFetcher
 import pl.ketchupplayer.tv.core.network.TextFetcher
 import javax.inject.Singleton
 
@@ -34,6 +39,9 @@ abstract class DataModule {
 
     @Binds
     abstract fun bindCatalog(impl: RoomCatalogRepository): CatalogRepository
+
+    @Binds
+    abstract fun bindEpg(impl: RoomEpgRepository): EpgRepository
 
     companion object {
         @Provides
@@ -51,6 +59,13 @@ abstract class DataModule {
         @Provides
         @Singleton
         fun textFetcher(): TextFetcher = OkHttpTextFetcher(NetworkClients.stream())
+
+        @Provides
+        fun epgDao(db: KetchupDatabase): EpgDao = db.epg()
+
+        @Provides
+        @Singleton
+        fun streamFetcher(): StreamFetcher = OkHttpStreamFetcher(NetworkClients.stream())
 
         @Provides
         fun clock(): Clock = Clock.System

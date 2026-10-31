@@ -18,6 +18,7 @@ import org.robolectric.annotation.GraphicsMode
 import pl.ketchupplayer.tv.core.designsystem.DeviceClass
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.model.Channel
+import pl.ketchupplayer.tv.core.model.EpgProgramme
 import pl.ketchupplayer.tv.core.model.ProviderId
 
 @OptIn(ExperimentalTestApi::class)
@@ -58,6 +59,18 @@ class LiveTvScreenTest {
     fun screenshotListyKanalow() {
         show(full)
         compose.onRoot().captureRoboImage("src/test/screenshots/livetv_channels.png")
+    }
+
+    @Test
+    fun screenshotZAudycjamiTeraz() {
+        val now = 1_800_000_000_000L
+        val onAir =
+            mapOf(
+                "p:1" to EpgProgramme("p:1", now - 1_200_000, now + 2_400_000, "Wiadomości"),
+                "p:3" to EpgProgramme("p:3", now - 600_000, now + 3_000_000, "Mecz: finał ligi"),
+            )
+        show(full.copy(onAir = onAir, nowMs = now))
+        compose.onRoot().captureRoboImage("src/test/screenshots/livetv_epg.png")
     }
 
     @Test

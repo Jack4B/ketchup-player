@@ -54,3 +54,27 @@ data class ChannelFlagEntity(
     val hidden: Boolean = false,
     val lastWatchedMs: Long? = null,
 )
+
+/** Audycje przewodnika EPG (aktualne). Zapełniane atomową podmianą z [EpgStagingEntity]. */
+@Entity(tableName = "epg_programmes", indices = [Index("channelId", "startMs"), Index("endMs")])
+data class EpgProgrammeEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val channelId: String,
+    val startMs: Long,
+    val endMs: Long,
+    val title: String,
+    val description: String?,
+    val category: String?,
+)
+
+/** Tabela robocza importu: UI jej nie czyta, więc import nie pokazuje „połowy” przewodnika. */
+@Entity(tableName = "epg_staging")
+data class EpgStagingEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val channelId: String,
+    val startMs: Long,
+    val endMs: Long,
+    val title: String,
+    val description: String?,
+    val category: String?,
+)

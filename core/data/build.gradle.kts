@@ -13,6 +13,7 @@ dependencies {
     implementation(project(":core:common"))
     implementation(project(":provider:m3u"))
     implementation(project(":provider:xtream"))
+    implementation(project(":epg:xmltv"))
     implementation(project(":core:security"))
     implementation(project(":core:datastore"))
     implementation(libs.serialization.json)
@@ -20,4 +21,5 @@ dependencies {
     testImplementation(libs.coroutines.test)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
+    testImplementation(libs.kxml2)
 }

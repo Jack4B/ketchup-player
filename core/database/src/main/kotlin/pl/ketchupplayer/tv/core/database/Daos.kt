@@ -46,6 +46,9 @@ interface ChannelDao {
     @Query("SELECT * FROM channels WHERE id = :id")
     suspend fun get(id: String): ChannelEntity?
 
+    @Query("SELECT id, epgId, normName FROM channels WHERE type = 'LIVE'")
+    suspend fun liveEpgKeys(): List<ChannelEpgKey>
+
     @Query("SELECT COUNT(*) FROM channels WHERE providerId = :providerId")
     suspend fun count(providerId: String): Int
 
@@ -78,3 +81,56 @@ interface ChannelFlagDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(flag: ChannelFlagEntity)
 }
+
+@Dao
+interface EpgDao {
+    @Insert
+    suspend fun insertStaging(rows: List<EpgStagingEntity>)
+
+    /** Wersja blokująca dla parsera strumieniowego (wołać tylko z wątku IO, nigdy z głównego). */
+    @Insert
+    fun insertStagingBlocking(rows: List<EpgStagingEntity>)
+
+    @Query("DELETE FROM epg_staging")
+    suspend fun clearStaging()
+
+    @Query("DELETE FROM epg_programmes")
+    suspend fun clearLive()
+
+    @Query(
+        "INSERT INTO epg_programmes (channelId, startMs, endMs, title, description, category) " +
+            "SELECT channelId, startMs, endMs, title, description, category FROM epg_staging",
+    )
+    suspend fun promoteStaging()
+
+    /** Atomowa podmiana: UI widzi stary przewodnik albo nowy, nigdy mieszankę. */
+    @Transaction
+    suspend fun swapInStaging() {
+        clearLive()
+        promoteStaging()
+        clearStaging()
+    }
+
+    @Query("SELECT * FROM epg_programmes WHERE startMs <= :nowMs AND endMs > :nowMs")
+    fun observeOnAir(nowMs: Long): Flow<List<EpgProgrammeEntity>>
+
+    @Query(
+        "SELECT * FROM epg_programmes WHERE channelId = :channelId AND endMs > :fromMs " +
+            "AND startMs < :toMs ORDER BY startMs",
+    )
+    suspend fun range(
+        channelId: String,
+        fromMs: Long,
+        toMs: Long,
+    ): List<EpgProgrammeEntity>
+
+    @Query("SELECT COUNT(*) FROM epg_programmes")
+    suspend fun count(): Int
+}
+
+/** Minimalny widok kanału do dopasowania EPG (bez ładowania całej encji). */
+data class ChannelEpgKey(
+    val id: String,
+    val epgId: String?,
+    val normName: String,
+)
