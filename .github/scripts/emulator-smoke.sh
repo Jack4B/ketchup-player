@@ -25,7 +25,9 @@ shot 04_teleman_przelaczony
 key KEYCODE_BACK
 shot 05_po_back
 if adb logcat -d | grep -qE "FATAL EXCEPTION|ANR in $PKG"; then
-  echo "=== Crash lub ANR wykryty, ślad: ===" >&2
-  adb logcat -d -t 600 | grep -A 30 -E "FATAL EXCEPTION|ANR in $PKG" | head -80 >&2
+  echo "=== Crash lub ANR wykryty. Bufor crash: ===" >&2
+  adb logcat -d -b crash | head -120 >&2
+  echo "=== AndroidRuntime / ActivityManager (ostatnie wpisy): ===" >&2
+  adb logcat -d -s AndroidRuntime:E ActivityManager:E | tail -80 >&2
   exit 1
 fi
