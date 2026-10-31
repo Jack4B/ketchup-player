@@ -45,7 +45,7 @@ class LiveTvViewModel
                 val effective = selected?.takeIf { it in groups }
                 LiveTvUiState(
                     loading = false,
-                    groups = groups,
+                    groups = orderGroups(groups),
                     selectedGroup = effective,
                     channels = if (effective == null) channels else channels.filter { it.group == effective },
                     onAir = current,
@@ -79,3 +79,9 @@ class LiveTvViewModel
             const val STALE_MS = 6L * 60 * 60 * 1000
         }
     }
+
+private val polishGroup = Regex("^(PL|POLSKA|POLAND)([^A-Za-z]|$)", RegexOption.IGNORE_CASE)
+
+/** Grupy polskie (`PL| ...`, `Polska`) na początku, reszta alfabetycznie; sortowanie jest stabilne. */
+internal fun orderGroups(groups: List<String>): List<String> =
+    groups.sortedWith(compareBy({ !polishGroup.containsMatchIn(it) }, { it.lowercase() }))
