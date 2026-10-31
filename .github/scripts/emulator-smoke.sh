@@ -19,7 +19,8 @@ key KEYCODE_DPAD_CENTER      # przełącz Telemana
 shot 04_teleman_przelaczony
 key KEYCODE_BACK
 shot 05_po_back
-if adb logcat -d | grep -E "FATAL EXCEPTION|ANR in $PKG"; then
-  echo "Crash lub ANR wykryty" >&2
+if adb logcat -d | grep -qE "FATAL EXCEPTION|ANR in $PKG"; then
+  echo "=== Crash lub ANR wykryty, ślad: ===" >&2
+  adb logcat -d -t 600 | grep -A 30 -E "FATAL EXCEPTION|ANR in $PKG" | head -80 >&2
   exit 1
 fi
