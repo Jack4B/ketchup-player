@@ -1,8 +1,10 @@
 plugins {
     id("ketchup.android.library")
+    id("ketchup.hilt")
 }
 
 dependencies {
-    testImplementation(libs.junit)
+    api(libs.datastore.preferences)
+    implementation(libs.coroutines.core)
     testImplementation(libs.coroutines.test)
 }

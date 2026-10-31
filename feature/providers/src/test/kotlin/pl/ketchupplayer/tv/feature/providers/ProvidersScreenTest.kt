@@ -4,7 +4,9 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -63,7 +65,7 @@ class ProvidersScreenTest {
 
     @Test
     fun screenshotFormularzaZBledem() {
-        show(ProvidersUiState(form = ProviderForm("Moja", "ftp://x", urlError = true)))
+        show(ProvidersUiState(form = ProviderForm(name = "Moja", url = "ftp://x", urlError = true)))
         compose.onRoot().captureRoboImage("src/test/screenshots/providers_form.png")
     }
 
@@ -91,5 +93,32 @@ class ProvidersScreenTest {
         compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         assertEquals(listOf<ProvidersEvent>(ProvidersEvent.Cancel), events)
         assertEquals(0, backs)
+    }
+
+    @Test
+    fun screenshotFormularzaXtream() {
+        show(
+            ProvidersUiState(
+                form =
+                    ProviderForm(
+                        kind = ProviderKind.XTREAM,
+                        name = "Xtream",
+                        url = "http://x.example.invalid:8080",
+                        username = "jan",
+                        password = "haslo",
+                        credentialsError = false,
+                    ),
+            ),
+        )
+        compose.onRoot().captureRoboImage("src/test/screenshots/providers_form_xtream.png")
+        compose.assertNoHorizontalOverflow()
+    }
+
+    @Test
+    fun wyborTypuXtreamDotykiem() {
+        val events = mutableListOf<ProvidersEvent>()
+        show(ProvidersUiState(form = ProviderForm()), events)
+        compose.onNodeWithText("Xtream Codes").performClick()
+        assertEquals(listOf<ProvidersEvent>(ProvidersEvent.SelectKind(ProviderKind.XTREAM)), events)
     }
 }

@@ -6,7 +6,7 @@ import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.ProviderInfo
 import pl.ketchupplayer.tv.core.model.StreamSpec
 
-enum class AddProviderError { INVALID_NAME, INVALID_URL }
+enum class AddProviderError { INVALID_NAME, INVALID_URL, INVALID_CREDENTIALS }
 
 /** Wynik dodania dostawcy: id albo błąd walidacji/pobrania. */
 sealed interface AddProviderResult {
@@ -38,6 +38,16 @@ interface CatalogRepository {
         name: String,
         url: String,
     ): AddProviderResult
+
+    suspend fun addXtream(
+        name: String,
+        server: String,
+        username: String,
+        password: String,
+    ): AddProviderResult
+
+    /** Adres XMLTV dostawcy (może zawierać dane logowania; trzymany w `SecretStore`). */
+    suspend fun epgUrl(id: ProviderId): String?
 
     /** Pobiera listę ponownie; przy błędzie zostawia dotychczasowe kanały i zapisuje komunikat błędu. */
     suspend fun refresh(id: ProviderId): Result<Int>

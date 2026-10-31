@@ -37,6 +37,11 @@ class ProvidersViewModel
                             form = it.form?.copy(name = event.value, nameError = false),
                         )
                     }
+                is ProvidersEvent.UsernameChanged ->
+                    local.update { it.copy(form = it.form?.copy(username = event.value, credentialsError = false)) }
+                is ProvidersEvent.PasswordChanged ->
+                    local.update { it.copy(form = it.form?.copy(password = event.value, credentialsError = false)) }
+                is ProvidersEvent.SelectKind -> local.update { it.copy(form = it.form?.copy(kind = event.kind)) }
                 is ProvidersEvent.UrlChanged ->
                     local.update {
                         it.copy(
@@ -70,7 +75,7 @@ class ProvidersViewModel
             val form = local.value.form ?: return
             viewModelScope.launch {
                 local.update { it.copy(busy = true) }
-                when (val r = catalog.addM3u(form.name, form.url)) {
+                when (val r = add(form)) {
                     is AddProviderResult.Added -> local.update { it.copy(form = null, busy = false, message = null) }
                     is AddProviderResult.SavedWithError ->
                         local.update { it.copy(form = null, busy = false, message = r.message) }
@@ -82,12 +87,19 @@ class ProvidersViewModel
                                     it.form?.copy(
                                         nameError = r.error == AddProviderError.INVALID_NAME,
                                         urlError = r.error == AddProviderError.INVALID_URL,
+                                        credentialsError = r.error == AddProviderError.INVALID_CREDENTIALS,
                                     ),
                             )
                         }
                 }
             }
         }
+
+        private suspend fun add(form: ProviderForm): AddProviderResult =
+            when (form.kind) {
+                ProviderKind.M3U -> catalog.addM3u(form.name, form.url)
+                ProviderKind.XTREAM -> catalog.addXtream(form.name, form.url, form.username, form.password)
+            }
 
         private suspend fun runBusy(block: suspend () -> Result<Int>) {
             local.update { it.copy(busy = true) }

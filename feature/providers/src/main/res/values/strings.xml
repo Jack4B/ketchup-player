@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="providers_title">Dostawcy</string>
-    <string name="providers_empty">Nie dodano jeszcze żadnej listy. Dodaj listę M3U, aby zobaczyć kanały.</string>
-    <string name="providers_add_m3u">Dodaj listę M3U</string>
+    <string name="providers_empty">Nie dodano jeszcze żadnego dostawcy. Dodaj listę M3U lub konto Xtream Codes, aby zobaczyć kanały.</string>
+    <string name="providers_add">Dodaj dostawcę</string>
+    <string name="providers_kind_m3u">Lista M3U</string>
+    <string name="providers_kind_xtream">Xtream Codes</string>
+    <string name="providers_field_server">Adres serwera (http lub https)</string>
+    <string name="providers_field_username">Login</string>
+    <string name="providers_field_password">Hasło</string>
+    <string name="providers_error_credentials">Podaj login i hasło</string>
     <string name="providers_refresh">Odśwież</string>
     <string name="providers_remove">Usuń</string>
     <string name="providers_save">Zapisz i pobierz</string>

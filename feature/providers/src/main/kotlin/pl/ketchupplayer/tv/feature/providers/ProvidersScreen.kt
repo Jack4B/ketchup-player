@@ -89,7 +89,7 @@ private fun ProviderList(
         }
     }
     KetchupButton(
-        stringResource(R.string.providers_add_m3u),
+        stringResource(R.string.providers_add),
         { onEvent(ProvidersEvent.StartAdd) },
         modifier = if (state.providers.isEmpty()) Modifier.requestFocusWhenPlaced() else Modifier,
     )
@@ -116,6 +116,19 @@ private fun AddForm(
     busy: Boolean,
     onEvent: (ProvidersEvent) -> Unit,
 ) {
+    val xtream = form.kind == ProviderKind.XTREAM
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        KetchupButton(
+            stringResource(R.string.providers_kind_m3u),
+            { onEvent(ProvidersEvent.SelectKind(ProviderKind.M3U)) },
+            primary = !xtream,
+        )
+        KetchupButton(
+            stringResource(R.string.providers_kind_xtream),
+            { onEvent(ProvidersEvent.SelectKind(ProviderKind.XTREAM)) },
+            primary = xtream,
+        )
+    }
     TextInputField(
         stringResource(R.string.providers_field_name),
         form.name,
@@ -123,8 +136,30 @@ private fun AddForm(
         Modifier.requestFocusWhenPlaced(),
     )
     if (form.nameError) Text(stringResource(R.string.providers_error_name), color = ERROR_COLOR, fontSize = 16.sp)
-    TextInputField(stringResource(R.string.providers_field_url), form.url, { onEvent(ProvidersEvent.UrlChanged(it)) })
+    TextInputField(
+        stringResource(if (xtream) R.string.providers_field_server else R.string.providers_field_url),
+        form.url,
+        { onEvent(ProvidersEvent.UrlChanged(it)) },
+    )
     if (form.urlError) Text(stringResource(R.string.providers_error_url), color = ERROR_COLOR, fontSize = 16.sp)
+    if (xtream) {
+        TextInputField(stringResource(R.string.providers_field_username), form.username, {
+            onEvent(ProvidersEvent.UsernameChanged(it))
+        })
+        TextInputField(
+            stringResource(R.string.providers_field_password),
+            form.password,
+            { onEvent(ProvidersEvent.PasswordChanged(it)) },
+            password = true,
+        )
+        if (form.credentialsError) {
+            Text(
+                stringResource(R.string.providers_error_credentials),
+                color = ERROR_COLOR,
+                fontSize = 16.sp,
+            )
+        }
+    }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         KetchupButton(
             stringResource(R.string.providers_save),

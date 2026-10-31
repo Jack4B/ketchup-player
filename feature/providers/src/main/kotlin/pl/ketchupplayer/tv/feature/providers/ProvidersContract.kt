@@ -3,11 +3,18 @@ package pl.ketchupplayer.tv.feature.providers
 import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.ProviderInfo
 
+enum class ProviderKind { M3U, XTREAM }
+
 data class ProviderForm(
+    val kind: ProviderKind = ProviderKind.M3U,
     val name: String = "",
+    /** Adres listy M3U albo serwera Xtream. */
     val url: String = "",
+    val username: String = "",
+    val password: String = "",
     val nameError: Boolean = false,
     val urlError: Boolean = false,
+    val credentialsError: Boolean = false,
 )
 
 data class ProvidersUiState(
@@ -29,6 +36,18 @@ sealed interface ProvidersEvent {
 
     data class UrlChanged(
         val value: String,
+    ) : ProvidersEvent
+
+    data class UsernameChanged(
+        val value: String,
+    ) : ProvidersEvent
+
+    data class PasswordChanged(
+        val value: String,
+    ) : ProvidersEvent
+
+    data class SelectKind(
+        val kind: ProviderKind,
     ) : ProvidersEvent
 
     data object Submit : ProvidersEvent
