@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<network-security-config>
+<network-security-config xmlns:tools="http://schemas.android.com/tools">
     <!-- Strumienie IPTV: dowolne hosty dodane przez użytkownika, często HTTP -->
-    <base-config cleartextTrafficPermitted="true">
+    <!-- Wymóg KONSPEKT §8.1: listy IPTV użytkownika bywają po HTTP; metadane/EPG są wymuszone na HTTPS poniżej. -->
+    <base-config
+        cleartextTrafficPermitted="true"
+        tools:ignore="InsecureBaseConfiguration">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>

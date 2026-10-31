@@ -10,6 +10,8 @@
     <application
         android:name=".KetchupApp"
         android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
         android:banner="@drawable/banner_placeholder"
         android:icon="@drawable/ic_launcher_placeholder"
         android:label="@string/app_name"
