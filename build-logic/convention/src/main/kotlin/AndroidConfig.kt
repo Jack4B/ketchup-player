@@ -26,7 +26,8 @@ internal fun Project.configureAndroid(extension: CommonExtension<*, *, *, *, *, 
             abortOnError = true
             checkDependencies = false
             // Przykładowe wyłączenia dla zależności wersjowanych centralnie w katalogu.
-            disable += setOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion")
+            // Typos: słownik lint jest angielski, teksty UI są po polsku (false positive).
+            disable += setOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion", "Typos")
         }
     }
     configureKotlin()
