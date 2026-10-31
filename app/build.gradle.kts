@@ -38,6 +38,7 @@ dependencies {
     implementation(project(":core:datastore"))
     implementation(project(":feature:settings"))
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.splashscreen)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime)
     testImplementation(libs.junit)
