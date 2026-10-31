@@ -1,8 +1,9 @@
 package pl.ketchupplayer.tv.feature.settings
 
+import androidx.activity.ComponentActivity
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
@@ -24,7 +25,7 @@ import pl.ketchupplayer.tv.core.model.EpgSourceKind
 @Config(sdk = [34], qualifiers = "w960dp-h540dp-xhdpi")
 class EpgSourcesScreenTest {
     @get:Rule
-    val compose = createComposeRule()
+    val compose = createAndroidComposeRule<ComponentActivity>()
 
     private val sources =
         listOf(
