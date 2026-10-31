@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -161,7 +162,7 @@ fun KetchupButton(
         focusedContainer = if (primary) c.accent else null,
         ringColor = if (primary) c.textPrimary else null,
     ) {
-        Box(Modifier.fillMaxHeight().padding(horizontal = 28.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxSize().padding(horizontal = 28.dp), contentAlignment = Alignment.Center) {
             Text(text, fontSize = 20.sp, color = if (primary) c.onAccent else c.textPrimary)
         }
     }
