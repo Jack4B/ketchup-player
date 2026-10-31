@@ -130,14 +130,7 @@ def main():
     paste_center(mono, monochrome_mark(264))
     save(mono, RES / "drawable-nodpi/ic_launcher_monochrome.png")
 
-    # Legacy mipmapy (kwadrat #111217 + sygnet), 48..192 px, oraz round
-    for dpi, px in (("mdpi", 48), ("hdpi", 72), ("xhdpi", 96), ("xxhdpi", 144), ("xxxhdpi", 192)):
-        sq = on_canvas((px, px), BG + (255,))
-        paste_center(sq, mark.resize((round(px * 0.78),) * 2, Image.LANCZOS))
-        save(sq.convert("RGB"), RES / f"mipmap-{dpi}/ic_launcher.png")
-        rnd = on_canvas((px, px))
-        rnd.paste(sq, (0, 0), circle_mask(px, feather=0))
-        save(rnd, RES / f"mipmap-{dpi}/ic_launcher_round.png")
+    # Legacy mipmapy (mdpi..xxxhdpi) pomijamy: minSdk 28 >= 26, więc wystarcza adaptive icon (lint: IconXmlAndPng).
     play = on_canvas((512, 512), BG + (255,))
     paste_center(play, mark.resize((420, 420), Image.LANCZOS))
     save(play.convert("RGB"), OUT / "play-store-icon-512.png")
@@ -151,8 +144,9 @@ def main():
         c.alpha_composite(cr, ((w - cr.width) // 2, round(h * 0.02)))
         c.alpha_composite(rib, ((w - rib.width) // 2, h - rib.height - round(h * 0.02)))
         return c.convert("RGB")
-    save(banner(320, 180), RES / "drawable-xhdpi/banner.png")
-    save(banner(640, 360), RES / "drawable-xxhdpi/banner.png")
+    # Banner TV = 320x180 dp; 640x360 px (xhdpi) jako nodpi, żeby lint nie wymagał wariantów gęstości.
+    save(banner(640, 360), RES / "drawable-nodpi/banner.png")
+    save(banner(320, 180), OUT / "banner-320x180.png")
 
     # Splash (Android 12+): sygnet w środku okręgu 2/3 ikony 288dp (1152 px)
     sp = on_canvas((1152, 1152))

@@ -24,6 +24,8 @@ android {
         }
     }
     buildFeatures { buildConfig = true }
+    // AAPT2 nie rozwiązuje @mipmap/ic_launcher z folderu bez -v26, mimo minSdk 28.
+    lint { disable += "ObsoleteSdkInt" }
     testOptions.unitTests.all {
         it.systemProperty("robolectric.pixelCopyRenderMode", "hardware")
     }
