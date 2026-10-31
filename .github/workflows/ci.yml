@@ -28,18 +28,18 @@ jobs:
         run: ./gradlew testDebugUnitTest test
       - name: Roborazzi (verify; bez baseline - record)
         run: |
-          if ls app/src/test/screenshots/*.png >/dev/null 2>&1; then
-            ./gradlew :app:verifyRoborazziDebug
+          if [ -n "$(find . -path '*/src/test/screenshots/*.png' -print -quit)" ]; then
+            ./gradlew verifyRoborazziDebug
           else
-            ./gradlew :app:recordRoborazziDebug
+            ./gradlew recordRoborazziDebug
           fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: screenshots
           path: |
-            app/src/test/screenshots
-            app/build/outputs/roborazzi
+            **/src/test/screenshots
+            **/build/outputs/roborazzi
       - name: Lint
         run: ./gradlew lintDebug
       - name: Build debug
