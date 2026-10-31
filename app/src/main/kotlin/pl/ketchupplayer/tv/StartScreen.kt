@@ -22,10 +22,11 @@ import androidx.tv.material3.Text
 fun StartScreen() {
     MaterialTheme {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFF0B1220))
-                .padding(horizontal = 48.dp, vertical = 27.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF0B1220))
+                    .padding(horizontal = 48.dp, vertical = 27.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
