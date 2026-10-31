@@ -8,3 +8,5 @@ build/
 *.iml
 .env
 .mcp.local.json
+.kotlin/
+captures/
