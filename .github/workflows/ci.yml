@@ -28,12 +28,12 @@ jobs:
         run: ./gradlew spotlessCheck detekt
       - name: Testy jednostkowe
         run: ./gradlew testDebugUnitTest :core:model:test :core:policy:test :epg:radar:test :provider:api:test
-      - name: Roborazzi (verify; bez baseline - record)
+      - name: Roborazzi (faza-* nagrywa baseline, PR i main weryfikują)
         run: |
-          if [ -n "$(find . -path '*/src/test/screenshots/*.png' -print -quit)" ]; then
-            ./gradlew verifyRoborazziDebug
-          else
+          if [[ "${GITHUB_REF_NAME}" == faza-* ]]; then
             ./gradlew recordRoborazziDebug
+          else
+            ./gradlew verifyRoborazziDebug
           fi
       - name: Commit baseline Roborazzi (tylko gdy dopiero co nagrany)
         if: github.event_name == 'push' && startsWith(github.ref_name, 'faza-')
