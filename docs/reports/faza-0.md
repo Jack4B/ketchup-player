@@ -15,7 +15,7 @@ Gałąź `faza-0`, PR do `main` (link w opisie PR). Środowisko pracy: `docs/rep
 ## DoD — checklista
 | Punkt | Stan | Dowód |
 |---|---|---|
-| Aplikacja „Ketchup Player” startuje na emulatorze TV (API 34) i telefonie | ❌ niezweryfikowane | brak urządzenia/KVM w chmurze; ekran startowy tylko w Roborazzi (`app/src/test/screenshots/start_screen.png`); do sprawdzenia przez właściciela lokalnie |
+| Aplikacja „Ketchup Player” startuje na emulatorze TV (API 34) i telefonie | ✅ TV (CI), ✅ telefon (właściciel) | TV: job `emulator` w CI (obraz android-tv x86 API 34): start, OK, D-pad, BACK bez crasha, zrzuty w `docs/qa/emulator/`; run https://github.com/Jack4B/ketchup-player/actions/runs/41223773013. Telefon: ręczny test właściciela (APK debug); wykryte i naprawione: brak reakcji na dotyk (komponenty tv-material), nakładanie tytułu w pionie, crash po wejściu w „Źródła EPG” (requestFocus przy pustej liście) |
 | Release z R8 działa | ⚠️ częściowo | `:app:assembleRelease` buduje się (APK ~2 MB, niepodpisany); uruchomienia na urządzeniu brak; podpis kluczem CI — nie skonfigurowany (sekrety poza repo) |
 | CI zielone | ✅ | run #14: https://github.com/Jack4B/ketchup-player/actions/runs/41220268049 (build-logic, reguły modułów, Spotless, Detekt, testy, Roborazzi verify, Lint, debug, release R8, gitleaks) |
 | Złamanie „feature nie zależy od feature” łamie build | ✅ | ręcznie: dodanie `:feature:home → :feature:vod` daje `Naruszone reguły zależności modułów: :feature:home -> :feature:vod`; test logiki: `ModuleRulesTest` |
@@ -35,7 +35,7 @@ Brak (aplikacja bez funkcji). Rozmiar release APK: ~2 MB.
 - **Opcje poza konspektem:** brak Tink/Keystore w `SecretStore` (Faza D), DataStore z JSON dla własnych źródeł EPG (migracja do Room w Fazie D).
 
 ## Ryzyka / znane problemy
-- Brak weryfikacji na prawdziwym TV; fokus i overscan sprawdzone tylko Roborazzi.
+- Brak weryfikacji na prawdziwym TV boxie; fokus i overscan sprawdzone na emulatorze i Roborazzi. Zaznaczony wiersz po fokusie wychodzi poza margines 48 dp (do poprawy w Fazie B).
 - Placeholdery ikony/banera w `app` (Faza B).
 - Przycisk i listy używają domyślnych komponentów `tv-material` w ciemnym schemacie; docelowy design system dopiero w Fazie B.
 - URL własnych źródeł EPG może zawierać hasło (`xmltv.php?password=`); trafia do DataStore jawnie do czasu przeniesienia do `SecretStore` (Faza D).
@@ -49,7 +49,7 @@ Brak (aplikacja bez funkcji). Rozmiar release APK: ~2 MB.
 **Blokujące 🔒**
 1. Zgoda na rozstrzygnięcie §10.2 vs `legacy/` powyżej (blokuje start Fazy P).
 2. `applicationId` (obecnie `pl.ketchupplayer.tv`). Domyślny stan Telemana: WŁ. — rozstrzygnięte.
-3. Uruchomienie `app-debug.apk` na emulatorze TV API 34 i telefonie (jedyny punkt DoD niemożliwy w chmurze).
+3. Uruchomienie na prawdziwym TV boxie (overscan, pilot) — emulator TV i telefon już sprawdzone.
 
 **Nieblokujące**
 4. Klucz podpisu release w CI (secret `KEYSTORE_*`) — kiedy i jak.
