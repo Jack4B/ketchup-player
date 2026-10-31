@@ -85,7 +85,8 @@ private fun SourceList(
     onEvent: (EpgSourcesEvent) -> Unit,
 ) {
     val first = remember { FocusRequester() }
-    LaunchedEffect(Unit) { first.requestFocus() }
+    // Lista z ViewModelu startuje pusta; fokus dopiero gdy pierwszy wiersz (z requesterem) istnieje.
+    LaunchedEffect(sources.firstOrNull()?.id) { if (sources.isNotEmpty()) first.requestFocus() }
     // Zwykła kolumna zamiast LazyColumn: lista jest krótka, a FocusRequester musi być podpięty przed requestFocus().
     Column(
         modifier = Modifier.verticalScroll(rememberScrollState()),

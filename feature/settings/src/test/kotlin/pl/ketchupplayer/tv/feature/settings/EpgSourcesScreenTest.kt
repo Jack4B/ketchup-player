@@ -1,6 +1,9 @@
 package pl.ketchupplayer.tv.feature.settings
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -86,6 +89,19 @@ class EpgSourcesScreenTest {
             listOf(EpgSourcesEvent.Toggle(BuiltInEpgSources.TELEMAN_ID, false), EpgSourcesEvent.StartAdd),
             events,
         )
+    }
+
+    /** Regresja crasha: VM startuje z pustą listą, a requestFocus() leciał na nieistniejący element. */
+    @Test
+    fun pustaListaPotemZrodlaNieWywalaFokusu() {
+        val events = mutableListOf<EpgSourcesEvent>()
+        var state by mutableStateOf(EpgSourcesUiState())
+        compose.setContent { EpgSourcesScreen(state, { events += it }, {}) }
+        compose.waitForIdle()
+        state = EpgSourcesUiState(sources)
+        compose.waitForIdle()
+        key(Key.DirectionCenter)
+        assertEquals(listOf<EpgSourcesEvent>(EpgSourcesEvent.Toggle(BuiltInEpgSources.OVH_ID, false)), events)
     }
 
     @Test
