@@ -23,7 +23,7 @@ class ThemeGalleryTest {
         accent: AccentId = theme.defaultAccent,
         name: String,
     ) {
-        compose.setContent { ThemeSwatch(theme, accent) }
+        compose.setContent { ThemeSwatch(theme, accent = accent) }
         compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
     }
 

@@ -26,8 +26,8 @@ import androidx.tv.material3.Text
 @Composable
 fun ThemeSwatch(
     theme: ThemeId,
-    accent: AccentId = theme.defaultAccent,
     modifier: Modifier = Modifier,
+    accent: AccentId = theme.defaultAccent,
 ) {
     KetchupTheme(theme, accent) {
         val c = KetchupTheme.colors
