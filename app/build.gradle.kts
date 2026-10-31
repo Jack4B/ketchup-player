@@ -51,6 +51,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime)
     testImplementation(libs.junit)
     testImplementation(project(":core:testing"))
+    testImplementation(libs.hilt.testing)
+    kspTest(libs.hilt.compiler)
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)

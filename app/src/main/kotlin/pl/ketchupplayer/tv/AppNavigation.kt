@@ -2,7 +2,10 @@ package pl.ketchupplayer.tv
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.toMutableStateList
 import pl.ketchupplayer.tv.feature.livetv.LiveTvRoute
 import pl.ketchupplayer.tv.feature.playerui.PlayerRoute
 import pl.ketchupplayer.tv.feature.providers.ProvidersRoute
@@ -15,7 +18,16 @@ import pl.ketchupplayer.tv.feature.settings.EpgSourcesRoute
  */
 @Composable
 fun AppNavigation() {
-    val stack = rememberSaveable { mutableStateListOf(Routes.START) }
+    // SnapshotStateList nie jest zapisywalny domyślnie: własny Saver (lista Stringów) przeżywa obrót i zabicie procesu.
+    val stack =
+        rememberSaveable(
+            saver =
+                listSaver<SnapshotStateList<String>, String>(save = {
+                    it.toList()
+                }, restore = { it.toMutableStateList() }),
+        ) {
+            mutableStateListOf(Routes.START)
+        }
     val push: (String) -> Unit = { stack.add(it) }
     val pop: () -> Unit = { if (stack.size > 1) stack.removeAt(stack.lastIndex) }
     val top = stack.last()
