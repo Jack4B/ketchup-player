@@ -20,6 +20,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.model.BuiltInEpgSources
 import pl.ketchupplayer.tv.core.model.EpgSource
 import pl.ketchupplayer.tv.core.model.EpgSourceKind
@@ -43,14 +44,14 @@ class EpgSourcesScreenTest {
 
     @Test
     fun screenshotListy() {
-        compose.setContent { EpgSourcesScreen(EpgSourcesUiState(sources), {}, {}) }
+        compose.setContent { KetchupTheme { EpgSourcesScreen(EpgSourcesUiState(sources), {}, {}) } }
         compose.onRoot().captureRoboImage("src/test/screenshots/epg_sources_list.png")
     }
 
     @Test
     fun screenshotFormularza() {
         val state = EpgSourcesUiState(sources, AddForm("Moje", "ftp://x", FormError.URL))
-        compose.setContent { EpgSourcesScreen(state, {}, {}) }
+        compose.setContent { KetchupTheme { EpgSourcesScreen(state, {}, {}) } }
         compose.onRoot().captureRoboImage("src/test/screenshots/epg_sources_form.png")
     }
 
@@ -58,7 +59,7 @@ class EpgSourcesScreenTest {
     @Test
     fun dpadFokusIOk() {
         val events = mutableListOf<EpgSourcesEvent>()
-        compose.setContent { EpgSourcesScreen(EpgSourcesUiState(sources), { events += it }, {}) }
+        compose.setContent { KetchupTheme { EpgSourcesScreen(EpgSourcesUiState(sources), { events += it }, {}) } }
         compose.waitForIdle()
 
         key(Key.DirectionCenter)
@@ -82,7 +83,7 @@ class EpgSourcesScreenTest {
     @Test
     fun dotykPrzelaczaIDodaje() {
         val events = mutableListOf<EpgSourcesEvent>()
-        compose.setContent { EpgSourcesScreen(EpgSourcesUiState(sources), { events += it }, {}) }
+        compose.setContent { KetchupTheme { EpgSourcesScreen(EpgSourcesUiState(sources), { events += it }, {}) } }
         compose.onNodeWithText("Teleman.pl").performClick()
         compose.onNodeWithText("Dodaj własne źródło").performClick()
         assertEquals(
@@ -96,7 +97,7 @@ class EpgSourcesScreenTest {
     fun pustaListaPotemZrodlaNieWywalaFokusu() {
         val events = mutableListOf<EpgSourcesEvent>()
         var state by mutableStateOf(EpgSourcesUiState())
-        compose.setContent { EpgSourcesScreen(state, { events += it }, {}) }
+        compose.setContent { KetchupTheme { EpgSourcesScreen(state, { events += it }, {}) } }
         compose.waitForIdle()
         state = EpgSourcesUiState(sources)
         compose.waitForIdle()
@@ -110,7 +111,9 @@ class EpgSourcesScreenTest {
         var backs = 0
         val form = AddForm()
         compose.setContent {
-            EpgSourcesScreen(EpgSourcesUiState(sources, form), { events += it }, { backs++ })
+            KetchupTheme {
+                EpgSourcesScreen(EpgSourcesUiState(sources, form), { events += it }, { backs++ })
+            }
         }
         compose.waitForIdle()
         compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }

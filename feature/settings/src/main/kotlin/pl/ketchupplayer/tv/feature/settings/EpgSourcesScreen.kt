@@ -58,21 +58,19 @@ fun EpgSourcesScreen(
 ) {
     // BACK: najpierw zamyka formularz, dopiero potem wychodzi z ekranu.
     BackHandler { if (state.form != null) onEvent(EpgSourcesEvent.Cancel) else onBack() }
-    KetchupTheme {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(KetchupTheme.colors.background)
-                    .padding(horizontal = 48.dp, vertical = 27.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Text(stringResource(R.string.epg_sources_title), fontSize = 32.sp, color = KetchupTheme.colors.textPrimary)
-            if (state.form == null) {
-                SourceList(state.sources, onEvent)
-            } else {
-                AddSourceForm(state.form, onEvent)
-            }
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(KetchupTheme.colors.background)
+                .padding(horizontal = 48.dp, vertical = 27.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Text(stringResource(R.string.epg_sources_title), fontSize = 32.sp, color = KetchupTheme.colors.textPrimary)
+        if (state.form == null) {
+            SourceList(state.sources, onEvent)
+        } else {
+            AddSourceForm(state.form, onEvent)
         }
     }
 }

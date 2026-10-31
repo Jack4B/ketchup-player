@@ -22,35 +22,33 @@ import pl.ketchupplayer.tv.core.ui.touchClickable
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun StartScreen(onOpenEpgSources: () -> Unit = {}) {
-    KetchupTheme {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(KetchupTheme.colors.background)
-                    .padding(horizontal = 48.dp, vertical = 27.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(KetchupTheme.colors.background)
+                .padding(horizontal = 48.dp, vertical = 27.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = stringResource(R.string.app_name),
+            fontSize = 48.sp,
+            lineHeight = 56.sp,
+            textAlign = TextAlign.Center,
+            color = KetchupTheme.colors.textPrimary,
+        )
+        Text(
+            text = stringResource(R.string.start_tagline),
+            fontSize = 20.sp,
+            textAlign = TextAlign.Center,
+            color = KetchupTheme.colors.textSecondary,
+        )
+        Button(
+            onClick = onOpenEpgSources,
+            modifier = Modifier.padding(top = 24.dp).touchClickable(onOpenEpgSources),
         ) {
-            Text(
-                text = stringResource(R.string.app_name),
-                fontSize = 48.sp,
-                lineHeight = 56.sp,
-                textAlign = TextAlign.Center,
-                color = KetchupTheme.colors.textPrimary,
-            )
-            Text(
-                text = stringResource(R.string.start_tagline),
-                fontSize = 20.sp,
-                textAlign = TextAlign.Center,
-                color = KetchupTheme.colors.textSecondary,
-            )
-            Button(
-                onClick = onOpenEpgSources,
-                modifier = Modifier.padding(top = 24.dp).touchClickable(onOpenEpgSources),
-            ) {
-                Text(stringResource(R.string.start_epg_sources))
-            }
+            Text(stringResource(R.string.start_epg_sources))
         }
     }
 }

@@ -29,7 +29,7 @@ fun ThemeSwatch(
     modifier: Modifier = Modifier,
     accent: AccentId = theme.defaultAccent,
 ) {
-    KetchupTheme(theme, accent) {
+    KetchupTheme(theme, AccentChoice.Preset(accent)) {
         val c = KetchupTheme.colors
         val shape = RoundedCornerShape(c.cornerRadius)
         Column(

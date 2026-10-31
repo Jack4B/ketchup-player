@@ -9,6 +9,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -19,7 +20,7 @@ class StartScreenScreenshotTest {
 
     @Test
     fun startScreen() {
-        compose.setContent { StartScreen() }
+        compose.setContent { KetchupTheme { StartScreen() } }
         compose.onRoot().captureRoboImage("src/test/screenshots/start_screen.png")
     }
 }

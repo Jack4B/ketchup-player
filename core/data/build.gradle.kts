@@ -7,6 +7,7 @@ plugins {
 dependencies {
     api(project(":core:model"))
     implementation(project(":core:policy"))
+    api(project(":core:designsystem"))
     implementation(project(":core:datastore"))
     implementation(libs.serialization.json)
     implementation(libs.coroutines.core)

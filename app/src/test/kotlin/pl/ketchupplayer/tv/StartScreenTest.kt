@@ -12,6 +12,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -24,7 +25,7 @@ class StartScreenTest {
     @Test
     fun dotykPrzyciskuOtwieraZrodlaEpg() {
         var opened = 0
-        compose.setContent { StartScreen(onOpenEpgSources = { opened++ }) }
+        compose.setContent { KetchupTheme { StartScreen(onOpenEpgSources = { opened++ }) } }
         compose.onNodeWithText("Źródła EPG").performClick()
         assertEquals(1, opened)
     }
@@ -32,7 +33,7 @@ class StartScreenTest {
     /** Regresja: tytuł nakładał się na siebie w pionie (zawijanie bez lineHeight). */
     @Test
     fun screenshotPion() {
-        compose.setContent { StartScreen() }
+        compose.setContent { KetchupTheme { StartScreen() } }
         compose.onRoot().captureRoboImage("src/test/screenshots/start_screen_portrait.png")
     }
 }

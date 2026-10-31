@@ -30,22 +30,24 @@ data class KetchupColors(
     val cornerRadius: Dp,
 )
 
-private fun PaletteTokens.toColors(accent: AccentId) =
-    KetchupColors(
-        background = Color(background),
-        surface2 = Color(surface2),
-        surface3 = Color(surface3),
-        textPrimary = Color(textPrimary),
-        textSecondary = Color(textSecondary),
-        outline = Color(outline),
-        scrim = Color(scrim),
-        channelTile = Color(channelTile),
-        channelTileText = Color(channelTileText),
-        accent = Color(accent.argb),
-        onAccent = Color(Palettes.ON_ACCENT),
-        newEpisode = Color(Palettes.NEW_EPISODE_GREEN),
-        cornerRadius = cornerRadiusDp.dp,
-    )
+private fun PaletteTokens.toColors(
+    accentArgb: Long,
+    onAccentArgb: Long,
+) = KetchupColors(
+    background = Color(background),
+    surface2 = Color(surface2),
+    surface3 = Color(surface3),
+    textPrimary = Color(textPrimary),
+    textSecondary = Color(textSecondary),
+    outline = Color(outline),
+    scrim = Color(scrim),
+    channelTile = Color(channelTile),
+    channelTileText = Color(channelTileText),
+    accent = Color(accentArgb),
+    onAccent = Color(onAccentArgb),
+    newEpisode = Color(Palettes.NEW_EPISODE_GREEN),
+    cornerRadius = cornerRadiusDp.dp,
+)
 
 private val LocalKetchupColors =
     staticCompositionLocalOf<KetchupColors> {
@@ -64,10 +66,19 @@ object KetchupTheme {
 @Composable
 fun KetchupTheme(
     theme: ThemeId = ThemeId.GRANAT,
-    accent: AccentId = theme.defaultAccent,
+    accent: AccentChoice = AccentChoice.Preset(theme.defaultAccent),
     content: @Composable () -> Unit,
 ) {
-    val colors = remember(theme, accent) { Palettes.tokens(theme).toColors(accent) }
+    val colors =
+        remember(theme, accent) {
+            when (accent) {
+                is AccentChoice.Preset -> Palettes.tokens(theme).toColors(accent.id.argb, Palettes.ON_ACCENT)
+                is AccentChoice.Custom ->
+                    AccentFit.fit(theme, accent.argb).let {
+                        Palettes.tokens(theme).toColors(it.argb, it.onAccent)
+                    }
+            }
+        }
     val scheme =
         remember(colors) {
             darkColorScheme(
