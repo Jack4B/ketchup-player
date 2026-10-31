@@ -36,5 +36,12 @@ class ModuleRulesTest {
     @Test
     fun `core nie zalezy od feature`() {
         assertEquals(1, ModuleRules.check(mapOf(":core:data" to setOf(":feature:home"))).size)
+        assertEquals(1, ModuleRules.check(mapOf(":core:ui" to setOf(":provider:api"))).size)
+    }
+
+    @Test
+    fun `core data moze zalezec od dostawcow i EPG`() {
+        val graph = mapOf(":core:data" to setOf(":provider:m3u", ":epg:xmltv", ":core:database"))
+        assertTrue(ModuleRules.check(graph).isEmpty())
     }
 }

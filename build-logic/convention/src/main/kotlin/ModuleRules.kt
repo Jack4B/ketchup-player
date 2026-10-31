@@ -4,7 +4,8 @@
  * - feature:* nie zależy od innego feature:*
  * - core:model, core:policy — nie zależą od modułów android (tylko od siebie nawzajem / core:model)
  * - provider:* nie zależy od core:database ani od core:ui / core:designsystem / feature:*
- * - core:* nie zależy od feature:*, provider:*, player:*, epg:*, integration:*
+ * - core:* nie zależy od feature:*, provider:*, player:*, epg:*, integration:* (wyjątek: core:data = repozytoria
+ *   spinają dostawców i EPG; core:data nie zależy jednak od feature:*)
  */
 object ModuleRules {
     private val pureJvm = setOf(":core:model", ":core:policy")
@@ -30,7 +31,9 @@ object ModuleRules {
         from.startsWith(":provider:") && (to == ":core:database" || to == ":core:ui" ||
             to == ":core:designsystem" || to.startsWith(":feature:")) ->
             "provider nie zna Room ani UI"
-        from.startsWith(":core:") && listOf(":feature:", ":provider:", ":player:", ":epg:", ":integration:")
+        from == ":core:data" && to.startsWith(":feature:") -> "core:data nie zależy od ekranów"
+        from != ":core:data" && from.startsWith(":core:") &&
+            listOf(":feature:", ":provider:", ":player:", ":epg:", ":integration:")
             .any { to.startsWith(it) } -> "core nie zależy od warstw wyższych"
         else -> null
     }
