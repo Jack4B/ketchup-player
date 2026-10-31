@@ -43,14 +43,14 @@ class EpgSourcePolicyTest {
         val a = ProviderId("a")
         val b = ProviderId("b")
         val custom = EpgSource("c1", "C", EpgSourceKind.CUSTOM_XMLTV, "http://x/y", true, providerId = a)
-        val list = listOf(BuiltInEpgSources.ovh(), BuiltInEpgSources.teleman(), custom)
+        val list = listOf(BuiltInEpgSources.ovh(), BuiltInEpgSources.teleman(enabled = false), custom)
         assertEquals(listOf("builtin.ovh", "c1"), EpgSourcePolicy.activeFor(list, a).map { it.id })
         assertEquals(listOf("builtin.ovh"), EpgSourcePolicy.activeFor(list, b).map { it.id })
     }
 
     @Test
-    fun `teleman domyslnie wylaczony, ovh wlaczony`() {
-        assertFalse(BuiltInEpgSources.teleman().enabled)
+    fun `teleman i ovh domyslnie wlaczone`() {
+        assertTrue(BuiltInEpgSources.teleman().enabled)
         assertTrue(BuiltInEpgSources.ovh().enabled)
     }
 

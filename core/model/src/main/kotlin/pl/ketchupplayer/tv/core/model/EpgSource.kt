@@ -22,8 +22,8 @@ object BuiltInEpgSources {
     const val TELEMAN_ID = "builtin.teleman"
     const val OVH_URL = "https://epg.ovh/pltv.xml.gz"
 
-    /** Teleman domyślnie WYŁ. (KONSPEKT §13.3 — decyzja właściciela 🔒 w ADR docs/adr/teleman.md). */
+    /** Teleman domyślnie WŁ. — decyzja właściciela 2026-10-31 (KONSPEKT §13.3, ADR docs/adr/teleman.md). */
     fun ovh(enabled: Boolean = true) = EpgSource(OVH_ID, "epg.ovh (XMLTV)", EpgSourceKind.OVH, OVH_URL, enabled)
 
-    fun teleman(enabled: Boolean = false) = EpgSource(TELEMAN_ID, "Teleman.pl", EpgSourceKind.TELEMAN, null, enabled)
+    fun teleman(enabled: Boolean = true) = EpgSource(TELEMAN_ID, "Teleman.pl", EpgSourceKind.TELEMAN, null, enabled)
 }

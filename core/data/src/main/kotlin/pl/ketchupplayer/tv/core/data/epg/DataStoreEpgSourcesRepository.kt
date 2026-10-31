@@ -45,7 +45,7 @@ class DataStoreEpgSourcesRepository
             store.data.map { prefs ->
                 listOf(
                     BuiltInEpgSources.ovh(prefs[OVH_ENABLED] ?: true),
-                    BuiltInEpgSources.teleman(prefs[TELEMAN_ENABLED] ?: false),
+                    BuiltInEpgSources.teleman(prefs[TELEMAN_ENABLED] ?: true),
                 ) + decode(prefs[CUSTOM]).map { it.toSource() }
             }
 

@@ -20,22 +20,22 @@ class EpgSourcesRepositoryTest {
         DataStoreEpgSourcesRepository(PreferenceDataStoreFactory.create { File(tmp.root, "$name.preferences_pb") })
 
     @Test
-    fun `domyslnie ovh wlaczony teleman wylaczony`() =
+    fun `domyslnie ovh i teleman wlaczone`() =
         runTest {
             val list = repo().sources.first()
             assertEquals(listOf(BuiltInEpgSources.OVH_ID, BuiltInEpgSources.TELEMAN_ID), list.map { it.id })
             assertTrue(list[0].enabled)
-            assertFalse(list[1].enabled)
+            assertTrue(list[1].enabled)
         }
 
     @Test
     fun `flagi wbudowanych zrodel sa trwale`() =
         runTest {
             val r = repo()
-            r.setEnabled(BuiltInEpgSources.TELEMAN_ID, true)
+            r.setEnabled(BuiltInEpgSources.TELEMAN_ID, false)
             r.setEnabled(BuiltInEpgSources.OVH_ID, false)
             val list = r.sources.first()
-            assertTrue(list.first { it.id == BuiltInEpgSources.TELEMAN_ID }.enabled)
+            assertFalse(list.first { it.id == BuiltInEpgSources.TELEMAN_ID }.enabled)
             assertFalse(list.first { it.id == BuiltInEpgSources.OVH_ID }.enabled)
         }
 

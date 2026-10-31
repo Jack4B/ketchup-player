@@ -8,7 +8,7 @@ Gałąź `faza-0`, PR do `main` (link w opisie PR). Środowisko pracy: `docs/rep
 - **Jakość:** Detekt (zakaz pustych `catch`, `SwallowedException`, `TooGenericExceptionCaught`), Spotless/ktlint (`.editorconfig`), Android Lint z `warningsAsErrors`.
 - **Bezpieczeństwo:** `network_security_config` wg §8.1 (HTTPS-only dla domen metadanych/EPG), brak kopii zapasowych (`data_extraction_rules`, `backup_rules`), `RedactingTree` + `Redactor` z testami (hasła, tokeny, ścieżki Xtream, nagłówki, MAC), szkielet `SecretStore` (`InMemorySecretStore`) z testami.
 - **Reguły modułów:** `verifyModuleDependencies` podpięte pod `check`; `ModuleRules` + 5 testów.
-- **Źródła EPG (zakres dodatkowy na prośbę właściciela):** epg.ovh (domyślnie WŁ.), Teleman (domyślnie WYŁ.), własne źródła XMLTV (http/https); model, `EpgSourcePolicy`, repozytorium na DataStore, ekran „Źródła EPG” (D-pad + OK + BACK), `docs/adr/teleman.md`. Samo pobieranie XMLTV/scraping to Faza E.
+- **Źródła EPG (zakres dodatkowy na prośbę właściciela):** epg.ovh (domyślnie WŁ.), Teleman (domyślnie WŁ.), własne źródła XMLTV (http/https); model, `EpgSourcePolicy`, repozytorium na DataStore, ekran „Źródła EPG” (D-pad + OK + BACK), `docs/adr/teleman.md`. Samo pobieranie XMLTV/scraping to Faza E.
 - **CI** (`.github/workflows/ci.yml`): reguły modułów, Spotless, Detekt, testy jednostkowe, Roborazzi (verify; bez baseline — record i commit PNG), Lint, `assembleDebug`, `assembleRelease` (R8), gitleaks.
 - **Narzędzia:** skille `ponytail`, `android-tv-ui` i inne w `.claude/skills`, allow-lista poleceń w `.claude/settings.json`.
 
@@ -27,7 +27,7 @@ Gałąź `faza-0`, PR do `main` (link w opisie PR). Środowisko pracy: `docs/rep
 Brak (aplikacja bez funkcji). Rozmiar release APK: ~2 MB.
 
 ## Odstępstwa od konspektu (ADR)
-- **Teleman domyślnie WYŁ.** (zalecenie §13.3) — `docs/adr/teleman.md`, do potwierdzenia 🔒.
+- **Teleman domyślnie WŁ.** (decyzja właściciela; §13.3 zalecał WYŁ. dla dystrybucji publicznej) — `docs/adr/teleman.md`.
 - **JDK:** build lokalnie na JDK 17; maszyna miała 21. CI: Temurin 17.
 - **`mavenCentral` w tej sesji:** `repo.maven.apache.org` zwracał 429; lokalnie obejście init-scriptem poza repo, CI bez zmian.
 - **Lint `Typos` wyłączony** (słownik angielski, UI po polsku), `InsecureBaseConfiguration` wyłączony punktowo w `network_security_config` (wymóg §8.1).
@@ -48,7 +48,7 @@ Brak (aplikacja bez funkcji). Rozmiar release APK: ~2 MB.
 ## Pytania do właściciela
 **Blokujące 🔒**
 1. Zgoda na rozstrzygnięcie §10.2 vs `legacy/` powyżej (blokuje start Fazy P).
-2. Domyślny stan Telemana (obecnie WYŁ.) i `applicationId` (obecnie `pl.ketchupplayer.tv`).
+2. `applicationId` (obecnie `pl.ketchupplayer.tv`). Domyślny stan Telemana: WŁ. — rozstrzygnięte.
 3. Uruchomienie `app-debug.apk` na emulatorze TV API 34 i telefonie (jedyny punkt DoD niemożliwy w chmurze).
 
 **Nieblokujące**

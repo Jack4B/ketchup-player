@@ -2,7 +2,7 @@
 <resources>
     <string name="epg_sources_title">Źródła EPG</string>
     <string name="epg_source_ovh_hint">Domyślny przewodnik XMLTV</string>
-    <string name="epg_source_teleman_hint">Opisy i oceny z teleman.pl (wyłączone domyślnie)</string>
+    <string name="epg_source_teleman_hint">Opisy i oceny z teleman.pl</string>
     <string name="epg_source_custom_hint">Własne źródło XMLTV</string>
     <string name="epg_add_source">Dodaj własne źródło</string>
     <string name="epg_remove_source">Usuń</string>
