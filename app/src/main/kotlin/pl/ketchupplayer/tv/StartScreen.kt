@@ -16,12 +16,13 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import androidx.tv.material3.darkColorScheme
 
 /** Pusty ekran startowy Fazy 0 (marża overscan 48×27 dp wg skilla android-tv-ui). */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun StartScreen(onOpenEpgSources: () -> Unit = {}) {
-    MaterialTheme {
+    MaterialTheme(colorScheme = darkColorScheme()) {
         Column(
             modifier =
                 Modifier

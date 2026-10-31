@@ -35,6 +35,7 @@ import androidx.tv.material3.ListItem
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Switch
 import androidx.tv.material3.Text
+import androidx.tv.material3.darkColorScheme
 import pl.ketchupplayer.tv.core.model.EpgSource
 import pl.ketchupplayer.tv.core.model.EpgSourceKind
 
@@ -57,7 +58,7 @@ fun EpgSourcesScreen(
 ) {
     // BACK: najpierw zamyka formularz, dopiero potem wychodzi z ekranu.
     BackHandler { if (state.form != null) onEvent(EpgSourcesEvent.Cancel) else onBack() }
-    MaterialTheme {
+    MaterialTheme(colorScheme = darkColorScheme()) {
         Column(
             modifier =
                 Modifier
