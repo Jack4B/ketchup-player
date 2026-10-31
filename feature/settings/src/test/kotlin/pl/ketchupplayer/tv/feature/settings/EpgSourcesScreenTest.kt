@@ -51,7 +51,7 @@ class EpgSourcesScreenTest {
         compose.onRoot().captureRoboImage("src/test/screenshots/epg_sources_form.png")
     }
 
-    /** D-pad: fokus startuje na pierwszej pozycji, DOL przechodzi dalej, OK przelacza flage (domyslnie obie wlaczone). */
+    /** D-pad: fokus na pierwszej pozycji, DOL idzie dalej, OK przelacza flage (domyslnie obie wlaczone). */
     @Test
     fun dpadFokusIOk() {
         val events = mutableListOf<EpgSourcesEvent>()
