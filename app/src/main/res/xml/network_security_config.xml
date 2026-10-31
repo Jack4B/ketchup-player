@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config xmlns:tools="http://schemas.android.com/tools">
+    <!-- Strumienie IPTV: dowolne hosty dodane przez użytkownika, często HTTP -->
+    <!-- Wymóg KONSPEKT §8.1: listy IPTV użytkownika bywają po HTTP; metadane/EPG są wymuszone na HTTPS poniżej. -->
+    <base-config
+        cleartextTrafficPermitted="true"
+        tools:ignore="InsecureBaseConfiguration">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    <!-- Metadane i EPG: wyłącznie HTTPS -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">themoviedb.org</domain>
+        <domain includeSubdomains="true">tmdb.org</domain>
+        <domain includeSubdomains="true">opensubtitles.com</domain>
+        <domain includeSubdomains="true">opensubtitles.org</domain>
+        <domain includeSubdomains="true">epg.ovh</domain>
+        <domain includeSubdomains="true">teleman.pl</domain>
+        <domain includeSubdomains="true">youtube.com</domain>
+    </domain-config>
+</network-security-config>

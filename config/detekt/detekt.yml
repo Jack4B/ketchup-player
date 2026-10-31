@@ -1,0 +1,14 @@
+build:
+  maxIssues: 0
+exceptions:
+  SwallowedException: { active: true }
+  TooGenericExceptionCaught: { active: true }
+empty-blocks:
+  EmptyCatchBlock: { active: true, allowedExceptionNameRegex: '^$' }
+naming:
+  FunctionNaming: { active: true, ignoreAnnotated: ['Composable'] }
+style:
+  ReturnCount: { active: true, max: 6, excludeGuardClauses: true }
+  MagicNumber: { active: false }
+  WildcardImport: { active: true }
+  MaxLineLength: { active: true, maxLineLength: 120 }

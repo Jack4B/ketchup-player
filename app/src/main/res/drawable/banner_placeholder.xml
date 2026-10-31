@@ -1,0 +1,4 @@
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/ketchup_red" />
+    <size android:width="320dp" android:height="180dp" />
+</shape>

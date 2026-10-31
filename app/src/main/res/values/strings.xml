@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Ketchup Player</string>
+    <string name="start_tagline">Faza 0: fundament projektu</string>
+    <string name="start_epg_sources">Źródła EPG</string>
+</resources>
