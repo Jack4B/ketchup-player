@@ -21,7 +21,10 @@ import pl.ketchupplayer.tv.core.ui.touchClickable
 /** Pusty ekran startowy Fazy 0 (marża overscan 48×27 dp wg skilla android-tv-ui). */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun StartScreen(onOpenEpgSources: () -> Unit = {}) {
+fun StartScreen(
+    onOpenEpgSources: () -> Unit = {},
+    onOpenAppearance: () -> Unit = {},
+) {
     Column(
         modifier =
             Modifier
@@ -49,6 +52,12 @@ fun StartScreen(onOpenEpgSources: () -> Unit = {}) {
             modifier = Modifier.padding(top = 24.dp).touchClickable(onOpenEpgSources),
         ) {
             Text(stringResource(R.string.start_epg_sources))
+        }
+        Button(
+            onClick = onOpenAppearance,
+            modifier = Modifier.padding(top = 12.dp).touchClickable(onOpenAppearance),
+        ) {
+            Text(stringResource(R.string.start_appearance))
         }
     }
 }

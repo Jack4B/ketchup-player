@@ -95,7 +95,7 @@ object AccentFit {
         return out
     }
 
-    internal fun toHsl(argb: Long): DoubleArray {
+    fun toHsl(argb: Long): DoubleArray {
         val r = ((argb shr 16) and 0xFF) / 255.0
         val g = ((argb shr 8) and 0xFF) / 255.0
         val b = (argb and 0xFF) / 255.0
@@ -114,7 +114,7 @@ object AccentFit {
         return doubleArrayOf((h + 360) % 360, s, l)
     }
 
-    internal fun fromHsl(
+    fun fromHsl(
         h: Double,
         s: Double,
         l: Double,

@@ -15,4 +15,26 @@
     <string name="epg_error_duplicate">Takie źródło już istnieje</string>
     <string name="epg_state_on">Włączone</string>
     <string name="epg_state_off">Wyłączone</string>
+    <string name="appearance_title">Wygląd</string>
+    <string name="appearance_theme">Motyw</string>
+    <string name="appearance_accent">Kolor akcentu</string>
+    <string name="appearance_theme_granat">Granat</string>
+    <string name="appearance_theme_czern">Czerń</string>
+    <string name="appearance_theme_bordo">Bordo</string>
+    <string name="accent_turkus">Turkus</string>
+    <string name="accent_biel">Biel</string>
+    <string name="accent_bursztyn">Bursztyn</string>
+    <string name="accent_zolty">Żółty</string>
+    <string name="accent_blekit">Błękit</string>
+    <string name="accent_fiolet">Fiolet</string>
+    <string name="accent_custom">Własny…</string>
+    <string name="custom_hex">Kod HEX (np. #33B5C4)</string>
+    <string name="custom_hue">Odcień</string>
+    <string name="custom_saturation">Nasycenie</string>
+    <string name="custom_lightness">Jasność</string>
+    <string name="custom_hex_error">Nieprawidłowy kod koloru</string>
+    <string name="custom_adjusted">Kolor rozjaśniono, żeby był czytelny na tym motywie</string>
+    <string name="custom_warn_green">Zielony kojarzy się ze wskaźnikiem nowych odcinków</string>
+    <string name="custom_warn_red">Czerwony kojarzy się z błędem i nagrywaniem</string>
+    <string name="custom_close">Gotowe</string>
 </resources>

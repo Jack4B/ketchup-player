@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
+import pl.ketchupplayer.tv.feature.settings.AppearanceRoute
 import pl.ketchupplayer.tv.feature.settings.EpgSourcesRoute
 
 @AndroidEntryPoint
@@ -23,11 +24,15 @@ class MainActivity : ComponentActivity() {
             val appearance by viewModel.appearance.collectAsStateWithLifecycle()
             KetchupTheme(appearance.theme, appearance.effectiveAccent) {
                 // Tymczasowa nawigacja Fazy 0; NavHost z kontraktami tras w core:ui pojawi się z pierwszymi ekranami.
-                var epgSources by rememberSaveable { mutableStateOf(false) }
-                if (epgSources) {
-                    EpgSourcesRoute(onBack = { epgSources = false })
-                } else {
-                    StartScreen(onOpenEpgSources = { epgSources = true })
+                var screen by rememberSaveable { mutableStateOf("start") }
+                when (screen) {
+                    "epg" -> EpgSourcesRoute(onBack = { screen = "start" })
+                    "look" -> AppearanceRoute(onBack = { screen = "start" })
+                    else ->
+                        StartScreen(
+                            onOpenEpgSources = { screen = "epg" },
+                            onOpenAppearance = { screen = "look" },
+                        )
                 }
             }
         }
