@@ -718,6 +718,7 @@ Nowa aplikacja może czytać starą bazę `databases/bk-next.db` **tylko** przy 
 ## 10. Przenoszenie logiki ze starej aplikacji
 
 ### 10.1 Procedura portu `*Policy` (MUSI)
+> **Zmiana 2026-10-31 (ADR `docs/adr/legacy-policy-port.md`):** moduł `:legacy:policy-java` i katalog `legacy/` w repo **nie powstają** (§14 ma pierwszeństwo); golden master generowany poza repo, do repo trafiają tylko fixture'y i testy. Pkt 2 poniżej czytać z tym zastrzeżeniem.
 1. **Inwentaryzacja** w `docs/PORTING.md`: wszystkie ~70 klas `*Policy` / `*Match` / `*Plan` / `*Framing` / `*Palette` z kategorią **(L)** logika domenowa → port 1:1, **(U)** heurystyka starego UI → zastąpić/odrzucić, **(M)** mieszane → wydzielić logikę.
 2. **Port (L) pod osłoną testów:** utwórz tymczasowy moduł `:legacy:policy-java` z kopią klas Java. Z 238 testów wybierz te, które wywołują polityki (nie czytają źródeł), przetłumacz na Kotlin, uruchom na kopii Java → zielone → przetłumacz klasę do `:core:policy` → te same testy zielone na Kotlinie → usuń kopię Java.
 3. Polityki bez testów zachowania: najpierw **testy charakteryzujące** (golden master: tablica wejść/wyjść z wartościami granicznymi) na kopii Java.
