@@ -22,6 +22,18 @@ class PlaybackSettingsViewModel
         val clockEnabled: StateFlow<Boolean> =
             prefs.clockEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), true)
 
+        val remoteDebounceMs: StateFlow<Int> =
+            prefs.remoteDebounceMs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), 250)
+
+        /** OK: Wyłączony → 150 → 250 → 400 → Wyłączony. */
+        fun cycleRemoteDebounce() {
+            viewModelScope.launch {
+                val steps = listOf(0, 150, 250, 400)
+                val current = prefs.remoteDebounceMs.first()
+                prefs.setRemoteDebounceMs(steps[(steps.indexOf(current) + 1) % steps.size])
+            }
+        }
+
         fun toggleClock() {
             viewModelScope.launch { prefs.setClockEnabled(!prefs.clockEnabled.first()) }
         }

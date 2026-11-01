@@ -15,7 +15,11 @@ class AppViewModel
     @Inject
     constructor(
         repository: AppearanceRepository,
+        prefs: pl.ketchupplayer.tv.core.data.playback.PlayerPrefsRepository,
     ) : ViewModel() {
+        val remoteDebounceMs: StateFlow<Int> =
+            prefs.remoteDebounceMs.stateIn(viewModelScope, SharingStarted.Eagerly, 250)
+
         val appearance: StateFlow<Appearance> =
             repository.appearance
                 .stateIn(viewModelScope, SharingStarted.Eagerly, Appearance())

@@ -66,4 +66,7 @@
     <string name="network_auto_hint">Automatycznie: próbuje kolejnych przy błędzie</string>
     <string name="appearance_blur">Efekt szkła (rozmycie tła)</string>
     <string name="appearance_blur_hint">Rozmywa grafikę pod panelami. Włącz, jeśli płynność na Twoim urządzeniu pozostaje dobra.</string>
+    <string name="playback_remote">Czułość pilota</string>
+    <string name="playback_remote_hint">Jedno wciśnięcie przeskakuje o kilka pól? Zwiększ odstęp między naciśnięciami tej samej strzałki.</string>
+    <string name="playback_remote_off">Wyłączona</string>
 </resources>

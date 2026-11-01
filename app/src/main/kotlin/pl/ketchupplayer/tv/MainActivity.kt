@@ -10,9 +10,12 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.designsystem.LocalGlassBlur
+import timber.log.Timber
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -24,10 +27,14 @@ class MainActivity : ComponentActivity() {
         val navigation = event.keyCode in NAV_KEYS
         return if (navigation &&
             event.action == KeyEvent.ACTION_DOWN &&
-            keyGuard.shouldDrop(event.repeatCount, event.eventTime, SystemClock.uptimeMillis())
+            keyGuard.shouldDrop(event.keyCode, event.repeatCount, event.eventTime, SystemClock.uptimeMillis())
         ) {
+            Timber.tag("KeyGuard").d("drop key=%d rep=%d", event.keyCode, event.repeatCount)
             true
         } else {
+            if (navigation && event.action == KeyEvent.ACTION_DOWN && BuildConfig.DEBUG) {
+                Timber.tag("KeyGuard").d("key=%d rep=%d", event.keyCode, event.repeatCount)
+            }
             super.dispatchKeyEvent(event)
         }
     }
@@ -35,6 +42,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        lifecycleScope.launch { viewModel.remoteDebounceMs.collect { keyGuard.debounceMs = it.toLong() } }
         setContent {
             val appearance by viewModel.appearance.collectAsStateWithLifecycle()
             KetchupTheme(appearance.theme, appearance.effectiveAccent) {

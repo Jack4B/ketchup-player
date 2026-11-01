@@ -1,34 +1,40 @@
 package pl.ketchupplayer.tv
 
 /**
- * Ochrona przed „przeskakiwaniem” fokusu na pilocie: przytrzymany klawisz generuje powtórzenia, a gdy ekran się
- * chwilowo zacina, kolejkują się i wykonują po puszczeniu przycisku (jedno naciśnięcie = kilka pól).
- * Powtórzenie jest odrzucane, gdy jest zbyt stare (zalega w kolejce) albo przychodzi szybciej niż ekran nadąża.
- * Pierwsze naciśnięcie (repeatCount == 0) nigdy nie jest odrzucane.
+ * Ochrona przed „przeskakiwaniem” fokusu na pilocie. Dwa źródła problemu:
+ * 1) przytrzymany klawisz generuje powtórzenia, które przy chwilowym zacięciu kolejkują się i wykonują po puszczeniu;
+ * 2) niektóre piloty IR wysyłają na jedno wciśnięcie kilka osobnych naciśnięć (każde z repeatCount == 0).
+ * Zdarzenie jest odrzucane, gdy powtórzenie jest zbyt stare albo za gęste, albo gdy to samo naciśnięcie przychodzi
+ * szybciej niż [debounceMs] po poprzednim przyjętym (0 = filtr naciśnięć wyłączony).
  */
 class KeyRepeatGuard(
     private val staleMs: Long = STALE_MS,
     private val minIntervalMs: Long = MIN_INTERVAL_MS,
+    var debounceMs: Long = 0L,
 ) {
-    private var lastAcceptedMs = Long.MIN_VALUE
+    private val lastAcceptedByKey = HashMap<Int, Long>()
 
     /** true = zdarzenie należy odrzucić. [eventTimeMs] i [nowMs] w tej samej skali (uptimeMillis). */
     fun shouldDrop(
+        keyCode: Int,
         repeatCount: Int,
         eventTimeMs: Long,
         nowMs: Long,
     ): Boolean {
-        if (repeatCount == 0) {
-            lastAcceptedMs = nowMs
-            return false
-        }
-        val drop = nowMs - eventTimeMs > staleMs || nowMs - lastAcceptedMs < minIntervalMs
-        if (!drop) lastAcceptedMs = nowMs
+        val last = lastAcceptedByKey[keyCode] ?: (nowMs - NEVER_MS)
+        val drop =
+            if (repeatCount == 0) {
+                debounceMs > 0 && nowMs - last < debounceMs
+            } else {
+                nowMs - eventTimeMs > staleMs || nowMs - last < minIntervalMs
+            }
+        if (!drop) lastAcceptedByKey[keyCode] = nowMs
         return drop
     }
 
     companion object {
         const val STALE_MS = 120L
         const val MIN_INTERVAL_MS = 70L
+        private const val NEVER_MS = 1_000_000L
     }
 }

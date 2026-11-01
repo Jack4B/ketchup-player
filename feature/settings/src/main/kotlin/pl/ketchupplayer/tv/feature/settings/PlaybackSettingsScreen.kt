@@ -25,7 +25,16 @@ fun PlaybackSettingsRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val clock by viewModel.clockEnabled.collectAsStateWithLifecycle()
-    PlaybackSettingsScreen(state, viewModel::onEvent, onBack, clock, viewModel::toggleClock)
+    val debounce by viewModel.remoteDebounceMs.collectAsStateWithLifecycle()
+    PlaybackSettingsScreen(
+        state,
+        viewModel::onEvent,
+        onBack,
+        clock,
+        viewModel::toggleClock,
+        debounce,
+        viewModel::cycleRemoteDebounce,
+    )
 }
 
 /** Ustawienia odtwarzania: automatyczne przełączanie źródeł (failover). Każdy wiersz: OK zmienia wartość. */
@@ -37,6 +46,8 @@ fun PlaybackSettingsScreen(
     onBack: () -> Unit,
     clockEnabled: Boolean = true,
     onToggleClock: () -> Unit = {},
+    remoteDebounceMs: Int = 250,
+    onCycleDebounce: () -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
     val c = KetchupTheme.colors
@@ -68,6 +79,17 @@ fun PlaybackSettingsScreen(
             trailing = {
                 Text(
                     stringResource(R.string.playback_seconds, settings.tvDelaySeconds),
+                    color = c.textPrimary,
+                )
+            },
+        )
+        SettingsListItem(
+            title = stringResource(R.string.playback_remote),
+            subtitle = stringResource(R.string.playback_remote_hint),
+            onClick = onCycleDebounce,
+            trailing = {
+                Text(
+                    if (remoteDebounceMs == 0) stringResource(R.string.playback_remote_off) else "$remoteDebounceMs ms",
                     color = c.textPrimary,
                 )
             },

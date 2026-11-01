@@ -14,6 +14,11 @@ interface PlayerPrefsRepository {
     val clockEnabled: Flow<Boolean>
 
     suspend fun setClockEnabled(enabled: Boolean)
+
+    /** Minimalny odstęp między kolejnymi naciśnięciami tej samej strzałki w ms (0 = wyłączony); domyślnie 250. */
+    val remoteDebounceMs: Flow<Int>
+
+    suspend fun setRemoteDebounceMs(value: Int)
 }
 
 class DataStorePlayerPrefsRepository
@@ -27,7 +32,17 @@ class DataStorePlayerPrefsRepository
             store.edit { it[CLOCK] = enabled }
         }
 
+        override val remoteDebounceMs: Flow<Int> = store.data.map { it[DEBOUNCE] ?: DEFAULT_DEBOUNCE_MS }
+
+        override suspend fun setRemoteDebounceMs(value: Int) {
+            store.edit { it[DEBOUNCE] = value }
+        }
+
         private companion object {
+            const val DEFAULT_DEBOUNCE_MS = 250
+            val DEBOUNCE =
+                androidx.datastore.preferences.core
+                    .intPreferencesKey("remote_debounce_ms")
             val CLOCK = booleanPreferencesKey("player_clock_enabled")
         }
     }
