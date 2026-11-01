@@ -25,7 +25,7 @@ class AppearanceViewModel
 
         val state: StateFlow<AppearanceUiState> =
             combine(repository.appearance, editor) { a, e ->
-                AppearanceUiState(a.theme, a.effectiveAccent, e)
+                AppearanceUiState(a.theme, a.effectiveAccent, e, a.glassBlur)
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), AppearanceUiState())
 
         fun onEvent(event: AppearanceEvent) {
@@ -35,6 +35,8 @@ class AppearanceViewModel
                     editor.value = null
                     viewModelScope.launch { repository.setAccent(AccentChoice.Preset(event.id)) }
                 }
+                AppearanceEvent.ToggleGlassBlur ->
+                    viewModelScope.launch { repository.setGlassBlur(!state.value.glassBlur) }
                 AppearanceEvent.OpenCustom ->
                     editor.value =
                         editorFrom(

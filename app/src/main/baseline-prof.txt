@@ -1,0 +1,19 @@
+# Ręczny profil startowy (AGP kompiluje go do baseline.prof): ścieżka gorąca startu i nawigacji D-pad.
+# Pełny profil zmierzony na urządzeniu (Macrobenchmark) zastąpi ten plik, gdy będzie wygenerowany.
+HSPL pl/ketchupplayer/tv/**;->**(**)**
+HSPL pl/ketchupplayer/tv/core/designsystem/**;->**(**)**
+HSPL pl/ketchupplayer/tv/feature/**;->**(**)**
+HSPL pl/ketchupplayer/tv/core/data/**;->**(**)**
+HSPL pl/ketchupplayer/tv/core/database/**;->**(**)**
+HSPL pl/ketchupplayer/tv/player/engine/**;->**(**)**
+HSPL androidx/compose/foundation/**;->**(**)**
+HSPL androidx/compose/ui/**;->**(**)**
+HSPL androidx/compose/runtime/**;->**(**)**
+HSPL androidx/compose/animation/**;->**(**)**
+HSPL androidx/tv/material3/**;->**(**)**
+HSPL androidx/room/**;->**(**)**
+HSPL coil3/**;->**(**)**
+Lpl/ketchupplayer/tv/**;
+Landroidx/compose/foundation/lazy/**;
+Landroidx/compose/ui/focus/**;
+Landroidx/tv/material3/**;

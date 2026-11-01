@@ -20,9 +20,12 @@ data class AppearanceUiState(
     val theme: ThemeId = ThemeId.GRANAT,
     val accent: AccentChoice = AccentChoice.Preset(AccentId.TURKUS),
     val editor: CustomEditor? = null,
+    val glassBlur: Boolean = false,
 )
 
 sealed interface AppearanceEvent {
+    data object ToggleGlassBlur : AppearanceEvent
+
     data class SelectTheme(
         val theme: ThemeId,
     ) : AppearanceEvent

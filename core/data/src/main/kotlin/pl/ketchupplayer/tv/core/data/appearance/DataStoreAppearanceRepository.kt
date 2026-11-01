@@ -23,11 +23,16 @@ class DataStoreAppearanceRepository
                 Appearance(
                     theme = ThemeId.entries.firstOrNull { it.name == prefs[THEME] } ?: ThemeId.GRANAT,
                     accent = decode(prefs[ACCENT]),
+                    glassBlur = prefs[BLUR] ?: false,
                 )
             }
 
         override suspend fun setTheme(theme: ThemeId) {
             store.edit { it[THEME] = theme.name }
+        }
+
+        override suspend fun setGlassBlur(enabled: Boolean) {
+            store.edit { it[BLUR] = enabled }
         }
 
         override suspend fun setAccent(accent: AccentChoice?) {
@@ -52,5 +57,8 @@ class DataStoreAppearanceRepository
         private companion object {
             val THEME = stringPreferencesKey("appearance_theme")
             val ACCENT = stringPreferencesKey("appearance_accent")
+            val BLUR =
+                androidx.datastore.preferences.core
+                    .booleanPreferencesKey("appearance_glass_blur")
         }
     }

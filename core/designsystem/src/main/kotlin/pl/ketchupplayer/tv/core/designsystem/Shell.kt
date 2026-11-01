@@ -34,6 +34,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
@@ -114,6 +115,20 @@ fun Modifier.panel(): Modifier {
         ThemeId.BORDO -> this.background(c.surface2, shape)
     }
 }
+
+/** Czy rozmywać grafikę w tle (ustawienie „Efekt szkła”); działa tylko na Androidzie 12+. */
+val LocalGlassBlur = androidx.compose.runtime.compositionLocalOf { false }
+
+/** Rozmycie grafiki tylko gdy włączone i obsługiwane przez system. */
+@Composable
+fun Modifier.glassBlur(radius: androidx.compose.ui.unit.Dp = GLASS_BLUR_RADIUS): Modifier =
+    if (LocalGlassBlur.current && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+        this.blur(radius)
+    } else {
+        this
+    }
+
+private val GLASS_BLUR_RADIUS = 18.dp
 
 /**
  * Panel „szkło”: półprzezroczysty gradient z cienką jasną krawędzią; grafika pod spodem prześwituje.

@@ -43,6 +43,7 @@ import pl.ketchupplayer.tv.core.designsystem.InitialFocusEffect
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.designsystem.ScreenScaffold
 import pl.ketchupplayer.tv.core.designsystem.ScreenTitle
+import pl.ketchupplayer.tv.core.designsystem.SettingsListItem
 import pl.ketchupplayer.tv.core.designsystem.StepSlider
 import pl.ketchupplayer.tv.core.designsystem.ThemeId
 
@@ -102,6 +103,15 @@ fun AppearanceScreen(
             }
         }
         state.editor?.let { CustomEditorPanel(it, onEvent) }
+        // Rozmycie wymaga Androida 12+ (RenderEffect); na starszych zostaje sama półprzezroczystość.
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            SettingsListItem(
+                title = stringResource(R.string.appearance_blur),
+                subtitle = stringResource(R.string.appearance_blur_hint),
+                onClick = { onEvent(AppearanceEvent.ToggleGlassBlur) },
+                trailing = { androidx.tv.material3.Switch(checked = state.glassBlur, onCheckedChange = null) },
+            )
+        }
     }
 }
 

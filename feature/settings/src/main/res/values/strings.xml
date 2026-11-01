@@ -64,4 +64,6 @@
     <string name="network_hint">Gdy lista nie chce się pobrać (404, odmowa), „Automatyczny” sam wypróbuje inne nagłówki. Tu możesz wybrać stały.</string>
     <string name="network_empty">Brak list. Dodaj listę w „Listy i dostawcy”.</string>
     <string name="network_auto_hint">Automatycznie: próbuje kolejnych przy błędzie</string>
+    <string name="appearance_blur">Efekt szkła (rozmycie tła)</string>
+    <string name="appearance_blur_hint">Rozmywa grafikę pod panelami. Włącz, jeśli płynność na Twoim urządzeniu pozostaje dobra.</string>
 </resources>

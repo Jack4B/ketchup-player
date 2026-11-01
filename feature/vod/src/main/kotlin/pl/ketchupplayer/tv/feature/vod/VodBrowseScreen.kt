@@ -50,6 +50,7 @@ import pl.ketchupplayer.tv.core.designsystem.SearchField
 import pl.ketchupplayer.tv.core.designsystem.ShellHeader
 import pl.ketchupplayer.tv.core.designsystem.StateKind
 import pl.ketchupplayer.tv.core.designsystem.StateView
+import pl.ketchupplayer.tv.core.designsystem.glassBlur
 import pl.ketchupplayer.tv.core.designsystem.glassPanel
 import java.util.Locale
 
@@ -140,7 +141,7 @@ private fun Backdrop(entry: VodEntry?) {
     val item = entry?.item ?: return
     val url = item.backdrop ?: item.poster ?: return
     Box(Modifier.fillMaxSize()) {
-        PosterImage(url, item.title, Modifier.fillMaxSize().alpha(BACKDROP_ALPHA))
+        PosterImage(url, item.title, Modifier.fillMaxSize().glassBlur().alpha(BACKDROP_ALPHA))
         Box(
             Modifier.fillMaxSize().background(
                 Brush.horizontalGradient(listOf(c.background, c.background.copy(alpha = 0.7f), Color.Transparent)),
