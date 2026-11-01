@@ -42,7 +42,8 @@ class RootViewModel
                 val providers = catalog.providers.first()
                 if (providers.isNotEmpty() && prefs.autoRefresh.first()) {
                     providers
-                        .filter { (it.lastRefreshMs ?: 0L) < clock.nowMs() - LIST_STALE_MS }
+                        // Bez daty odświeżenia lista jest w trakcie importu: nie dublujemy pobierania.
+                        .filter { p -> p.lastRefreshMs?.let { it < clock.nowMs() - LIST_STALE_MS } == true }
                         .forEach { catalog.refresh(it.id) }
                     epg.refreshIfStale(EPG_STALE_MS)
                 }
