@@ -1,6 +1,6 @@
 # Lista testów beta: Ketchup Player (TV)
 
-Wersja: beta 0.1 (Live TV). Co jest sprawdzane automatycznie w CI, a co trzeba sprawdzić ręcznie na prawdziwym boxie.
+Wersja: beta 0.2 (Live TV, Filmy, Seriale, wygląd wg makiet v3). Co jest sprawdzane automatycznie w CI, a co trzeba sprawdzić ręcznie na prawdziwym boxie.
 Oznaczenia: ✅ pokryte automatycznie, 🖐 do sprawdzenia ręcznie na TV, ⚠ znane ograniczenie.
 
 ## Przygotowanie
@@ -13,7 +13,8 @@ Oznaczenia: ✅ pokryte automatycznie, 🖐 do sprawdzenia ręcznie na TV, ⚠ z
 ## A. Start i nawigacja
 | # | Scenariusz | Oczekiwany wynik | Auto |
 |---|---|---|---|
-| A1 | Uruchom aplikację | Ekran startowy, sześć przycisków w dwóch kolumnach, fokus na „Na żywo”, nic nie ucięte | ✅ emulator + Roborazzi |
+| A1 | Pierwsze uruchomienie | Splash z logo, potem kreator 3 kroków (Witaj, Dodaj listę, Gotowe); „Pomiń” działa w każdym kroku | ✅ E2E + Roborazzi; 🖐 wygląd splasha na TV |
+| A1b | Kolejne uruchomienia | Home z szyną nawigacji po lewej (profil, szukaj, home, na żywo, przewodnik, filmy, seriale, moja lista, ustawienia), fokus na pierwszym kafelku | ✅ E2E + emulator |
 | A2 | Pilot: strzałki, OK, BACK po wszystkich ekranach | Wszystko osiągalne, BACK zawsze cofa o jeden ekran | ✅ testy D-pad każdego ekranu |
 | A3 | Obrót / uśpienie i wybudzenie TV w środku ekranu | Wracasz na ten sam ekran | ✅ AppStartTest, scenariusz restartu |
 | A4 | Overscan: marginesy na Twoim TV | Teksty i ramki nie wychodzą poza ekran | 🖐 |
@@ -31,7 +32,8 @@ Oznaczenia: ✅ pokryte automatycznie, 🖐 do sprawdzenia ręcznie na TV, ⚠ z
 | B7 | Odśwież listę, usuń listę | Kanały odświeżone / znikają razem z listą | ✅ testy repozytorium |
 | B8 | Wpisywanie adresu pilotem (klawiatura ekranowa) | Enter/✓ w polu: następne pole, w ostatnim zapis listy | ✅ E2E i emulator; 🖐 Twoja klawiatura ekranowa |
 | B9 | Własna lista M3U z kontem użytkownika (hasło w adresie) | Działa; hasło nie jest widoczne na ekranie ani w bazie | ✅ test bajtów bazy; 🖐 na Twojej liście |
-| B10 | Stalker, filmy i seriale z M3U/Xtream | ⚠ nieobsługiwane w tej becie | — |
+| B10 | Filmy i seriale z M3U (`/movie/`, `/series/`, odcinki `S01E02`) i z Xtream | Pojawiają się w Filmy/Seriale, tytuły bez przedrostka języka i roku | ✅ E2E; 🖐 na Twoich listach |
+| B11 | Stalker | ⚠ nieobsługiwany | — |
 
 ## C. Na żywo
 | # | Scenariusz | Oczekiwany wynik | Auto |
@@ -86,6 +88,26 @@ Oznaczenia: ✅ pokryte automatycznie, 🖐 do sprawdzenia ręcznie na TV, ⚠ z
 |---|---|---|---|
 | H1 | Obejrzyj kilka kanałów, wróć na start | Do 5 ostatnich kanałów, OK wznawia | ✅ |
 
+
+## J. Filmy, Seriale, szczegóły
+| # | Scenariusz | Oczekiwany wynik | Auto |
+|---|---|---|---|
+| J1 | Filmy: siatka plakatów, kategorie po lewej, chipy Najnowsze/A–Z/Ocena/Rok, pole szukania | Fokus na pierwszym plakacie; zmiana sortowania i kategorii działa | ✅ D-pad + ViewModel + E2E |
+| J2 | Plakaty z internetu | Obrazy się ładują, bez nich kafel z inicjałem | 🖐 (bez sieci w testach) |
+| J3 | Szczegóły filmu: Oglądaj / Wznów / Od początku / Moja lista | Przyciski działają, „Wznów” pokazuje czas | ✅ E2E (czas wznowienia: test repozytorium) |
+| J4 | Szczegóły serialu: sezony i odcinki pobierane z serwera, Podobne | Przełączanie sezonów, OK na odcinku gra | ✅ E2E (Xtream i M3U) |
+| J5 | Odtwarzacz filmu: LEWO/PRAWO ±10 s, OK pauza, pasek postępu | Pozycja zapisuje się co 5 s i przy wyjściu | ✅ logika; 🖐 przewijanie na prawdziwym pliku |
+| J6 | Moja lista i Kontynuuj oglądanie (Home) | Wybór zostaje po restarcie i odświeżeniu listy | ✅ |
+| J7 | Szukaj (cały katalog: filmy i seriale) | Wynik po fragmencie tytułu | ✅ E2E |
+| J8 | Duży katalog (19 tys. filmów, 76 tys. odcinków) | Import w kilkanaście sekund, UI płynny | ✅ import; 🖐 płynność na słabym boxie |
+
+## K. Ustawienia i wygląd
+| # | Scenariusz | Oczekiwany wynik | Auto |
+|---|---|---|---|
+| K1 | Ustawienia dwupoziomowe: kategorie po lewej, opcje po prawej | PRAWO wchodzi w opcje, BACK wraca do kategorii, potem na szynę | ✅ E2E |
+| K2 | Teksty zawijane nie nachodzą na siebie | Czytelne w każdym ekranie | ✅ test regresji + zrzuty; 🖐 Twój TV |
+| K3 | Logo: ikona w szynie, ikona launchera, banner TV | Zgodne z dostarczoną grafiką | 🖐 |
+
 ## I. Stabilność (tylko na boxie)
 | # | Scenariusz | Oczekiwany wynik |
 |---|---|---|
@@ -95,8 +117,8 @@ Oznaczenia: ✅ pokryte automatycznie, 🖐 do sprawdzenia ręcznie na TV, ⚠ z
 | I4 | Zimny start na słabym boxie | Czas do ekranu startowego akceptowalny 🖐 |
 
 ## Poza zakresem tej bety (znane luki)
-Filmy i seriale (VOD), szczegóły audycji i nagrywanie, wyszukiwanie, profile i PIN, VPN, NAS, migracja z BK Player Next,
-Stalker, podpisane wydanie (APK jest podpisany kluczem debug).
+Radar i „Moje zainteresowania” w przewodniku, profile i PIN, nagrywanie, VPN, NAS, migracja z BK Player Next, Stalker,
+wybór ścieżek audio i napisów, zwiastuny, podpisane wydanie (APK jest podpisany kluczem debug).
 
 ## Jak zgłaszać błędy
 Opis w jednym zdaniu, numer scenariusza z tej listy, zrzut ekranu. Przy crashu: kiedy dokładnie (po jakim kliknięciu).
