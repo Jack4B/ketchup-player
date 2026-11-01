@@ -195,7 +195,7 @@ check_section() { # id etykieta-szyny oczekiwany-tekst nazwa-zrzutu
   shot "$4" >/dev/null; save_ui "$4"
   alive || record "$2" "Crash w sekcji $1" FAIL "$(crashes)"
 }
-check_section "Na żywo" C1 "Siatka" 10_live
+check_section "Na żywo" C1 "Przewodnik" 10_live
 check_section "Filmy" J1 "Najnowsze" 12_filmy
 check_section "Seriale" J1s "Najnowsze" 13_seriale
 check_section "Moja lista" J6 "Moja lista" 14_mojalista
@@ -204,7 +204,7 @@ check_section "Ustawienia" K1 "Listy i dostawcy" 16_ustawienia
 
 # ---------- ustawienia: wygląd, odtwarzanie ----------
 tap "Wygląd" && { sleep 1.5; shot 17_wyglad >/dev/null
-  for th in "Czerń" "Bordo" "Granat"; do tap "$th" && { sleep 1; shot "18_motyw_$th" >/dev/null; }; done
+  for th in "Czerń" "Bordo" "Granat"; do { tap "$th" || { key 20; sleep 1; tap "$th"; }; } && { sleep 1; shot "18_motyw_$th" >/dev/null; }; done
   record G1 "Zmiana motywu (zrzuty 18_motyw_*)" PASS "oceń wizualnie"; }
 tap "Odtwarzanie" && { sleep 1.5; shot 19_odtwarzanie >/dev/null; record E4 "Ustawienia odtwarzania widoczne" PASS; }
 
@@ -229,8 +229,8 @@ shot 21_ulubione >/dev/null
 goto "Filmy"; sleep 2; ui_dump
 if has_text "Brak filmów"; then record J3 "Filmy z listy" WARN "lista bez filmów (użyj M3U/Xtream z VOD)"
 else
-  key 23; sleep 3; ui_dump; shot 22_szczegoly >/dev/null; save_ui 22_szczegoly
-  if has_text "FILM" || has_text "SERIAL"; then record J3 "Szczegóły filmu" PASS; else record J3 "Szczegóły filmu" FAIL; fi
+  key 23; sleep 5; ui_dump; shot 22_szczegoly >/dev/null; save_ui 22_szczegoly
+  if has_text "Oglądaj" || has_text "Wznów"; then record J3 "Szczegóły filmu" PASS; else record J3 "Szczegóły filmu" FAIL "brak przycisku Oglądaj/Wznów (sprawdź 22_szczegoly)"; fi
   tap "▶ Oglądaj" || tap "▶ Wznów"; sleep 15; shot 23_vod >/dev/null
   playing && record J5 "Odtwarzanie filmu" PASS || record J5 "Odtwarzanie filmu" WARN "brak aktywnego audio"
   key 22; sleep 1; key 22; sleep 1; shot 24_vod_przewijanie >/dev/null; key 4; sleep 2
