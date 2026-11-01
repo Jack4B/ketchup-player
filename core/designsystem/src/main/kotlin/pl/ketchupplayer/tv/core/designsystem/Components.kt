@@ -161,7 +161,7 @@ fun ChannelRow(
         outlined = false,
     ) {
         Row(
-            Modifier.padding(horizontal = 12.dp).fillMaxHeight(),
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp).fillMaxHeight(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {

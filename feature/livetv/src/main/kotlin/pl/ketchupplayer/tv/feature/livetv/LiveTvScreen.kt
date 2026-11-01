@@ -184,7 +184,6 @@ private fun ChannelsPanel(
                     onLongClick = { onEvent(LiveTvEvent.ToggleFavorite(ch.id)) },
                     nowPlaying = programme?.title,
                     progress = programme?.progressAt(state.nowMs),
-                    timeRange = programme?.let { "${clock(it.startMs)}–${clock(it.endMs)}" },
                     modifier =
                         Modifier
                             .onFocusChanged { if (it.hasFocus) onEvent(LiveTvEvent.FocusChannel(ch.id)) }

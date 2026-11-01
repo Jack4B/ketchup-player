@@ -280,7 +280,7 @@ private fun ChannelCell(
         contentAlignment = Alignment.CenterStart,
     ) {
         Row(
-            Modifier.padding(horizontal = 8.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -290,18 +290,6 @@ private fun ChannelCell(
                 color = c.textSecondary,
                 modifier = Modifier.width(26.dp),
             )
-            Box(
-                Modifier.width(44.dp).background(c.channelTile, RoundedCornerShape(6.dp)).padding(vertical = 4.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    tileText(channel.displayName),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = c.channelTileText,
-                    maxLines = 1,
-                )
-            }
             Text(
                 (if (favorite) "★ " else "") + channel.displayName,
                 fontSize = 15.sp,
@@ -309,12 +297,11 @@ private fun ChannelCell(
                 color = c.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
             )
         }
     }
 }
-
-private fun tileText(name: String): String = name.substringBefore(' ').take(TILE_CHARS)
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -383,5 +370,4 @@ private val PREVIEW_HEIGHT = 112.dp
 private val PREVIEW_ART = 200.dp
 private const val BLOCK_GAP = 4f
 private const val MS_PER_MINUTE = 60_000L
-private const val TILE_CHARS = 6
 private const val ON_AIR_ALPHA = 0.9f
