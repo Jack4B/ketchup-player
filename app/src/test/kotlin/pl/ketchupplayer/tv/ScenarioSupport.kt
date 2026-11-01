@@ -103,6 +103,7 @@ object ListFactory {
         nowTitle: String,
         nextTitle: String,
         nowMs: Long = System.currentTimeMillis(),
+        displayName: String = epgId,
     ): String {
         val fmt = SimpleDateFormat("yyyyMMddHHmmss", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
 
@@ -110,7 +111,7 @@ object ListFactory {
         val min = 60_000L
         return """<?xml version="1.0" encoding="UTF-8"?>
 <tv>
-<channel id="$epgId"><display-name>$epgId</display-name></channel>
+<channel id="$epgId"><display-name>$displayName</display-name></channel>
 <programme start="${t(
             nowMs - 10 * min,
         )}" stop="${t(nowMs + 50 * min)}" channel="$epgId"><title lang="pl">$nowTitle</title></programme>

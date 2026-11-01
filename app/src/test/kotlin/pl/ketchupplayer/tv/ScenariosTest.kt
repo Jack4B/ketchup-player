@@ -465,4 +465,21 @@ class ScenariosTest {
         waitForText("błąd", substring = true)
         assertEquals(2, runBlocking { catalog.liveChannels().first().size })
     }
+
+    /** Scenariusz: kanały bez tvg-id (typowe u dostawców); EPG dopasowuje po nazwie mimo przedrostka i sufiksu HD. */
+    @Test
+    fun epgDopasowaneDoKanaluBezTvgIdPoNazwie() {
+        val host = "http://127.0.0.1:${server.port}"
+        server.serve("/noid.m3u") {
+            "#EXTM3U url-tvg=\"$host/epg.xml\"\n" +
+                "#EXTINF:-1 tvg-id=\"\" group-title=\"PL| POLAND VIP\",PL-VIP| TVN 24 HD\n$host/tvn24.m3u8\n"
+        }
+        server.serve("/epg.xml") {
+            ListFactory.xmltvNow("tvn24.pl", "Teraz Fakty", "Potem Dzień", displayName = "TVN 24")
+        }
+        runBlocking { catalog.addM3u("Bez tvg-id", server.url("/noid.m3u")) }
+
+        click("Na żywo")
+        waitForText("Teraz Fakty", timeoutMs = BIG_WAIT_MS)
+    }
 }
