@@ -113,6 +113,26 @@ class ShellTest {
         assertTrue("treść powinna przesunąć się w prawo ($before -> $after)", after > before + 40f)
     }
 
+    /** Ustawienia (konfiguracja) nie przesuwają treści: szuflada może na nią nachodzić. */
+    @Test
+    fun szynaNaUstawieniachNiePrzesuwaTresci() {
+        show(selected = "settings")
+        keyboardMode()
+        val before =
+            compose
+                .onNodeWithText("Pierwszy")
+                .fetchSemanticsNode()
+                .boundsInRoot.left
+        key(Key.DirectionLeft)
+        compose.waitForIdle()
+        val after =
+            compose
+                .onNodeWithText("Pierwszy")
+                .fetchSemanticsNode()
+                .boundsInRoot.left
+        assertEquals(before, after, 1f)
+    }
+
     /** Pilot: LEWO z treści trafia w szynę na aktywną pozycję („Na żywo”), OK ją wybiera. */
     @Test
     fun dpadLewoDoSzynyNaAktywnaPozycjeOkWybiera() {

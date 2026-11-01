@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -48,7 +47,6 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -144,6 +142,7 @@ fun AppShell(
 ) {
     val requesters = remember(entries) { entries.associate { it.id to FocusRequester() } }
     var railFocused by remember { mutableStateOf(false) }
+    val overlayOnly = entries.firstOrNull { it.id == selectedId }?.icon == RailIcon.SETTINGS
     // Jak w TiViMate: rozwinięta szuflada nie nachodzi na treść, tylko przesuwa ją w prawo (nadal widoczną).
     val railWidth by animateDpAsState(
         if (railFocused) RAIL_EXPANDED else RAIL_COLLAPSED,
@@ -158,11 +157,14 @@ fun AppShell(
     ThemedBackground(modifier) {
         CompositionLocalProvider(LocalInShell provides true, LocalFocusRail provides toRail) {
             Box(Modifier.fillMaxSize().padding(horizontal = SHELL_MARGIN_H, vertical = SHELL_MARGIN_V)) {
+                // Treść jest „wypychana”: zmniejsza się o szerokość, którą zyskuje szuflada (siatka filmów mieści mniej
+                // plakatów, EPG mniej godzin), więc nic nie jest zasłonięte ani ucięte. Ustawienia są konfiguracją, nie
+                // oglądaniem: tam szuflada może nachodzić.
+                val pushed = if (overlayOnly) 0.dp else railWidth - RAIL_COLLAPSED
                 Box(
                     Modifier
                         .fillMaxSize()
-                        .padding(start = RAIL_COLLAPSED + CONTENT_GAP)
-                        .offset { IntOffset((railWidth - RAIL_COLLAPSED).roundToPx(), 0) },
+                        .padding(start = RAIL_COLLAPSED + CONTENT_GAP + pushed),
                     content = content,
                 )
                 NavRail(
