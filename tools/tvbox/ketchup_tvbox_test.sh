@@ -197,10 +197,10 @@ check_section() { # id etykieta-szyny oczekiwany-tekst nazwa-zrzutu
 }
 check_section "Na żywo" C1 "Grupy" 10_live
 check_section "Przewodnik" F1 "Siatka" 11_guide
-check_section "Filmy" J1 "Szukaj w: Filmy" 12_filmy
-check_section "Seriale" J1s "Szukaj w: Seriale" 13_seriale
+check_section "Filmy" J1 "Najnowsze" 12_filmy
+check_section "Seriale" J1s "Najnowsze" 13_seriale
 check_section "Moja lista" J6 "Moja lista" 14_mojalista
-check_section "Szukaj" J7 "Szukaj filmów i seriali" 15_szukaj
+check_section "Szukaj" J7 "Szukaj" 15_szukaj
 check_section "Ustawienia" K1 "Listy i dostawcy" 16_ustawienia
 
 # ---------- ustawienia: wygląd, odtwarzanie ----------
@@ -253,7 +253,8 @@ sh_ "logcat -d" > "$OUT/logs/logcat_full.txt"
 sh_ "logcat -d -b crash" > "$OUT/logs/logcat_crash.txt"
 sh_ "dumpsys meminfo $PKG" > "$OUT/logs/meminfo.txt"
 sh_ "dumpsys activity processes" | grep -A3 "$PKG" > "$OUT/logs/process.txt" 2>/dev/null
-grep -qE "FATAL EXCEPTION|ANR in $PKG" "$OUT/logs/logcat_full.txt" \
+# Tylko awarie NASZEGO procesu (uiautomator też zapisuje własne FATAL EXCEPTION, to nie jest crash aplikacji).
+grep -qE "ANR in $PKG|Process: $PKG|FATAL EXCEPTION.*$PKG" "$OUT/logs/logcat_full.txt" \
   && record "—" "Crash/ANR w logach" FAIL "patrz logs/logcat_crash.txt" || record "—" "Crash/ANR w logach" PASS
 grep -E "ketchup|Timber|E/AndroidRuntime" "$OUT/logs/logcat_full.txt" | tail -200 > "$OUT/logs/app_tail.txt"
 

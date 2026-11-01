@@ -112,7 +112,7 @@ fun VodBrowseScreen(
     }
 }
 
-private val CATEGORIES_WIDTH = 160.dp
+private val CATEGORIES_WIDTH = 300.dp
 private const val COLUMNS = 6
 private const val FOCUS_RETRIES = 20
 
@@ -161,7 +161,7 @@ private fun CategoryItem(
             text,
             fontSize = 17.sp,
             color = c.textPrimary,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
         )
