@@ -459,6 +459,31 @@ class ScenariosTest {
         waitForText("TVN 24")
     }
 
+    /** Scenariusz: lista M3U z filmami i serialami (jak get.php panelu): Filmy, Seriale i odtwarzanie odcinka. */
+    @Test
+    fun listaM3uZFilmamiISerialamiDajeKatalogVod() {
+        val host = server.baseUrl()
+        server.serve("/vod.m3u") {
+            "#EXTM3U\n" +
+                "#EXTINF:-1 group-title=\"Info\",TVN24\n$host/live/u/p/1.ts\n" +
+                "#EXTINF:-1 group-title=\"Dramat\",PL - Pitbull (2005)\n$host/movie/u/p/10.mkv\n" +
+                "#EXTINF:-1 group-title=\"Seriale\",Rodzina Kowalskich S01E01 Pilot\n$host/series/u/p/21.mp4\n" +
+                "#EXTINF:-1 group-title=\"Seriale\",Rodzina Kowalskich S01E02\n$host/series/u/p/22.mp4\n"
+        }
+        addProviderViaUi("Lista z VOD", server.url("/vod.m3u"))
+        waitForText("Kanały: 1", substring = true)
+        nav("Filmy")
+        waitForText("Pitbull")
+        nav("Seriale")
+        waitForText("Rodzina Kowalskich")
+        click("Rodzina Kowalskich")
+        waitForText("1. Pilot")
+        waitForText("2. Odcinek 2")
+        click("2. Odcinek 2")
+        waitFor { FakePlayers.played.isNotEmpty() }
+        assertEquals(listOf("$host/series/u/p/22.mp4"), FakePlayers.played.toList())
+    }
+
     /** Scenariusz: Seriale -> szczegóły ładują odcinki z serwera, sezony przełączają listę, odcinek gra swój adres. */
     @Test
     fun serialZXtreamPokazujeSezonyIOdcinki() {

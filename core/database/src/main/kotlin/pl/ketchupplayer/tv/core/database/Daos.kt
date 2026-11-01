@@ -172,13 +172,22 @@ interface VodDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(items: List<VodItemEntity>)
 
+    @Query("DELETE FROM vod_episodes WHERE seriesId IN (SELECT id FROM vod_items WHERE providerId = :providerId)")
+    suspend fun deleteEpisodesByProvider(providerId: String)
+
+    @Query("SELECT COUNT(*) FROM vod_episodes WHERE seriesId = :seriesId")
+    suspend fun episodeCount(seriesId: String): Int
+
     @Transaction
     suspend fun replaceAll(
         providerId: String,
         items: List<VodItemEntity>,
+        episodes: List<EpisodeEntity> = emptyList(),
     ) {
+        deleteEpisodesByProvider(providerId)
         deleteByProvider(providerId)
         items.chunked(INSERT_CHUNK).forEach { insertAll(it) }
+        episodes.chunked(INSERT_CHUNK).forEach { insertEpisodes(it) }
     }
 
     @Query("SELECT * FROM vod_episodes WHERE seriesId = :seriesId ORDER BY season, number")

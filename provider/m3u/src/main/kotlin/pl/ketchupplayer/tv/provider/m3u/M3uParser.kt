@@ -26,16 +26,18 @@ object M3uParser {
         providerId: ProviderId,
         text: String,
         liveOnly: Boolean = false,
-    ): M3uPlaylist = parse(providerId, text.lineSequence(), liveOnly)
+        vod: M3uVodCollector? = null,
+    ): M3uPlaylist = parse(providerId, text.lineSequence(), liveOnly, vod)
 
     /** Wersja strumieniowa: linie czytane leniwie, pamięć zależy od liczby kanałów, nie od rozmiaru listy. */
     fun parse(
         providerId: ProviderId,
         lines: Sequence<String>,
         liveOnly: Boolean = false,
+        vod: M3uVodCollector? = null,
     ): M3uPlaylist {
         val channels = ArrayList<Channel>()
-        val acc = Accumulator(providerId, liveOnly, channels)
+        val acc = Accumulator(providerId, liveOnly, channels, vod)
         var epgUrl: String? = null
         var pending: Pending? = null
         var skipped = 0
@@ -81,6 +83,7 @@ object M3uParser {
         private val providerId: ProviderId,
         private val liveOnly: Boolean,
         private val channels: MutableList<Channel>,
+        private val vod: M3uVodCollector?,
     ) {
         fun accept(
             pending: Pending?,
@@ -88,7 +91,10 @@ object M3uParser {
         ): Outcome =
             when {
                 pending == null || !isStreamUrl(line) -> Outcome.SKIPPED
-                liveOnly && detectType(line, pending.group) != ContentType.LIVE -> Outcome.OMITTED
+                liveOnly && detectType(line, pending.group) != ContentType.LIVE -> {
+                    vod?.add(detectType(line, pending.group), pending.name, line, pending.logo, pending.group)
+                    Outcome.OMITTED
+                }
                 else -> {
                     channels += pending.toChannel(providerId, line, channels.size + 1)
                     Outcome.ADDED

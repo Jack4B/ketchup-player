@@ -1,9 +1,12 @@
 package pl.ketchupplayer.tv.provider.m3u
 
 import pl.ketchupplayer.tv.core.model.Channel
+import pl.ketchupplayer.tv.core.model.Episode
 import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.ProviderType
 import pl.ketchupplayer.tv.core.model.StreamSpec
+import pl.ketchupplayer.tv.core.model.VodCatalog
+import pl.ketchupplayer.tv.core.model.VodItem
 import pl.ketchupplayer.tv.core.network.NetworkException
 import pl.ketchupplayer.tv.core.network.TextFetcher
 import pl.ketchupplayer.tv.provider.api.Capability
@@ -23,26 +26,46 @@ class M3uProvider(
     @Volatile
     private var lastEpgUrl: String? = null
 
+    @Volatile
+    private var lastVod: VodCatalog? = null
+
     override suspend fun loadChannels(): Result<List<Channel>> =
-        fetcher.fetchLines(url) { lines -> M3uParser.parse(id, lines, liveOnly = true) }.fold(
-            onSuccess = { playlist ->
-                lastEpgUrl = playlist.epgUrl
-                if (playlist.channels.isEmpty()) {
-                    Result.failure(
-                        ProviderError.BadResponse(
-                            if (playlist.omittedVod > 0) {
-                                "Lista zawiera tylko filmy i seriale (obsługa w kolejnej wersji)"
-                            } else {
-                                "Lista nie zawiera żadnych kanałów"
-                            },
-                        ),
-                    )
-                } else {
-                    Result.success(playlist.channels)
-                }
-            },
-            onFailure = { Result.failure(it.toProviderError()) },
-        )
+        fetcher
+            .fetchLines(url) { lines ->
+                // Filmy i seriale zbieramy w tym samym przebiegu (lista bywa 30 MB: jedno pobranie).
+                val collector = M3uVodCollector(id)
+                val playlist = M3uParser.parse(id, lines, liveOnly = true, vod = collector)
+                lastVod = if (collector.isEmpty) null else collector.build()
+                playlist
+            }.fold(
+                onSuccess = { playlist ->
+                    lastEpgUrl = playlist.epgUrl
+                    if (playlist.channels.isEmpty()) {
+                        Result.failure(
+                            ProviderError.BadResponse(
+                                if (playlist.omittedVod > 0) {
+                                    "Lista zawiera tylko filmy i seriale (obsługa w kolejnej wersji)"
+                                } else {
+                                    "Lista nie zawiera żadnych kanałów"
+                                },
+                            ),
+                        )
+                    } else {
+                        Result.success(playlist.channels)
+                    }
+                },
+                onFailure = { Result.failure(it.toProviderError()) },
+            )
+
+    override suspend fun loadVod(): Result<VodCatalog> =
+        lastVod?.let { Result.success(it) }
+            ?: Result.failure(ProviderError.BadResponse("Lista nie zawiera filmów ani seriali"))
+
+    /** Odcinki z M3U przychodzą razem z katalogiem (patrz [loadVod]); pobierania na żądanie nie ma. */
+    override suspend fun loadEpisodes(series: VodItem): Result<List<Episode>> =
+        Result.failure(ProviderError.BadResponse("Odcinki są częścią listy"))
+
+    override suspend fun resolveVod(ref: String): Result<StreamSpec> = Result.success(StreamSpec(ref))
 
     override suspend fun resolveStream(channel: Channel): Result<StreamSpec> =
         channel.streamUrl?.let { Result.success(StreamSpec(it, channel.userAgent)) }

@@ -117,7 +117,11 @@ class RoomCatalogRepository
                     // Filmy i seriale są dodatkiem: ich błąd nie psuje odświeżenia kanałów.
                     if (Capability.VOD in provider.capabilities) {
                         provider.loadVod().onSuccess { vod ->
-                            vodDao.replaceAll(id.value, vod.items.map { it.toVodEntity() })
+                            vodDao.replaceAll(
+                                id.value,
+                                vod.items.map { it.toVodEntity() },
+                                vod.episodes.map { it.toEpisodeEntity() },
+                            )
                         }
                     }
                     providerDao.markRefreshed(id.value, now, null, null)
@@ -202,5 +206,19 @@ private fun pl.ketchupplayer.tv.core.model.VodItem.toVodEntity() =
         plot,
         durationMin,
         category,
+        addedMs,
+    )
+
+private fun pl.ketchupplayer.tv.core.model.Episode.toEpisodeEntity() =
+    pl.ketchupplayer.tv.core.database.EpisodeEntity(
+        id,
+        seriesId,
+        season,
+        number,
+        title,
+        ref,
+        plot,
+        durationMin,
+        poster,
         addedMs,
     )

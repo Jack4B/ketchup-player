@@ -50,4 +50,39 @@ class M3uProviderTest {
             assertEquals("http://h.example.invalid/a", spec.url)
             assertEquals("UA1", spec.userAgent)
         }
+
+    private val withVod =
+        "#EXTM3U\n" +
+            "#EXTINF:-1 group-title=\"PL| News\",TVN24\nhttp://h.example.invalid/live/u/p/1.ts\n" +
+            "#EXTINF:-1 tvg-logo=\"http://i.example.invalid/p.jpg\" group-title=\"Dramat\",PL - Pitbull (2005)\n" +
+            "http://h.example.invalid/movie/u/p/10.mkv\n" +
+            "#EXTINF:-1 group-title=\"Seriale\",Rodzina Kowalskich S01E01 Pilot\n" +
+            "http://h.example.invalid/series/u/p/21.mp4\n" +
+            "#EXTINF:-1 group-title=\"Seriale\",Rodzina Kowalskich S01E02\n" +
+            "http://h.example.invalid/series/u/p/22.mp4\n" +
+            "#EXTINF:-1 group-title=\"Seriale\",Rodzina Kowalskich S02E01 Powrót\n" +
+            "http://h.example.invalid/series/u/p/23.mp4\n" +
+            "#EXTINF:-1 group-title=\"Seriale\",Inny Serial S01E01\nhttp://h.example.invalid/series/u/p/31.mp4\n"
+
+    @Test
+    fun `filmy i odcinki z listy trafiaja do katalogu VOD, seriale grupowane po nazwie`() =
+        runTest {
+            val p = M3uProvider(ProviderId("p"), "u") { Result.success(withVod) }
+            assertEquals(listOf("TVN24"), p.loadChannels().getOrThrow().map { it.name })
+            val vod = p.loadVod().getOrThrow()
+            val movie = vod.items.single { it.kind == pl.ketchupplayer.tv.core.model.VodKind.MOVIE }
+            assertEquals("Pitbull", movie.title)
+            assertEquals(2005, movie.year)
+            assertEquals("Dramat", movie.category)
+            val series = vod.items.filter { it.kind == pl.ketchupplayer.tv.core.model.VodKind.SERIES }
+            assertEquals(setOf("Rodzina Kowalskich", "Inny Serial"), series.map { it.title }.toSet())
+            val kowalscy = series.single { it.title == "Rodzina Kowalskich" }
+            val eps =
+                vod.episodes
+                    .filter { it.seriesId == kowalscy.id }
+                    .sortedWith(compareBy({ it.season }, { it.number }))
+            assertEquals(listOf(1 to 1, 1 to 2, 2 to 1), eps.map { it.season to it.number })
+            assertEquals(listOf("Pilot", "Odcinek 2", "Powrót"), eps.map { it.title })
+            assertEquals("http://h.example.invalid/movie/u/p/10.mkv", p.resolveVod(movie.ref).getOrThrow().url)
+        }
 }

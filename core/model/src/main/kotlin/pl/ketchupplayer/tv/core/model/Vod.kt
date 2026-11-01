@@ -38,4 +38,6 @@ data class Episode(
 /** Wynik pobrania katalogu VOD jednego dostawcy. */
 data class VodCatalog(
     val items: List<VodItem>,
+    /** Odcinki dostarczone od razu (M3U); Xtream pobiera je na żądanie, więc tu pusto. */
+    val episodes: List<Episode> = emptyList(),
 )

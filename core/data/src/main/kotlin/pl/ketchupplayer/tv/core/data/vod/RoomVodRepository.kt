@@ -77,6 +77,12 @@ class RoomVodRepository
 
         override suspend fun refreshEpisodes(seriesId: String): Result<Int> {
             val series = dao.get(seriesId)?.toModel() ?: return Result.failure(IllegalStateException("Nie ma serialu"))
+            // Odcinki dostarczone z listą (M3U) są już w bazie: nic do pobrania.
+            dao
+                .episodeCount(
+                    seriesId,
+                ).takeIf { it > 0 && series.ref == M3U_SERIES_REF }
+                ?.let { return Result.success(it) }
             val provider =
                 providerDao.get(series.providerId.value)?.let { factory.create(it) }
                     ?: return Result.failure(IllegalStateException("Brak dostawcy"))
@@ -150,6 +156,7 @@ class RoomVodRepository
         }
 
         private companion object {
+            const val M3U_SERIES_REF = "m3u:series"
             const val DONE = 0.9
         }
     }
