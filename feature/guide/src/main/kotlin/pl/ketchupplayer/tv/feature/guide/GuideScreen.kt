@@ -298,7 +298,7 @@ private fun Preview(
                     p.startMs > nowMs -> stringResource(R.string.guide_later, focused.channel.displayName.uppercase())
                     else -> focused.channel.displayName.uppercase()
                 }
-            Text(kicker, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = c.textSecondary)
+            Text(kicker, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = c.textSecondary)
             Text(
                 p?.title ?: focused?.channel?.displayName.orEmpty(),
                 fontSize = 22.sp,
@@ -361,10 +361,13 @@ private fun NowMarker(
                 .offset(x = offset.dp)
                 .width(2.dp)
                 .height(height)
-                .background(KetchupTheme.colors.accent),
+                .background(KetchupTheme.colors.accent.copy(alpha = NOW_MARKER_ALPHA)),
         )
     }
 }
+
+// Linia „teraz” przechodzi przez bloki audycji: półprzezroczysta, żeby nie zasłaniała tytułów.
+private const val NOW_MARKER_ALPHA = 0.7f
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -469,7 +472,7 @@ private fun Timeline(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Text(clock(p.startMs), fontSize = 13.sp, color = c.textSecondary, maxLines = 1)
+                    Text(clock(p.startMs), fontSize = 14.sp, color = c.textSecondary, maxLines = 1)
                 }
             }
         }

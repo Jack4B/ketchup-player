@@ -60,6 +60,12 @@ enum class SettingsCategory(
     SERVICES(R.string.settings_cat_services),
     DATA(R.string.settings_cat_data),
     ABOUT(R.string.settings_cat_about),
+    ;
+
+    companion object {
+        /** Tylko kategorie z działającą zawartością; „wkrótce” nie zaśmieca menu (przegląd UX). */
+        val visible: List<SettingsCategory> = entries.filter { it.page != null || it == ABOUT }
+    }
 }
 
 /**
@@ -69,7 +75,7 @@ enum class SettingsCategory(
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun SettingsScreen(initial: SettingsPage? = null) {
-    val categories = SettingsCategory.entries
+    val categories = SettingsCategory.visible
     var selected by rememberSaveable { mutableIntStateOf(initialCategoryIndex(initial)) }
     val requesters = remember { categories.map { FocusRequester() } }
     LaunchedEffect(Unit) {
@@ -123,7 +129,7 @@ fun SettingsScreen(initial: SettingsPage? = null) {
 
 /** Kategoria startowa: odpowiadająca stronie, a bez niej pierwsza („Listy i dostawcy”). */
 internal fun initialCategoryIndex(initial: SettingsPage?): Int =
-    if (initial == null) 0 else SettingsCategory.entries.indexOfFirst { it.page == initial }.coerceAtLeast(0)
+    if (initial == null) 0 else SettingsCategory.visible.indexOfFirst { it.page == initial }.coerceAtLeast(0)
 
 private val CATEGORIES_WIDTH = 230.dp
 private const val FOCUS_RETRIES = 20

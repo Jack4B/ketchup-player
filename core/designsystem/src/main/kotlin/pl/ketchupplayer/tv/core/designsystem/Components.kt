@@ -107,7 +107,7 @@ fun PosterCard(
                     ) {
                         Text(
                             title,
-                            fontSize = 13.sp,
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.White,
                             maxLines = 2,
@@ -116,7 +116,7 @@ fun PosterCard(
                         if (subtitle !=
                             null
                         ) {
-                            Text(subtitle, fontSize = 12.sp, color = Color(OVERLAY_SUBTITLE), maxLines = 1)
+                            Text(subtitle, fontSize = 13.sp, color = Color(OVERLAY_SUBTITLE), maxLines = 1)
                         }
                     }
                 }
@@ -136,8 +136,8 @@ fun PosterCard(
                 }
             }
             if (!overlay) {
-                Text(title, fontSize = 12.sp, color = c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (subtitle != null) Text(subtitle, fontSize = 11.sp, color = c.textSecondary, maxLines = 1)
+                Text(title, fontSize = 13.sp, color = c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (subtitle != null) Text(subtitle, fontSize = 13.sp, color = c.textSecondary, maxLines = 1)
             }
         }
     }
@@ -216,7 +216,7 @@ fun ChannelRow(
             ) {
                 Text(
                     tileLabel(name),
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = c.channelTileText,
                     maxLines = 1,
@@ -253,7 +253,7 @@ fun ChannelRow(
                 }
             }
             if (timeRange != null) {
-                Text(timeRange, fontSize = 13.sp, color = c.textSecondary, maxLines = 1)
+                Text(timeRange, fontSize = 14.sp, color = c.textSecondary, maxLines = 1)
             }
         }
     }
@@ -286,7 +286,7 @@ private fun CompactChannelRow(
             ) {
                 Text(
                     tileLabel(name),
-                    fontSize = 12.sp,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = c.channelTileText,
                     maxLines = 1,
@@ -309,7 +309,7 @@ private fun CompactChannelRow(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(COMPACT_TITLE_WEIGHT),
             )
-            if (timeRange != null) Text(timeRange, fontSize = 13.sp, color = c.textSecondary, maxLines = 1)
+            if (timeRange != null) Text(timeRange, fontSize = 14.sp, color = c.textSecondary, maxLines = 1)
         }
         if (progress != null) {
             Box(
@@ -491,7 +491,7 @@ fun PillChip(
     ) {
         Text(
             text,
-            fontSize = 13.sp,
+            fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
             color = if (selected) c.background else c.textPrimary,
             modifier = Modifier.padding(horizontal = 16.dp),

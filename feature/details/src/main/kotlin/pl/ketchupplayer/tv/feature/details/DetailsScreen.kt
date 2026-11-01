@@ -154,7 +154,7 @@ private fun DetailsBody(
                     overflow = TextOverflow.Ellipsis,
                 )
                 item.cast?.takeIf { it.isNotBlank() }?.let {
-                    Text(stringResource(R.string.details_cast), fontSize = 12.sp, color = c.textSecondary)
+                    Text(stringResource(R.string.details_cast), fontSize = 14.sp, color = c.textSecondary)
                     Text(it, fontSize = 14.sp, color = c.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
             }
@@ -289,7 +289,7 @@ private fun EpisodeCard(
             e.durationMin?.let {
                 Text(
                     stringResource(R.string.details_minutes, it),
-                    fontSize = 12.sp,
+                    fontSize = 13.sp,
                     color = c.textSecondary,
                 )
             }
