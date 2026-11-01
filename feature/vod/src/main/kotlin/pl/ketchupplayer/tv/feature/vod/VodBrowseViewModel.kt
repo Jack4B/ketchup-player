@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import pl.ketchupplayer.tv.core.data.vod.VodEntry
 import pl.ketchupplayer.tv.core.data.vod.VodRepository
@@ -48,6 +49,8 @@ class VodBrowseViewModel
                 query,
                 sort,
             ) { all, m, cat, q, s -> build(all, m ?: VodMode.MOVIES, cat, q, s) }
+                // Filtrowanie i sortowanie dużego katalogu poza głównym wątkiem (inaczej UI zamiera).
+                .flowOn(kotlinx.coroutines.Dispatchers.Default)
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_MS), VodBrowseUiState())
 
         /** Filmy i seriale bez ukrytych kategorii; Moja lista zostaje pełna (to wybór użytkownika). */
@@ -121,7 +124,14 @@ class VodBrowseViewModel
                             filtered.sortedWith(
                                 compareByDescending<VodEntry> { it.item.addedMs ?: 0L }.thenBy { it.item.title },
                             )
-                        VodSort.AZ -> filtered.sortedBy { it.item.normTitle }
+                        // Klucz liczony raz na pozycję: porównywanie przez normTitle (regex w każdym porównaniu) trwało
+                        // sekundy na 50 tys. pozycji i zawieszało aplikację na boxie.
+                        VodSort.AZ ->
+                            filtered
+                                .map {
+                                    it.item.title.lowercase() to it
+                                }.sortedBy { it.first }
+                                .map { it.second }
                         VodSort.RATING -> filtered.sortedByDescending { it.item.rating ?: 0.0 }
                         VodSort.YEAR -> filtered.sortedByDescending { it.item.year ?: 0 }
                     }

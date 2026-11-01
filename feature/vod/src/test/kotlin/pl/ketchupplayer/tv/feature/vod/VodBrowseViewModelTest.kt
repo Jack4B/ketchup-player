@@ -100,4 +100,32 @@ class VodBrowseViewModelTest {
                     .item.title,
             )
         }
+
+    /** Błąd z boxa: sortowanie katalogu ~50 tys. filmów zawieszało aplikację. Każde sortowanie musi być szybkie. */
+    @Test
+    fun `sortowanie duzego katalogu jest szybkie dla kazdego trybu`() =
+        runTest {
+            val big =
+                (1..50_000).map {
+                    movie(
+                        it,
+                        "Film numer ${it * 7919 % 50_000} Śląsk",
+                        "Kat${it % 40}",
+                        1990 + it % 35,
+                        (it % 100) / 10.0,
+                    )
+                }
+            val vm = VodBrowseViewModel(FakeVodRepo(big), FakeGroups())
+            vm.bind(VodMode.MOVIES)
+            vm.state.first { !it.loading }
+            for (sort in VodSort.entries) {
+                val started = System.nanoTime()
+                vm.onEvent(VodBrowseEvent.Sort(sort))
+                val st = vm.state.first { it.sort == sort }
+                val ms = (System.nanoTime() - started) / 1_000_000
+                println("SORT $sort $ms ms, ${st.entries.size} pozycji")
+                assertEquals(50_000, st.entries.size)
+                assertEquals(true, ms < 1500)
+            }
+        }
 }
