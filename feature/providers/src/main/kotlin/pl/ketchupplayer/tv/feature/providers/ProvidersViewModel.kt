@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import pl.ketchupplayer.tv.core.data.catalog.AddProviderError
 import pl.ketchupplayer.tv.core.data.catalog.AddProviderResult
 import pl.ketchupplayer.tv.core.data.catalog.CatalogRepository
+import pl.ketchupplayer.tv.core.model.ProviderId
 import javax.inject.Inject
 
 @HiltViewModel
@@ -31,11 +32,13 @@ class ProvidersViewModel
             ) { providers, l, st -> l.copy(providers = providers, status = st) }
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), ProvidersUiState())
 
+        private var failedId: ProviderId? = null
+
         fun onEvent(event: ProvidersEvent) {
             when (event) {
                 ProvidersEvent.StartAdd -> local.update { it.copy(form = ProviderForm(), message = null) }
                 ProvidersEvent.Cancel -> local.update { it.copy(form = null) }
-                ProvidersEvent.RetryAdd -> local.update { it.copy(form = it.lastForm ?: ProviderForm()) }
+                ProvidersEvent.RetryAdd -> retryAdd()
                 is ProvidersEvent.NameChanged,
                 is ProvidersEvent.UsernameChanged,
                 is ProvidersEvent.PasswordChanged,
@@ -65,6 +68,13 @@ class ProvidersViewModel
             }
         }
 
+        /** Wpisujemy inną listę po błędzie: nieudany wpis znika, żeby nie zostały duplikaty. */
+        private fun retryAdd() {
+            failedId?.let { id -> viewModelScope.launch { catalog.remove(id) } }
+            failedId = null
+            local.update { it.copy(form = it.lastForm ?: ProviderForm()) }
+        }
+
         private fun edited(
             form: ProviderForm,
             event: ProvidersEvent,
@@ -84,8 +94,10 @@ class ProvidersViewModel
                 local.update { it.copy(busy = true, lastForm = form) }
                 when (val r = add(form)) {
                     is AddProviderResult.Added -> local.update { it.copy(form = null, busy = false, message = null) }
-                    is AddProviderResult.SavedWithError ->
+                    is AddProviderResult.SavedWithError -> {
+                        failedId = r.id
                         local.update { it.copy(form = null, busy = false, message = r.message) }
+                    }
                     is AddProviderResult.Invalid ->
                         local.update {
                             it.copy(

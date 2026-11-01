@@ -138,8 +138,9 @@ class RoomCatalogRepository
                     Result.success(channels.size)
                 },
                 onFailure = { e ->
-                    providerDao.markRefreshed(id.value, now, e.message ?: "Błąd", null)
-                    Result.failure(e)
+                    val friendly = friendlyImportError(e.message)
+                    providerDao.markRefreshed(id.value, now, friendly, null)
+                    Result.failure(IllegalStateException(friendly, e))
                 },
             )
         }

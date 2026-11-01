@@ -155,7 +155,7 @@ private fun AddStep(
     )
     Text(stringResource(R.string.onb_add_text), fontSize = 16.sp, color = c.textPrimary)
     state.message?.let {
-        Text(stringResource(R.string.providers_saved_with_error, it), fontSize = 16.sp, color = ERROR_COLOR)
+        Text(stringResource(R.string.onb_error, it), fontSize = 16.sp, color = ERROR_COLOR)
     }
     val form = state.form
     if (form != null) AddForm(form, state.busy, onEvent, showActions = false)

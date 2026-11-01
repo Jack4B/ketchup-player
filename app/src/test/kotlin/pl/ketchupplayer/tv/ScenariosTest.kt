@@ -470,7 +470,7 @@ class ScenariosTest {
         compose.onAllNodes(hasSetTextAction())[0].performTextInput("Zepsuta lista")
         compose.onAllNodes(hasSetTextAction())[1].performTextInput(server.url("/nie-ma-takiej.m3u")) // 404
         click("Dalej ›")
-        waitForText("pobranie się nie udało", substring = true)
+        waitForText("Nie znaleziono listy pod tym adresem", substring = true)
         waitForText("Zepsuta lista", substring = true)
         assertTrue(compose.onAllNodes(hasText("Dodaj pierwszą listę")).fetchSemanticsNodes().isNotEmpty())
     }
