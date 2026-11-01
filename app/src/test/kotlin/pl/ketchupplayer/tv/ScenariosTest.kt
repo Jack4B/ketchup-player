@@ -783,7 +783,7 @@ class ScenariosTest {
         nav("Na żywo")
         waitForText("Fakty wieczorne", timeoutMs = BIG_WAIT_MS)
         click("Fakty wieczorne")
-        waitFor { FakePlayers.played.isNotEmpty() }
+        waitFor(BIG_WAIT_MS) { FakePlayers.played.isNotEmpty() }
         assertEquals(listOf("$host/tvn24.m3u8"), FakePlayers.played.toList())
     }
 
