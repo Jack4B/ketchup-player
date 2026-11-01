@@ -52,6 +52,7 @@ class CatalogRepositoryTest {
         RoomCatalogRepository(
             db.providers(),
             db.channels(),
+            db.channelFlags(),
             ProviderSecrets(
                 secrets,
             ),
@@ -62,6 +63,21 @@ class CatalogRepositoryTest {
         )
 
     private fun repo() = repoWith(fetcher)
+
+    @Test
+    fun `ulubione przezywaja odswiezenie listy`() =
+        runTest {
+            response = Result.success(list)
+            val repo = repo()
+            val id = (repo.addM3u("A", "http://a.example.invalid/x") as AddProviderResult.Added).id
+            val ch = repo.liveChannels().first().first()
+            repo.setFavorite(ch.id, true)
+            assertEquals(setOf(ch.id), repo.favoriteIds().first())
+            repo.refresh(id)
+            assertEquals(setOf(ch.id), repo.favoriteIds().first())
+            repo.setFavorite(ch.id, false)
+            assertEquals(emptySet<String>(), repo.favoriteIds().first())
+        }
 
     @Test
     fun `equivalents - kanal pierwszy, potem ta sama nazwa u innych dostawcow`() =
@@ -232,6 +248,7 @@ class CatalogRepositoryTest {
                 RoomCatalogRepository(
                     fileDb.providers(),
                     fileDb.channels(),
+                    fileDb.channelFlags(),
                     ProviderSecrets(
                         secrets,
                     ),

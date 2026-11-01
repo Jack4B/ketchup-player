@@ -26,11 +26,11 @@ import javax.inject.Inject
 class LiveTvViewModel
     @Inject
     constructor(
-        catalog: CatalogRepository,
+        private val catalog: CatalogRepository,
         private val epg: EpgRepository,
         private val clock: Clock,
     ) : ViewModel() {
-        private val group = MutableStateFlow<String?>(null)
+        private val selection = MutableStateFlow(Selection())
 
         private val onAir: Flow<Pair<Long, Map<String, EpgProgramme>>> =
             ticker().flatMapLatest { now -> epg.onAir(now).map { now to it } }
@@ -39,15 +39,24 @@ class LiveTvViewModel
             combine(
                 catalog.liveChannels(),
                 catalog.liveGroups(),
-                group,
+                selection,
                 onAir,
-            ) { channels, groups, selected, (now, current) ->
-                val effective = selected?.takeIf { it in groups }
+                catalog.favoriteIds(),
+            ) { channels, groups, sel, (now, current), favorites ->
+                val effective = sel.group?.takeIf { it in groups }
+                val showFavorites = sel.favorites && favorites.isNotEmpty()
                 LiveTvUiState(
                     loading = false,
                     groups = orderGroups(groups),
-                    selectedGroup = effective,
-                    channels = if (effective == null) channels else channels.filter { it.group == effective },
+                    selectedGroup = if (showFavorites) null else effective,
+                    channels =
+                        when {
+                            showFavorites -> channels.filter { it.id in favorites }
+                            effective == null -> channels
+                            else -> channels.filter { it.group == effective }
+                        },
+                    favorites = favorites,
+                    favoritesSelected = showFavorites,
                     onAir = current,
                     nowMs = now,
                 )
@@ -60,7 +69,12 @@ class LiveTvViewModel
 
         fun onEvent(event: LiveTvEvent) {
             when (event) {
-                is LiveTvEvent.SelectGroup -> group.value = event.group
+                is LiveTvEvent.SelectGroup -> selection.value = Selection(group = event.group)
+                LiveTvEvent.SelectFavorites -> selection.value = Selection(favorites = true)
+                is LiveTvEvent.ToggleFavorite ->
+                    viewModelScope.launch {
+                        catalog.setFavorite(event.channelId, event.channelId !in state.value.favorites)
+                    }
             }
         }
 
@@ -85,3 +99,9 @@ private val polishGroup = Regex("^(PL|POLSKA|POLAND)([^A-Za-z]|$)", RegexOption.
 /** Grupy polskie (`PL| ...`, `Polska`) na początku, reszta alfabetycznie; sortowanie jest stabilne. */
 internal fun orderGroups(groups: List<String>): List<String> =
     groups.sortedWith(compareBy({ !polishGroup.containsMatchIn(it) }, { it.lowercase() }))
+
+/** Wybór po lewej: wszystkie / grupa / ulubione. */
+private data class Selection(
+    val group: String? = null,
+    val favorites: Boolean = false,
+)

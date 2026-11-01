@@ -20,6 +20,7 @@ import pl.ketchupplayer.tv.core.data.epg.RoomEpgRepository
 import pl.ketchupplayer.tv.core.data.playback.DataStoreFailoverSettingsRepository
 import pl.ketchupplayer.tv.core.data.playback.FailoverSettingsRepository
 import pl.ketchupplayer.tv.core.database.ChannelDao
+import pl.ketchupplayer.tv.core.database.ChannelFlagDao
 import pl.ketchupplayer.tv.core.database.EpgDao
 import pl.ketchupplayer.tv.core.database.KetchupDatabase
 import pl.ketchupplayer.tv.core.database.ProviderDao
@@ -60,6 +61,9 @@ abstract class DataModule {
 
         @Provides
         fun channelDao(db: KetchupDatabase): ChannelDao = db.channels()
+
+        @Provides
+        fun channelFlagDao(db: KetchupDatabase): ChannelFlagDao = db.channelFlags()
 
         @Provides
         @Singleton

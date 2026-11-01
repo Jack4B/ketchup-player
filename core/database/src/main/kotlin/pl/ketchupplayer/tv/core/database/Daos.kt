@@ -85,6 +85,9 @@ interface ChannelFlagDao {
     @Query("SELECT * FROM channel_flags")
     fun observeAll(): Flow<List<ChannelFlagEntity>>
 
+    @Query("SELECT * FROM channel_flags WHERE channelId = :channelId")
+    suspend fun get(channelId: String): ChannelFlagEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(flag: ChannelFlagEntity)
 }

@@ -94,9 +94,11 @@ fun ChannelRow(
     modifier: Modifier = Modifier,
     nowPlaying: String? = null,
     progress: Float? = null,
+    favorite: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
 ) {
     val c = KetchupTheme.colors
-    FocusItem(onClick, modifier.fillMaxWidth().height(CHANNEL_ROW_HEIGHT)) {
+    FocusItem(onClick, modifier.fillMaxWidth().height(CHANNEL_ROW_HEIGHT), onLongClick = onLongClick) {
         Row(
             Modifier.padding(horizontal = 16.dp).fillMaxHeight(),
             verticalAlignment = Alignment.CenterVertically,
@@ -115,7 +117,13 @@ fun ChannelRow(
                 Text(tileLabel(name), fontSize = 18.sp, color = c.channelTileText)
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(name, fontSize = 20.sp, color = c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    if (favorite) "★ $name" else name,
+                    fontSize = 20.sp,
+                    color = c.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 if (nowPlaying != null) {
                     Text(
                         nowPlaying,

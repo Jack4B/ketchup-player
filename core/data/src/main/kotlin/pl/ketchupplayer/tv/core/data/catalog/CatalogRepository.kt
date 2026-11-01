@@ -56,6 +56,14 @@ interface CatalogRepository {
 
     suspend fun channel(id: String): Channel?
 
+    /** Id kanałów oznaczonych jako ulubione (przeżywają odświeżenie listy dostawcy). */
+    fun favoriteIds(): Flow<Set<String>>
+
+    suspend fun setFavorite(
+        channelId: String,
+        favorite: Boolean,
+    )
+
     /**
      * Łańcuch równoważnych kanałów do failoveru: [channelId] pierwszy, potem ten sam kanał (ta sama znormalizowana
      * nazwa) u pozostałych dostawców wg ich kolejności. Zawsze zawiera przynajmniej wskazany kanał, jeśli istnieje.

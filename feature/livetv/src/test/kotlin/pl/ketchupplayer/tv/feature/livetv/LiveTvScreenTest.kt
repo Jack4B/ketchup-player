@@ -121,6 +121,44 @@ class LiveTvScreenTest {
     }
 
     @Test
+    fun screenshotUlubionych() {
+        val state =
+            full.copy(
+                favorites = setOf("p:3"),
+                favoritesSelected = true,
+                channels = channels.filter { it.id == "p:3" },
+            )
+        show(state)
+        compose.onRoot().captureRoboImage("src/test/screenshots/livetv_favorites.png")
+    }
+
+    /** Pilot: przytrzymanie OK na kanale przełącza ulubiony (zdarzenie), zwykłe OK otwiera odtwarzacz. */
+    @Test
+    fun dlugieOkPrzelaczaUlubiony() {
+        val events = mutableListOf<LiveTvEvent>()
+        val opened = mutableListOf<String>()
+        show(full, events, opened)
+        compose.onRoot().performKeyInput {
+            keyDown(Key.DirectionCenter)
+            advanceEventTime(1_000)
+            keyUp(Key.DirectionCenter)
+        }
+        compose.waitForIdle()
+        assertEquals(listOf<LiveTvEvent>(LiveTvEvent.ToggleFavorite("p:1")), events)
+        assertEquals(emptyList<String>(), opened)
+    }
+
+    @Test
+    fun grupaUlubioneWidocznaTylkoGdyJestUlubiony() {
+        val events = mutableListOf<LiveTvEvent>()
+        show(full.copy(favorites = setOf("p:2")), events)
+        key(Key.DirectionLeft)
+        key(Key.DirectionDown)
+        key(Key.DirectionCenter)
+        assertEquals(listOf<LiveTvEvent>(LiveTvEvent.SelectFavorites), events)
+    }
+
+    @Test
     fun backWychodzi() {
         var backs = 0
         show(full, onBack = { backs++ })

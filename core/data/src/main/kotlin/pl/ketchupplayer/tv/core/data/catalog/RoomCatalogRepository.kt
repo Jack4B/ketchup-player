@@ -4,6 +4,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import pl.ketchupplayer.tv.core.common.Clock
 import pl.ketchupplayer.tv.core.database.ChannelDao
+import pl.ketchupplayer.tv.core.database.ChannelFlagDao
+import pl.ketchupplayer.tv.core.database.ChannelFlagEntity
 import pl.ketchupplayer.tv.core.database.ProviderDao
 import pl.ketchupplayer.tv.core.database.ProviderEntity
 import pl.ketchupplayer.tv.core.model.Channel
@@ -23,6 +25,7 @@ class RoomCatalogRepository
     constructor(
         private val providerDao: ProviderDao,
         private val channelDao: ChannelDao,
+        private val flagDao: ChannelFlagDao,
         private val secrets: ProviderSecrets,
         private val factory: ProviderFactory,
         private val clock: Clock,
@@ -125,6 +128,17 @@ class RoomCatalogRepository
         }
 
         override suspend fun channel(id: String): Channel? = channelDao.get(id)?.toModel()
+
+        override fun favoriteIds(): Flow<Set<String>> =
+            flagDao.observeAll().map { flags -> flags.filter { it.favorite }.map { it.channelId }.toSet() }
+
+        override suspend fun setFavorite(
+            channelId: String,
+            favorite: Boolean,
+        ) {
+            val current = flagDao.get(channelId) ?: ChannelFlagEntity(channelId)
+            flagDao.upsert(current.copy(favorite = favorite))
+        }
 
         override suspend fun equivalents(channelId: String): List<Channel> {
             val first = channelDao.get(channelId) ?: return emptyList()

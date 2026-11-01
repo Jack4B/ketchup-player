@@ -87,8 +87,17 @@ private fun Content(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item(key = "all") {
-                GroupItem(stringResource(R.string.livetv_all_groups), state.selectedGroup == null) {
-                    onEvent(LiveTvEvent.SelectGroup(null))
+                GroupItem(
+                    stringResource(R.string.livetv_all_groups),
+                    state.selectedGroup == null && !state.favoritesSelected,
+                ) { onEvent(LiveTvEvent.SelectGroup(null)) }
+            }
+            if (state.favorites.isNotEmpty()) {
+                item(key = "favorites") {
+                    GroupItem(
+                        stringResource(R.string.livetv_favorites, state.favorites.size),
+                        state.favoritesSelected,
+                    ) { onEvent(LiveTvEvent.SelectFavorites) }
                 }
             }
             items(state.groups, key = { it }) { g ->
@@ -106,6 +115,8 @@ private fun Content(
                     number = ch.number ?: 0,
                     name = ch.displayName,
                     onClick = { onOpenChannel(ch.id) },
+                    favorite = ch.id in state.favorites,
+                    onLongClick = { onEvent(LiveTvEvent.ToggleFavorite(ch.id)) },
                     nowPlaying = state.onAir[ch.id]?.title,
                     progress = state.onAir[ch.id]?.progressAt(state.nowMs),
                     modifier = if (ch == state.channels.first()) Modifier.requestFocusWhenPlaced() else Modifier,

@@ -2,9 +2,10 @@ package pl.ketchupplayer.tv.core.designsystem
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -31,6 +32,7 @@ const val FOCUS_ANIMATION_MS = 120
  * Fokus daje kilka sygnałów naraz (konspekt §4.1): skala [focusScale], obrys 3 dp, rozjaśnione tło.
  * [container]/[focusedContainer]/[ringColor] pozwalają przebarwić element (np. przycisk główny w kolorze akcentu).
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FocusItem(
     onClick: () -> Unit,
@@ -42,6 +44,7 @@ fun FocusItem(
     ringColor: Color? = null,
     focusScale: Float = 1.04f,
     contentAlignment: Alignment = Alignment.TopStart,
+    onLongClick: (() -> Unit)? = null,
     content: @Composable (focused: Boolean) -> Unit,
 ) {
     val c = KetchupTheme.colors
@@ -64,9 +67,10 @@ fun FocusItem(
                 .background(fill, shape)
                 .border(if (focused) 3.dp else 1.dp, ring, shape)
                 .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
-                .clickable(
+                .combinedClickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
+                    onLongClick = onLongClick,
                     onClick = onClick,
                 )
                 // focusable() po clickable: clickable sam jest fokusowalny tylko w trybie klawiatury, a nie dotyku.
