@@ -4,6 +4,8 @@ import android.os.Looper
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.filter
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -156,9 +158,12 @@ class ScenariosTest {
         click(label)
     }
 
+    /** Pierwszy węzeł z akcją kliknięcia o danym tekście (ten sam tekst bywa też w panelu szczegółów/podglądzie). */
+    private fun clickable(text: String) = compose.onAllNodesWithText(text).filter(hasClickAction())[0]
+
     private fun click(text: String) {
         waitForText(text)
-        compose.onNodeWithText(text).performScrollTo().performClick()
+        clickable(text).performScrollTo().performClick()
     }
 
     private fun addProviderViaUi(
@@ -187,9 +192,9 @@ class ScenariosTest {
         waitForText("4 Fun Kids (576i)")
 
         // Ulubione: długie przytrzymanie, potem grupa „Ulubione”.
-        compose.onNodeWithText("4 Fun Dance").performTouchInput { longClick() }
+        clickable("4 Fun Dance").performTouchInput { longClick() }
         waitForText("★ 4 Fun Dance")
-        click("★ Ulubione (1)")
+        click("★ Ulubione")
         waitFor { compose.onAllNodesWithText("4 Fun TV").fetchSemanticsNodes().isEmpty() }
 
         // Oglądanie: pierwszy adres z listy trafia do odtwarzacza, bez panelu błędu.
@@ -223,7 +228,7 @@ class ScenariosTest {
 
         nav("Na żywo")
         waitForText("TVN 24")
-        compose.onAllNodesWithText("TVN 24")[0].performClick()
+        clickable("TVN 24").performClick()
 
         waitFor { FakePlayers.played.any { "/b/" in it } }
         // STANDARD: jedno ponowienie tego samego źródła, potem przełączenie.
@@ -373,7 +378,7 @@ class ScenariosTest {
 
         nav("Na żywo")
         waitForText("TVN 24")
-        compose.onAllNodesWithText("TVN 24")[0].performClick()
+        clickable("TVN 24").performClick()
         waitForText("Nie udało się odtworzyć kanału", timeoutMs = BIG_WAIT_MS)
         assertTrue("przełączono mimo wyłączenia: ${FakePlayers.played}", FakePlayers.played.none { "/b/" in it })
     }
@@ -386,7 +391,7 @@ class ScenariosTest {
         runBlocking { catalog.addM3u("Publiczna PL", server.url("/pl.m3u")) }
         nav("Na żywo")
         waitForText("4 Fun Dance")
-        compose.onNodeWithText("4 Fun Dance").performTouchInput { longClick() }
+        clickable("4 Fun Dance").performTouchInput { longClick() }
         waitForText("★ 4 Fun Dance")
 
         compose.activityRule.scenario.recreate()
@@ -455,7 +460,7 @@ class ScenariosTest {
 
         nav("Na żywo")
         waitForText("TVN 24")
-        compose.onAllNodesWithText("TVN 24")[0].performClick()
+        clickable("TVN 24").performClick()
         waitForText("Buforowanie", substring = true)
         waitFor(timeoutMs = BIG_WAIT_MS) { FakePlayers.played.any { "/b/" in it } }
         waitForText("Przełączono na Lista 2 · TVN 24")

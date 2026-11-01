@@ -10,19 +10,23 @@ adb shell am start -n "$PKG/pl.ketchupplayer.tv.MainActivity"
 sleep 6
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; }
 key() { adb shell input keyevent "$1"; sleep 1.5; }
-shot 01_start
-key KEYCODE_DPAD_CENTER      # OK na „Na żywo” (pusty katalog)
-shot 01b_na_zywo_pusto
-key KEYCODE_BACK
-key KEYCODE_DPAD_RIGHT       # Źródła EPG (prawa kolumna, pierwszy wiersz)
+shot 01_start                  # Home bez list: hero „Witaj” z przyciskiem Dodaj dostawcę
+key KEYCODE_DPAD_LEFT          # fokus na szynę (aktywna pozycja: Home)
+shot 01b_szyna
+for _ in 1 2 3 4 5 6; do key KEYCODE_DPAD_DOWN; done   # Ustawienia (ostatnia pozycja szyny)
+key KEYCODE_DPAD_CENTER
+shot 01c_ustawienia
+key KEYCODE_DPAD_DOWN          # Źródła EPG
 key KEYCODE_DPAD_CENTER
 shot 02_zrodla_epg
 key KEYCODE_DPAD_DOWN
 shot 03_teleman_fokus
-key KEYCODE_DPAD_CENTER      # przełącz Telemana
+key KEYCODE_DPAD_CENTER        # przełącz Telemana
 shot 04_teleman_przelaczony
-key KEYCODE_BACK
+key KEYCODE_BACK               # powrót do listy ustawień
 shot 05_po_back
+key KEYCODE_DPAD_UP            # Dostawcy
+key KEYCODE_DPAD_CENTER
 
 FAIL_PROVIDER=0
 # Scenariusz z prawdziwym odtwarzaniem: dwie listy z tym samym kanałem, pierwsza zepsuta (404), druga gra (HLS z ffmpeg).
@@ -54,9 +58,6 @@ adb reverse tcp:8099 tcp:8099
   echo "emulator curl: $(adb shell 'toybox nc -w 3 127.0.0.1 8099 </dev/null >/dev/null 2>&1 && echo ok || echo brak')"
   ls "$SRV/hls/good" | head -3
 } > "$OUT/diag.txt" 2>&1 || true
-key KEYCODE_DPAD_DOWN        # Przewodnik
-key KEYCODE_DPAD_DOWN        # Dostawcy
-key KEYCODE_DPAD_CENTER
 shot 06_dostawcy_pusto
 key KEYCODE_DPAD_CENTER      # Dodaj dostawcę
 shot 07_formularz
@@ -82,8 +83,10 @@ adb shell input text "http://127.0.0.1:8099/b.m3u"
 key KEYCODE_ENTER
 sleep 6
 shot 10_po_zapisie_B
-key KEYCODE_BACK
-key KEYCODE_DPAD_CENTER      # Na żywo
+key KEYCODE_BACK              # lista ustawień
+key KEYCODE_BACK              # fokus na szynę
+for _ in 1 2 3 4 5; do key KEYCODE_DPAD_UP; done   # z Ustawień w górę do Na żywo
+key KEYCODE_DPAD_CENTER       # Na żywo
 sleep 3
 shot 11_na_zywo_dwa_kanaly
 key KEYCODE_DPAD_CENTER      # pierwszy kanał (Lista A, 404) -> failover na Listę B

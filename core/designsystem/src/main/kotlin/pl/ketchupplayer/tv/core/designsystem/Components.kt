@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -271,5 +272,40 @@ fun StateView(
         }
         Text(message, fontSize = 20.sp, color = c.textPrimary)
         if (actionLabel != null && onAction != null) KetchupButton(actionLabel, onAction, primary = true)
+    }
+}
+
+/** Zakładka w nagłówku ekranu (Siatka | Radar | Moje zainteresowania); wybrana ma tło i dolną kreskę akcentu. */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun TabChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val c = KetchupTheme.colors
+    FocusItem(
+        onClick,
+        modifier.height(36.dp),
+        selected = selected,
+        container = if (selected) c.surface3 else Color.Transparent,
+        outlined = false,
+        focusScale = 1f,
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(contentAlignment = Alignment.BottomCenter) {
+            Text(
+                text,
+                fontSize = 16.sp,
+                color = if (selected) c.textPrimary else c.textSecondary,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+            if (selected) {
+                Box(Modifier.matchParentSize().padding(horizontal = 2.dp), contentAlignment = Alignment.BottomCenter) {
+                    Box(Modifier.fillMaxWidth().height(2.dp).background(c.accent, CircleShape))
+                }
+            }
+        }
     }
 }

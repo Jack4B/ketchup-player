@@ -1,9 +1,11 @@
 package pl.ketchupplayer.tv.feature.guide
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,12 +16,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,9 +38,10 @@ import androidx.tv.material3.Text
 import pl.ketchupplayer.tv.core.designsystem.FocusItem
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.designsystem.ScreenScaffold
-import pl.ketchupplayer.tv.core.designsystem.ScreenTitle
+import pl.ketchupplayer.tv.core.designsystem.ShellHeader
 import pl.ketchupplayer.tv.core.designsystem.StateKind
 import pl.ketchupplayer.tv.core.designsystem.StateView
+import pl.ketchupplayer.tv.core.designsystem.TabChip
 import pl.ketchupplayer.tv.core.designsystem.requestFocusWhenPlaced
 import pl.ketchupplayer.tv.core.model.Channel
 import pl.ketchupplayer.tv.core.model.EpgProgramme
@@ -51,10 +60,13 @@ fun GuideRoute(
     GuideScreen(state, viewModel::programmes, onOpenChannel, onOpenProviders, onBack)
 }
 
+/** Zakładki ekranu Przewodnik (makieta 04): Siatka | Radar | Moje zainteresowania. */
+enum class GuideTab { GRID, RADAR, INTERESTS }
+
 /**
- * Przewodnik: wiersze kanałów, oś czasu 12 h od pełnej półgodziny. Wszystkie wiersze przewijają się poziomo razem
- * (wspólny [rememberScrollState]); audycje wiersza ładują się dopiero, gdy wiersz trafia na ekran.
- * D-pad: GÓRA/DÓŁ zmienia kanał, LEWO/PRAWO audycję, OK otwiera kanał, BACK wychodzi.
+ * Przewodnik (makieta v3 04-epg): nagłówek z zakładkami, blok podglądu zaznaczonej audycji, oś czasu 12 h z linią
+ * „teraz”, wiersze kanałów. Wszystkie wiersze przewijają się poziomo razem; audycje wiersza ładują się leniwie.
+ * D-pad: GÓRA/DÓŁ kanał, LEWO/PRAWO audycja, OK otwiera kanał, BACK wraca do szyny.
  */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -66,8 +78,9 @@ fun GuideScreen(
     onBack: () -> Unit,
 ) {
     BackHandler(onBack = onBack)
+    var tab by remember { mutableStateOf(GuideTab.GRID) }
     ScreenScaffold(scrollable = false) {
-        ScreenTitle(stringResource(R.string.guide_title))
+        ShellHeader(stringResource(R.string.guide_title), tabs = { Tabs(tab) { tab = it } })
         when {
             state.loading -> StateView(StateKind.LOADING, "")
             state.channels.isEmpty() ->
@@ -77,10 +90,32 @@ fun GuideScreen(
                     actionLabel = stringResource(R.string.guide_open_providers),
                     onAction = onOpenProviders,
                 )
-            else -> Grid(state, loadProgrammes, onOpenChannel)
+            tab == GuideTab.GRID -> Grid(state, loadProgrammes, onOpenChannel)
+            else -> StateView(StateKind.EMPTY, stringResource(R.string.guide_tab_soon))
         }
     }
 }
+
+@Composable
+private fun Tabs(
+    selected: GuideTab,
+    onSelect: (GuideTab) -> Unit,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        TabChip(stringResource(R.string.guide_tab_grid), selected == GuideTab.GRID, { onSelect(GuideTab.GRID) })
+        TabChip(stringResource(R.string.guide_tab_radar), selected == GuideTab.RADAR, { onSelect(GuideTab.RADAR) })
+        TabChip(
+            stringResource(R.string.guide_tab_interests),
+            selected == GuideTab.INTERESTS,
+            { onSelect(GuideTab.INTERESTS) },
+        )
+    }
+}
+
+private data class Focused(
+    val channel: Channel,
+    val programme: EpgProgramme?,
+)
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -90,21 +125,90 @@ private fun Grid(
     onOpenChannel: (String) -> Unit,
 ) {
     val scroll = rememberScrollState()
-    Row(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
-        Box(Modifier.width(CHANNEL_COLUMN))
+    var focused by remember { mutableStateOf<Focused?>(null) }
+    Preview(focused ?: state.channels.firstOrNull()?.let { Focused(it, null) }, state.nowMs)
+    Row(Modifier.fillMaxWidth()) {
+        Box(Modifier.width(CHANNEL_COLUMN), contentAlignment = Alignment.CenterStart) {
+            Text(
+                SimpleDateFormat("EEE d.MM", Locale.getDefault()).format(Date(state.windowStartMs)),
+                fontSize = 13.sp,
+                color = KetchupTheme.colors.textSecondary,
+            )
+        }
         Box(Modifier.weight(1f).horizontalScroll(scroll)) { TimeScale(state) }
     }
-    LazyColumn(Modifier.fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    LazyColumn(Modifier.fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(ROW_GAP)) {
         items(state.channels, key = { it.id }) { ch ->
             val first = ch.id == state.channels.first().id
             Row(Modifier.fillMaxWidth().height(ROW_HEIGHT)) {
-                ChannelCell(ch, ch.id in state.favorites, first) { onOpenChannel(ch.id) }
+                ChannelCell(
+                    ch,
+                    ch.id in state.favorites,
+                    first,
+                    { focused = Focused(ch, null) },
+                ) { onOpenChannel(ch.id) }
                 val programmes by produceState<List<EpgProgramme>?>(null, ch.id, state.epgRevision) {
-                    value =
-                        loadProgrammes(ch.id)
+                    value = loadProgrammes(ch.id)
                 }
                 Box(Modifier.weight(1f).horizontalScroll(scroll)) {
-                    Timeline(state, programmes) { onOpenChannel(ch.id) }
+                    Timeline(state, programmes, first, { focused = Focused(ch, it) }) { onOpenChannel(ch.id) }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun Preview(
+    focused: Focused?,
+    nowMs: Long,
+) {
+    val c = KetchupTheme.colors
+    Row(Modifier.fillMaxWidth().height(PREVIEW_HEIGHT), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Box(
+            Modifier
+                .width(
+                    PREVIEW_ART,
+                ).fillMaxHeight()
+                .background(c.channelTile, RoundedCornerShape(c.cornerRadius / 2)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                focused?.channel?.displayName.orEmpty(),
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = c.channelTileText,
+            )
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            val p = focused?.programme
+            val kicker =
+                when {
+                    p == null -> ""
+                    p.isOnAt(nowMs) -> stringResource(R.string.guide_now, focused.channel.displayName.uppercase())
+                    p.startMs > nowMs -> stringResource(R.string.guide_later, focused.channel.displayName.uppercase())
+                    else -> focused.channel.displayName.uppercase()
+                }
+            Text(kicker, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = c.textSecondary)
+            Text(
+                p?.title ?: focused?.channel?.displayName.orEmpty(),
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = c.textPrimary,
+                maxLines = 1,
+            )
+            if (p != null) {
+                val meta = listOfNotNull("${clock(p.startMs)}–${clock(p.endMs)}", p.category).joinToString(" · ")
+                Text(meta, fontSize = 14.sp, color = c.textSecondary, maxLines = 1)
+                p.description?.let {
+                    Text(
+                        it,
+                        fontSize = 14.sp,
+                        color = c.textPrimary,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
         }
@@ -115,18 +219,42 @@ private fun Grid(
 @Composable
 private fun TimeScale(state: GuideUiState) {
     val c = KetchupTheme.colors
-    val fmt = SimpleDateFormat("HH:mm", Locale.getDefault())
-    Box(Modifier.width(GuideGeometry.totalWidthDp().dp).height(28.dp)) {
+    Box(Modifier.width(GuideGeometry.totalWidthDp().dp).height(24.dp)) {
         val steps = GuideGeometry.WINDOW_MINUTES / GuideGeometry.STEP_MINUTES
         for (i in 0 until steps) {
             val minutes = i * GuideGeometry.STEP_MINUTES
-            Text(
-                fmt.format(Date(state.windowStartMs + minutes * MS_PER_MINUTE)),
-                fontSize = 16.sp,
-                color = c.textSecondary,
-                modifier = Modifier.offset(x = (minutes * GuideGeometry.DP_PER_MINUTE).dp),
-            )
+            Row(
+                Modifier.offset(x = (minutes * GuideGeometry.DP_PER_MINUTE).dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(Modifier.width(1.dp).height(14.dp).background(c.outline))
+                Text(
+                    clock(state.windowStartMs + minutes * MS_PER_MINUTE),
+                    fontSize = 14.sp,
+                    color = c.textSecondary,
+                    modifier = Modifier.padding(start = 6.dp),
+                )
+            }
         }
+        NowMarker(state, Modifier.align(Alignment.BottomStart), 6.dp)
+    }
+}
+
+@Composable
+private fun NowMarker(
+    state: GuideUiState,
+    modifier: Modifier,
+    height: androidx.compose.ui.unit.Dp,
+) {
+    val offset = ((state.nowMs - state.windowStartMs) / MS_PER_MINUTE.toFloat() * GuideGeometry.DP_PER_MINUTE)
+    if (offset >= 0) {
+        Box(
+            modifier
+                .offset(x = offset.dp)
+                .width(2.dp)
+                .height(height)
+                .background(KetchupTheme.colors.accent),
+        )
     }
 }
 
@@ -136,32 +264,65 @@ private fun ChannelCell(
     channel: Channel,
     favorite: Boolean,
     initialFocus: Boolean,
+    onFocus: () -> Unit,
     onClick: () -> Unit,
 ) {
+    val c = KetchupTheme.colors
     FocusItem(
         onClick,
         Modifier
-            .width(CHANNEL_COLUMN - 8.dp)
+            .width(CHANNEL_COLUMN - 6.dp)
             .height(ROW_HEIGHT)
+            .onFocusChanged { if (it.hasFocus) onFocus() }
             .then(if (initialFocus) Modifier.requestFocusWhenPlaced() else Modifier),
+        container = c.surface2,
+        outlined = false,
         contentAlignment = Alignment.CenterStart,
     ) {
-        Text(
-            (if (favorite) "★ " else "") + channel.displayName,
-            fontSize = 18.sp,
-            color = KetchupTheme.colors.textPrimary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 12.dp),
-        )
+        Row(
+            Modifier.padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                (channel.number ?: 0).toString(),
+                fontSize = 14.sp,
+                color = c.textSecondary,
+                modifier = Modifier.width(26.dp),
+            )
+            Box(
+                Modifier.width(44.dp).background(c.channelTile, RoundedCornerShape(6.dp)).padding(vertical = 4.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    tileText(channel.displayName),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = c.channelTileText,
+                    maxLines = 1,
+                )
+            }
+            Text(
+                (if (favorite) "★ " else "") + channel.displayName,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = c.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
+
+private fun tileText(name: String): String = name.substringBefore(' ').take(TILE_CHARS)
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun Timeline(
     state: GuideUiState,
     programmes: List<EpgProgramme>?,
+    focusOnAir: Boolean,
+    onFocus: (EpgProgramme) -> Unit,
     onOpen: () -> Unit,
 ) {
     val c = KetchupTheme.colors
@@ -173,33 +334,54 @@ private fun Timeline(
         if (programmes != null && placed.isEmpty()) {
             Text(
                 stringResource(R.string.guide_no_data),
-                fontSize = 16.sp,
+                fontSize = 14.sp,
                 color = c.textSecondary,
                 modifier = Modifier.align(Alignment.CenterStart).padding(start = 12.dp),
             )
         }
         placed.forEach { (p, pos) ->
+            val past = p.endMs <= state.nowMs
             val onAir = p.isOnAt(state.nowMs)
             FocusItem(
                 onOpen,
-                Modifier.offset(x = pos.first.dp).width((pos.second - BLOCK_GAP).dp).height(ROW_HEIGHT),
-                container = if (onAir) c.surface3 else null,
+                Modifier
+                    .offset(x = pos.first.dp)
+                    .width((pos.second - BLOCK_GAP).dp)
+                    .height(ROW_HEIGHT)
+                    .onFocusChanged { if (it.hasFocus) onFocus(p) }
+                    .then(if (focusOnAir && onAir) Modifier.requestFocusWhenPlaced() else Modifier),
+                container = if (onAir) c.surface3.copy(alpha = ON_AIR_ALPHA) else c.surface2,
+                outlined = false,
+                focusScale = 1f,
+                cornerRadius = CELL_RADIUS,
                 contentAlignment = Alignment.CenterStart,
             ) {
-                Text(
-                    p.title,
-                    fontSize = 16.sp,
-                    color = c.textPrimary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(horizontal = 10.dp),
-                )
+                Column(Modifier.padding(horizontal = 10.dp), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                    Text(
+                        p.title,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (past) c.textSecondary else c.textPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(clock(p.startMs), fontSize = 13.sp, color = c.textSecondary, maxLines = 1)
+                }
             }
         }
+        NowMarker(state, Modifier.align(Alignment.TopStart), ROW_HEIGHT)
     }
 }
 
-private val CHANNEL_COLUMN = 220.dp
-private val ROW_HEIGHT = 56.dp
+private fun clock(ms: Long): String = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(ms))
+
+private val CHANNEL_COLUMN = 150.dp
+private val ROW_HEIGHT = 44.dp
+private val ROW_GAP = 4.dp
+private val CELL_RADIUS = 6.dp
+private val PREVIEW_HEIGHT = 112.dp
+private val PREVIEW_ART = 200.dp
 private const val BLOCK_GAP = 4f
 private const val MS_PER_MINUTE = 60_000L
+private const val TILE_CHARS = 6
+private const val ON_AIR_ALPHA = 0.9f

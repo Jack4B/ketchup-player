@@ -18,6 +18,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import pl.ketchupplayer.tv.core.designsystem.DeviceClass
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
+import pl.ketchupplayer.tv.core.designsystem.ShellPreview
 import pl.ketchupplayer.tv.core.model.Channel
 import pl.ketchupplayer.tv.core.model.EpgProgramme
 import pl.ketchupplayer.tv.core.model.ProviderId
@@ -67,7 +68,7 @@ class GuideScreenTest {
     ) {
         compose.setContent {
             KetchupTheme(device = DeviceClass.TV) {
-                GuideScreen(state, { data[it].orEmpty() }, { opened += it }, {}, backs)
+                ShellPreview("guide") { GuideScreen(state, { data[it].orEmpty() }, { opened += it }, {}, backs) }
             }
         }
         compose.waitForIdle()

@@ -90,6 +90,9 @@ private fun Content(
     onOpenChannel: (String) -> Unit,
 ) {
     val groupsState = rememberLazyListState()
+    // Pojawienie się „Ulubione”/„Ostatnie” na górze listy nie może jej przewinąć (LazyColumn zachowuje pozycję).
+    val virtualCount = (if (state.favorites.isNotEmpty()) 1 else 0) + (if (state.recentCount > 0) 1 else 0)
+    LaunchedEffect(virtualCount) { if (state.selectedGroup == null) groupsState.scrollToItem(0) }
     LaunchedEffect(Unit) {
         // Wybrana grupa może leżeć daleko na liście (np. 100+ grup); przed nią są pozycje wirtualne.
         val index = state.groups.indexOf(state.selectedGroup)

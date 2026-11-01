@@ -19,8 +19,8 @@ data class GuideUiState(
 object GuideGeometry {
     const val WINDOW_MINUTES = 12 * 60
     const val STEP_MINUTES = 30
-    const val DP_PER_MINUTE = 6f
-    const val MIN_BLOCK_DP = 36f
+    const val DP_PER_MINUTE = 4f
+    const val MIN_BLOCK_DP = 28f
     private const val MS_PER_MINUTE = 60_000L
 
     /** Początek okna: bieżąca pełna półgodzina. */

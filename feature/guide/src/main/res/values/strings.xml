@@ -4,4 +4,10 @@
     <string name="guide_no_data">Brak danych przewodnika</string>
     <string name="guide_empty">Brak kanałów. Dodaj listę u dostawców.</string>
     <string name="guide_open_providers">Dostawcy</string>
+    <string name="guide_tab_grid">Siatka</string>
+    <string name="guide_tab_radar">Radar</string>
+    <string name="guide_tab_interests">Moje zainteresowania</string>
+    <string name="guide_tab_soon">Ta zakładka pojawi się w kolejnej wersji.</string>
+    <string name="guide_now">TERAZ · %1$s</string>
+    <string name="guide_later">PÓŹNIEJ · %1$s</string>
 </resources>

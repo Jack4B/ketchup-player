@@ -47,12 +47,14 @@ fun FocusItem(
     onLongClick: (() -> Unit)? = null,
     /** false: bez obramowania w spoczynku (listy w panelach); ring akcentu przy fokusie zostaje. */
     outlined: Boolean = true,
+    /** Promień zaokrąglenia; null = z motywu. */
+    cornerRadius: androidx.compose.ui.unit.Dp? = null,
     content: @Composable (focused: Boolean) -> Unit,
 ) {
     val c = KetchupTheme.colors
     var focused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(if (focused) focusScale else 1f, tween(FOCUS_ANIMATION_MS), label = "focusScale")
-    val shape = RoundedCornerShape(c.cornerRadius)
+    val shape = RoundedCornerShape(cornerRadius ?: c.cornerRadius)
     val ring =
         when {
             focused -> ringColor ?: c.accent
