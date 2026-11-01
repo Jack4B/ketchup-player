@@ -447,7 +447,7 @@ class ScenariosTest {
     fun odswiezenieListyPobieraZmianyIZostawiaStareKanalyPrzyBledzie() {
         var body = "#EXTM3U\n#EXTINF:-1 group-title=\"Info\",Kanal Pierwszy\nhttp://127.0.0.1:1/1.m3u8\n"
         var down = false
-        server.serveRequest("/live.m3u") { if (down) throw IllegalStateException("serwer niedostępny") else body }
+        server.serveRequest("/live.m3u") { if (down) error("serwer niedostępny") else body }
         runBlocking { catalog.addM3u("Zmienna", server.url("/live.m3u")) }
 
         click("Dostawcy")
