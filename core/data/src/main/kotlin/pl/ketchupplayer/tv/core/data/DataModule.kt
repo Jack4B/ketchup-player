@@ -45,6 +45,7 @@ abstract class DataModule {
     abstract fun bindFailoverSettings(impl: DataStoreFailoverSettingsRepository): FailoverSettingsRepository
 
     @Binds
+    @Singleton
     abstract fun bindCatalog(impl: RoomCatalogRepository): CatalogRepository
 
     @Binds
@@ -78,6 +79,7 @@ abstract class DataModule {
     ): pl.ketchupplayer.tv.core.data.groups.GroupsRepository
 
     @Binds
+    @Singleton
     abstract fun bindEpg(impl: RoomEpgRepository): EpgRepository
 
     companion object {

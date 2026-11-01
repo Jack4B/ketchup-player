@@ -19,7 +19,10 @@ import pl.ketchupplayer.tv.core.model.EpgProgramme
 import pl.ketchupplayer.tv.core.network.StreamFetcher
 import pl.ketchupplayer.tv.epg.xmltv.XmlTvParser
 import javax.inject.Inject
+import javax.inject.Singleton
 
+/** Jedna instancja na aplikację: wspólny zamek importu i licznik wersji EPG dla wszystkich ekranów. */
+@Singleton
 class RoomEpgRepository
     @Inject
     constructor(

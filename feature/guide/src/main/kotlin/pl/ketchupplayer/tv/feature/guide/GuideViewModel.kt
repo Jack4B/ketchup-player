@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import pl.ketchupplayer.tv.core.common.Clock
@@ -43,7 +42,10 @@ class GuideViewModel
                 epgRevision.value++
             }
             // EPG potrafi dojść w tle (start aplikacji, dodanie listy): wiersze przeładowują wtedy audycje.
-            viewModelScope.launch { epg.revision.drop(1).collect { epgRevision.value++ } }
+            // Wartość początkowa z chwili utworzenia (nie „pierwsza emisja”): import kończący się tuż przed
+            // zasubskrybowaniem też przeładuje wiersze.
+            val initialRevision = epg.revision.value
+            viewModelScope.launch { epg.revision.collect { if (it > initialRevision) epgRevision.value++ } }
         }
 
         private val selection = MutableStateFlow<GuideGroup>(GuideGroup.All)
