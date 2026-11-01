@@ -19,12 +19,7 @@
     <string name="providers_error_url">Podaj poprawny adres http lub https</string>
     <string name="providers_loading">Pobieranie listy…</string>
     <string name="providers_summary">%1$s · %2$s</string>
-    <plurals name="providers_channels">
-        <item quantity="one">%d kanał</item>
-        <item quantity="few">%d kanały</item>
-        <item quantity="many">%d kanałów</item>
-        <item quantity="other">%d kanału</item>
-    </plurals>
+    <string name="providers_channels">Kanały: %1$d</string>
     <string name="providers_summary_error">%1$s · błąd: %2$s</string>
     <string name="providers_saved_with_error">Lista zapisana, ale pobranie się nie udało: %1$s</string>
 </resources>

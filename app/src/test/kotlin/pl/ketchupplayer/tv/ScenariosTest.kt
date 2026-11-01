@@ -7,10 +7,12 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.printToString
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
@@ -59,6 +61,8 @@ class ScenariosTest {
 
     @Inject lateinit var epgSources: EpgSourcesRepository
 
+    @Inject lateinit var failoverSettings: pl.ketchupplayer.tv.core.data.playback.FailoverSettingsRepository
+
     private val server = ProviderServer()
 
     @Before
@@ -87,7 +91,9 @@ class ScenariosTest {
         while (!condition()) {
             Shadows.shadowOf(Looper.getMainLooper()).idle()
             compose.waitForIdle()
-            check(System.nanoTime() < end) { "Warunek niespełniony po $timeoutMs ms" }
+            check(System.nanoTime() < end) {
+                "Warunek niespełniony po $timeoutMs ms. Ekran:\n" + compose.onRoot().printToString(maxDepth = 14)
+            }
             Thread.sleep(POLL_MS)
         }
     }
@@ -131,7 +137,7 @@ class ScenariosTest {
         server.serve("/pl.m3u") { list }
 
         addProviderViaUi("Publiczna PL", server.url("/pl.m3u"))
-        waitForText("184", substring = true) // „127.0.0.1 · 184 kanałów”
+        waitForText("Kanały: 184", substring = true) // „127.0.0.1 · Kanały: 184”
         back()
 
         click("Na żywo")
@@ -249,5 +255,113 @@ class ScenariosTest {
         addProviderViaUi("Zepsuta", server.url("/nie-ma.m3u")) // 404
         waitForText("błąd", substring = true)
         assertTrue(compose.onAllNodes(hasText("Dodaj dostawcę")).fetchSemanticsNodes().isNotEmpty())
+    }
+
+    /** Serwer Xtream: poprawne dane logowania (`jan` / `dobre-haslo`) dają konto i kanały, inne `auth=0`. */
+    private fun serveXtream() {
+        val ok = """{"user_info":{"auth":1,"status":"Active","exp_date":"1893456000","max_connections":"2"}}"""
+        server.serveRequest("/player_api.php") { req ->
+            val good = req.requestUrl?.queryParameter("password") == "dobre-haslo"
+            if (good) ok else """{"user_info":{"auth":0}}"""
+        }
+        server.serve("/player_api.php?get_live_categories") { """[{"category_id":"1","category_name":"PL | News"}]""" }
+        server.serve("/player_api.php?get_live_streams") {
+            """[{"num":1,"name":"TVN24 HD","stream_id":101,"epg_channel_id":"tvn24.pl","category_id":"1"},""" +
+                """{"num":2,"name":"Polsat News","stream_id":102,"epg_channel_id":"","category_id":"1"}]"""
+        }
+    }
+
+    private fun addXtreamViaUi(password: String) {
+        click("Dostawcy")
+        click("Dodaj dostawcę")
+        waitForText("Zapisz i pobierz")
+        click("Xtream Codes")
+        compose.onAllNodes(hasSetTextAction())[0].performTextInput("Mój Xtream")
+        compose.onAllNodes(hasSetTextAction())[1].performTextInput(server.baseUrl())
+        compose.onAllNodes(hasSetTextAction())[2].performTextInput("jan")
+        compose.onAllNodes(hasSetTextAction())[3].performTextInput(password)
+        compose.onNodeWithText("Zapisz i pobierz").performScrollTo().performClick()
+    }
+
+    /** Scenariusz: konto Xtream Codes przez formularz (login i hasło); kanały pojawiają się z kategorią. */
+    @Test
+    fun kontoXtreamDodaneFormularzemDajeKanalyIKategorie() {
+        serveXtream()
+        addXtreamViaUi("dobre-haslo")
+        waitForText("Kanały: 2", substring = true)
+        back()
+        click("Na żywo")
+        waitForText("TVN24 HD")
+        waitForText("Polsat News")
+        waitForText("PL | News") // grupa z kategorii Xtream
+    }
+
+    /** Scenariusz: złe hasło Xtream: czytelny komunikat, aplikacja nie pada, dostawca zostaje do poprawienia. */
+    @Test
+    fun zleHasloXtreamDajeKomunikat() {
+        serveXtream()
+        addXtreamViaUi("zle-haslo")
+        waitForText("pobranie się nie udało", substring = true)
+    }
+
+    /** Scenariusz: użytkownik wyłącza failover w Ustawieniach; zepsuty kanał nie przełącza się na drugą listę. */
+    @Test
+    fun wylaczonyFailoverNiePrzelaczaNaDrugaListe() {
+        val host = "http://127.0.0.1:${server.port}"
+        server.serve(
+            "/a.m3u",
+        ) { "#EXTM3U\n#EXTINF:-1 tvg-chno=\"1\" group-title=\"Info\",TVN 24\n$host/a/tvn24.m3u8\n" }
+        server.serve(
+            "/b.m3u",
+        ) { "#EXTM3U\n#EXTINF:-1 tvg-chno=\"2\" group-title=\"Info\",TVN 24\n$host/b/tvn24.m3u8\n" }
+        runBlocking {
+            catalog.addM3u("Lista A", server.url("/a.m3u"))
+            catalog.addM3u("Lista B", server.url("/b.m3u"))
+        }
+        FakePlayers.behaviour = { url -> if ("/a/" in url) PlaybackStatus.ERROR else PlaybackStatus.READY }
+
+        click("Odtwarzanie")
+        click("Automatyczne przełączanie źródeł") // przełącznik wyłączony
+        waitFor {
+            runBlocking {
+                failoverSettings.settings
+                    .first()
+                    .enabled
+                    .not()
+            }
+        }
+        back()
+
+        click("Na żywo")
+        waitForText("TVN 24")
+        compose.onAllNodesWithText("TVN 24")[0].performClick()
+        waitForText("Nie udało się odtworzyć kanału", timeoutMs = BIG_WAIT_MS)
+        assertTrue("przełączono mimo wyłączenia: ${FakePlayers.played}", FakePlayers.played.none { "/b/" in it })
+    }
+
+    /** Scenariusz: restart aktywności (obrót, zabicie procesu) nie gubi dostawców, kanałów ani ulubionych. */
+    @Test
+    fun daneIUlubionePrzezywajaRestartAktywnosci() {
+        val list = javaClass.getResource("/fixtures/iptv-org-pl.m3u")!!.readText()
+        server.serve("/pl.m3u") { list }
+        runBlocking { catalog.addM3u("Publiczna PL", server.url("/pl.m3u")) }
+        click("Na żywo")
+        waitForText("4 Fun Dance")
+        compose.onNodeWithText("4 Fun Dance").performTouchInput { longClick() }
+        waitForText("★ 4 Fun Dance")
+
+        compose.activityRule.scenario.recreate()
+        compose.waitForIdle()
+        waitForText("★ 4 Fun Dance") // stos nawigacji i ulubione przeżyły
+        assertEquals(
+            setOf(true),
+            runBlocking {
+                catalog
+                    .favoriteIds()
+                    .first()
+                    .map { true }
+                    .toSet()
+            },
+        )
     }
 }

@@ -11,14 +11,18 @@ import java.util.TimeZone
 
 /** Serwer HTTP dostawcy: ścieżka -> treść. Nieznane ścieżki dają 404 (jak prawdziwy serwer). */
 class ProviderServer {
-    private val routes = java.util.concurrent.ConcurrentHashMap<String, () -> String>()
+    private val routes = java.util.concurrent.ConcurrentHashMap<String, (RecordedRequest) -> String>()
     private val server =
         MockWebServer().apply {
             dispatcher =
                 object : Dispatcher() {
                     override fun dispatch(request: RecordedRequest): MockResponse {
                         val path = request.path.orEmpty().substringBefore('?')
-                        val body = routes[path]?.invoke() ?: return MockResponse().setResponseCode(404)
+                        // Klucz „ścieżka?action” (API Xtream) ma pierwszeństwo przed samą ścieżką.
+                        val action = request.requestUrl?.queryParameter("action")
+                        val body =
+                            (action?.let { routes["$path?$it"] } ?: routes[path])?.invoke(request)
+                                ?: return MockResponse().setResponseCode(404)
                         return MockResponse().setBody(body)
                     }
                 }
@@ -29,8 +33,19 @@ class ProviderServer {
         path: String,
         body: () -> String,
     ) {
+        routes[path] = { body() }
+    }
+
+    /** Jak [serve], ale odpowiedź zależy od żądania (np. dane logowania w zapytaniu Xtream). */
+    fun serveRequest(
+        path: String,
+        body: (RecordedRequest) -> String,
+    ) {
         routes[path] = body
     }
+
+    /** Adres serwera bez ścieżki (np. `http://127.0.0.1:1234`), jak wpisuje użytkownik w formularzu Xtream. */
+    fun baseUrl(): String = server.url("/").toString().trimEnd('/')
 
     fun url(path: String): String = server.url(path).toString()
 

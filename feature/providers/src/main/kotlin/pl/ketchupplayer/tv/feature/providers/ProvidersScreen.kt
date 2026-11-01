@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -104,7 +103,7 @@ private fun summary(p: ProviderInfo): String {
         stringResource(
             R.string.providers_summary,
             p.urlHost,
-            pluralStringResource(R.plurals.providers_channels, p.channelCount, p.channelCount),
+            stringResource(R.string.providers_channels, p.channelCount),
         )
     }
 }
