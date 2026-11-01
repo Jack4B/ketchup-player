@@ -5,6 +5,7 @@ plugins {
 }
 
 dependencies {
+    implementation(libs.androidx.activity.compose)
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)

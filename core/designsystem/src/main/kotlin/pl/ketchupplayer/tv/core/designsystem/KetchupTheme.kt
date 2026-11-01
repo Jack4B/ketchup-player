@@ -15,6 +15,7 @@ import androidx.tv.material3.darkColorScheme
 
 @Immutable
 data class KetchupColors(
+    val theme: ThemeId,
     val background: Color,
     val surface2: Color,
     val surface3: Color,
@@ -31,9 +32,11 @@ data class KetchupColors(
 )
 
 private fun PaletteTokens.toColors(
+    theme: ThemeId,
     accentArgb: Long,
     onAccentArgb: Long,
 ) = KetchupColors(
+    theme = theme,
     background = Color(background),
     surface2 = Color(surface2),
     surface3 = Color(surface3),
@@ -80,10 +83,10 @@ fun KetchupTheme(
     val colors =
         remember(theme, accent) {
             when (accent) {
-                is AccentChoice.Preset -> Palettes.tokens(theme).toColors(accent.id.argb, Palettes.ON_ACCENT)
+                is AccentChoice.Preset -> Palettes.tokens(theme).toColors(theme, accent.id.argb, Palettes.ON_ACCENT)
                 is AccentChoice.Custom ->
                     AccentFit.fit(theme, accent.argb).let {
-                        Palettes.tokens(theme).toColors(it.argb, it.onAccent)
+                        Palettes.tokens(theme).toColors(theme, it.argb, it.onAccent)
                     }
             }
         }
