@@ -115,8 +115,17 @@ shot 10_po_zapisie_B
 tap "Na żywo" || FAIL_PROVIDER=1   # szyna nawigacji (opis dostępności pozycji)
 sleep 3
 shot 11_na_zywo_dwa_kanaly
+HITS_BEFORE=$(wc -l < "$OUT/http-server.log")
 tap "Kanal Testowy" || FAIL_PROVIDER=1   # pierwszy kanał (Lista A, 404) -> failover na Listę B
-sleep 3
+sleep 4
+# Dotyk w tekst bywa zjadany przez nakładkę/podgląd w układzie Na żywo: bez żądania strumienia próbujemy pilotem
+# (pierwszy klawisz po dotyku wychodzi z trybu dotykowego, drugi to OK na kanale z fokusem).
+if ! tail -n +$((HITS_BEFORE + 1)) "$OUT/http-server.log" | grep -q "hls/"; then
+  key KEYCODE_DPAD_DOWN
+  key KEYCODE_DPAD_UP
+  key KEYCODE_DPAD_CENTER
+  sleep 3
+fi
 shot 12_failover_przelaczenie
 sleep 12
 shot 13_odtwarzanie
