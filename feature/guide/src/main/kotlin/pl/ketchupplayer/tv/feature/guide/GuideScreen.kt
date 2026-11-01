@@ -73,6 +73,7 @@ import pl.ketchupplayer.tv.core.model.Channel
 import pl.ketchupplayer.tv.core.model.EpgProgramme
 import pl.ketchupplayer.tv.epg.radar.RadarItem
 import pl.ketchupplayer.tv.epg.radar.RadarSlot
+import pl.ketchupplayer.tv.player.engine.PlaybackStatus
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -333,6 +334,27 @@ private fun Preview(
             if (live != null && preview.channelId == focused?.channel?.id) {
                 androidx.media3.ui.compose
                     .PlayerSurface(live, Modifier.fillMaxSize())
+            }
+            // Stan podglądu zamiast pustego czarnego pola: ładowanie albo komunikat o błędzie (OK otwiera pełny ekran).
+            val status = preview.status
+            val note =
+                when {
+                    preview.channelId != focused?.channel?.id -> null
+                    status == PlaybackStatus.ERROR -> stringResource(R.string.guide_preview_error)
+                    status == PlaybackStatus.BUFFERING -> stringResource(R.string.guide_preview_loading)
+                    else -> null
+                }
+            note?.let {
+                Text(
+                    it,
+                    fontSize = 14.sp,
+                    color = Color.White,
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                )
             }
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {

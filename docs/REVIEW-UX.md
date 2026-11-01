@@ -44,7 +44,7 @@ Skala: 1–5 (5 = poziom TiViMate / nowoczesnych aplikacji TV).
 Ocena 5 wymaga sprawdzenia na prawdziwym ekranie TV; z zrzutów testowych można ocenić układ, nie płynność ani czytelność z kanapy.
 | Obszar | Zrobione | Brakuje do 5 |
 |---|---|---|
-| Na żywo | logo, żywy podgląd, licznik, znacznik fokusu, szersza kolumna | komunikat failoveru w podglądzie, stan ładowania podglądu, test czytelności siatki na boxie |
+| Na żywo | logo, żywy podgląd (stan ładowania/błędu), licznik, znacznik fokusu, szersza kolumna | komunikat failoveru (podgląd nie przełącza źródeł), test czytelności siatki na boxie |
 | Home | karty poziome, Nowe odcinki, hero z pigułkami | „Mam X minut”/„Zdrowie źródeł” (1.1), pomiar płynności przewijania rzędów |
 | Filmy/Seriale | tło z grafiką, szkło, chowane kategorie, 6 kolumn | oceny IMDb/Filmweb (1.1), wybór źródła/jakości przy tytule |
 | Szczegóły | tło, pigułki, opis, obsada, Źródła: N | oceny zewnętrzne, „Podobne” z lepszym dopasowaniem |

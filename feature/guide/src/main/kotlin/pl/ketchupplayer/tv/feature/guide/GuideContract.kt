@@ -4,6 +4,7 @@ import pl.ketchupplayer.tv.core.model.Channel
 import pl.ketchupplayer.tv.epg.radar.InterestHit
 import pl.ketchupplayer.tv.epg.radar.RadarItem
 import pl.ketchupplayer.tv.epg.radar.RadarSlot
+import pl.ketchupplayer.tv.player.engine.PlaybackStatus
 
 /** Okno czasu siatki i kanały w kolejności wyświetlania (ulubione na początku). */
 data class GuideUiState(
@@ -30,6 +31,7 @@ data class GuideUiState(
 data class PreviewUi(
     val player: androidx.media3.common.Player? = null,
     val channelId: String? = null,
+    val status: PlaybackStatus = PlaybackStatus.IDLE,
 )
 
 /** Wybór w panelu grup: wszystkie / konkretna grupa / ulubione / ostatnio oglądane. */

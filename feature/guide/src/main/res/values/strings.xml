@@ -25,4 +25,6 @@
     <string name="guide_radar_soon">Za chwilę</string>
     <string name="guide_radar_evening">Wieczorem</string>
     <string name="guide_radar_empty">Brak audycji w tym oknie. Sprawdź źródła EPG w Ustawieniach.</string>
+    <string name="guide_preview_loading">Ładowanie podglądu…</string>
+    <string name="guide_preview_error">Podgląd niedostępny · OK otwiera kanał</string>
 </resources>

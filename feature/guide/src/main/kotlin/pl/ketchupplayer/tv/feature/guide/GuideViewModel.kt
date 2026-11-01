@@ -53,6 +53,7 @@ class GuideViewModel
             viewModelScope.launch { epg.revision.collect { if (it > initialRevision) epgRevision.value++ } }
         }
 
+        private var statusJob: kotlinx.coroutines.Job? = null
         private var previewController: pl.ketchupplayer.tv.player.engine.PlayerController? = null
         private val previewRequests = MutableStateFlow<String?>(null)
         private val _preview = MutableStateFlow(PreviewUi())
@@ -79,11 +80,17 @@ class GuideViewModel
             controller.play(spec)
             controller.player?.volume = 0f // podgląd bez dźwięku: pełny dźwięk dopiero w pełnym ekranie
             _preview.value = PreviewUi(controller.player, channelId)
+            statusJob?.cancel()
+            statusJob =
+                viewModelScope.launch {
+                    controller.state.collect { st -> _preview.value = _preview.value.copy(status = st.status) }
+                }
         }
 
         /** Zatrzymuje i zwalnia podgląd (wyjście z Na żywo, wejście w pełny ekran): jeden dekoder naraz. */
         fun releasePreview() {
             previewRequests.value = null
+            statusJob?.cancel()
             previewController?.release()
             previewController = null
             _preview.value = PreviewUi()
