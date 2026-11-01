@@ -33,6 +33,20 @@ class NetworkSettingsViewModel
         catalog: CatalogRepository,
         private val headers: ProviderHeadersRepository,
     ) : ViewModel() {
+        val customs: StateFlow<List<UserAgentProfile>> =
+            headers.customs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_MS), emptyList())
+
+        /** Dodaje własny User-Agent; false = niepoprawny (puste, ponad 512 znaków, znaki spoza ASCII). */
+        fun addCustom(value: String): Boolean {
+            val valid = UserAgentProfiles.validated(value) != null
+            if (valid) viewModelScope.launch { headers.addCustom(value) }
+            return valid
+        }
+
+        fun removeCustom(profile: UserAgentProfile) {
+            viewModelScope.launch { headers.removeCustom(profile.value.orEmpty()) }
+        }
+
         val rows: StateFlow<List<ProviderHeaderRow>> =
             catalog.providers
                 .flatMapLatest { list ->
@@ -53,8 +67,8 @@ class NetworkSettingsViewModel
 
         /** OK na liście: kolejny nagłówek z gotowej puli (bez wpisywania). */
         fun cycle(row: ProviderHeaderRow) {
-            val all = UserAgentProfiles.ALL
-            val next = all[(all.indexOf(row.profile) + 1) % all.size]
+            val all = UserAgentProfiles.ALL + customs.value
+            val next = all[(all.indexOf(row.profile) + 1).mod(all.size)]
             viewModelScope.launch { headers.set(row.providerId, next) }
         }
 

@@ -26,8 +26,28 @@ object UserAgentProfiles {
                 "Chrome/120.0.0.0 Safari/537.36",
         )
 
-    /** Wszystkie profile do wyboru w ustawieniach; pierwszy to tryb automatyczny. */
-    val ALL = listOf(AUTO, BK, VLC, TIVIMATE, SMARTERS, KODI, CHROME)
+    val WINK = UserAgentProfile("wink", "Wink", "Wink/1.31.1")
+    val PREMIER = UserAgentProfile("premier", "PremierLeagueModPlayer", "PremierLeagueModPlayer")
+    val EXO = UserAgentProfile("exo", "ExoPlayer", "ExoPlayerLib/2.19.1")
 
-    fun byId(id: String?): UserAgentProfile = ALL.firstOrNull { it.id == id } ?: AUTO
+    /** Wszystkie profile do wyboru w ustawieniach; pierwszy to tryb automatyczny. */
+    val ALL = listOf(AUTO, BK, VLC, TIVIMATE, SMARTERS, KODI, WINK, PREMIER, EXO, CHROME)
+
+    private const val CUSTOM_PREFIX = "custom:"
+
+    /** Własny wpis użytkownika: identyfikator niesie samą wartość, więc działa bez rejestru. */
+    fun custom(value: String): UserAgentProfile = UserAgentProfile(CUSTOM_PREFIX + value, value, value)
+
+    fun byId(id: String?): UserAgentProfile =
+        when {
+            id == null -> AUTO
+            id.startsWith(CUSTOM_PREFIX) -> custom(id.removePrefix(CUSTOM_PREFIX))
+            else -> ALL.firstOrNull { it.id == id } ?: AUTO
+        }
+
+    /** Jak w BK Playerze: do 512 znaków, tylko drukowalne ASCII (bez enterów); zwraca oczyszczoną wartość albo null. */
+    fun validated(raw: String): String? =
+        raw.trim().takeIf { it.isNotEmpty() && it.length <= MAX_LENGTH && it.all { c -> c in ' '..'~' } }
+
+    private const val MAX_LENGTH = 512
 }

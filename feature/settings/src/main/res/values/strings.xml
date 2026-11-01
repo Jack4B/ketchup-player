@@ -74,4 +74,9 @@
     <string name="playback_remote">Czułość pilota</string>
     <string name="playback_remote_hint">Jedno wciśnięcie przeskakuje o kilka pól? Zwiększ odstęp między naciśnięciami tej samej strzałki.</string>
     <string name="playback_remote_off">Wyłączona</string>
+    <string name="network_custom_title">Własne User-Agenty</string>
+    <string name="network_custom_remove">OK usuwa ten wpis z listy</string>
+    <string name="network_custom_add">Dodaj własny User-Agent</string>
+    <string name="network_custom_field">User-Agent (np. Wink/1.31.1)</string>
+    <string name="network_custom_invalid">Niepoprawny: tylko drukowalne znaki ASCII, do 512 znaków.</string>
 </resources>

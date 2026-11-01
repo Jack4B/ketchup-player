@@ -33,9 +33,14 @@ class NetworkSettingsScreenTest {
             ProviderHeaderRow("b", "Lista PL", UserAgentProfiles.VLC),
         )
 
+    private val customs =
+        listOf(UserAgentProfiles.custom("PremierLeagueModPlayer"), UserAgentProfiles.custom("Wink/1.31.1"))
+
     @Test
     fun screenshot() {
-        compose.setContent { KetchupTheme(device = DeviceClass.TV) { NetworkSettingsScreen(rows, {}, {}) } }
+        compose.setContent {
+            KetchupTheme(device = DeviceClass.TV) { NetworkSettingsScreen(rows, customs, {}, { true }, {}, {}) }
+        }
         compose.onRoot().captureRoboImage("src/test/screenshots/network_settings.png")
     }
 
@@ -44,7 +49,9 @@ class NetworkSettingsScreenTest {
     fun dpadOkPrzelaczaNaglowek() {
         val cycled = mutableListOf<String>()
         compose.setContent {
-            KetchupTheme(device = DeviceClass.TV) { NetworkSettingsScreen(rows, { cycled += it.providerId }, {}) }
+            KetchupTheme(device = DeviceClass.TV) {
+                NetworkSettingsScreen(rows, customs, { cycled += it.providerId }, { true }, {}, {})
+            }
         }
         compose.waitForIdle()
         compose.onRoot().performKeyInput { pressKey(Key.DirectionCenter) }
@@ -56,7 +63,11 @@ class NetworkSettingsScreenTest {
     @Test
     fun backWychodzi() {
         var backs = 0
-        compose.setContent { KetchupTheme(device = DeviceClass.TV) { NetworkSettingsScreen(rows, {}, { backs++ }) } }
+        compose.setContent {
+            KetchupTheme(
+                device = DeviceClass.TV,
+            ) { NetworkSettingsScreen(rows, customs, {}, { true }, {}, { backs++ }) }
+        }
         compose.waitForIdle()
         compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         assertEquals(1, backs)

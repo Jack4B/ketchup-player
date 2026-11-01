@@ -21,6 +21,14 @@ interface ProviderHeadersRepository {
         providerId: String,
         profile: UserAgentProfile,
     )
+
+    /** Własne User-Agenty użytkownika (kolejność dodania). */
+    val customs: Flow<List<UserAgentProfile>>
+
+    /** Dodaje wpis po walidacji (drukowalne ASCII, do 512 znaków); false = odrzucony. */
+    suspend fun addCustom(value: String): Boolean
+
+    suspend fun removeCustom(value: String)
 }
 
 class DataStoreProviderHeadersRepository
@@ -42,5 +50,34 @@ class DataStoreProviderHeadersRepository
             }
         }
 
+        override val customs: Flow<List<UserAgentProfile>> =
+            store.data.map { prefs ->
+                prefs[CUSTOMS]
+                    .orEmpty()
+                    .split('\n')
+                    .filter { it.isNotBlank() }
+                    .map(UserAgentProfiles::custom)
+            }
+
+        override suspend fun addCustom(value: String): Boolean {
+            val clean = UserAgentProfiles.validated(value) ?: return false
+            store.edit { p ->
+                val list = p[CUSTOMS].orEmpty().split('\n').filter { it.isNotBlank() }
+                if (clean !in list) p[CUSTOMS] = (list + clean).joinToString("\n")
+            }
+            return true
+        }
+
+        override suspend fun removeCustom(value: String) {
+            store.edit { p ->
+                val kept = p[CUSTOMS].orEmpty().split('\n').filter { it.isNotBlank() && it != value }
+                p[CUSTOMS] = kept.joinToString("\n")
+            }
+        }
+
         private fun key(providerId: String) = stringPreferencesKey("ua_profile_$providerId")
+
+        private companion object {
+            val CUSTOMS = stringPreferencesKey("ua_custom_list")
+        }
     }
