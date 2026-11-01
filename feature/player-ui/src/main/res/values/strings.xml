@@ -7,4 +7,6 @@
     <string name="player_switched">Przełączono na %1$s</string>
     <string name="player_retry">Spróbuj ponownie</string>
     <string name="player_back">Wróć</string>
+    <string name="player_paused">Pauza</string>
+    <string name="player_vod_hint">◀ ▶ przewiń 10 s · OK pauza</string>
 </resources>

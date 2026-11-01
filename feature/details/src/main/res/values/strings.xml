@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="details_movie">FILM</string>
+    <string name="details_series">SERIAL</string>
+    <string name="details_play">▶ Oglądaj</string>
+    <string name="details_resume">▶ Wznów %1$s</string>
+    <string name="details_resume_episode">▶ Wznów %1$s · %2$s</string>
+    <string name="details_play_episode">▶ Oglądaj %1$s</string>
+    <string name="details_from_start">Od początku</string>
+    <string name="details_my_list">+ Moja lista</string>
+    <string name="details_in_my_list">✓ Moja lista</string>
+    <string name="details_season">Sezon %1$d</string>
+    <string name="details_seasons_count">Sezony: %1$d</string>
+    <string name="details_minutes">%1$d min</string>
+    <string name="details_similar">Podobne</string>
+    <string name="details_loading">Ładowanie…</string>
+    <string name="details_not_found">Nie znaleziono pozycji</string>
+    <string name="details_episodes_error">Nie udało się pobrać odcinków</string>
+    <string name="details_retry">Spróbuj ponownie</string>
+    <string name="details_no_plot">Brak opisu.</string>
+</resources>

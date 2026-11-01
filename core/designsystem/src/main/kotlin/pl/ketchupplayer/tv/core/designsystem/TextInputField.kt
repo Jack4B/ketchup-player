@@ -1,17 +1,22 @@
 package pl.ketchupplayer.tv.core.designsystem
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
@@ -63,5 +68,46 @@ fun TextInputField(
                 modifier = modifier.fillMaxWidth(),
             )
         }
+    }
+}
+
+/** Pole szukania w kształcie pigułki z podpowiedzią (makieta v3); fokus podświetla obrys akcentem. */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun SearchField(
+    hint: String,
+    value: String,
+    onChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    onDone: () -> Unit = {},
+) {
+    val c = KetchupTheme.colors
+    val focusManager = LocalFocusManager.current
+    var focused by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    Box(
+        modifier
+            .height(38.dp)
+            .background(c.surface2, RoundedCornerShape(19.dp))
+            .border(if (focused) 3.dp else 1.dp, if (focused) c.accent else c.outline, RoundedCornerShape(19.dp))
+            .padding(horizontal = 18.dp),
+        contentAlignment = androidx.compose.ui.Alignment.CenterStart,
+    ) {
+        if (value.isEmpty()) Text(hint, fontSize = 14.sp, color = c.textSecondary)
+        BasicTextField(
+            value = value,
+            onValueChange = onChange,
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions =
+                KeyboardActions(
+                    onSearch = {
+                        onDone()
+                        focusManager.moveFocus(FocusDirection.Down)
+                    },
+                ),
+            textStyle = TextStyle(color = c.textPrimary, fontSize = 14.sp),
+            cursorBrush = SolidColor(c.accent),
+            modifier = Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused },
+        )
     }
 }

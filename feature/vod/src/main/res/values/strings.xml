@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="vod_movies">Filmy</string>
+    <string name="vod_series">Seriale</string>
+    <string name="vod_search_movies">Szukaj w: Filmy</string>
+    <string name="vod_search_series">Szukaj w: Seriale</string>
+    <string name="vod_all">Wszystkie</string>
+    <string name="vod_recent">Ostatnio dodane</string>
+    <string name="vod_my_list">Moja lista</string>
+    <string name="vod_sort_newest">Najnowsze</string>
+    <string name="vod_sort_az">A–Z</string>
+    <string name="vod_sort_rating">Ocena</string>
+    <string name="vod_sort_year">Rok</string>
+    <string name="vod_loading">Ładowanie…</string>
+    <string name="vod_empty_movies">Brak filmów. Dodaj dostawcę Xtream z filmami.</string>
+    <string name="vod_empty_series">Brak seriali. Dodaj dostawcę Xtream z serialami.</string>
+    <string name="vod_no_results">Brak wyników dla „%1$s”</string>
+    <string name="vod_open_providers">Dostawcy</string>
+    <string name="vod_meta">%1$s · ★ %2$s</string>
+</resources>

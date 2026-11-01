@@ -44,6 +44,8 @@ dependencies {
     implementation(project(":feature:providers"))
     implementation(project(":feature:livetv"))
     implementation(project(":feature:guide"))
+    implementation(project(":feature:vod"))
+    implementation(project(":feature:details"))
     implementation(project(":feature:home"))
     implementation(project(":feature:player-ui"))
     implementation(libs.timber)

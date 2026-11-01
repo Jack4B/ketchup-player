@@ -29,6 +29,13 @@ data class EpisodeEntry(
     }
 }
 
+/** Co potrzebne odtwarzaczowi: tytuł do OSD i zapisana pozycja. */
+data class VodPlayback(
+    val title: String,
+    val positionMs: Long,
+    val durationMs: Long,
+)
+
 /** Katalog filmów i seriali (offline-first, jak [pl.ketchupplayer.tv.core.data.catalog.CatalogRepository]). */
 interface VodRepository {
     fun entries(kind: VodKind): Flow<List<VodEntry>>
@@ -64,4 +71,7 @@ interface VodRepository {
     ): List<VodItem>
 
     suspend fun resolve(itemId: String): Result<StreamSpec>
+
+    /** Dane odtwarzania filmu albo odcinka (tytuł odcinka z nazwą serialu); null, gdy pozycji nie ma. */
+    suspend fun playback(itemId: String): VodPlayback?
 }

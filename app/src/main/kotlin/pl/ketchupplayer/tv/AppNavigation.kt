@@ -13,14 +13,18 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import pl.ketchupplayer.tv.core.designsystem.AppShell
+import pl.ketchupplayer.tv.core.model.VodKind
+import pl.ketchupplayer.tv.feature.details.DetailsRoute
 import pl.ketchupplayer.tv.feature.guide.GuideRoute
 import pl.ketchupplayer.tv.feature.home.HomeRoute
 import pl.ketchupplayer.tv.feature.livetv.LiveTvRoute
 import pl.ketchupplayer.tv.feature.playerui.PlayerRoute
+import pl.ketchupplayer.tv.feature.playerui.VodPlayerRoute
 import pl.ketchupplayer.tv.feature.providers.ProvidersRoute
 import pl.ketchupplayer.tv.feature.settings.AppearanceRoute
 import pl.ketchupplayer.tv.feature.settings.EpgSourcesRoute
 import pl.ketchupplayer.tv.feature.settings.PlaybackSettingsRoute
+import pl.ketchupplayer.tv.feature.vod.VodBrowseRoute
 
 /**
  * Nawigacja: stos tras (String, przeżywa obrót) + powłoka z szyną (makiety v3). Odtwarzacz jest pełnoekranowy,
@@ -42,6 +46,11 @@ fun AppNavigation(onExit: () -> Unit = {}) {
     val openPlayer: (String) -> Unit = { push(Routes.player(it)) }
     val top = stack.last()
 
+    val vodTarget = Routes.vodPlayerTarget(top)
+    if (vodTarget != null) {
+        VodPlayerRoute(vodTarget.first, vodTarget.second, onBack = pop)
+        return
+    }
     val playerChannel = Routes.playerChannel(top)
     if (playerChannel != null) {
         PlayerRoute(playerChannel, onBack = pop)
@@ -106,12 +115,27 @@ private fun SectionContent(
         SettingsPage.EPG_SOURCES.route -> EpgSourcesRoute(onBack = pop)
         SettingsPage.PLAYBACK.route -> PlaybackSettingsRoute(onBack = pop)
         SettingsPage.APPEARANCE.route -> AppearanceRoute(onBack = pop)
+        Section.MOVIES.route ->
+            VodBrowseRoute(VodKind.MOVIE, { push(Routes.details(it)) }, { push(SettingsPage.PROVIDERS.route) })
+        Section.SERIES.route ->
+            VodBrowseRoute(VodKind.SERIES, { push(Routes.details(it)) }, { push(SettingsPage.PROVIDERS.route) })
         Section.HOME.route ->
             HomeRoute(
                 onOpenChannel = openPlayer,
                 onOpenGuide = { push(Section.GUIDE.route) },
                 onOpenProviders = { push(SettingsPage.PROVIDERS.route) },
             )
-        else -> ComingSoon(route)
+        else -> {
+            val detailsId = Routes.detailsId(route)
+            if (detailsId != null) {
+                DetailsRoute(
+                    detailsId,
+                    onPlay = { id, fromStart -> push(Routes.vodPlayer(id, fromStart)) },
+                    onOpen = { push(Routes.details(it)) },
+                )
+            } else {
+                ComingSoon(route)
+            }
+        }
     }
 }

@@ -54,6 +54,13 @@ class ExoPlayerController(
         exo.play()
     }
 
+    override fun seekTo(positionMs: Long) {
+        exo.seekTo(positionMs)
+        publish()
+    }
+
+    override fun poll() = publish()
+
     override fun stop() {
         exo.stop()
         publish()

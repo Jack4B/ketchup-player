@@ -30,5 +30,11 @@ interface PlayerController {
 
     fun stop()
 
+    /** Przewija do pozycji (filmy i odcinki; kanały na żywo ignorują). */
+    fun seekTo(positionMs: Long) {}
+
+    /** Odświeża [state] (pozycja płynie bez zdarzeń odtwarzacza); wołane okresowo przez ekran VOD. */
+    fun poll() {}
+
     fun release()
 }

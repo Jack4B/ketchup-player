@@ -341,6 +341,73 @@ class ScenariosTest {
         waitForText("PL | News") // grupa z kategorii Xtream
     }
 
+    /** Serwer Xtream z filmami i serialem o kształcie prawdziwego panelu (syntetyczne tytuły). */
+    private fun serveXtreamVod() {
+        serveXtream()
+        server.serve("/player_api.php?get_vod_categories") {
+            """[{"category_id":"10","category_name":"Dramat"},{"category_id":"11","category_name":"Komedia"}]"""
+        }
+        server.serve("/player_api.php?get_vod_streams") {
+            """[{"stream_id":501,"name":"PL - Pitbull (2005)","rating":"7.4","category_id":"10",""" +
+                """"container_extension":"mkv","added":"1700000000"},""" +
+                """{"stream_id":502,"name":"Seksmisja","rating":"8.1","category_id":"11","container_extension":"mp4"}]"""
+        }
+        server.serve(
+            "/player_api.php?get_series_categories",
+        ) { """[{"category_id":"20","category_name":"Kryminał"}]""" }
+        server.serve("/player_api.php?get_series") {
+            """[{"series_id":77,"name":"Rodzina Kowalskich","genre":"Komedia","plot":"Opis serialu",""" +
+                """"rating":"6.5","releaseDate":"2011-03-01","category_id":"20"}]"""
+        }
+        server.serve("/player_api.php?get_series_info") {
+            """{"episodes":{"1":[{"id":"9001","episode_num":1,"title":"Pilot","season":1,""" +
+                """"container_extension":"mp4","info":{"duration_secs":2700}},""" +
+                """{"id":"9002","episode_num":2,"title":"Drugi","season":1,"container_extension":"mp4"}],""" +
+                """"2":[{"id":"9003","episode_num":1,"title":"Powrót","season":2,"container_extension":"mp4"}]}}"""
+        }
+    }
+
+    /** Scenariusz: Filmy z konta Xtream -> szczegóły -> „Oglądaj” gra adres filmu; Moja lista zapamiętuje wybór. */
+    @Test
+    fun filmZXtreamOtwieraSzczegolyIGra() {
+        serveXtreamVod()
+        addXtreamViaUi("dobre-haslo")
+        waitForText("Kanały: 2", substring = true)
+        nav("Filmy")
+        waitForText("Pitbull") // tytuł oczyszczony z przedrostka języka i roku
+        waitForText("Seksmisja")
+        waitForText("Dramat") // kategorie dostawcy w panelu
+        click("Pitbull")
+        waitForText("FILM")
+        waitForText("▶ Oglądaj")
+        click("+ Moja lista")
+        waitForText("✓ Moja lista")
+        click("▶ Oglądaj")
+        waitFor { FakePlayers.played.isNotEmpty() }
+        assertEquals(listOf("${server.baseUrl()}/movie/jan/dobre-haslo/501.mkv"), FakePlayers.played.toList())
+    }
+
+    /** Scenariusz: Seriale -> szczegóły ładują odcinki z serwera, sezony przełączają listę, odcinek gra swój adres. */
+    @Test
+    fun serialZXtreamPokazujeSezonyIOdcinki() {
+        serveXtreamVod()
+        addXtreamViaUi("dobre-haslo")
+        waitForText("Kanały: 2", substring = true)
+        nav("Seriale")
+        waitForText("Rodzina Kowalskich")
+        click("Rodzina Kowalskich")
+        waitForText("SERIAL")
+        waitForText("1. Pilot")
+        waitForText("2. Drugi")
+        click("Sezon 2")
+        waitForText("1. Powrót")
+        click("Sezon 1")
+        waitForText("1. Pilot")
+        click("1. Pilot")
+        waitFor { FakePlayers.played.isNotEmpty() }
+        assertEquals(listOf("${server.baseUrl()}/series/jan/dobre-haslo/9001.mp4"), FakePlayers.played.toList())
+    }
+
     /** Scenariusz: złe hasło Xtream: czytelny komunikat, aplikacja nie pada, dostawca zostaje do poprawienia. */
     @Test
     fun zleHasloXtreamDajeKomunikat() {

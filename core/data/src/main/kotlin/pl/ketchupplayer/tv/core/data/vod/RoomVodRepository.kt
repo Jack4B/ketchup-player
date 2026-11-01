@@ -54,7 +54,7 @@ class RoomVodRepository
                 val started =
                     states
                         .filter { it.positionMs > 0 && it.durationMs > 0 && it.positionMs < it.durationMs * DONE }
-                        .sortedByDescending { it.updatedMs ?: 0 }
+                        .sortedByDescending { it.updatedMs ?: 0L }
                 val byId = movies.associateBy { it.id }
                 started
                     .mapNotNull { s ->
@@ -135,6 +135,18 @@ class RoomVodRepository
                 providerDao.get(providerId)?.let { factory.create(it) }
                     ?: return Result.failure(IllegalStateException("Brak dostawcy"))
             return provider.resolveVod(ref)
+        }
+
+        override suspend fun playback(itemId: String): VodPlayback? {
+            val state = dao.state(itemId)
+            val title =
+                dao.get(itemId)?.title
+                    ?: dao.episode(itemId)?.let { e ->
+                        val series = dao.get(e.seriesId)?.title
+                        listOfNotNull(series, "S${e.season} E${e.number}", e.title).joinToString(" · ")
+                    }
+                    ?: return null
+            return VodPlayback(title, state?.positionMs ?: 0, state?.durationMs ?: 0)
         }
 
         private companion object {

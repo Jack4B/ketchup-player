@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -18,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -53,7 +55,7 @@ fun NewEpisodeBadge(
     }
 }
 
-/** Plakat (2:3) z tytułem i opcjonalną plakietką nowych odcinków. [poster] rysuje obraz (Coil w kolejnych fazach). */
+/** Plakat (2:3) z tytułem, podtytułem, paskiem postępu i plakietką nowych odcinków; obraz ładuje Coil. */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun PosterCard(
@@ -62,24 +64,74 @@ fun PosterCard(
     modifier: Modifier = Modifier,
     newEpisodes: Int? = null,
     newEpisodeLabel: String? = null,
+    imageUrl: String? = null,
+    subtitle: String? = null,
+    progress: Float? = null,
+    fillWidth: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
+    focusRequester: FocusRequester? = null,
     poster: @Composable BoxScope.() -> Unit = {},
 ) {
     val c = KetchupTheme.colors
-    FocusItem(onClick, modifier.width(POSTER_WIDTH), focusScale = 1.06f) {
-        Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    FocusItem(
+        onClick,
+        if (fillWidth) modifier.fillMaxWidth() else modifier.width(POSTER_WIDTH),
+        focusScale = 1.06f,
+        focusRequester = focusRequester,
+        onLongClick = onLongClick,
+        container = Color.Transparent,
+        outlined = false,
+    ) {
+        Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .aspectRatio(
-                        2f / 3f,
-                    ).background(c.surface3, RoundedCornerShape(c.cornerRadius.coerceAtMost(12.dp))),
+                    .aspectRatio(2f / 3f)
+                    .clip(RoundedCornerShape(c.cornerRadius.coerceAtMost(12.dp)))
+                    .background(c.surface3),
             ) {
+                PosterImage(imageUrl, title)
                 poster()
+                if (progress != null && progress > 0f) {
+                    Box(
+                        Modifier
+                            .align(Alignment.BottomStart)
+                            .fillMaxWidth()
+                            .height(5.dp)
+                            .background(Color(0x66000000)),
+                    ) {
+                        Box(Modifier.fillMaxWidth(progress.coerceIn(0f, 1f)).fillMaxHeight().background(c.accent))
+                    }
+                }
                 if (newEpisodes != null) {
                     NewEpisodeBadge(Modifier.align(Alignment.TopEnd).padding(8.dp), newEpisodes, newEpisodeLabel)
                 }
             }
-            Text(title, fontSize = 18.sp, color = c.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(title, fontSize = 12.sp, color = c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (subtitle != null) Text(subtitle, fontSize = 11.sp, color = c.textSecondary, maxLines = 1)
+        }
+    }
+}
+
+/** Obraz z sieci (Coil); bez adresu lub przy błędzie zostaje tło kafla z inicjałem tytułu. */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun PosterImage(
+    url: String?,
+    title: String,
+    modifier: Modifier = Modifier,
+    contentScale: androidx.compose.ui.layout.ContentScale = androidx.compose.ui.layout.ContentScale.Crop,
+) {
+    val c = KetchupTheme.colors
+    Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(tileLabel(title), fontSize = 18.sp, color = c.textSecondary)
+        if (!url.isNullOrBlank()) {
+            coil3.compose.AsyncImage(
+                model = url,
+                contentDescription = null,
+                contentScale = contentScale,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
     }
 }
@@ -307,5 +359,36 @@ fun TabChip(
                 }
             }
         }
+    }
+}
+
+/** Pigułka filtra/sortowania (makieta v3): wybrana jest jasna z ciemnym tekstem, pozostałe przyciemnione. */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun PillChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val c = KetchupTheme.colors
+    FocusItem(
+        onClick,
+        modifier.height(34.dp),
+        selected = selected,
+        container = if (selected) c.textPrimary else c.surface2,
+        focusedContainer = if (selected) c.textPrimary else c.surface3,
+        outlined = false,
+        focusScale = 1.04f,
+        cornerRadius = 17.dp,
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            color = if (selected) c.background else c.textPrimary,
+            modifier = Modifier.padding(horizontal = 16.dp),
+        )
     }
 }
