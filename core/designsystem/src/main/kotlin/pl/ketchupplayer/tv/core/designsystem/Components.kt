@@ -74,12 +74,15 @@ fun PosterCard(
     focusRequester: FocusRequester? = null,
     /** true: tytuł i podtytuł na dolnym gradiencie obrazu (jak karty w poprzedniej aplikacji), bez tekstu pod kartą. */
     overlay: Boolean = false,
+    /** Proporcje obrazu: 2:3 plakat albo 16:9 karta pozioma z grafiką w tle. */
+    aspect: Float = POSTER_ASPECT,
+    cardWidth: androidx.compose.ui.unit.Dp = POSTER_WIDTH,
     poster: @Composable BoxScope.() -> Unit = {},
 ) {
     val c = KetchupTheme.colors
     FocusItem(
         onClick,
-        if (fillWidth) modifier.fillMaxWidth() else modifier.width(POSTER_WIDTH),
+        if (fillWidth) modifier.fillMaxWidth() else modifier.width(cardWidth),
         focusScale = 1.06f,
         focusRequester = focusRequester,
         onLongClick = onLongClick,
@@ -90,7 +93,7 @@ fun PosterCard(
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .aspectRatio(2f / 3f)
+                    .aspectRatio(aspect)
                     .clip(RoundedCornerShape(c.cornerRadius.coerceAtMost(12.dp)))
                     .background(c.surface3),
             ) {
@@ -170,6 +173,7 @@ fun PosterImage(
 }
 
 private val POSTER_WIDTH = 170.dp
+private const val POSTER_ASPECT = 2f / 3f
 
 /** Wiersz kanału: numer, kafel logo, nazwa, bieżąca audycja z paskiem postępu (0..1). */
 @OptIn(ExperimentalTvMaterial3Api::class)

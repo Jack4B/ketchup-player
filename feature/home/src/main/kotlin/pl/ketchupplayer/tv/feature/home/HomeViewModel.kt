@@ -43,8 +43,9 @@ class HomeViewModel
                 vod.continueWatching(RECENT_LIMIT),
                 vod.myList(),
                 vod.entries(VodKind.MOVIE),
-            ) { cont, mine, movies ->
-                Triple(cont, mine.take(RECENT_LIMIT), movies)
+                vod.entries(VodKind.SERIES),
+            ) { cont, mine, movies, series ->
+                VodRows(cont, mine.take(RECENT_LIMIT), movies, series.filter { it.hasNewEpisodes }.take(RECENT_LIMIT))
             }
 
         val state: StateFlow<HomeUiState> =
@@ -55,7 +56,10 @@ class HomeViewModel
                 catalog.favoriteIds(),
                 combine(vodRows, ticker.flatMapLatest { now -> epg.onAir(now).map { now to it } }) { v, t -> v to t },
             ) { providers, recent, all, favorites, (vodPart, nowPart) ->
-                val (cont, mine, movies) = vodPart
+                val cont = vodPart.cont
+                val mine = vodPart.mine
+                val movies = vodPart.movies
+                val fresh = vodPart.fresh
                 val (now, onAir) = nowPart
 
                 fun withNow(list: List<pl.ketchupplayer.tv.core.model.Channel>) =
@@ -71,8 +75,16 @@ class HomeViewModel
                     featuredResumes = cont.isNotEmpty(),
                     continueVod = cont,
                     myList = mine,
+                    newEpisodes = fresh,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), HomeUiState())
+
+        private data class VodRows(
+            val cont: List<pl.ketchupplayer.tv.core.data.vod.VodEntry>,
+            val mine: List<pl.ketchupplayer.tv.core.data.vod.VodEntry>,
+            val movies: List<pl.ketchupplayer.tv.core.data.vod.VodEntry>,
+            val fresh: List<pl.ketchupplayer.tv.core.data.vod.VodEntry>,
+        )
 
         private companion object {
             const val RECENT_LIMIT = 8

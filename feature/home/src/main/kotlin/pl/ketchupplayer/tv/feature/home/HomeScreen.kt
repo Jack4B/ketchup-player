@@ -85,7 +85,23 @@ fun HomeScreen(
             }
             if (state.continueVod.isNotEmpty()) {
                 item(key = "continue-vod") {
-                    PosterRow(stringResource(R.string.home_row_continue), state.continueVod, onOpenDetails)
+                    PosterRow(
+                        stringResource(R.string.home_row_continue),
+                        state.continueVod,
+                        onOpenDetails,
+                        landscape = true,
+                    )
+                }
+            }
+            if (state.newEpisodes.isNotEmpty()) {
+                item(key = "new-episodes") {
+                    PosterRow(
+                        stringResource(R.string.home_row_new_episodes),
+                        state.newEpisodes,
+                        onOpenDetails,
+                        landscape = true,
+                        newLabel = stringResource(R.string.home_new_episodes_badge),
+                    )
                 }
             }
             if (state.myList.isNotEmpty()) {
@@ -96,7 +112,7 @@ fun HomeScreen(
             if (state.recent.isNotEmpty()) {
                 item(key = "continue") {
                     CardsSection(
-                        stringResource(R.string.home_row_continue),
+                        stringResource(R.string.home_row_recent_channels),
                         state.recent,
                         state.nowMs,
                         onOpenChannel,
@@ -188,8 +204,9 @@ private fun PosterRow(
     title: String,
     entries: List<VodEntry>,
     onOpen: (String) -> Unit,
+    landscape: Boolean = false,
+    newLabel: String? = null,
 ) {
-    val c = KetchupTheme.colors
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         RowHeader(title, entries.size)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -197,13 +214,31 @@ private fun PosterRow(
                 PosterCard(
                     e.item.title,
                     { onOpen(e.item.id) },
-                    imageUrl = e.item.poster,
+                    // Karta pozioma: grafika w tle (backdrop, a gdy go brak plakat), tytuł i ocena na gradiencie.
+                    imageUrl = if (landscape) e.item.backdrop ?: e.item.poster else e.item.poster,
                     progress = e.progress.takeIf { it > 0f },
+                    subtitle = if (landscape) cardSubtitle(e) else null,
+                    overlay = landscape,
+                    aspect = if (landscape) LANDSCAPE_ASPECT else POSTER_ASPECT,
+                    cardWidth = if (landscape) LANDSCAPE_WIDTH else POSTER_CARD_WIDTH,
+                    newEpisodes = if (newLabel != null) 1 else null,
+                    newEpisodeLabel = newLabel,
                 )
             }
         }
     }
 }
+
+private fun cardSubtitle(e: VodEntry): String? {
+    val year = e.item.year?.toString()
+    val rating = e.item.rating?.let { String.format(Locale.forLanguageTag("pl"), "%.1f", it) }
+    return listOfNotNull(year, rating?.let { "★ $it" }).joinToString(" · ").ifEmpty { null }
+}
+
+private val LANDSCAPE_WIDTH = 270.dp
+private val POSTER_CARD_WIDTH = 170.dp
+private const val LANDSCAPE_ASPECT = 16f / 9f
+private const val POSTER_ASPECT = 2f / 3f
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable

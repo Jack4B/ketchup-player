@@ -23,4 +23,6 @@ data class HomeUiState(
     val featuredResumes: Boolean = false,
     val continueVod: List<VodEntry> = emptyList(),
     val myList: List<VodEntry> = emptyList(),
+    /** Seriale z nowymi odcinkami od ostatniej wizyty w szczegółach (zielona kropka). */
+    val newEpisodes: List<VodEntry> = emptyList(),
 )

@@ -7,8 +7,11 @@
     <string name="home_welcome_text">Dodaj listę kanałów, aby zacząć oglądać. Obsługujemy listy M3U i konta Xtream Codes.</string>
     <string name="home_watch">▶ Oglądaj</string>
     <string name="home_add_provider">Dodaj dostawcę</string>
-    <string name="home_guide">Przewodnik</string>
+    <string name="home_guide">Na żywo</string>
     <string name="home_row_continue">Kontynuuj oglądanie</string>
+    <string name="home_row_new_episodes">Nowe odcinki</string>
+    <string name="home_new_episodes_badge">NOWE</string>
+    <string name="home_row_recent_channels">Ostatnie kanały</string>
     <string name="home_row_live_now">Na żywo teraz</string>
     <string name="home_live_badge">na żywo</string>
     <string name="home_now_until">%1$s · do %2$s</string>
