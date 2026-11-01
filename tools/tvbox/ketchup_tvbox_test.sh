@@ -38,6 +38,15 @@ LOG="$OUT/logs/test.log"
 log() { printf '[%s] %s\n' "$(date +%T)" "$*" | tee -a "$LOG"; }
 adb_s() { timeout "${ADB_TIMEOUT:-25}" adb -s "$TARGET" "$@"; }
 sh_() { adb_s shell "$@" 2>/dev/null | tr -d '\r'; }
+collect_logs() { # wołane przy każdym wyjściu (także Ctrl+C), żeby log nigdy nie przepadł
+  [ -n "${LOGS_DONE:-}" ] && return; LOGS_DONE=1
+  timeout 60 adb -s "$TARGET" logcat -d 2>/dev/null | tr -d '\r' > "$OUT/logs/logcat_full.txt"
+  timeout 30 adb -s "$TARGET" logcat -d -b crash 2>/dev/null | tr -d '\r' > "$OUT/logs/logcat_crash.txt"
+  grep -iE "ketchup|FATAL|AndroidRuntime|OutOfMemory|lmkd|am_kill|am_proc_died|ANR" "$OUT/logs/logcat_full.txt" | tail -300 > "$OUT/logs/logcat_app.txt"
+  echo "Logi zapisane w $OUT/logs/"
+}
+trap collect_logs EXIT
+trap 'echo "Przerwano."; exit 130' INT TERM
 key() { adb_s shell input keyevent "$@" >/dev/null 2>&1; sleep "${KEY_DELAY:-0.7}"; }
 sleepf() { sleep "$1"; }
 
@@ -143,6 +152,12 @@ while [ $(( $(date +%s) - t0 )) -lt "$MAX_WAIT" ]; do
   ui_dump
   if has_text "Lista została dodana"; then okimp=1; break; fi
   line=$(sed 's/<node/\n<node/g' "$OUT/ui/last.xml" | grep -oE 'text="(Pobieranie|Zapisywanie|Lista zapisana|Podaj|Nie )[^"]*"' | head -2 | tr '\n' ' ')
+  if ! alive; then
+    log "UWAGA: proces aplikacji nie żyje (crash lub zabity z braku pamięci)"
+    sh_ "logcat -d -b crash" > "$OUT/logs/logcat_crash.txt"
+    record B1 "Dodanie listy M3U w kreatorze" FAIL "aplikacja padła po $(( $(date +%s) - t0 )) s (ostatni etap: ${line:-?})"
+    shot 04_padla >/dev/null; exit 1
+  fi
   [ -z "$line" ] && line="(brak komunikatu na ekranie)"
   log "po $(( $(date +%s) - t0 )) s: $line"
   case "$line" in *"Lista zapisana"*) break;; esac    # błąd importu: formularz wrócił z komunikatem
