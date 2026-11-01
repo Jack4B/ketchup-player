@@ -17,7 +17,10 @@
     <string name="providers_field_url">Adres listy M3U (http lub https)</string>
     <string name="providers_error_name">Podaj nazwę (do 60 znaków)</string>
     <string name="providers_error_url">Podaj poprawny adres http lub https</string>
-    <string name="providers_loading">Pobieranie listy…</string>
+    <string name="import_downloading">Pobieranie i czytanie listy… %1$s</string>
+    <string name="import_saving_channels">Zapisywanie kanałów (%2$d)… %1$s</string>
+    <string name="import_saving_vod">Zapisywanie filmów i seriali (%2$d)… %1$s</string>
+    <string name="import_hint">Duże listy z filmami i serialami mogą potrwać kilka minut. Nie zamykaj aplikacji.</string>
     <string name="providers_summary">%1$s · %2$s</string>
     <string name="providers_channels">Kanały: %1$d</string>
     <string name="providers_summary_error">%1$s · błąd: %2$s</string>
@@ -36,5 +39,4 @@
     <string name="onb_back">‹ Wstecz</string>
     <string name="onb_skip">Pomiń</string>
     <string name="onb_start">Zaczynamy</string>
-    <string name="onb_loading">Pobieranie listy…</string>
 </resources>

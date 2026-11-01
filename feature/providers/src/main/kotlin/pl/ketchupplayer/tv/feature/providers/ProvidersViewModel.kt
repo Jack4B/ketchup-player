@@ -24,7 +24,11 @@ class ProvidersViewModel
         private val local = MutableStateFlow(ProvidersUiState())
 
         val state: StateFlow<ProvidersUiState> =
-            combine(catalog.providers, local) { providers, l -> l.copy(providers = providers) }
+            combine(
+                catalog.providers,
+                local,
+                catalog.importStatus,
+            ) { providers, l, st -> l.copy(providers = providers, status = st) }
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), ProvidersUiState())
 
         fun onEvent(event: ProvidersEvent) {

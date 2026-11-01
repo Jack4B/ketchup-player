@@ -102,7 +102,19 @@ class RoomCatalogRepository
                 onFailure = { AddProviderResult.SavedWithError(id, it.message ?: "Błąd pobierania listy") },
             )
 
+        private val status = kotlinx.coroutines.flow.MutableStateFlow<ImportStatus?>(null)
+        override val importStatus: kotlinx.coroutines.flow.StateFlow<ImportStatus?> = status
+
         override suspend fun refresh(id: ProviderId): Result<Int> {
+            status.value = ImportStatus(ImportPhase.DOWNLOADING)
+            try {
+                return doRefresh(id)
+            } finally {
+                status.value = null
+            }
+        }
+
+        private suspend fun doRefresh(id: ProviderId): Result<Int> {
             val entity =
                 providerDao.get(id.value) ?: return Result.failure(IllegalStateException("Nie ma takiego dostawcy"))
             val provider =
@@ -117,6 +129,7 @@ class RoomCatalogRepository
             val now = clock.nowMs()
             return result.fold(
                 onSuccess = { channels ->
+                    status.value = ImportStatus(ImportPhase.SAVING_CHANNELS, channels.size)
                     channelDao.replaceAll(id.value, channels.map { it.toEntity() })
                     provider.epgUrl()?.let { secrets.putEpg(id, it) }
                     // Filmy i seriale są dodatkiem: ich błąd (także brak pamięci na dużym katalogu) nie psuje kanałów.
@@ -140,6 +153,7 @@ class RoomCatalogRepository
             if (Capability.VOD !in provider.capabilities) return null
             return try {
                 provider.loadVod().onSuccess { vod ->
+                    status.value = ImportStatus(ImportPhase.SAVING_VOD, vod.items.size + vod.episodes.size)
                     vodDao.replaceAll(
                         id.value,
                         vod.items.map { it.toVodEntity() },

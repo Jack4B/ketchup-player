@@ -26,9 +26,21 @@ sealed interface AddProviderResult {
     ) : AddProviderResult
 }
 
+/** Etap trwającego importu listy (duża lista z filmami to minuty pracy, użytkownik musi widzieć postęp). */
+enum class ImportPhase { DOWNLOADING, SAVING_CHANNELS, SAVING_VOD }
+
+/** Stan importu: etap i liczba pozycji, jeśli już znana (dla etapów zapisu). */
+data class ImportStatus(
+    val phase: ImportPhase,
+    val count: Int = 0,
+)
+
 /** Katalog kanałów (offline-first: UI zawsze czyta z bazy). */
 interface CatalogRepository {
     val providers: Flow<List<ProviderInfo>>
+
+    /** Etap trwającego pobierania/zapisu listy albo null, gdy nic się nie dzieje. */
+    val importStatus: kotlinx.coroutines.flow.StateFlow<ImportStatus?>
 
     fun liveChannels(): Flow<List<Channel>>
 

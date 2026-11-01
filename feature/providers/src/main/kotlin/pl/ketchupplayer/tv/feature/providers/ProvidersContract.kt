@@ -23,6 +23,7 @@ data class ProvidersUiState(
     val form: ProviderForm? = null,
     val busy: Boolean = false,
     val message: String? = null,
+    val status: pl.ketchupplayer.tv.core.data.catalog.ImportStatus? = null,
 )
 
 sealed interface ProvidersEvent {

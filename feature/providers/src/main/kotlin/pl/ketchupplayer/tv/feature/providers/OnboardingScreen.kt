@@ -159,7 +159,7 @@ private fun AddStep(
     }
     val form = state.form
     if (form != null) AddForm(form, state.busy, onEvent, showActions = false)
-    if (state.busy) Text(stringResource(R.string.onb_loading), fontSize = 16.sp, color = c.textSecondary)
+    if (state.busy) ImportProgress(state.status, fontSizeSp = 16)
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),

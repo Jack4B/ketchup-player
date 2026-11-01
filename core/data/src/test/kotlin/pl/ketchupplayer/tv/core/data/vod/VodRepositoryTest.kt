@@ -3,7 +3,11 @@ package pl.ketchupplayer.tv.core.data.vod
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -16,6 +20,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import pl.ketchupplayer.tv.core.common.Clock
 import pl.ketchupplayer.tv.core.data.catalog.AddProviderResult
+import pl.ketchupplayer.tv.core.data.catalog.ImportPhase
+import pl.ketchupplayer.tv.core.data.catalog.ImportStatus
 import pl.ketchupplayer.tv.core.data.catalog.ProviderFactory
 import pl.ketchupplayer.tv.core.data.catalog.ProviderSecrets
 import pl.ketchupplayer.tv.core.data.catalog.RoomCatalogRepository
@@ -237,5 +243,30 @@ class VodRepositoryTest {
                     .lastError!!
                     .contains("Filmy i seriale pominięte"),
             )
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `import pokazuje etapy i konczy sie czystym stanem`() =
+        runTest {
+            val secrets = ProviderSecrets(InMemorySecretStore())
+            val catalog =
+                RoomCatalogRepository(
+                    db.providers(),
+                    db.channels(),
+                    db.channelFlags(),
+                    db.vod(),
+                    secrets,
+                    ProviderFactory(secrets, fetcher),
+                    Clock { now },
+                )
+            val seen = mutableListOf<ImportStatus?>()
+            val job = launch(UnconfinedTestDispatcher(testScheduler)) { catalog.importStatus.toList(seen) }
+            catalog.addXtream("Konto", "http://x.example.invalid:8080", "jan", "tajne")
+            job.cancel()
+            val phases = seen.filterNotNull().map { it.phase }.distinct()
+            assertEquals(listOf(ImportPhase.DOWNLOADING, ImportPhase.SAVING_CHANNELS, ImportPhase.SAVING_VOD), phases)
+            assertEquals(3, seen.filterNotNull().first { it.phase == ImportPhase.SAVING_VOD }.count)
+            assertEquals(null, catalog.importStatus.value)
         }
 }
