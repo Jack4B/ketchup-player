@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -57,10 +58,11 @@ fun SplashOverlay(
         content()
         AnimatedVisibility(visible, exit = fadeOut()) {
             Box(Modifier.fillMaxSize().background(SPLASH_BG), contentAlignment = Alignment.Center) {
-                KetchupLogoWide(Modifier.fillMaxSize().padding(24.dp))
+                KetchupLogoWide(Modifier.fillMaxHeight(SPLASH_LOGO_HEIGHT).padding(24.dp))
             }
         }
     }
 }
 
 private val SPLASH_BG = Color(0xFF0E1017)
+private const val SPLASH_LOGO_HEIGHT = 0.5f
