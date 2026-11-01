@@ -50,6 +50,8 @@ class DetailsViewModel
             episodesStatus.value = EpisodesStatus.LOADING
             episodesStatus.value =
                 if (repo.refreshEpisodes(id).isSuccess) EpisodesStatus.IDLE else EpisodesStatus.FAILED
+            // Otwarcie serialu = nowe odcinki zobaczone (zielona kropka znika z plakatu i z szuflady).
+            repo.markSeen(id)
         }
 
         val state: StateFlow<DetailsUiState> =

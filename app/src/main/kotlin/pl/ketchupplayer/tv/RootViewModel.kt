@@ -16,8 +16,13 @@ class RootViewModel
     @Inject
     constructor(
         private val onboarding: OnboardingRepository,
+        vod: pl.ketchupplayer.tv.core.data.vod.VodRepository,
         splash: SplashPolicy,
     ) : ViewModel() {
+        /** Są seriale z nowymi odcinkami: zielona kropka na pozycji „Seriale” w szufladzie. */
+        val newEpisodes: StateFlow<Boolean> =
+            vod.anyNewEpisodes().stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_MS), false)
+
         val splashMs: Long = splash.durationMs
 
         val onboardingDone: StateFlow<Boolean?> =
@@ -25,5 +30,9 @@ class RootViewModel
 
         fun finishOnboarding() {
             viewModelScope.launch { onboarding.setDone(true) }
+        }
+
+        private companion object {
+            const val STOP_MS = 5_000L
         }
     }

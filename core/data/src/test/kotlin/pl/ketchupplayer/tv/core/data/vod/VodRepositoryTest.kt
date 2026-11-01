@@ -58,6 +58,7 @@ class VodRepositoryTest {
                 """"2":[{"id":"9003","episode_num":1,"title":"Powrót","season":2,"container_extension":"mp4"}]}}""",
             "action=get_series" to
                 """[{"series_id":77,"name":"Rodzina Kowalskich","cover":"http://i.example.invalid/s.jpg",""" +
+                """"last_modified":"1700000000",""" +
                 """"genre":"Komedia","plot":"Opis serialu","rating":"6.5","releaseDate":"2011-03-01",""" +
                 """"category_id":"20"}]""",
         )
@@ -88,10 +89,13 @@ class VodRepositoryTest {
     @After
     fun close() = db.close()
 
+    private lateinit var catalog: RoomCatalogRepository
+    private var providerId = ""
+
     private suspend fun vodRepo(): VodRepository {
         val secrets = ProviderSecrets(InMemorySecretStore())
         val factory = ProviderFactory(secrets, fetcher)
-        val catalog =
+        catalog =
             RoomCatalogRepository(
                 db.providers(),
                 db.channels(),
@@ -103,6 +107,7 @@ class VodRepositoryTest {
             )
         val added = catalog.addXtream("Konto", "http://x.example.invalid:8080", "jan", "tajne")
         check(added is AddProviderResult.Added)
+        providerId = added.id.value
         return RoomVodRepository(db.vod(), db.providers(), factory, Clock { now })
     }
 
@@ -268,5 +273,31 @@ class VodRepositoryTest {
             assertEquals(listOf(ImportPhase.DOWNLOADING, ImportPhase.SAVING_CHANNELS, ImportPhase.SAVING_VOD), phases)
             assertEquals(3, seen.filterNotNull().first { it.phase == ImportPhase.SAVING_VOD }.count)
             assertEquals(null, catalog.importStatus.value)
+        }
+
+    /** Zielona kropka: serial z nowszym `last_modified` po odświeżeniu listy; otwarcie serialu ją zdejmuje. */
+    @Test
+    fun `nowy odcinek po odswiezeniu zapala kropke a otwarcie serialu ja zdejmuje`() =
+        runTest {
+            val repo = vodRepo()
+            assertFalse(repo.anyNewEpisodes().first()) // pierwszy import to stan wyjściowy, nic nie jest „nowe”
+            api = api + ("action=get_series" to api.getValue("action=get_series").replace("1700000000", "1700500000"))
+            catalog
+                .refresh(
+                    pl.ketchupplayer.tv.core.model
+                        .ProviderId(providerId),
+                ).getOrThrow()
+            assertTrue(repo.anyNewEpisodes().first())
+            val series = repo.entries(VodKind.SERIES).first().single()
+            assertTrue(series.hasNewEpisodes)
+            repo.markSeen(series.item.id)
+            assertFalse(repo.anyNewEpisodes().first())
+            assertFalse(
+                repo
+                    .entries(VodKind.SERIES)
+                    .first()
+                    .single()
+                    .hasNewEpisodes,
+            )
         }
 }

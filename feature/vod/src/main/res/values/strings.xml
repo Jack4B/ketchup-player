@@ -5,6 +5,7 @@
     <string name="vod_search_movies">Szukaj w: Filmy</string>
     <string name="vod_search_series">Szukaj w: Seriale</string>
     <string name="vod_all">Wszystkie</string>
+    <string name="vod_new_episodes">NOWE</string>
     <string name="vod_recent">Ostatnio dodane</string>
     <string name="vod_my_list">Moja lista</string>
     <string name="vod_sort_newest">Najnowsze</string>

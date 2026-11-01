@@ -37,13 +37,16 @@ fun AppNavigation(
         when (done) {
             null -> Unit
             false -> OnboardingRoute(onFinished = root::finishOnboarding)
-            true -> MainFlow(onExit)
+            true -> MainFlow(onExit, root)
         }
     }
 }
 
 @Composable
-private fun MainFlow(onExit: () -> Unit) {
+private fun MainFlow(
+    onExit: () -> Unit,
+    root: RootViewModel,
+) {
     // SnapshotStateList nie jest zapisywalny domyślnie: własny Saver (lista Stringów).
     val stack =
         rememberSaveable(
@@ -70,7 +73,8 @@ private fun MainFlow(onExit: () -> Unit) {
     }
 
     val labels = Section.entries.associateWith { sectionLabel(it) }
-    val entries = railEntries { labels.getValue(it) }
+    val newEpisodes by root.newEpisodes.collectAsStateWithLifecycle()
+    val entries = railEntries(newEpisodes) { labels.getValue(it) }
     // Wybór sekcji z szyny zaczyna stos od nowa: Home -> sekcja (BACK z sekcji wraca na szynę, z szyny na Home).
     val select: (String) -> Unit = { route ->
         stack.clear()

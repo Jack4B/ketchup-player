@@ -12,6 +12,8 @@ data class VodEntry(
     val myList: Boolean = false,
     val positionMs: Long = 0,
     val durationMs: Long = 0,
+    /** Serial z odcinkiem dodanym od ostatniego otwarcia (zielona kropka). */
+    val hasNewEpisodes: Boolean = false,
 ) {
     val progress: Float get() = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
 }
@@ -47,6 +49,12 @@ interface VodRepository {
     fun continueWatching(limit: Int): Flow<List<VodEntry>>
 
     fun entry(id: String): Flow<VodEntry?>
+
+    /** Czy jakikolwiek serial ma nowe odcinki (kropka na pozycji „Seriale” w szufladzie). */
+    fun anyNewEpisodes(): Flow<Boolean>
+
+    /** Użytkownik otworzył serial: nowe odcinki uznajemy za zobaczone. */
+    suspend fun markSeen(seriesId: String)
 
     fun episodes(seriesId: String): Flow<List<EpisodeEntry>>
 

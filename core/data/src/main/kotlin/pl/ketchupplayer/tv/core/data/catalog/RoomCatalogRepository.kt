@@ -165,6 +165,7 @@ class RoomCatalogRepository
                         vod.items.map { it.toVodEntity() },
                         vod.episodes.map { it.toEpisodeEntity() },
                     )
+                    vodDao.baselineSeen()
                 }
                 null
             } catch (e: kotlinx.coroutines.CancellationException) {

@@ -133,3 +133,14 @@ data class VodStateEntity(
     val durationMs: Long = 0,
     val updatedMs: Long? = null,
 )
+
+/**
+ * Co użytkownik już „widział” w serialu: znacznik czasu aktualizacji dostawcy i liczba odcinków z chwili ostatniego
+ * otwarcia (albo pierwszego zaimportowania). Wzrost którejś z tych wartości = nowy odcinek (zielona kropka).
+ */
+@Entity(tableName = "vod_seen")
+data class VodSeenEntity(
+    @PrimaryKey val itemId: String,
+    val seenAddedMs: Long?,
+    val seenEpisodes: Int,
+)

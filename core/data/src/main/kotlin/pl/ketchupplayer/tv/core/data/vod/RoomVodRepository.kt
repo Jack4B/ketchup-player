@@ -26,13 +26,18 @@ class RoomVodRepository
         private val clock: Clock,
     ) : VodRepository {
         private fun entries(items: Flow<List<VodItemEntity>>): Flow<List<VodEntry>> =
-            combine(items, dao.observeState()) { list, states ->
+            combine(items, dao.observeState(), dao.observeNewSeriesIds()) { list, states, fresh ->
                 val byId = states.associateBy { it.itemId }
+                val newIds = fresh.toHashSet()
                 list.map { e ->
                     val s = byId[e.id]
-                    VodEntry(e.toModel(), s?.myList == true, s?.positionMs ?: 0, s?.durationMs ?: 0)
+                    VodEntry(e.toModel(), s?.myList == true, s?.positionMs ?: 0, s?.durationMs ?: 0, e.id in newIds)
                 }
             }
+
+        override fun anyNewEpisodes(): Flow<Boolean> = dao.observeNewSeriesIds().map { it.isNotEmpty() }
+
+        override suspend fun markSeen(seriesId: String) = dao.markSeen(seriesId)
 
         override fun entries(kind: VodKind): Flow<List<VodEntry>> = entries(dao.observeByKind(kind.name))
 

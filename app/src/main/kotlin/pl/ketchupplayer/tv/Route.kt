@@ -72,5 +72,8 @@ object Routes {
             }
 }
 
-fun railEntries(label: (Section) -> String): List<RailEntry> =
-    Section.entries.map { RailEntry(it.route, label(it), it.icon, badge = it == Section.SERIES && false) }
+fun railEntries(
+    newEpisodes: Boolean,
+    label: (Section) -> String,
+): List<RailEntry> =
+    Section.entries.map { RailEntry(it.route, label(it), it.icon, badge = it == Section.SERIES && newEpisodes) }

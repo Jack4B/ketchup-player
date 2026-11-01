@@ -220,6 +220,8 @@ private fun Grid(
                 imageUrl = e.item.poster,
                 subtitle = subtitle(e),
                 progress = e.progress.takeIf { it > 0f },
+                newEpisodes = if (e.hasNewEpisodes) 1 else null,
+                newEpisodeLabel = if (e.hasNewEpisodes) stringResource(R.string.vod_new_episodes) else null,
                 fillWidth = true,
             )
         }
