@@ -1,5 +1,6 @@
 package pl.ketchupplayer.tv
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.KeyEvent
@@ -23,6 +24,7 @@ class MainActivity : ComponentActivity() {
     private val keyGuard = KeyRepeatGuard()
 
     /** Zalegające lub zbyt gęste powtórzenia klawisza są pomijane (pilot nie „przeskakuje” o kilka pól). */
+    @SuppressLint("RestrictedApi") // androidx.core oznacza ten punkt jako wewnętrzny, ale to publiczny Activity API
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         val navigation = event.keyCode in NAV_KEYS
         return if (navigation &&
