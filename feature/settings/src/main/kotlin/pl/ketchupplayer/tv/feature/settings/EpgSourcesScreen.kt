@@ -21,6 +21,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Switch
 import androidx.tv.material3.Text
+import pl.ketchupplayer.tv.core.designsystem.InitialFocusEffect
 import pl.ketchupplayer.tv.core.designsystem.KetchupButton
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.designsystem.ScreenScaffold
@@ -67,7 +68,7 @@ private fun SourceList(
 ) {
     val first = remember { FocusRequester() }
     // Lista z ViewModelu startuje pusta; fokus dopiero gdy pierwszy wiersz (z requesterem) istnieje.
-    LaunchedEffect(sources.firstOrNull()?.id) { if (sources.isNotEmpty()) first.requestFocus() }
+    InitialFocusEffect(first, key = sources.firstOrNull()?.id, enabled = sources.isNotEmpty())
     sources.forEachIndexed { i, source ->
         SettingsListItem(
             title = source.name,

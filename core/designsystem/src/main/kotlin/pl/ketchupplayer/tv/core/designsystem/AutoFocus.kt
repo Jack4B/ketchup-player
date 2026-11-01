@@ -31,3 +31,19 @@ fun Modifier.requestFocusWhenPlaced(enabled: Boolean = true): Modifier =
             }
         }
     }
+
+/**
+ * Początkowy fokus ekranu przez [requester] (po zmianie [key] ponownie). Na stronie osadzonej w panelu
+ * ([LocalBreadcrumb]) nic nie robi: fokus zostaje na liście kategorii po lewej.
+ */
+@androidx.compose.runtime.Composable
+fun InitialFocusEffect(
+    requester: FocusRequester,
+    key: Any? = Unit,
+    enabled: Boolean = true,
+) {
+    val embedded = LocalBreadcrumb.current != null
+    androidx.compose.runtime.LaunchedEffect(key, enabled, embedded) {
+        if (enabled && !embedded) requester.requestFocus()
+    }
+}

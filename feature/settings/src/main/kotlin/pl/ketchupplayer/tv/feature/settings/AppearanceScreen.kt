@@ -17,7 +17,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -40,6 +39,7 @@ import pl.ketchupplayer.tv.core.designsystem.AccentId
 import pl.ketchupplayer.tv.core.designsystem.AccentWarning
 import pl.ketchupplayer.tv.core.designsystem.DeviceClass
 import pl.ketchupplayer.tv.core.designsystem.FocusItem
+import pl.ketchupplayer.tv.core.designsystem.InitialFocusEffect
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.designsystem.ScreenScaffold
 import pl.ketchupplayer.tv.core.designsystem.ScreenTitle
@@ -66,7 +66,7 @@ fun AppearanceScreen(
     // BACK: najpierw zamyka edytor własnego koloru, potem wychodzi.
     BackHandler { if (state.editor != null) onEvent(AppearanceEvent.CloseCustom) else onBack() }
     val first = remember { FocusRequester() }
-    LaunchedEffect(Unit) { first.requestFocus() }
+    InitialFocusEffect(first)
     ScreenScaffold {
         ScreenTitle(stringResource(R.string.appearance_title))
         Text(stringResource(R.string.appearance_theme), fontSize = 20.sp, color = c.textSecondary)

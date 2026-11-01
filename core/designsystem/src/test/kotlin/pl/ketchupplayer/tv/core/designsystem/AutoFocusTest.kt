@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotFocused
@@ -56,6 +57,46 @@ class AutoFocusTest {
                         .requestFocusWhenPlaced()
                         .focusable(),
                 )
+            }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithTag("cel").assertIsNotFocused()
+    }
+
+    @Test
+    fun poczatkowyFokusEkranuDzialaPozaPanelemAleNieWPanelu() {
+        val standalone =
+            androidx.compose.ui.focus
+                .FocusRequester()
+        compose.setContent {
+            Box(
+                Modifier
+                    .size(40.dp)
+                    .testTag("cel")
+                    .focusRequester(standalone)
+                    .focusable(),
+            )
+            InitialFocusEffect(standalone)
+        }
+        compose.waitForIdle()
+        compose.onNodeWithTag("cel").assertIsFocused()
+    }
+
+    @Test
+    fun poczatkowyFokusEkranuWPaneluNieKradnieFokusu() {
+        val requester =
+            androidx.compose.ui.focus
+                .FocusRequester()
+        compose.setContent {
+            CompositionLocalProvider(LocalBreadcrumb provides "Ustawienia") {
+                Box(
+                    Modifier
+                        .size(40.dp)
+                        .testTag("cel")
+                        .focusRequester(requester)
+                        .focusable(),
+                )
+                InitialFocusEffect(requester)
             }
         }
         compose.waitForIdle()
