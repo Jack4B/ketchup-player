@@ -14,8 +14,7 @@ shot 01_start
 key KEYCODE_DPAD_CENTER      # OK na „Na żywo” (pusty katalog)
 shot 01b_na_zywo_pusto
 key KEYCODE_BACK
-key KEYCODE_DPAD_DOWN        # Dostawcy
-key KEYCODE_DPAD_DOWN        # Źródła EPG
+key KEYCODE_DPAD_RIGHT       # Źródła EPG (prawa kolumna, pierwszy wiersz)
 key KEYCODE_DPAD_CENTER
 shot 02_zrodla_epg
 key KEYCODE_DPAD_DOWN

@@ -3,11 +3,13 @@ package pl.ketchupplayer.tv
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -68,24 +70,55 @@ fun StartScreen(onNavigate: (Destination) -> Unit = {}) {
             textAlign = TextAlign.Center,
             color = c.textSecondary,
         )
-        val buttons = Modifier.padding(top = 4.dp).widthIn(max = 420.dp).fillMaxWidth(if (phone) 1f else 0.4f)
-        val entries =
-            listOf(
-                R.string.start_live to Destination.LIVE,
-                R.string.start_guide to Destination.GUIDE,
-                R.string.start_providers to Destination.PROVIDERS,
-                R.string.start_epg_sources to Destination.EPG_SOURCES,
-                R.string.start_playback to Destination.PLAYBACK,
-                R.string.start_appearance to Destination.APPEARANCE,
-            )
-        entries.forEachIndexed { i, (label, destination) ->
-            KetchupButton(
-                stringResource(label),
-                { onNavigate(destination) },
-                buttons,
-                primary = i == 0,
-                focusRequester = if (i == 0) first else null,
-            )
+        StartButtons(phone, first, onNavigate)
+    }
+}
+
+private val ENTRIES =
+    listOf(
+        R.string.start_live to Destination.LIVE,
+        R.string.start_guide to Destination.GUIDE,
+        R.string.start_providers to Destination.PROVIDERS,
+        R.string.start_epg_sources to Destination.EPG_SOURCES,
+        R.string.start_playback to Destination.PLAYBACK,
+        R.string.start_appearance to Destination.APPEARANCE,
+    )
+
+/** Telefon: jedna kolumna na całą szerokość. TV: dwie kolumny po trzy przyciski, bez przewijania w 540 dp. */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun StartButtons(
+    phone: Boolean,
+    first: FocusRequester,
+    onNavigate: (Destination) -> Unit,
+) {
+    @Composable
+    fun Entry(
+        index: Int,
+        modifier: Modifier,
+    ) {
+        val (label, destination) = ENTRIES[index]
+        KetchupButton(
+            stringResource(label),
+            { onNavigate(destination) },
+            modifier,
+            primary = index == 0,
+            focusRequester = if (index == 0) first else null,
+        )
+    }
+    if (phone) {
+        val width = Modifier.padding(top = 4.dp).widthIn(max = 420.dp).fillMaxWidth()
+        ENTRIES.indices.forEach { Entry(it, width) }
+    } else {
+        val width = Modifier.width(TV_BUTTON_WIDTH)
+        Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+            listOf(0, 3).forEach { from ->
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    for (i in from until from + 3) Entry(i, width)
+                }
+            }
         }
     }
 }
+
+private val TV_BUTTON_WIDTH = 300.dp
