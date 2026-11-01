@@ -94,11 +94,12 @@ class NetworkSettingsViewModel
                 combine(f, flowOf(name)) { p, n -> ProviderHeaderRow(id, n, p) }
             }
 
-        /** OK na liście: kolejny nagłówek z gotowej puli (bez wpisywania). */
-        fun cycle(row: ProviderHeaderRow) {
-            val all = UserAgentProfiles.ALL + customs.value
-            val next = all[(all.indexOf(row.profile) + 1).mod(all.size)]
-            viewModelScope.launch { headers.set(row.providerId, next) }
+        /** Wybór z listy (okno z ptaszkiem): zapisuje nagłówek dla listy. */
+        fun select(
+            row: ProviderHeaderRow,
+            profileId: String,
+        ) {
+            viewModelScope.launch { headers.set(row.providerId, UserAgentProfiles.byId(profileId)) }
         }
 
         private companion object {

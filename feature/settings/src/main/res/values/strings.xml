@@ -86,4 +86,5 @@
     <string name="epg_auto_refresh_hint">EPG co kilka godzin oraz listy starsze niż doba, po uruchomieniu aplikacji</string>
     <string name="network_probe">Testuj połączenie: %1$s</string>
     <string name="network_probe_hint">Sprawdza listę każdym nagłówkiem po kolei i pokazuje odpowiedź serwera (np. HTTP 513)</string>
+    <string name="network_pick_title">User-Agent: %1$s</string>
 </resources>

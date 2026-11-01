@@ -19,6 +19,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
+import pl.ketchupplayer.tv.core.designsystem.Choice
+import pl.ketchupplayer.tv.core.designsystem.ChoiceDialog
 import pl.ketchupplayer.tv.core.designsystem.KetchupButton
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.designsystem.ScreenScaffold
@@ -27,6 +29,7 @@ import pl.ketchupplayer.tv.core.designsystem.SettingsListItem
 import pl.ketchupplayer.tv.core.designsystem.TextInputField
 import pl.ketchupplayer.tv.core.designsystem.requestFocusWhenPlaced
 import pl.ketchupplayer.tv.core.network.UserAgentProfile
+import pl.ketchupplayer.tv.core.network.UserAgentProfiles
 
 @Composable
 fun NetworkSettingsRoute(
@@ -39,7 +42,7 @@ fun NetworkSettingsRoute(
     NetworkSettingsScreen(
         rows,
         customs,
-        viewModel::cycle,
+        viewModel::select,
         onAdd = viewModel::addCustom,
         onRemove = viewModel::removeCustom,
         onBack = onBack,
@@ -49,15 +52,15 @@ fun NetworkSettingsRoute(
 }
 
 /**
- * Nagłówek połączenia dla każdej listy: OK przełącza po puli (domyślny jak BK Player, VLC, TiviMate, Wink,
- * PremierLeagueModPlayer, … oraz własne wpisy). Własne User-Agenty dodajesz i usuwasz poniżej.
+ * Nagłówek połączenia dla każdej listy: OK otwiera listę wyboru z ptaszkiem (OTT, VLC, TiviMate, Wink, … i własne
+ * wpisy). Własne User-Agenty dodajesz i usuwasz poniżej.
  */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun NetworkSettingsScreen(
     rows: List<ProviderHeaderRow>,
     customs: List<UserAgentProfile>,
-    onCycle: (ProviderHeaderRow) -> Unit,
+    onSelect: (ProviderHeaderRow, String) -> Unit,
     onAdd: (String) -> Boolean,
     onRemove: (UserAgentProfile) -> Unit,
     onBack: () -> Unit,
@@ -66,9 +69,25 @@ fun NetworkSettingsScreen(
 ) {
     BackHandler(onBack = onBack)
     val c = KetchupTheme.colors
+    var picking by remember { mutableStateOf<ProviderHeaderRow?>(null) }
     var adding by remember { mutableStateOf(false) }
     var draft by remember { mutableStateOf("") }
     var invalid by remember { mutableStateOf(false) }
+    picking?.let { row ->
+        ChoiceDialog(
+            title = stringResource(R.string.network_pick_title, row.name),
+            choices =
+                (UserAgentProfiles.ALL + customs).map {
+                    Choice(it.id, it.label, it.value ?: stringResource(R.string.network_auto_hint))
+                },
+            selectedId = row.profile.id,
+            onSelect = {
+                onSelect(row, it)
+                picking = null
+            },
+            onDismiss = { picking = null },
+        )
+    }
     ScreenScaffold(scrollable = false) {
         ScreenTitle(stringResource(R.string.network_title))
         Text(stringResource(R.string.network_hint), color = c.textSecondary)
@@ -80,7 +99,7 @@ fun NetworkSettingsScreen(
                 SettingsListItem(
                     title = row.name,
                     subtitle = row.profile.value ?: stringResource(R.string.network_auto_hint),
-                    onClick = { onCycle(row) },
+                    onClick = { picking = row },
                     modifier = if (i == 0) Modifier.requestFocusWhenPlaced() else Modifier,
                     trailing = { Text(row.profile.label, color = c.textPrimary, maxLines = 1) },
                 )

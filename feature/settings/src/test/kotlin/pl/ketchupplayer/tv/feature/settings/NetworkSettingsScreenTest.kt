@@ -3,7 +3,9 @@ package pl.ketchupplayer.tv.feature.settings
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
@@ -40,25 +42,30 @@ class NetworkSettingsScreenTest {
     @Test
     fun screenshot() {
         compose.setContent {
-            KetchupTheme(device = DeviceClass.TV) { NetworkSettingsScreen(rows, customs, {}, { true }, {}, {}) }
+            KetchupTheme(
+                device = DeviceClass.TV,
+            ) { NetworkSettingsScreen(rows, customs, { _, _ -> }, { true }, {}, {}) }
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/network_settings.png")
     }
 
-    /** D-pad: fokus na pierwszej liście, OK przełącza jej nagłówek; DÓŁ + OK drugiej. */
+    /** D-pad: OK na liście otwiera okno wyboru z ptaszkiem; DÓŁ + OK wybiera kolejną pozycję (OTT Navigator). */
     @Test
-    fun dpadOkPrzelaczaNaglowek() {
-        val cycled = mutableListOf<String>()
+    fun dpadOkOtwieraListeWyboruIWybieraNaglowek() {
+        val picked = mutableListOf<String>()
         compose.setContent {
             KetchupTheme(device = DeviceClass.TV) {
-                NetworkSettingsScreen(rows, customs, { cycled += it.providerId }, { true }, {}, {})
+                NetworkSettingsScreen(rows, customs, { r, id -> picked += r.providerId + ":" + id }, { true }, {}, {})
             }
         }
         compose.waitForIdle()
         compose.onRoot().performKeyInput { pressKey(Key.DirectionCenter) }
-        compose.onRoot().performKeyInput { pressKey(Key.DirectionDown) }
-        compose.onRoot().performKeyInput { pressKey(Key.DirectionCenter) }
-        assertEquals(listOf("a", "b"), cycled)
+        compose.waitForIdle()
+        compose.onNodeWithText("✓").assertExists() // zaznaczona pozycja ma ptaszek
+        // Okno wyboru to osobny korzeń (Dialog): klawisze trafiają do ostatniego.
+        compose.onAllNodes(isRoot()).onLast().performKeyInput { pressKey(Key.DirectionDown) }
+        compose.onAllNodes(isRoot()).onLast().performKeyInput { pressKey(Key.DirectionCenter) }
+        assertEquals(listOf("a:ott"), picked)
     }
 
     @Test
@@ -67,7 +74,7 @@ class NetworkSettingsScreenTest {
         compose.setContent {
             KetchupTheme(
                 device = DeviceClass.TV,
-            ) { NetworkSettingsScreen(rows, customs, {}, { true }, {}, { backs++ }) }
+            ) { NetworkSettingsScreen(rows, customs, { _, _ -> }, { true }, {}, { backs++ }) }
         }
         compose.waitForIdle()
         compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
@@ -83,7 +90,7 @@ class NetworkSettingsScreenTest {
                 NetworkSettingsScreen(
                     rows,
                     customs,
-                    {},
+                    { _, _ -> },
                     { true },
                     {},
                     {},
