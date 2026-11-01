@@ -119,7 +119,10 @@ private const val GRANAT_PANEL_ALPHA = 0.72f
 
 private val RAIL_COLLAPSED = 52.dp
 private val RAIL_EXPANDED = 168.dp
-private val CONTENT_GAP = 20.dp
+// Małe marginesy: telewizory nie przycinają obrazu (overscan wyłączony), więc zawartość może iść blisko krawędzi.
+private val SHELL_MARGIN_H = 16.dp
+private val SHELL_MARGIN_V = 10.dp
+private val CONTENT_GAP = 12.dp
 
 /**
  * Powłoka aplikacji (makiety v3): szyna nawigacji po lewej (ikony, po fokusie rozwija się z podpisami), treść obok.
@@ -145,7 +148,7 @@ fun AppShell(
     BackHandler(enabled = railFocused, onBack = onRailBack)
     ThemedBackground(modifier) {
         CompositionLocalProvider(LocalInShell provides true, LocalFocusRail provides toRail) {
-            Box(Modifier.fillMaxSize().padding(horizontal = 48.dp, vertical = 27.dp)) {
+            Box(Modifier.fillMaxSize().padding(horizontal = SHELL_MARGIN_H, vertical = SHELL_MARGIN_V)) {
                 Box(
                     Modifier
                         .fillMaxSize()

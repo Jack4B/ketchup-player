@@ -20,7 +20,7 @@ import androidx.tv.material3.Text
 
 /**
  * Szkielet ekranu z marginesami zależnymi od urządzenia:
- * TV = overscan 48×27 dp (konspekt §4.1), telefon = systemowe wcięcia (paski, wycięcie) + 16 dp.
+ * TV = małe marginesy 16×10 dp (użytkownik: bez dużego overscanu), telefon = systemowe wcięcia (paski, wycięcie) + 16 dp.
  * Zawartość przewija się pionowo, więc nic nie ucieka poza ekran w pionie ani w poziomie.
  */
 @Composable
@@ -60,8 +60,8 @@ fun ScreenScaffold(
     )
 }
 
-private val TV_MARGIN_H = 48.dp
-private val TV_MARGIN_V = 27.dp
+private val TV_MARGIN_H = 16.dp
+private val TV_MARGIN_V = 10.dp
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable

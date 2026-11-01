@@ -181,7 +181,7 @@ private fun VodOsd(
     val duration = state.durationMs ?: 0L
     val progress = if (duration > 0) (state.positionMs.toFloat() / duration).coerceIn(0f, 1f) else 0f
     Column(
-        modifier.fillMaxWidth().background(c.scrim.copy(alpha = 0.75f)).padding(horizontal = 48.dp, vertical = 20.dp),
+        modifier.fillMaxWidth().background(c.scrim.copy(alpha = 0.75f)).padding(horizontal = 24.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Text(title, fontSize = 24.sp, color = c.textPrimary, maxLines = 1)
@@ -223,7 +223,7 @@ private fun Osd(
     modifier: Modifier,
 ) {
     val c = KetchupTheme.colors
-    Box(modifier.padding(horizontal = 48.dp, vertical = 27.dp).background(c.scrim.copy(alpha = 0.7f)).padding(16.dp)) {
+    Box(modifier.padding(horizontal = 24.dp, vertical = 14.dp).background(c.scrim.copy(alpha = 0.7f)).padding(16.dp)) {
         Text(name, fontSize = 24.sp, color = c.textPrimary)
     }
 }
