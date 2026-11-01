@@ -118,6 +118,28 @@ class LiveTvScreenTest {
         assertEquals(listOf<LiveTvEvent>(LiveTvEvent.SelectGroup("Info")), events.actions())
     }
 
+    /** Strzałka w lewo na liście wysuwa panel grup (zrzut: panel nad przyciemnioną listą), BACK go zamyka. */
+    @Test
+    fun screenshotPanelGrup() {
+        show(full.copy(groupCounts = mapOf("Info" to 24, "Ogólne" to 38, "Sport" to 56), totalCount = 118))
+        key(Key.DirectionLeft)
+        compose.waitForIdle()
+        compose.onRoot().captureRoboImage("src/test/screenshots/livetv_groups_panel.png")
+    }
+
+    @Test
+    fun backZamykaPanelGrupZamiastWychodzic() {
+        var backs = 0
+        show(full, onBack = { backs++ })
+        key(Key.DirectionLeft)
+        compose.waitForIdle()
+        compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        compose.waitForIdle()
+        assertEquals(0, backs)
+        compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        assertEquals(1, backs)
+    }
+
     @Test
     fun pustyKatalogMaPrzyciskDostawcow() {
         var clicks = 0

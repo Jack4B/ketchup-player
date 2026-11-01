@@ -119,6 +119,7 @@ private const val GRANAT_PANEL_ALPHA = 0.72f
 
 private val RAIL_COLLAPSED = 52.dp
 private val RAIL_EXPANDED = 168.dp
+
 // Małe marginesy: telewizory nie przycinają obrazu (overscan wyłączony), więc zawartość może iść blisko krawędzi.
 private val SHELL_MARGIN_H = 16.dp
 private val SHELL_MARGIN_V = 10.dp

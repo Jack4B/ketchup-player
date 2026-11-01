@@ -20,7 +20,8 @@ import androidx.tv.material3.Text
 
 /**
  * Szkielet ekranu z marginesami zależnymi od urządzenia:
- * TV = małe marginesy 16×10 dp (użytkownik: bez dużego overscanu), telefon = systemowe wcięcia (paski, wycięcie) + 16 dp.
+ * TV = małe marginesy 16×10 dp (użytkownik: bez dużego overscanu),
+ * telefon = systemowe wcięcia (paski, wycięcie) + 16 dp.
  * Zawartość przewija się pionowo, więc nic nie ucieka poza ekran w pionie ani w poziomie.
  */
 @Composable

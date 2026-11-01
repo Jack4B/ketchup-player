@@ -172,6 +172,18 @@ class ScenariosTest {
     /** Pierwszy węzeł z akcją kliknięcia o danym tekście (ten sam tekst bywa też w panelu szczegółów/podglądzie). */
     private fun clickable(text: String) = compose.onAllNodesWithText(text).filter(hasClickAction())[0]
 
+    /** Na żywo: grupy są w wysuwanym panelu; przycisk „Grupy: …” (jak LEWO na liście) otwiera go. */
+    private fun openGroups() {
+        waitFor {
+            compose
+                .onAllNodes(hasText("Grupy:", substring = true) and hasClickAction())
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+        compose.onAllNodes(hasText("Grupy:", substring = true) and hasClickAction())[0].performClick()
+        compose.waitForIdle()
+    }
+
     private fun click(text: String) {
         waitForText(text)
         clickable(text).performScrollTo().performClick()
@@ -205,6 +217,7 @@ class ScenariosTest {
         // Ulubione: długie przytrzymanie, potem grupa „Ulubione”.
         clickable("4 Fun Dance").performTouchInput { longClick() }
         waitForText("★ 4 Fun Dance")
+        openGroups()
         click("★ Ulubione")
         waitFor { compose.onAllNodesWithText("4 Fun TV").fetchSemanticsNodes().isEmpty() }
 
@@ -349,6 +362,7 @@ class ScenariosTest {
         nav("Na żywo")
         waitForText("TVN24 HD")
         waitForText("Polsat News")
+        openGroups()
         waitForText("PL | News") // grupa z kategorii Xtream
     }
 
