@@ -76,6 +76,15 @@ object BkFailoverPolicy {
     fun tvSwitchDelaySeconds(requested: Int): Int =
         if (requested in TV_DELAY_OPTIONS_SECONDS) requested else DEFAULT_TV_DELAY_SECONDS
 
+    fun tvSwitchDelayMs(requested: Int): Long = tvSwitchDelaySeconds(requested) * 1000L
+
+    /** Ile czasu kanał na żywo nie robi postępu: od późniejszego z (start epizodu, ostatni postęp bufora). */
+    fun tvNoProgressMs(
+        now: Long,
+        episodeStart: Long,
+        lastBufferProgress: Long,
+    ): Long = maxOf(0L, now - maxOf(episodeStart, lastBufferProgress))
+
     /** Przełącznik globalny ORAZ przełącznik dla danego typu treści. */
     fun enabled(
         settings: FailoverSettings,

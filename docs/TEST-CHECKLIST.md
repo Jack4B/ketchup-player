@@ -64,7 +64,7 @@ Oznaczenia: ✅ pokryte automatycznie, 🖐 do sprawdzenia ręcznie na TV, ⚠ z
 | E3 | Ustawienia → Odtwarzanie → wyłącz przełączanie | Zepsuty kanał nie przełącza się na drugą listę | ✅ |
 | E4 | Czułość: szybka / standardowa / ostrożna; opóźnienie 5/10/15/25 s | Zapamiętane po restarcie; zmienia czas reakcji | ✅ logika; 🖐 odczucie w praktyce |
 | E5 | Kanał zacina się (nie pada) na jednej liście | Po czasie z ustawień przełącza na drugą | ✅ testy na wirtualnym czasie; 🖐 prawdziwa sieć |
-| E6 | Zgodność z logiką starej aplikacji (golden master) | ⚠ brak fixture'ów, wartości ze specyfikacji | — |
+| E6 | Zgodność z logiką starej aplikacji (golden master) | Progi, cooldown, ponowienia, opóźnienie TV, przełączniki identyczne ze starym `BkFailoverPolicy` (107 przypadków) | ✅ `BkFailoverPolicyGoldenTest`; pozostałe polityki (§10.2) po resecie |
 
 ## F. Przewodnik EPG
 | # | Scenariusz | Oczekiwany wynik | Auto |

@@ -25,7 +25,7 @@ Gałąź `faza-d` (PR #4, względem `faza-b`). Obejmuje też część faz P (pol
 | Stalker | ❌ | poza zakresem tej iteracji |
 | Filmy i seriale (M3U/Xtream) | ❌ | świadomie pominięte (`liveOnly`), ekrany VOD w kolejnej fazie |
 | Failover: logika | ✅ | 10 testów na wirtualnym czasie |
-| Failover: golden master ze starej aplikacji | ⏳ | brak fixture'ów od właściciela |
+| Failover: golden master ze starej aplikacji | ✅ | `BkFailoverPolicyGoldenTest` (fixture wygenerowany kodem referencyjnym poza repo) |
 | Failover na prawdziwym ExoPlayerze: 404 na pierwszej liście, przełączenie na drugą | ✅ | emulator w CI (zrzuty 12–13, log serwera: 2× 404, segmenty 200) |
 | Failover: zacięcie i błędy 5xx na prawdziwym ExoPlayerze | ⏳ | logika na wirtualnym czasie i E2E z atrapą; emulator tylko 404 |
 | Zapis dostawców na prawdziwym Android Keystore | ✅ | emulator w CI (`ui_po_zapisie_A.xml`: „Kanały: 1”) |
