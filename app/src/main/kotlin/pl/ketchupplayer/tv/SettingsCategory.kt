@@ -38,6 +38,7 @@ import pl.ketchupplayer.tv.core.designsystem.panel
 import pl.ketchupplayer.tv.feature.providers.ProvidersRoute
 import pl.ketchupplayer.tv.feature.settings.AppearanceRoute
 import pl.ketchupplayer.tv.feature.settings.EpgSourcesRoute
+import pl.ketchupplayer.tv.feature.settings.GroupsSettingsRoute
 import pl.ketchupplayer.tv.feature.settings.PlaybackSettingsRoute
 
 /** Kategorie ustawień (makieta v3 09). Te bez własnych opcji pokazują krótką informację. */
@@ -46,6 +47,7 @@ enum class SettingsCategory(
     val page: SettingsPage? = null,
 ) {
     PROVIDERS(R.string.settings_cat_providers, SettingsPage.PROVIDERS),
+    GROUPS(R.string.settings_cat_groups, SettingsPage.GROUPS),
     PLAYBACK(R.string.settings_cat_playback, SettingsPage.PLAYBACK),
     TV(R.string.settings_cat_tv, SettingsPage.EPG_SOURCES),
     VOD(R.string.settings_cat_vod),
@@ -133,6 +135,7 @@ private fun CategoryContent(
 ) {
     when (category) {
         SettingsCategory.PROVIDERS -> ProvidersRoute(onBack = onBack)
+        SettingsCategory.GROUPS -> GroupsSettingsRoute(onBack = onBack)
         SettingsCategory.PLAYBACK -> PlaybackSettingsRoute(onBack = onBack)
         SettingsCategory.TV -> EpgSourcesRoute(onBack = onBack)
         SettingsCategory.APPEARANCE -> AppearanceRoute(onBack = onBack)

@@ -787,6 +787,29 @@ class ScenariosTest {
         assertEquals(listOf("$host/tvn24.m3u8"), FakePlayers.played.toList())
     }
 
+    /** Scenariusz: lista z kanałami z kilku krajów; wyłączona w Ustawieniach grupa UK znika z Na żywo. */
+    @Test
+    fun wylaczonaGrupaZnikaZNaZywo() {
+        val host = "http://127.0.0.1:${server.port}"
+        server.serve("/mix.m3u") {
+            "#EXTM3U\n" +
+                "#EXTINF:-1 group-title=\"PL | Info\",TVN 24\n$host/tvn24.m3u8\n" +
+                "#EXTINF:-1 group-title=\"UK | News\",BBC World\n$host/bbc.m3u8\n"
+        }
+        runBlocking { catalog.addM3u("Mix", server.url("/mix.m3u")) }
+        nav("Na żywo")
+        waitForText("TVN 24")
+        waitForText("BBC World")
+
+        settingsPage("Grupy i kategorie")
+        click("UK | News") // przełącznik grupy: wyłączona
+        compose.waitForIdle()
+
+        nav("Na żywo")
+        waitForText("TVN 24")
+        waitFor { compose.onAllNodesWithText("BBC World").fetchSemanticsNodes().isEmpty() }
+    }
+
     /** Scenariusz: użytkownik wybiera motyw Bordo; po restarcie aktywności motyw jest zapamiętany. */
     @Test
     fun wybranyMotywPrzezywaRestart() {

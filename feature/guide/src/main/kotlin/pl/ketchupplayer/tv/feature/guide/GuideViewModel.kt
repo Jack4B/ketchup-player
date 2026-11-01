@@ -26,6 +26,7 @@ class GuideViewModel
         private val catalog: CatalogRepository,
         private val epg: EpgRepository,
         private val interestsRepo: pl.ketchupplayer.tv.core.data.interests.InterestsRepository,
+        private val groupsRepo: pl.ketchupplayer.tv.core.data.groups.GroupsRepository,
         private val clock: Clock,
     ) : ViewModel() {
         /** Okno liczone raz na wejście do ekranu; przewijanie czasu w przód to kolejna iteracja. */
@@ -46,7 +47,15 @@ class GuideViewModel
 
         val state: StateFlow<GuideUiState> =
             combine(
-                combine(catalog.liveChannels(), catalog.liveGroups(), selection) { c, g, sel -> Triple(c, g, sel) },
+                combine(
+                    catalog.liveChannels(),
+                    catalog.liveGroups(),
+                    selection,
+                    groupsRepo.hidden(pl.ketchupplayer.tv.core.data.groups.GroupKind.TV),
+                ) { c, g, sel, hidden ->
+                    // Ukryte grupy (Ustawienia → Grupy) znikają z listy kanałów i z panelu grup.
+                    Triple(c.filter { it.group !in hidden }, g.filter { it !in hidden }, sel)
+                },
                 combine(catalog.favoriteIds(), catalog.recentChannels(RECENT_LIMIT), epgRevision) { f, r, rev ->
                     Triple(f, r, rev)
                 },

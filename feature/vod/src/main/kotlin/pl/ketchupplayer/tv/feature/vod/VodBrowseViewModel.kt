@@ -25,6 +25,7 @@ class VodBrowseViewModel
     @Inject
     constructor(
         private val repo: VodRepository,
+        private val groups: pl.ketchupplayer.tv.core.data.groups.GroupsRepository,
     ) : ViewModel() {
         private val mode = MutableStateFlow<VodMode?>(null)
         private val category = MutableStateFlow<String?>(null)
@@ -41,13 +42,26 @@ class VodBrowseViewModel
 
         val state: StateFlow<VodBrowseUiState> =
             combine(
-                mode.filterNotNull().flatMapLatest { m -> source(m) },
+                mode.filterNotNull().flatMapLatest { m -> visibleSource(m) },
                 mode,
                 category,
                 query,
                 sort,
             ) { all, m, cat, q, s -> build(all, m ?: VodMode.MOVIES, cat, q, s) }
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_MS), VodBrowseUiState())
+
+        /** Filmy i seriale bez ukrytych kategorii; Moja lista zostaje pełna (to wybór użytkownika). */
+        private fun visibleSource(mode: VodMode): Flow<List<VodEntry>> {
+            val kind =
+                when (mode) {
+                    VodMode.MOVIES -> pl.ketchupplayer.tv.core.data.groups.GroupKind.MOVIES
+                    VodMode.SERIES -> pl.ketchupplayer.tv.core.data.groups.GroupKind.SERIES
+                    else -> return source(mode)
+                }
+            return combine(source(mode), groups.hidden(kind)) { all, hidden ->
+                if (hidden.isEmpty()) all else all.filter { it.item.category !in hidden }
+            }
+        }
 
         private fun source(mode: VodMode): Flow<List<VodEntry>> =
             when (mode) {

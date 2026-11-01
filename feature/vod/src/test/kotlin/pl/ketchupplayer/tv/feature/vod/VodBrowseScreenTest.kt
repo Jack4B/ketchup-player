@@ -138,7 +138,7 @@ class VodBrowseScreenTest {
 
     private fun key(k: Key) = compose.onRoot().performKeyInput { pressKey(k) }
 
-    private val base get() = stateOf(VodBrowseViewModel(FakeVodRepo(MOVIES)))
+    private val base get() = stateOf(VodBrowseViewModel(FakeVodRepo(MOVIES), FakeGroups()))
 
     @Test
     fun screenshotSiatki() {

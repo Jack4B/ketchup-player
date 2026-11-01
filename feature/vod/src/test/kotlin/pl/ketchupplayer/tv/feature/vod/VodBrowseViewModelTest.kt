@@ -21,9 +21,29 @@ class VodBrowseViewModelTest {
     fun tearDown() = Dispatchers.resetMain()
 
     @Test
+    fun `ukryta kategoria znika z listy i z panelu kategorii a po pokazaniu wraca`() =
+        runTest {
+            val groups = FakeGroups(setOf("Akcja"))
+            val vm = VodBrowseViewModel(FakeVodRepo(MOVIES), groups)
+            vm.bind(VodMode.MOVIES)
+            val hidden = vm.state.first { !it.loading }
+            assertEquals(false, hidden.entries.any { it.item.category == "Akcja" })
+            assertEquals(false, hidden.categories.any { it.first == "Akcja" })
+            groups.setVisible(pl.ketchupplayer.tv.core.data.groups.GroupKind.MOVIES, "Akcja", true)
+            assertEquals(
+                true,
+                vm.state
+                    .first { s ->
+                        s.entries.any { it.item.category == "Akcja" }
+                    }.entries
+                    .isNotEmpty(),
+            )
+        }
+
+    @Test
     fun `szukanie, kategoria i sortowanie w ViewModelu`() =
         runTest {
-            val vm = VodBrowseViewModel(FakeVodRepo(MOVIES))
+            val vm = VodBrowseViewModel(FakeVodRepo(MOVIES), FakeGroups())
             vm.bind(VodMode.MOVIES)
             vm.state.first { !it.loading }
             // Pusty stan startowy zostaje zastąpiony po pierwszej emisji; sprawdzamy wyniki przez zdarzenia.
@@ -68,7 +88,7 @@ class VodBrowseViewModelTest {
         runTest {
             val noDate = MOVIES.map { it.copy(item = it.item.copy(addedMs = null)) }
             val mixed = noDate.take(2) + MOVIES.drop(2)
-            val vm = VodBrowseViewModel(FakeVodRepo(mixed))
+            val vm = VodBrowseViewModel(FakeVodRepo(mixed), FakeGroups())
             vm.bind(VodMode.MOVIES)
             val state = vm.state.first { !it.loading }
             assertEquals(MOVIES.size, state.entries.size)

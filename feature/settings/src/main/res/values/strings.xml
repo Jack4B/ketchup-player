@@ -52,4 +52,12 @@
     <string name="playback_delay">Maksymalny czas buforowania</string>
     <string name="playback_delay_hint">Po tym czasie ciągłego buforowania kanał TV zostanie przełączony</string>
     <string name="playback_seconds">%1$d s</string>
+    <string name="groups_title">Grupy i kategorie</string>
+    <string name="groups_tv">Kanały</string>
+    <string name="groups_movies">Filmy</string>
+    <string name="groups_series">Seriale</string>
+    <string name="groups_show_all">Pokaż wszystkie</string>
+    <string name="groups_hide_all">Ukryj wszystkie</string>
+    <string name="groups_empty">Brak grup. Dodaj listę w „Listy i dostawcy”.</string>
+    <string name="groups_count">%1$d pozycji</string>
 </resources>

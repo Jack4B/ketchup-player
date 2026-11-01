@@ -11,6 +11,7 @@
     <string name="nav_settings">Ustawienia</string>
     <string name="coming_soon">Ten ekran pojawi się w kolejnej wersji.</string>
     <string name="settings_cat_providers">Listy i dostawcy</string>
+    <string name="settings_cat_groups">Grupy i kategorie</string>
     <string name="settings_cat_playback">Odtwarzanie</string>
     <string name="settings_cat_tv">Telewizja</string>
     <string name="settings_cat_vod">Filmy i seriale</string>

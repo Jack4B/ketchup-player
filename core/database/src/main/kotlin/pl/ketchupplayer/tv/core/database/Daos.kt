@@ -43,6 +43,12 @@ interface ChannelDao {
     @Query("SELECT DISTINCT groupName FROM channels WHERE type = :type AND groupName IS NOT NULL ORDER BY groupName")
     fun observeGroups(type: String): Flow<List<String>>
 
+    @Query(
+        "SELECT groupName AS name, COUNT(*) AS cnt FROM channels " +
+            "WHERE type = :type AND groupName IS NOT NULL GROUP BY groupName ORDER BY groupName",
+    )
+    fun observeGroupCounts(type: String): Flow<List<NameCount>>
+
     @Query("SELECT * FROM channels WHERE id = :id")
     suspend fun get(id: String): ChannelEntity?
 
@@ -165,6 +171,12 @@ interface VodDao {
     @Query("SELECT * FROM vod_items WHERE kind = :kind ORDER BY title")
     fun observeByKind(kind: String): Flow<List<VodItemEntity>>
 
+    @Query(
+        "SELECT category AS name, COUNT(*) AS cnt FROM vod_items " +
+            "WHERE kind = :kind AND category IS NOT NULL GROUP BY category ORDER BY category",
+    )
+    fun observeCategoryCounts(kind: String): Flow<List<NameCount>>
+
     @Query("SELECT * FROM vod_items WHERE id = :id")
     suspend fun get(id: String): VodItemEntity?
 
@@ -255,3 +267,9 @@ interface VodDao {
         const val INSERT_CHUNK = 500
     }
 }
+
+/** Nazwa grupy/kategorii i liczba pozycji (do ekranu wyboru grup). */
+data class NameCount(
+    val name: String,
+    val cnt: Int,
+)
