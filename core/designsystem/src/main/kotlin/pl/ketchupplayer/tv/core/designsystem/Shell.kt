@@ -205,7 +205,12 @@ private fun NavRail(
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Box(Modifier.fillMaxWidth().height(RAIL_AVATAR_BOX), contentAlignment = Alignment.Center) {
-            Box(Modifier.size(RAIL_AVATAR).clip(CircleShape), contentAlignment = Alignment.Center) { avatar() }
+            Box(
+                Modifier.size(RAIL_AVATAR).clip(RoundedCornerShape(RAIL_AVATAR_CORNER)),
+                contentAlignment = Alignment.Center,
+            ) {
+                avatar()
+            }
         }
         val top = entries.filter { it.icon != RailIcon.SETTINGS }
         top.forEach { RailItem(it, it.id == selectedId, expanded, requesters.getValue(it.id)) { onSelect(it.id) } }
@@ -228,6 +233,7 @@ private const val RAIL_GRANAT_OPEN = 0xFF092C44
 private const val RAIL_BORDO = 0xFF4A252A
 private const val RAIL_ANIMATION_MS = 160
 private val RAIL_AVATAR = 40.dp
+private val RAIL_AVATAR_CORNER = 10.dp
 private val RAIL_AVATAR_BOX = 52.dp
 
 @OptIn(ExperimentalTvMaterial3Api::class)

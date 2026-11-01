@@ -85,10 +85,10 @@ private fun MainFlow(onExit: () -> Unit) {
         onRailBack = { if (top == Routes.HOME) onExit() else select(Routes.HOME) },
         avatar = {
             Image(
-                painterResource(R.drawable.sygnet),
+                painterResource(R.drawable.logo_app),
                 null,
                 Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Fit,
             )
         },
     ) {

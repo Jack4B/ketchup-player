@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Ketchup Player</string>
-    <string name="start_epg_sources">Źródła EPG</string>
-    <string name="start_playback">Odtwarzanie</string>
-    <string name="start_appearance">Wygląd</string>
-    <string name="start_providers">Dostawcy</string>
     <string name="nav_profile">Profil</string>
     <string name="nav_search">Szukaj</string>
     <string name="nav_home">Home</string>
