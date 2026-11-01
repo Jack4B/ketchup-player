@@ -91,9 +91,30 @@ class ScenariosTest {
 
     private val server = ProviderServer()
 
+    @OptIn(coil3.annotation.DelicateCoilApi::class)
+    private fun blockImageNetwork() {
+        // Fixtury mają prawdziwe adresy logo (https): bez tego Coil łączy się z internetem i dekoduje bitmapy w tle,
+        // co po zakończeniu testu kończyło się natywnym crashem JVM (exit 134) na CI. Obrazy w scenariuszach: błąd.
+        coil3.SingletonImageLoader.setUnsafe(
+            coil3.ImageLoader
+                .Builder(
+                    androidx.test.core.app.ApplicationProvider
+                        .getApplicationContext(),
+                ).components {
+                    add(
+                        coil3.intercept.Interceptor { chain ->
+                            coil3.request.ErrorResult(null, chain.request, IllegalStateException("offline w testach"))
+                        },
+                    )
+                }.build(),
+        )
+    }
+
     @Before
     fun setUp() {
         hilt.inject()
+        blockImageNetwork()
+        blockImageNetwork()
         FakePlayers.reset()
         // Hermetyczność: wbudowane źródła EPG (internet) wyłączone, EPG tylko z serwera testowego.
         runBlocking {
