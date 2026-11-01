@@ -108,23 +108,20 @@ class RoomCatalogRepository
             val provider =
                 factory.create(entity)
                     ?: return Result.failure(IllegalStateException("Brak zapisanych danych dostawcy"))
-            val result = provider.loadChannels()
+            val result =
+                try {
+                    provider.loadChannels()
+                } catch (e: OutOfMemoryError) {
+                    Result.failure(IllegalStateException("Za mało pamięci na tak dużą listę", e))
+                }
             val now = clock.nowMs()
             return result.fold(
                 onSuccess = { channels ->
                     channelDao.replaceAll(id.value, channels.map { it.toEntity() })
                     provider.epgUrl()?.let { secrets.putEpg(id, it) }
-                    // Filmy i seriale są dodatkiem: ich błąd nie psuje odświeżenia kanałów.
-                    if (Capability.VOD in provider.capabilities) {
-                        provider.loadVod().onSuccess { vod ->
-                            vodDao.replaceAll(
-                                id.value,
-                                vod.items.map { it.toVodEntity() },
-                                vod.episodes.map { it.toEpisodeEntity() },
-                            )
-                        }
-                    }
-                    providerDao.markRefreshed(id.value, now, null, null)
+                    // Filmy i seriale są dodatkiem: ich błąd (także brak pamięci na dużym katalogu) nie psuje kanałów.
+                    val vodNote = importVodSafely(provider, id)
+                    providerDao.markRefreshed(id.value, now, vodNote, null)
                     Result.success(channels.size)
                 },
                 onFailure = { e ->
@@ -132,6 +129,31 @@ class RoomCatalogRepository
                     Result.failure(e)
                 },
             )
+        }
+
+        /** Zwraca notatkę dla użytkownika, gdy katalog filmów i seriali trzeba było pominąć; null = bez uwag. */
+        @Suppress("TooGenericExceptionCaught", "SwallowedException")
+        private suspend fun importVodSafely(
+            provider: pl.ketchupplayer.tv.provider.api.IptvProvider,
+            id: ProviderId,
+        ): String? {
+            if (Capability.VOD !in provider.capabilities) return null
+            return try {
+                provider.loadVod().onSuccess { vod ->
+                    vodDao.replaceAll(
+                        id.value,
+                        vod.items.map { it.toVodEntity() },
+                        vod.episodes.map { it.toEpisodeEntity() },
+                    )
+                }
+                null
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                VOD_SKIPPED
+            } catch (e: OutOfMemoryError) {
+                VOD_SKIPPED_MEMORY
+            }
         }
 
         override suspend fun remove(id: ProviderId) {
@@ -222,3 +244,6 @@ private fun pl.ketchupplayer.tv.core.model.Episode.toEpisodeEntity() =
         poster,
         addedMs,
     )
+
+private const val VOD_SKIPPED = "Filmy i seriale pominięte (błąd pobierania katalogu)"
+private const val VOD_SKIPPED_MEMORY = "Filmy i seriale pominięte (za duży katalog na tym urządzeniu)"

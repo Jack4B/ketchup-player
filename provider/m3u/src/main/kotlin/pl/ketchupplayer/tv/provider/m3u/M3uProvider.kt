@@ -40,18 +40,12 @@ class M3uProvider(
             }.fold(
                 onSuccess = { playlist ->
                     lastEpgUrl = playlist.epgUrl
-                    if (playlist.channels.isEmpty()) {
-                        Result.failure(
-                            ProviderError.BadResponse(
-                                if (playlist.omittedVod > 0) {
-                                    "Lista zawiera tylko filmy i seriale (obsługa w kolejnej wersji)"
-                                } else {
-                                    "Lista nie zawiera żadnych kanałów"
-                                },
-                            ),
-                        )
-                    } else {
-                        Result.success(playlist.channels)
+                    when {
+                        // Lista tylko z filmami i serialami jest poprawna: kanałów na żywo po prostu nie ma.
+                        playlist.channels.isEmpty() && lastVod != null -> Result.success(emptyList())
+                        playlist.channels.isEmpty() ->
+                            Result.failure(ProviderError.BadResponse("Lista nie zawiera żadnych kanałów ani filmów"))
+                        else -> Result.success(playlist.channels)
                     }
                 },
                 onFailure = { Result.failure(it.toProviderError()) },

@@ -31,4 +31,13 @@ fun interface TextFetcher {
         url: String,
         block: (Sequence<String>) -> T,
     ): Result<T> = fetch(url).map { block(it.lineSequence()) }
+
+    /**
+     * Czyta odpowiedź jako strumień bajtów (rozpakowany gzip), bez trzymania całości w pamięci (duże katalogi JSON).
+     * Strumień jest ważny tylko w trakcie [block]. Domyślnie korzysta z [fetch]; [OkHttpTextFetcher] strumieniuje.
+     */
+    suspend fun <T> fetchStream(
+        url: String,
+        block: (java.io.InputStream) -> T,
+    ): Result<T> = fetch(url).map { block(it.byteInputStream()) }
 }

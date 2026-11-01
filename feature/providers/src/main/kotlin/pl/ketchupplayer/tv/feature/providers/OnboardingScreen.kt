@@ -2,6 +2,7 @@ package pl.ketchupplayer.tv.feature.providers
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -45,7 +46,7 @@ fun OnboardingRoute(
  * Kreator pierwszego uruchomienia (makieta v3 01): 1 Witaj, 2 Dodaj listę (formularz jak w Ustawieniach),
  * 3 Gotowe. „Pomiń” kończy kreator w każdym kroku. Wszystko pilotem: strzałki, OK, BACK (wstecz o krok).
  */
-@OptIn(ExperimentalTvMaterial3Api::class)
+@OptIn(ExperimentalTvMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun OnboardingScreen(
     state: ProvidersUiState,
@@ -110,7 +111,7 @@ fun OnboardingScreen(
     }
 }
 
-@OptIn(ExperimentalTvMaterial3Api::class)
+@OptIn(ExperimentalTvMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun Welcome(
     onNext: () -> Unit,
@@ -125,13 +126,17 @@ private fun Welcome(
         color = c.textPrimary,
     )
     Text(stringResource(R.string.onb_welcome_text), fontSize = 16.sp, color = c.textPrimary)
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(top = 16.dp)) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.padding(top = 16.dp),
+    ) {
         KetchupButton(stringResource(R.string.onb_next), onNext, Modifier.requestFocusWhenPlaced(), primary = true)
         KetchupButton(stringResource(R.string.onb_skip), onSkip)
     }
 }
 
-@OptIn(ExperimentalTvMaterial3Api::class)
+@OptIn(ExperimentalTvMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun AddStep(
     state: ProvidersUiState,
@@ -155,14 +160,18 @@ private fun AddStep(
     val form = state.form
     if (form != null) AddForm(form, state.busy, onEvent, showActions = false)
     if (state.busy) Text(stringResource(R.string.onb_loading), fontSize = 16.sp, color = c.textSecondary)
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(top = 8.dp)) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.padding(top = 8.dp),
+    ) {
         KetchupButton(stringResource(R.string.onb_back), onBack)
         KetchupButton(stringResource(R.string.onb_next), { if (!state.busy) onNext() }, primary = true)
         KetchupButton(stringResource(R.string.onb_skip), onSkip)
     }
 }
 
-@OptIn(ExperimentalTvMaterial3Api::class)
+@OptIn(ExperimentalTvMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun Done(
     state: ProvidersUiState,

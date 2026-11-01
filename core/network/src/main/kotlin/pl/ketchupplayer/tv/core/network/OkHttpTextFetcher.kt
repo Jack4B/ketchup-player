@@ -39,6 +39,30 @@ class OkHttpTextFetcher(
             Result.failure(NetworkException.Io(e))
         }
 
+    override suspend fun <T> fetchStream(
+        url: String,
+        block: (InputStream) -> T,
+    ): Result<T> =
+        withContext(Dispatchers.IO) {
+            try {
+                client.newCall(Request.Builder().url(url).build()).execute().use { response ->
+                    if (!response.isSuccessful) return@withContext Result.failure(NetworkException.Http(response.code))
+                    val body = response.body ?: return@withContext Result.success(block("".byteInputStream()))
+                    val raw = BufferedInputStream(LimitedInputStream(body.byteStream(), maxBytes), BUFFER)
+                    val counted = LimitedInputStream(maybeGunzip(raw), maxBytes)
+                    counted.use { Result.success(block(it)) }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: NetworkException) {
+                Result.failure(e)
+            } catch (e: IOException) {
+                Result.failure(NetworkException.Io(e))
+            } catch (e: IllegalArgumentException) {
+                Result.failure(NetworkException.Io(e))
+            }
+        }
+
     override suspend fun <T> fetchLines(
         url: String,
         block: (Sequence<String>) -> T,

@@ -30,8 +30,8 @@ class M3uVodCollector(
         group: String?,
     ) {
         when (type) {
-            ContentType.VOD -> addMovie(name, url, logo, group)
-            ContentType.SERIES -> addEpisode(name, url, logo, group)
+            ContentType.VOD -> if (movies.size < MAX_MOVIES) addMovie(name, url, logo, group)
+            ContentType.SERIES -> if (episodes.size < MAX_EPISODES) addEpisode(name, url, logo, group)
             ContentType.LIVE -> Unit
         }
     }
@@ -108,6 +108,9 @@ class M3uVodCollector(
             .joinToString("") { "%02x".format(it) }
 
     private companion object {
+        /** Limity chronią słabe boxy (kilkaset MB sterty) przed brakiem pamięci na bardzo dużych listach. */
+        const val MAX_MOVIES = 40_000
+        const val MAX_EPISODES = 80_000
         const val HASH_BYTES = 6
         val EPISODE = Regex("""^(.*?)[\s._-]*[Ss](\d{1,2})\s*[Ee](\d{1,3})(.*)$""")
     }

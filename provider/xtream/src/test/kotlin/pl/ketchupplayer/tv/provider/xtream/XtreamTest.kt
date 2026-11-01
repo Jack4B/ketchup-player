@@ -163,4 +163,26 @@ class XtreamTest {
                 provider().epgUrl(),
             )
         }
+
+    /** Parser strumieniowy (produkcja, katalogi po dziesiątki MB) daje to samo co tekstowy. */
+    @Test
+    fun `strumieniowy parser filmow i seriali daje te same pozycje co tekstowy`() {
+        val cats = mapOf("10" to "Dramat")
+        val movies =
+            """[{"stream_id":501,"name":"PL - Pitbull (2005)","rating":"7.4","category_id":"10",""" +
+                """"container_extension":"mkv"},""" +
+                """{"name":"bez id"},{"stream_id":502,"name":"Seksmisja"}]"""
+        val series =
+            """[{"series_id":77,"name":"Rodzina","genre":"Komedia","releaseDate":"2011-03-01","category_id":"10"}]"""
+        val pid = ProviderId("x")
+        assertEquals(
+            XtreamVodParser.movies(pid, movies, cats),
+            XtreamVodParser.movies(pid, movies.byteInputStream(), cats),
+        )
+        assertEquals(
+            XtreamVodParser.series(pid, series, cats),
+            XtreamVodParser.series(pid, series.byteInputStream(), cats),
+        )
+        assertEquals(2, XtreamVodParser.movies(pid, movies.byteInputStream(), cats).size)
+    }
 }

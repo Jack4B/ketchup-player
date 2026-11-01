@@ -31,7 +31,7 @@ class VodRepositoryTest {
     private lateinit var db: KetchupDatabase
     private var now = 1_000L
 
-    private val api =
+    private var api =
         mapOf(
             "&password=tajne" to """{"user_info":{"auth":1,"status":"Active"}}""",
             "action=get_live_categories" to """[{"category_id":"1","category_name":"Info"}]""",
@@ -206,5 +206,36 @@ class VodRepositoryTest {
                     .first()
                     .item
             assertEquals(listOf("Seksmisja"), repo.similar(pitbull.id, 5).map { it.title })
+        }
+
+    /** Regresja (zgłoszenie z boxa): uszkodzony lub zbyt duży katalog filmów nie może wywrócić dodania konta. */
+    @Test
+    fun `uszkodzony katalog filmow nie psuje dodania konta, kanaly zostaja`() =
+        runTest {
+            api = api + ("action=get_vod_streams" to "<html>Błąd serwera</html>")
+            val secrets = ProviderSecrets(InMemorySecretStore())
+            val factory = ProviderFactory(secrets, fetcher)
+            val catalog =
+                RoomCatalogRepository(
+                    db.providers(),
+                    db.channels(),
+                    db.channelFlags(),
+                    db.vod(),
+                    secrets,
+                    factory,
+                    Clock { now },
+                )
+            val added = catalog.addXtream("Konto", "http://x.example.invalid:8080", "jan", "tajne")
+            assertTrue("dodanie konta: $added", added is AddProviderResult.Added)
+            assertEquals(1, catalog.liveChannels().first().size)
+            assertTrue(db.vod().byKind("MOVIE").isEmpty())
+            // Użytkownik widzi powód braku filmów przy dostawcy.
+            assertTrue(
+                catalog.providers
+                    .first()
+                    .single()
+                    .lastError!!
+                    .contains("Filmy i seriale pominięte"),
+            )
         }
 }

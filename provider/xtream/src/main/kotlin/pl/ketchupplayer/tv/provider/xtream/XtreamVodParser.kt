@@ -4,6 +4,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.decodeToSequence
 import pl.ketchupplayer.tv.core.model.Episode
 import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.VodItem
@@ -12,29 +13,59 @@ import pl.ketchupplayer.tv.provider.xtream.XtreamParser.parse
 import pl.ketchupplayer.tv.provider.xtream.XtreamParser.str
 
 /** Parser filmów, seriali i odcinków Xtream (osobno od kanałów live). */
+@Suppress("TooManyFunctions") // wariant tekstowy (testy) i strumieniowy (produkcja) tych samych parserów
 object XtreamVodParser {
+    private val streamJson = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+
+    /** Elementy tablicy JSON czytane leniwie ze strumienia (katalogi mają dziesiątki MB; bez drzewa w pamięci). */
+    @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+    private fun objects(input: java.io.InputStream): Sequence<JsonObject> =
+        streamJson.decodeToSequence(
+            input,
+            JsonObject.serializer(),
+            kotlinx.serialization.json.DecodeSequenceMode.ARRAY_WRAPPED,
+        )
+
+    fun movies(
+        providerId: ProviderId,
+        input: java.io.InputStream,
+        categories: Map<String, String>,
+    ): List<VodItem> = objects(input).mapNotNull { movie(providerId, it, categories) }.toList()
+
+    fun series(
+        providerId: ProviderId,
+        input: java.io.InputStream,
+        categories: Map<String, String>,
+    ): List<VodItem> = objects(input).mapNotNull { seriesItem(providerId, it, categories) }.toList()
+
     fun movies(
         providerId: ProviderId,
         text: String,
         categories: Map<String, String>,
     ): List<VodItem>? {
         val array = parse(text) as? JsonArray ?: return null
-        return array.mapNotNull { it as? JsonObject }.mapNotNull { o ->
-            val id = o.str("stream_id") ?: return@mapNotNull null
-            val name = o.str("name") ?: return@mapNotNull null
-            VodItem(
-                id = "${providerId.value}:m$id",
-                providerId = providerId,
-                kind = VodKind.MOVIE,
-                title = cleanTitle(name),
-                ref = "xtream:movie:$id.${o.str("container_extension") ?: DEFAULT_VOD_EXT}",
-                poster = o.str("stream_icon"),
-                year = o.str("year")?.take(YEAR_LEN)?.toIntOrNull() ?: yearIn(name),
-                rating = o.str("rating")?.toDoubleOrNull()?.takeIf { it > 0 },
-                category = o.str("category_id")?.let { categories[it] },
-                addedMs = o.str("added")?.toLongOrNull()?.times(MS),
-            )
-        }
+        return array.mapNotNull { (it as? JsonObject)?.let { o -> movie(providerId, o, categories) } }
+    }
+
+    private fun movie(
+        providerId: ProviderId,
+        o: JsonObject,
+        categories: Map<String, String>,
+    ): VodItem? {
+        val id = o.str("stream_id") ?: return null
+        val name = o.str("name") ?: return null
+        return VodItem(
+            id = "${providerId.value}:m$id",
+            providerId = providerId,
+            kind = VodKind.MOVIE,
+            title = cleanTitle(name),
+            ref = "xtream:movie:$id.${o.str("container_extension") ?: DEFAULT_VOD_EXT}",
+            poster = o.str("stream_icon"),
+            year = o.str("year")?.take(YEAR_LEN)?.toIntOrNull() ?: yearIn(name),
+            rating = o.str("rating")?.toDoubleOrNull()?.takeIf { it > 0 },
+            category = o.str("category_id")?.let { categories[it] },
+            addedMs = o.str("added")?.toLongOrNull()?.times(MS),
+        )
     }
 
     fun series(
@@ -43,28 +74,33 @@ object XtreamVodParser {
         categories: Map<String, String>,
     ): List<VodItem>? {
         val array = parse(text) as? JsonArray ?: return null
-        return array.mapNotNull { it as? JsonObject }.mapNotNull { o ->
-            val id = o.str("series_id") ?: return@mapNotNull null
-            val name = o.str("name") ?: return@mapNotNull null
-            VodItem(
-                id = "${providerId.value}:s$id",
-                providerId = providerId,
-                kind = VodKind.SERIES,
-                title = cleanTitle(name),
-                ref = "xtream:series:$id",
-                poster = o.str("cover"),
-                backdrop = ((o["backdrop_path"] as? JsonArray)?.firstOrNull() as? JsonPrimitive)?.contentOrNull,
-                year =
-                    (o.str("year") ?: o.str("releaseDate") ?: o.str("release_date"))
-                        ?.take(YEAR_LEN)
-                        ?.toIntOrNull() ?: yearIn(name),
-                rating = o.str("rating")?.toDoubleOrNull()?.takeIf { it > 0 },
-                genre = o.str("genre"),
-                plot = o.str("plot"),
-                category = o.str("category_id")?.let { categories[it] },
-                addedMs = o.str("last_modified")?.toLongOrNull()?.times(MS),
-            )
-        }
+        return array.mapNotNull { (it as? JsonObject)?.let { o -> seriesItem(providerId, o, categories) } }
+    }
+
+    private fun seriesItem(
+        providerId: ProviderId,
+        o: JsonObject,
+        categories: Map<String, String>,
+    ): VodItem? {
+        val id = o.str("series_id") ?: return null
+        val name = o.str("name") ?: return null
+        return VodItem(
+            id = "${providerId.value}:s$id",
+            providerId = providerId,
+            kind = VodKind.SERIES,
+            title = cleanTitle(name),
+            ref = "xtream:series:$id",
+            poster = o.str("cover"),
+            backdrop = ((o["backdrop_path"] as? JsonArray)?.firstOrNull() as? JsonPrimitive)?.contentOrNull,
+            year =
+                (o.str("year") ?: o.str("releaseDate") ?: o.str("release_date"))?.take(YEAR_LEN)?.toIntOrNull()
+                    ?: yearIn(name),
+            rating = o.str("rating")?.toDoubleOrNull()?.takeIf { it > 0 },
+            genre = o.str("genre"),
+            plot = o.str("plot"),
+            category = o.str("category_id")?.let { categories[it] },
+            addedMs = o.str("last_modified")?.toLongOrNull()?.times(MS),
+        )
     }
 
     /** `get_series_info`: sezony -> odcinki. Zwraca null, gdy odpowiedź nie ma sensu. */

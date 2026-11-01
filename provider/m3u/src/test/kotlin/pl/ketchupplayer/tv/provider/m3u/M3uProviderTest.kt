@@ -85,4 +85,21 @@ class M3uProviderTest {
             assertEquals(listOf("Pilot", "Odcinek 2", "Powrót"), eps.map { it.title })
             assertEquals("http://h.example.invalid/movie/u/p/10.mkv", p.resolveVod(movie.ref).getOrThrow().url)
         }
+
+    /** Regresja: lista tylko z filmami i serialami (bez kanałów na żywo) jest poprawna, nie błędem. */
+    @Test
+    fun `lista tylko z filmami to poprawna lista bez kanalow na zywo`() =
+        runTest {
+            val onlyVod =
+                "#EXTM3U\n#EXTINF:-1 group-title=\"Dramat\",Pitbull (2005)\nhttp://h.example.invalid/movie/u/p/10.mkv\n"
+            val p = M3uProvider(ProviderId("p"), "u") { Result.success(onlyVod) }
+            assertEquals(emptyList<Any>(), p.loadChannels().getOrThrow())
+            assertEquals(
+                1,
+                p
+                    .loadVod()
+                    .getOrThrow()
+                    .items.size,
+            )
+        }
 }

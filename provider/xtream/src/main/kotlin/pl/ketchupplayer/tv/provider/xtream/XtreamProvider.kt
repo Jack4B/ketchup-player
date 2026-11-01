@@ -62,16 +62,15 @@ class XtreamProvider(
             ).getOrNull()?.let(XtreamParser::categories).orEmpty()
         val seriesCats =
             fetch(credentials.apiUrl("get_series_categories")).getOrNull()?.let(XtreamParser::categories).orEmpty()
+        // Katalogi mają dziesiątki MB: czytane strumieniowo, element po elemencie (bez całego tekstu i drzewa JSON).
         val movies =
-            fetch(credentials.apiUrl("get_vod_streams"))
-                .getOrElse { return Result.failure(it) }
-                .let { XtreamVodParser.movies(id, it, movieCats) }
-                .orEmpty()
+            fetcher
+                .fetchStream(credentials.apiUrl("get_vod_streams")) { XtreamVodParser.movies(id, it, movieCats) }
+                .getOrElse { return Result.failure(it.toProviderError()) }
         val series =
-            fetch(credentials.apiUrl("get_series"))
-                .getOrElse { return Result.failure(it) }
-                .let { XtreamVodParser.series(id, it, seriesCats) }
-                .orEmpty()
+            fetcher
+                .fetchStream(credentials.apiUrl("get_series")) { XtreamVodParser.series(id, it, seriesCats) }
+                .getOrElse { return Result.failure(it.toProviderError()) }
         return Result.success(VodCatalog(movies + series))
     }
 
