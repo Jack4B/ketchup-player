@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -28,9 +29,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
+import pl.ketchupplayer.tv.core.data.vod.VodEntry
 import pl.ketchupplayer.tv.core.designsystem.FocusItem
 import pl.ketchupplayer.tv.core.designsystem.KetchupButton
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
+import pl.ketchupplayer.tv.core.designsystem.PosterCard
+import pl.ketchupplayer.tv.core.designsystem.PosterImage
 import pl.ketchupplayer.tv.core.designsystem.ScreenTitle
 import pl.ketchupplayer.tv.core.designsystem.panel
 import pl.ketchupplayer.tv.core.designsystem.requestFocusWhenPlaced
@@ -43,10 +47,12 @@ fun HomeRoute(
     onOpenChannel: (String) -> Unit,
     onOpenGuide: () -> Unit,
     onOpenProviders: () -> Unit,
+    onOpenDetails: (String) -> Unit = {},
+    onPlayVod: (String) -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    HomeScreen(state, onOpenChannel, onOpenGuide, onOpenProviders)
+    HomeScreen(state, onOpenChannel, onOpenGuide, onOpenProviders, onOpenDetails, onPlayVod)
 }
 
 /**
@@ -60,11 +66,29 @@ fun HomeScreen(
     onOpenChannel: (String) -> Unit,
     onOpenGuide: () -> Unit,
     onOpenProviders: () -> Unit,
+    onOpenDetails: (String) -> Unit = {},
+    onPlayVod: (String) -> Unit = {},
 ) {
     Column(Modifier.fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         ScreenTitle(stringResource(R.string.home_title))
         LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            item(key = "hero") { Hero(state, onOpenChannel, onOpenGuide, onOpenProviders) }
+            item(key = "hero") {
+                if (state.featured != null) {
+                    VodHero(state, onPlayVod, onOpenDetails)
+                } else {
+                    Hero(state, onOpenChannel, onOpenGuide, onOpenProviders)
+                }
+            }
+            if (state.continueVod.isNotEmpty()) {
+                item(key = "continue-vod") {
+                    PosterRow(stringResource(R.string.home_row_continue), state.continueVod, onOpenDetails)
+                }
+            }
+            if (state.myList.isNotEmpty()) {
+                item(
+                    key = "my-list",
+                ) { PosterRow(stringResource(R.string.home_row_my_list), state.myList, onOpenDetails) }
+            }
             if (state.recent.isNotEmpty()) {
                 item(key = "continue") {
                     CardsSection(
@@ -72,7 +96,7 @@ fun HomeScreen(
                         state.recent,
                         state.nowMs,
                         onOpenChannel,
-                        firstFocus = true,
+                        firstFocus = state.featured == null,
                     )
                 }
             }
@@ -86,6 +110,87 @@ fun HomeScreen(
                         firstFocus = false,
                     )
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun VodHero(
+    state: HomeUiState,
+    onPlayVod: (String) -> Unit,
+    onOpenDetails: (String) -> Unit,
+) {
+    val c = KetchupTheme.colors
+    val entry = checkNotNull(state.featured)
+    val item = entry.item
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .height(HERO_HEIGHT)
+            .panel()
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(24.dp),
+    ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                stringResource(
+                    if (state.featuredResumes) R.string.home_continue_kicker else R.string.home_featured_kicker,
+                ),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = c.textSecondary,
+            )
+            Text(item.title, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = c.textPrimary, maxLines = 1)
+            Text(
+                listOfNotNull(
+                    item.year?.toString(),
+                    item.rating?.let { "★ " + String.format(Locale.forLanguageTag("pl"), "%.1f", it) },
+                    item.genre ?: item.category,
+                ).joinToString(" · "),
+                fontSize = 15.sp,
+                color = c.textSecondary,
+            )
+            item.plot?.let {
+                Text(it, fontSize = 15.sp, color = c.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 6.dp)) {
+                KetchupButton(
+                    stringResource(if (state.featuredResumes) R.string.home_resume else R.string.home_watch),
+                    { onPlayVod(item.id) },
+                    primary = true,
+                    modifier = Modifier.requestFocusWhenPlaced(),
+                )
+                KetchupButton(stringResource(R.string.home_details), { onOpenDetails(item.id) })
+            }
+        }
+        Box(Modifier.width(HERO_POSTER_WIDTH).fillMaxHeight().clip(RoundedCornerShape(c.cornerRadius / 2))) {
+            PosterImage(item.poster, item.title)
+        }
+    }
+}
+
+private val HERO_POSTER_WIDTH = 120.dp
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun PosterRow(
+    title: String,
+    entries: List<VodEntry>,
+    onOpen: (String) -> Unit,
+) {
+    val c = KetchupTheme.colors
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = c.textPrimary)
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(entries, key = { it.item.id }) { e ->
+                PosterCard(
+                    e.item.title,
+                    { onOpen(e.item.id) },
+                    imageUrl = e.item.poster,
+                    progress = e.progress.takeIf { it > 0f },
+                )
             }
         }
     }

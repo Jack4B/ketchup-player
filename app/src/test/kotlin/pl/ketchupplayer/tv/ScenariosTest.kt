@@ -388,6 +388,22 @@ class ScenariosTest {
         assertEquals(listOf("${server.baseUrl()}/movie/jan/dobre-haslo/501.mkv"), FakePlayers.played.toList())
     }
 
+    /** Scenariusz: Home pokazuje polecany film (najwyżej oceniany) i rząd „Moja lista” po dodaniu filmu do listy. */
+    @Test
+    fun homePokazujePolecanyFilmIMojaListe() {
+        serveXtreamVod()
+        addXtreamViaUi("dobre-haslo")
+        waitForText("Kanały: 2", substring = true)
+        nav("Filmy")
+        click("Pitbull")
+        click("+ Moja lista")
+        waitForText("✓ Moja lista")
+        nav("Home")
+        waitForText("POLECANE")
+        waitForText("Seksmisja") // najwyżej oceniany (8,1)
+        waitForText("Moja lista") // rząd na Home
+    }
+
     /** Scenariusz: Seriale -> szczegóły ładują odcinki z serwera, sezony przełączają listę, odcinek gra swój adres. */
     @Test
     fun serialZXtreamPokazujeSezonyIOdcinki() {

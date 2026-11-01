@@ -12,4 +12,9 @@
     <string name="home_row_live_now">Na żywo teraz</string>
     <string name="home_live_badge">na żywo</string>
     <string name="home_now_until">%1$s · do %2$s</string>
+    <string name="home_row_my_list">Moja lista</string>
+    <string name="home_continue_kicker">KONTYNUUJ</string>
+    <string name="home_featured_kicker">POLECANE</string>
+    <string name="home_resume">▶ Wznów</string>
+    <string name="home_details">Szczegóły</string>
 </resources>

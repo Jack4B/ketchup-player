@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.stateIn
 import pl.ketchupplayer.tv.core.common.Clock
 import pl.ketchupplayer.tv.core.data.catalog.CatalogRepository
 import pl.ketchupplayer.tv.core.data.epg.EpgRepository
+import pl.ketchupplayer.tv.core.data.vod.VodRepository
+import pl.ketchupplayer.tv.core.model.VodKind
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -25,6 +27,7 @@ class HomeViewModel
     constructor(
         catalog: CatalogRepository,
         epg: EpgRepository,
+        vod: VodRepository,
         private val clock: Clock,
     ) : ViewModel() {
         private val ticker: Flow<Long> =
@@ -35,14 +38,26 @@ class HomeViewModel
                 }
             }
 
+        private val vodRows =
+            combine(
+                vod.continueWatching(RECENT_LIMIT),
+                vod.myList(),
+                vod.entries(VodKind.MOVIE),
+            ) { cont, mine, movies ->
+                Triple(cont, mine.take(RECENT_LIMIT), movies)
+            }
+
         val state: StateFlow<HomeUiState> =
             combine(
                 catalog.providers,
                 catalog.recentChannels(RECENT_LIMIT),
                 catalog.liveChannels(),
                 catalog.favoriteIds(),
-                ticker.flatMapLatest { now -> epg.onAir(now).map { now to it } },
-            ) { providers, recent, all, favorites, (now, onAir) ->
+                combine(vodRows, ticker.flatMapLatest { now -> epg.onAir(now).map { now to it } }) { v, t -> v to t },
+            ) { providers, recent, all, favorites, (vodPart, nowPart) ->
+                val (cont, mine, movies) = vodPart
+                val (now, onAir) = nowPart
+
                 fun withNow(list: List<pl.ketchupplayer.tv.core.model.Channel>) =
                     list.map { ChannelNow(it, onAir[it.id]) }
                 val live = all.filter { it.id in favorites }.ifEmpty { all }.take(LIVE_LIMIT)
@@ -52,6 +67,10 @@ class HomeViewModel
                     recent = withNow(recent),
                     liveNow = withNow(live),
                     nowMs = now,
+                    featured = cont.firstOrNull() ?: movies.maxByOrNull { it.item.rating ?: 0.0 },
+                    featuredResumes = cont.isNotEmpty(),
+                    continueVod = cont,
+                    myList = mine,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), HomeUiState())
 

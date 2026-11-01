@@ -124,6 +124,8 @@ private fun SectionContent(
                 onOpenChannel = openPlayer,
                 onOpenGuide = { push(Section.GUIDE.route) },
                 onOpenProviders = { push(SettingsPage.PROVIDERS.route) },
+                onOpenDetails = { push(Routes.details(it)) },
+                onPlayVod = { push(Routes.vodPlayer(it, false)) },
             )
         else -> {
             val detailsId = Routes.detailsId(route)
