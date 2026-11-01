@@ -165,7 +165,7 @@ class ScenariosTest {
     private fun settingsCategory(label: String) =
         when (label) {
             "Dostawcy" -> "Listy i dostawcy"
-            "Źródła EPG" -> "Telewizja i przewodnik"
+            "Źródła EPG" -> "Telewizja"
             else -> label
         }
 

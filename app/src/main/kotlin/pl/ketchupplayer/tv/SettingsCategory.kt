@@ -67,9 +67,7 @@ enum class SettingsCategory(
 @Composable
 fun SettingsScreen(initial: SettingsPage? = null) {
     val categories = SettingsCategory.entries
-    var selected by rememberSaveable {
-        mutableIntStateOf(categories.indexOfFirst { it.page == initial }.coerceAtLeast(0))
-    }
+    var selected by rememberSaveable { mutableIntStateOf(initialCategoryIndex(initial)) }
     val requesters = remember { categories.map { FocusRequester() } }
     LaunchedEffect(Unit) {
         repeat(FOCUS_RETRIES) {
@@ -103,6 +101,7 @@ fun SettingsScreen(initial: SettingsPage? = null) {
                             fontSize = 15.sp,
                             color = c.textPrimary,
                             maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
                         )
                     }
@@ -119,7 +118,11 @@ fun SettingsScreen(initial: SettingsPage? = null) {
     }
 }
 
-private val CATEGORIES_WIDTH = 190.dp
+/** Kategoria startowa: odpowiadająca stronie, a bez niej pierwsza („Listy i dostawcy”). */
+internal fun initialCategoryIndex(initial: SettingsPage?): Int =
+    if (initial == null) 0 else SettingsCategory.entries.indexOfFirst { it.page == initial }.coerceAtLeast(0)
+
+private val CATEGORIES_WIDTH = 230.dp
 private const val FOCUS_RETRIES = 20
 
 @OptIn(ExperimentalTvMaterial3Api::class)
