@@ -444,12 +444,23 @@ private fun ChannelCell(
         container = c.surface2,
         outlined = false,
         contentAlignment = Alignment.CenterStart,
-    ) {
+    ) { rowFocused ->
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            Modifier.fillMaxWidth().padding(end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            // Pionowy znacznik zaznaczonego kanału (jak w starej aplikacji): widać go z kanapy bez szukania ramki.
+            Box(
+                Modifier
+                    .padding(start = 2.dp)
+                    .width(4.dp)
+                    .height(30.dp)
+                    .background(
+                        if (rowFocused) KetchupTheme.colors.accent else Color.Transparent,
+                        RoundedCornerShape(2.dp),
+                    ),
+            )
             Text(
                 (channel.number ?: 0).toString(),
                 fontSize = 14.sp,

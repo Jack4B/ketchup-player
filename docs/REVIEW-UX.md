@@ -39,3 +39,15 @@ Skala: 1–5 (5 = poziom TiViMate / nowoczesnych aplikacji TV).
 - Oceny IMDb/Filmweb: stara aplikacja brała je z MoviesRanking.com (bez publicznego API, scraping poza zakresem), archiwum
   Kaggle (zestawy IMDb do ręcznego importu CSV) i własnej bramki HTTPS. Realne dla nas: opcjonalny import publicznego
   zestawu ocen z pliku CSV (1.1) albo TMDB/OMDb z kluczem użytkownika. Opisy, obsada i okładki już są od dostawcy (Xtream).
+
+## Co blokuje 5/5 (stan 1.11.2026, noc)
+Ocena 5 wymaga sprawdzenia na prawdziwym ekranie TV; z zrzutów testowych można ocenić układ, nie płynność ani czytelność z kanapy.
+| Obszar | Zrobione | Brakuje do 5 |
+|---|---|---|
+| Na żywo | logo, żywy podgląd, licznik, znacznik fokusu, szersza kolumna | komunikat failoveru w podglądzie, stan ładowania podglądu, test czytelności siatki na boxie |
+| Home | karty poziome, Nowe odcinki, hero z pigułkami | „Mam X minut”/„Zdrowie źródeł” (1.1), pomiar płynności przewijania rzędów |
+| Filmy/Seriale | tło z grafiką, szkło, chowane kategorie, 6 kolumn | oceny IMDb/Filmweb (1.1), wybór źródła/jakości przy tytule |
+| Szczegóły | tło, pigułki, opis, obsada, Źródła: N | oceny zewnętrzne, „Podobne” z lepszym dopasowaniem |
+| Ustawienia | panel z prawej, listy z ptaszkiem, test połączenia | przegląd treści pozostałych kategorii na boxie |
+| Czytelność | minimum 13 sp wszędzie | weryfikacja z kanapy na 2 rozmiarach ekranu |
+| Płynność | jedna skala animacji, baseline profile | pomiar na boxie (zacięcia VOD, start odtwarzacza) |
