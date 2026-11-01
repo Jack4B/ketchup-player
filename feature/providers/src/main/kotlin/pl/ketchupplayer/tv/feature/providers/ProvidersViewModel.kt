@@ -21,7 +21,11 @@ class ProvidersViewModel
     @Inject
     constructor(
         private val catalog: CatalogRepository,
+        headers: pl.ketchupplayer.tv.core.data.network.ProviderHeadersRepository,
     ) : ViewModel() {
+        private val customs =
+            headers.customs.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
         private val local = MutableStateFlow(ProvidersUiState())
 
         val state: StateFlow<ProvidersUiState> =
@@ -45,6 +49,15 @@ class ProvidersViewModel
                 is ProvidersEvent.SelectKind,
                 is ProvidersEvent.UrlChanged,
                 -> local.update { it.copy(form = it.form?.let { f -> edited(f, event) }) }
+                ProvidersEvent.CycleUserAgent ->
+                    local.update {
+                        it.copy(
+                            form =
+                                it.form?.let { f ->
+                                    f.copy(userAgentId = nextUserAgent(f.userAgentId))
+                                },
+                        )
+                    }
                 ProvidersEvent.Submit -> submit()
                 is ProvidersEvent.Toggle ->
                     local.update {
@@ -114,10 +127,17 @@ class ProvidersViewModel
             }
         }
 
+        private fun nextUserAgent(current: String): String {
+            val pool = pl.ketchupplayer.tv.core.network.UserAgentProfiles.ALL + customs.value
+            val i = pool.indexOfFirst { it.id == current }
+            return pool[(i + 1).mod(pool.size)].id
+        }
+
         private suspend fun add(form: ProviderForm): AddProviderResult =
             when (form.kind) {
-                ProviderKind.M3U -> catalog.addM3u(form.name, form.url)
-                ProviderKind.XTREAM -> catalog.addXtream(form.name, form.url, form.username, form.password)
+                ProviderKind.M3U -> catalog.addM3u(form.name, form.url, form.userAgentId)
+                ProviderKind.XTREAM ->
+                    catalog.addXtream(form.name, form.url, form.username, form.password, form.userAgentId)
             }
 
         private suspend fun runBusy(block: suspend () -> Result<Int>) {

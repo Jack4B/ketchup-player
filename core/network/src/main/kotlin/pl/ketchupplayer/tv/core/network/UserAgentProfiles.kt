@@ -12,8 +12,9 @@ data class UserAgentProfile(
  * i przeglądarek; to nie jest podszywanie się pod konto ani logowanie.
  */
 object UserAgentProfiles {
-    val AUTO = UserAgentProfile("auto", "Domyślny (jak BK Player)", null)
-    val BK = UserAgentProfile("bk", "BK Player", NetworkClients.DEFAULT_USER_AGENT)
+    val AUTO = UserAgentProfile("auto", "Domyślny (OTT Navigator)", null)
+    val OTT = UserAgentProfile("ott", "OTT Navigator", NetworkClients.DEFAULT_USER_AGENT)
+    val BK = UserAgentProfile("bk", "BK Player", "BK-player-Next/1.0")
     val VLC = UserAgentProfile("vlc", "VLC", "VLC/3.0.20 LibVLC/3.0.20")
     val TIVIMATE = UserAgentProfile("tivimate", "TiviMate", "TiviMate/5.0.0 (Android 12)")
     val SMARTERS = UserAgentProfile("smarters", "IPTV Smarters", "IPTVSmartersPro")
@@ -31,7 +32,7 @@ object UserAgentProfiles {
     val EXO = UserAgentProfile("exo", "ExoPlayer", "ExoPlayerLib/2.19.1")
 
     /** Wszystkie profile do wyboru w ustawieniach; pierwszy to tryb automatyczny. */
-    val ALL = listOf(AUTO, BK, VLC, TIVIMATE, SMARTERS, KODI, WINK, PREMIER, EXO, CHROME)
+    val ALL = listOf(AUTO, OTT, BK, VLC, TIVIMATE, SMARTERS, KODI, WINK, PREMIER, EXO, CHROME)
 
     private const val CUSTOM_PREFIX = "custom:"
 

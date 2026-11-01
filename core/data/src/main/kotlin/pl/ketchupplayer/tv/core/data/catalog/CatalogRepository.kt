@@ -52,6 +52,7 @@ interface CatalogRepository {
     suspend fun addM3u(
         name: String,
         url: String,
+        userAgentId: String? = null,
     ): AddProviderResult
 
     suspend fun addXtream(
@@ -59,6 +60,7 @@ interface CatalogRepository {
         server: String,
         username: String,
         password: String,
+        userAgentId: String? = null,
     ): AddProviderResult
 
     /** Adres XMLTV dostawcy (może zawierać dane logowania; trzymany w `SecretStore`). */

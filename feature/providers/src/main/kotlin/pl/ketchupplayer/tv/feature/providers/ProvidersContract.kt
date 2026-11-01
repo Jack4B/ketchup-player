@@ -15,6 +15,8 @@ data class ProviderForm(
     val nameError: Boolean = false,
     val urlError: Boolean = false,
     val credentialsError: Boolean = false,
+    /** Wybrany nagłówek połączenia (id z puli); „auto” = domyślny OTT Navigator. */
+    val userAgentId: String = "auto",
 )
 
 data class ProvidersUiState(
@@ -57,6 +59,9 @@ sealed interface ProvidersEvent {
     ) : ProvidersEvent
 
     data object Submit : ProvidersEvent
+
+    /** OK na wierszu User-Agent w formularzu: kolejny z puli (wbudowane i własne). */
+    data object CycleUserAgent : ProvidersEvent
 
     data class Toggle(
         val id: ProviderId,

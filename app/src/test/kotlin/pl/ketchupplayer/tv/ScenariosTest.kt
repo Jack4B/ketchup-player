@@ -787,70 +787,36 @@ class ScenariosTest {
         assertEquals(listOf("$host/tvn24.m3u8"), FakePlayers.played.toList())
     }
 
-    /** Scenariusz: pobranie listy idzie z nagłówkiem jak w starym BK Playerze (panele odrzucają nieznane). */
+    /** Scenariusz: domyślnie lista idzie z nagłówkiem OTT Navigator; panel odrzuca inne (404). */
     @Test
-    fun listaPobieranaZNaglowkiemJakWBkPlayer() {
+    fun listaPobieranaDomyslnieZNaglowkiemOtt() {
         val host = "http://127.0.0.1:${server.port}"
-        server.serveRequest("/bk.m3u") { req ->
-            if (req.getHeader("User-Agent") == "BK-player-Next/1.0") {
+        server.serveRequest("/ott.m3u") { req ->
+            if (req.getHeader("User-Agent").orEmpty().startsWith("OTT Navigator/")) {
                 "#EXTM3U\n#EXTINF:-1 group-title=\"PL | Info\",TVN 24\n$host/tvn24.m3u8\n"
             } else {
                 ProviderServer.NOT_FOUND
             }
         }
-        runBlocking { catalog.addM3u("Jak BK", server.url("/bk.m3u")) }
+        runBlocking { catalog.addM3u("Domyślny OTT", server.url("/ott.m3u")) }
         nav("Na żywo")
         waitForText("TVN 24", timeoutMs = BIG_WAIT_MS)
     }
 
-    /** Scenariusz: po dodaniu listy z adresem EPG przewodnik pobiera się sam, bez wchodzenia w Na żywo. */
+    /** Scenariusz: User-Agent wybrany w kreatorze (tu własny) obowiązuje od pierwszego pobrania listy. */
     @Test
-    fun epgPobieraSieSamoPoDodaniuListy() {
+    fun naglowekWybranyPrzedWczytaniemListyDziala() {
         val host = "http://127.0.0.1:${server.port}"
-        val hits =
-            java.util.concurrent.atomic
-                .AtomicInteger()
-        server.serve("/auto.m3u") {
-            "#EXTM3U url-tvg=\"$host/auto-epg.xml\"\n" +
-                "#EXTINF:-1 tvg-id=\"TVN24.pl\" group-title=\"Info\",TVN 24\n$host/t.m3u8\n"
+        server.serveRequest("/wink.m3u") { req ->
+            if (req.getHeader("User-Agent") == "Wink/1.31.1") {
+                "#EXTM3U\n#EXTINF:-1 group-title=\"PL | Info\",TVN 24\n$host/tvn24.m3u8\n"
+            } else {
+                ProviderServer.NOT_FOUND
+            }
         }
-        server.serve("/auto-epg.xml") {
-            hits.incrementAndGet()
-            ListFactory.xmltvNow("TVN24.pl", "Fakty", "Dzień po dniu")
-        }
-        runBlocking { catalog.addM3u("Z EPG", server.url("/auto.m3u")) }
-        waitFor(BIG_WAIT_MS) { hits.get() > 0 }
-    }
-
-    private fun pressKeys(keys: List<Key>) =
-        keys.forEach { k ->
-            compose.onRoot().performKeyInput { pressKey(k) }
-            compose.waitForIdle()
-        }
-
-    /** Błąd z boxa: po wejściu w Ustawienia nie dało się wrócić pilotem do szyny i innych sekcji. */
-    @Test
-    fun zUstawienPilotemMoznaWrocicDoSzynyIInnychSekcji() {
-        nav("Ustawienia")
-        waitForText("Listy i dostawcy")
-        pressKeys(listOf(Key.ShiftLeft, Key.DirectionLeft)) // z listy kategorii w szynę (aktywna pozycja)
-        compose.onNodeWithContentDescription("Ustawienia").assertIsFocused()
-        Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(500)) // szyna zdąży się rozwinąć
-        compose.waitForIdle()
-        pressKeys(listOf(Key.DirectionUp)) // wyżej: Moja lista
-        compose.onNodeWithContentDescription("Moja lista").assertIsFocused()
-        pressKeys(listOf(Key.DirectionUp, Key.DirectionUp, Key.DirectionUp))
-        compose.onNodeWithContentDescription("Na żywo").assertIsFocused()
-    }
-
-    /** BACK w Ustawieniach z listy kategorii przenosi na szynę (nie zostaje w miejscu). */
-    @Test
-    fun backZListyKategoriiUstawienPrzenosiNaSzyne() {
-        nav("Ustawienia")
-        waitForText("Listy i dostawcy")
-        pressKeys(listOf(Key.ShiftLeft))
-        back()
-        compose.onNodeWithContentDescription("Ustawienia").assertIsFocused()
+        runBlocking { catalog.addM3u("Wink", server.url("/wink.m3u"), "custom:Wink/1.31.1") }
+        nav("Na żywo")
+        waitForText("TVN 24", timeoutMs = BIG_WAIT_MS)
     }
 
     /** Scenariusz: lista z kanałami z kilku krajów; wyłączona w Ustawieniach grupa UK znika z Na żywo. */

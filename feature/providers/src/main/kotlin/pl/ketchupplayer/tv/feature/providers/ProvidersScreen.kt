@@ -174,6 +174,16 @@ internal fun AddForm(
             )
         }
     }
+    // Wybór nagłówka przed pierwszym pobraniem: panele często odrzucają (404) nieznane aplikacje.
+    KetchupButton(
+        stringResource(
+            R.string.providers_user_agent,
+            pl.ketchupplayer.tv.core.network.UserAgentProfiles
+                .byId(form.userAgentId)
+                .label,
+        ),
+        { onEvent(ProvidersEvent.CycleUserAgent) },
+    )
     if (showActions) {
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),

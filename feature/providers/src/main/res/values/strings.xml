@@ -40,4 +40,5 @@
     <string name="onb_back">‹ Wstecz</string>
     <string name="onb_skip">Pomiń</string>
     <string name="onb_start">Zaczynamy</string>
+    <string name="providers_user_agent">User-Agent: %1$s (OK zmienia)</string>
 </resources>

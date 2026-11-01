@@ -121,4 +121,14 @@ class ProvidersScreenTest {
         compose.onNodeWithText("Xtream Codes").performClick()
         assertEquals(listOf<ProvidersEvent>(ProvidersEvent.SelectKind(ProviderKind.XTREAM)), events)
     }
+
+    /** Kreator: wiersz User-Agent przed zapisem; OK przełącza nagłówek (domyślnie OTT Navigator). */
+    @Test
+    fun wierszUserAgentWFormularzuPrzelaczaNaglowek() {
+        val events = mutableListOf<ProvidersEvent>()
+        show(ProvidersUiState(form = ProviderForm()), events)
+        compose.onNodeWithText("User-Agent: Domyślny (OTT Navigator)", substring = true).assertExists()
+        compose.onNodeWithText("User-Agent:", substring = true).performClick()
+        assertEquals(listOf<ProvidersEvent>(ProvidersEvent.CycleUserAgent), events)
+    }
 }

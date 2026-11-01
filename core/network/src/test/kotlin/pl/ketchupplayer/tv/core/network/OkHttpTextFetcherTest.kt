@@ -28,11 +28,12 @@ class OkHttpTextFetcherTest {
     private fun url(path: String = "/list.m3u") = server.url(path).toString()
 
     @Test
-    fun `domyslny User-Agent listy jest jak w BK Playerze`() =
+    fun `domyslny User-Agent listy to OTT Navigator`() =
         runTest {
             server.enqueue(MockResponse().setBody("x"))
             OkHttpTextFetcher(NetworkClients.stream()).fetch(url())
-            assertEquals("BK-player-Next/1.0", server.takeRequest().getHeader("User-Agent"))
+            assertEquals(NetworkClients.DEFAULT_USER_AGENT, server.takeRequest().getHeader("User-Agent"))
+            assertEquals(true, NetworkClients.DEFAULT_USER_AGENT.startsWith("OTT Navigator/"))
         }
 
     @Test

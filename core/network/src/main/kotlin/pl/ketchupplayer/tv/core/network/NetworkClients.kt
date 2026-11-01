@@ -12,11 +12,11 @@ import java.util.concurrent.TimeUnit
  */
 object NetworkClients {
     /**
-     * Jak w starym BK Playerze (1.8.x), który z listami dostawców działał: ten sam nagłówek przy pobieraniu list
-     * i API oraz osobny przy odtwarzaniu. Panele IPTV potrafią odrzucać (404) nieznane nagłówki.
+     * Domyślny nagłówek: OTT Navigator, popularny odtwarzacz IPTV, który panele przepuszczają. Można go zmienić dla
+     * każdej listy (w kreatorze przed pierwszym pobraniem i w Ustawieniach → Sieć), także na własny.
      */
-    const val DEFAULT_USER_AGENT = "BK-player-Next/1.0"
-    const val PLAYER_USER_AGENT = "BK-player-Next/1.7.2 AndroidXMedia3/1.11.1"
+    const val DEFAULT_USER_AGENT = "OTT Navigator/1.7.2.1 (Linux;Android 12) ExoPlayerLib/2.19.1"
+    const val PLAYER_USER_AGENT = DEFAULT_USER_AGENT
 
     fun stream(userAgent: String = DEFAULT_USER_AGENT): OkHttpClient =
         base(

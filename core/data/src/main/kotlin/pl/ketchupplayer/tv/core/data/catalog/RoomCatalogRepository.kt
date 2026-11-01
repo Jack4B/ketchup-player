@@ -59,6 +59,7 @@ class RoomCatalogRepository
         override suspend fun addM3u(
             name: String,
             url: String,
+            userAgentId: String?,
         ): AddProviderResult {
             val cleanName = EpgSourcePolicy.validateName(name) ?: return invalid(AddProviderError.INVALID_NAME)
             val valid =
@@ -76,6 +77,7 @@ class RoomCatalogRepository
                     secretRef = secrets.ref(id),
                 ),
             )
+            rememberUserAgent(id, userAgentId)
             return added(id)
         }
 
@@ -84,6 +86,7 @@ class RoomCatalogRepository
             server: String,
             username: String,
             password: String,
+            userAgentId: String?,
         ): AddProviderResult {
             val cleanName = EpgSourcePolicy.validateName(name) ?: return invalid(AddProviderError.INVALID_NAME)
             val normalized = XtreamCredentials.normalizeServer(server) ?: return invalid(AddProviderError.INVALID_URL)
@@ -93,10 +96,24 @@ class RoomCatalogRepository
             providerDao.upsert(
                 ProviderEntity(id.value, cleanName, ProviderType.XTREAM.name, normalized, secretRef = secrets.ref(id)),
             )
+            rememberUserAgent(id, userAgentId)
             return added(id)
         }
 
         override suspend fun epgUrl(id: ProviderId): String? = secrets.epg(id)
+
+        /** Wybrany w kreatorze User-Agent obowiązuje już od pierwszego pobrania listy. */
+        private suspend fun rememberUserAgent(
+            id: ProviderId,
+            userAgentId: String?,
+        ) {
+            val profile =
+                pl.ketchupplayer.tv.core.network.UserAgentProfiles
+                    .byId(userAgentId)
+            if (userAgentId != null && profile != pl.ketchupplayer.tv.core.network.UserAgentProfiles.AUTO) {
+                factory.remember(id.value, profile)
+            }
+        }
 
         private fun invalid(error: AddProviderError) = AddProviderResult.Invalid(error)
 
