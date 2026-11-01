@@ -11,6 +11,8 @@ data class GuideUiState(
     val windowStartMs: Long = 0,
     val windowEndMs: Long = 0,
     val nowMs: Long = 0,
+    /** Rośnie po zakończeniu importu EPG; wiersze przeładowują wtedy swoje audycje. */
+    val epgRevision: Int = 0,
 )
 
 /** Geometria siatki: długość audycji w minutach -> szerokość bloku. */

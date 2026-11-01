@@ -19,6 +19,9 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.printToString
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
@@ -35,9 +38,11 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import pl.ketchupplayer.tv.core.data.appearance.AppearanceRepository
 import pl.ketchupplayer.tv.core.data.catalog.AddProviderResult
 import pl.ketchupplayer.tv.core.data.catalog.CatalogRepository
 import pl.ketchupplayer.tv.core.data.epg.EpgSourcesRepository
+import pl.ketchupplayer.tv.core.designsystem.ThemeId
 import pl.ketchupplayer.tv.core.model.BuiltInEpgSources
 import pl.ketchupplayer.tv.core.policy.BkFailoverPolicy
 import pl.ketchupplayer.tv.core.policy.FailoverSensitivity
@@ -71,6 +76,10 @@ class ScenariosTest {
 
     @Inject lateinit var epgSources: EpgSourcesRepository
 
+    @Inject lateinit var appearance: AppearanceRepository
+
+    @Inject lateinit var dataStore: DataStore<Preferences>
+
     @Inject lateinit var failoverSettings: pl.ketchupplayer.tv.core.data.playback.FailoverSettingsRepository
 
     private val server = ProviderServer()
@@ -81,9 +90,12 @@ class ScenariosTest {
         FakePlayers.reset()
         // Hermetyczność: wbudowane źródła EPG (internet) wyłączone, EPG tylko z serwera testowego.
         runBlocking {
+            // DataStore jest singletonem procesu: stan poprzedniego scenariusza (ustawienia, znacznik importu EPG)
+            // przeciekałby do kolejnego, więc zaczynamy od czystego.
+            dataStore.edit { it.clear() }
             epgSources.setEnabled(BuiltInEpgSources.OVH_ID, false)
             epgSources.setEnabled(BuiltInEpgSources.TELEMAN_ID, false)
-            // DataStore jest singletonem procesu: ustawienia poprzedniego scenariusza przeciekają, więc domyślne.
+            appearance.setTheme(ThemeId.GRANAT)
             failoverSettings.setEnabled(true)
             failoverSettings.setSensitivity(FailoverSensitivity.STANDARD)
             failoverSettings.setTvDelaySeconds(BkFailoverPolicy.DEFAULT_TV_DELAY_SECONDS)
@@ -481,5 +493,34 @@ class ScenariosTest {
 
         click("Na żywo")
         waitForText("Teraz Fakty", timeoutMs = BIG_WAIT_MS)
+    }
+
+    /** Scenariusz: z przewodnika OK na audycji otwiera kanał i zaczyna odtwarzanie. */
+    @Test
+    fun zPrzewodnikaOkNaAudycjiOtwieraKanal() {
+        val host = "http://127.0.0.1:${server.port}"
+        server.serve("/g.m3u") {
+            "#EXTM3U url-tvg=\"$host/epg.xml\"\n#EXTINF:-1 tvg-id=\"TVN24.pl\" group-title=\"Info\",TVN 24\n$host/tvn24.m3u8\n"
+        }
+        server.serve("/epg.xml") { ListFactory.xmltvNow("TVN24.pl", "Fakty wieczorne", "Dzień po dniu") }
+        runBlocking { catalog.addM3u("Z EPG", server.url("/g.m3u")) }
+
+        click("Przewodnik")
+        waitForText("Fakty wieczorne", timeoutMs = BIG_WAIT_MS)
+        click("Fakty wieczorne")
+        waitFor { FakePlayers.played.isNotEmpty() }
+        assertEquals(listOf("$host/tvn24.m3u8"), FakePlayers.played.toList())
+    }
+
+    /** Scenariusz: użytkownik wybiera motyw Bordo; po restarcie aktywności motyw jest zapamiętany. */
+    @Test
+    fun wybranyMotywPrzezywaRestart() {
+        click("Wygląd")
+        click("Bordo")
+        waitFor { runBlocking { appearance.appearance.first().theme == ThemeId.BORDO } }
+        compose.activityRule.scenario.recreate()
+        compose.waitForIdle()
+        assertEquals(ThemeId.BORDO, runBlocking { appearance.appearance.first().theme })
+        waitForText("Motyw") // ekran Wygląd po restarcie dalej widoczny
     }
 }

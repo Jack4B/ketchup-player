@@ -99,7 +99,10 @@ private fun Grid(
             val first = ch.id == state.channels.first().id
             Row(Modifier.fillMaxWidth().height(ROW_HEIGHT)) {
                 ChannelCell(ch, ch.id in state.favorites, first) { onOpenChannel(ch.id) }
-                val programmes by produceState<List<EpgProgramme>?>(null, ch.id) { value = loadProgrammes(ch.id) }
+                val programmes by produceState<List<EpgProgramme>?>(null, ch.id, state.epgRevision) {
+                    value =
+                        loadProgrammes(ch.id)
+                }
                 Box(Modifier.weight(1f).horizontalScroll(scroll)) {
                     Timeline(state, programmes) { onOpenChannel(ch.id) }
                 }
