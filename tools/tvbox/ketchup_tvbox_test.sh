@@ -97,12 +97,15 @@ timeout 15 adb start-server >/dev/null 2>&1
 sh_ "wm size" > "$OUT/logs/wm_size.txt"; sh_ "logcat -c" >/dev/null
 
 # ---------- 0. instalacja ----------
+# Box może mieć kilku użytkowników (np. 0 i 10): instalujemy i uruchamiamy u aktywnego.
+USR=$(sh_ "am get-current-user" | tr -dc '0-9'); USR=${USR:-0}
+log "użytkownik: $USR"
 if [ -n "$APK" ] && [ -f "$APK" ]; then
-  out=$(adb -s "$TARGET" install -r -d "$APK" 2>&1 | tr -d '\r'); echo "$out" | grep -q Success \
+  out=$(adb -s "$TARGET" install -r -d --user "$USR" "$APK" 2>&1 | tr -d '\r'); echo "$out" | grep -q Success \
     && record "—" "Instalacja APK" PASS "$(basename "$APK")" || record "—" "Instalacja APK" FAIL "$out"
 fi
 sleep 3
-pk=$(ADB_TIMEOUT=90 sh_ "pm list packages" ; ADB_TIMEOUT=90 sh_ "cmd package list packages")
+pk=$(ADB_TIMEOUT=90 sh_ "pm list packages --user $USR")
 echo "$pk" > "$OUT/logs/packages.txt"
 for p in pl.ketchupplayer.tv.debug pl.ketchupplayer.tv; do
   if echo "$pk" | grep -q "package:$p\$"; then PKG="$p"; break; fi
@@ -113,11 +116,11 @@ if [ -z "$PKG" ]; then
 fi
 ACT="$PKG/pl.ketchupplayer.tv.MainActivity"
 log "pakiet: $PKG"
-sh_ "pm clear $PKG" >/dev/null
+sh_ "pm clear --user $USR $PKG" >/dev/null
 sh_ "settings put global window_animation_scale 1.0" >/dev/null
 
 # ---------- A1 start + kreator ----------
-sh_ "am start -n $ACT" >/dev/null; sleep 6
+sh_ "am start --user $USR -n $ACT" >/dev/null; sleep 6
 s=$(shot 01_start); ui_dump; save_ui 01_start
 if wait_text "Witaj w Ketchup Player" 25; then record A1 "Pierwsze uruchomienie: kreator" PASS "zrzut ${s:-?} B"; else record A1 "Pierwsze uruchomienie: kreator" FAIL "brak ekranu powitalnego"; fi
 alive || record A3 "Aplikacja żyje po starcie" FAIL "brak procesu"
