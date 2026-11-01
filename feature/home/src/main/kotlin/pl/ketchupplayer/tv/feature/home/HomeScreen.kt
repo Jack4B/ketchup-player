@@ -408,7 +408,7 @@ private fun ChannelArt(
     logo: String?,
     modifier: Modifier,
 ) {
-    ChannelLogo(name, logo, modifier, labelSize = 22.sp)
+    ChannelLogo(name, logo, modifier, labelSize = 22.sp, fullName = true)
 }
 
 private fun formatTime(ms: Long): String = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(ms))

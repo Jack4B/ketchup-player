@@ -311,7 +311,8 @@ private fun Preview(
                 focused?.channel?.displayName.orEmpty(),
                 focused?.channel?.logo,
                 Modifier.fillMaxSize(),
-                labelSize = 22.sp,
+                labelSize = 24.sp,
+                fullName = true,
             )
             // Żywy obraz kanału nad logo: tylko gdy podgląd gra właśnie zaznaczony kanał.
             val live = preview.player

@@ -169,11 +169,13 @@ fun ChannelLogo(
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            tileLabel(name),
+            if (fullName) name else tileLabel(name),
             fontSize = labelSize,
             fontWeight = FontWeight.Bold,
             color = c.channelTileText,
-            maxLines = 1,
+            maxLines = if (fullName) 2 else 1,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 6.dp),
         )
         if (!logoUrl.isNullOrBlank()) {
             coil3.compose.AsyncImage(
