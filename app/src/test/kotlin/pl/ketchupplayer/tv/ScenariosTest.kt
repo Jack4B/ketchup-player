@@ -62,6 +62,7 @@ import javax.inject.Inject
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], application = HiltTestApplication::class, qualifiers = "w960dp-h540dp-xhdpi")
 @OptIn(ExperimentalTestApi::class)
+@Suppress("LargeClass") // jeden scenariusz = jedna funkcja użytkownika; wspólny graf Hilt i serwer
 class ScenariosTest {
     private companion object {
         const val WAIT_MS = 30_000L
@@ -411,6 +412,50 @@ class ScenariosTest {
         click("▶ Oglądaj")
         waitFor { FakePlayers.played.isNotEmpty() }
         assertEquals(listOf("${server.baseUrl()}/movie/jan/dobre-haslo/501.mkv"), FakePlayers.played.toList())
+    }
+
+    /**
+     * Scenariusz: film gra, DÓŁ otwiera opcje; ścieżka audio, napisy i tempo zmieniane wyłącznie pilotem (D-pad + OK),
+     * BACK zamyka panel, pasek i wychodzi do szczegółów.
+     */
+    @Test
+    fun odtwarzaczPozwalaWybracAudioNapisyITempoPilotem() {
+        serveXtreamVod()
+        addXtreamViaUi("dobre-haslo")
+        waitForText("Kanały: 2", substring = true)
+        nav("Filmy")
+        click("Pitbull")
+        click("▶ Oglądaj")
+        waitFor { FakePlayers.played.isNotEmpty() }
+
+        fun press(keys: List<Key>) =
+            keys.forEach { k ->
+                compose.onRoot().performKeyInput { pressKey(k) }
+                compose.waitForIdle()
+            }
+        // Pierwszy klawisz po dotyku tylko przełącza tryb wejścia (jak na prawdziwym pilocie).
+        press(listOf(Key.ShiftLeft))
+        press(listOf(Key.DirectionDown)) // pasek opcji
+        waitForText("Synchronizacja")
+        press(listOf(Key.DirectionCenter)) // panel Audio, fokus na wybranej ścieżce
+        waitForText("Angielski", substring = true)
+        press(listOf(Key.DirectionDown, Key.DirectionCenter))
+        assertEquals(listOf("audio:2:0"), FakePlayers.osdCalls.toList())
+        back() // zamyka panel
+        press(listOf(Key.DirectionRight, Key.DirectionCenter)) // Napisy
+        waitForText("Wyłączone", substring = true)
+        press(listOf(Key.DirectionDown, Key.DirectionCenter))
+        assertTrue(FakePlayers.osdCalls.contains("text:3:0"))
+        back()
+        // z „Napisy” trzy w prawo = Tempo
+        press(listOf(Key.DirectionRight, Key.DirectionRight, Key.DirectionRight, Key.DirectionCenter))
+        waitForText("1.5×", substring = true)
+        press(listOf(Key.DirectionDown, Key.DirectionDown, Key.DirectionCenter)) // z 1× dwa w dół = 1,5×
+        assertTrue(FakePlayers.osdCalls.contains("speed:1.5"))
+        back() // panel
+        back() // pasek opcji
+        back() // wyjście z odtwarzacza
+        waitForText("FILM")
     }
 
     /** Scenariusz: Home pokazuje polecany film (najwyżej oceniany) i rząd „Moja lista” po dodaniu filmu do listy. */

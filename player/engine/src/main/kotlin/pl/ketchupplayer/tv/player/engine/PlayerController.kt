@@ -36,5 +36,22 @@ interface PlayerController {
     /** Odświeża [state] (pozycja płynie bez zdarzeń odtwarzacza); wołane okresowo przez ekran VOD. */
     fun poll() {}
 
+    /** Ścieżki audio/napisów, tempo, przesunięcia, informacje o strumieniu (OSD). Domyślnie puste. */
+    val tracks: StateFlow<TrackInfo> get() = NO_TRACKS
+
+    /** Tekst napisów do pokazania teraz (już z uwzględnieniem opóźnienia napisów); pusty = nic. */
+    val subtitle: StateFlow<String> get() = NO_SUBTITLE
+
+    fun selectAudio(id: String) {}
+
+    /** `null` wyłącza napisy. */
+    fun selectText(id: String?) {}
+
+    fun setSpeed(speed: Float) {}
+
+    fun setAudioDelayMs(ms: Int) {}
+
+    fun setSubtitleDelayMs(ms: Int) {}
+
     fun release()
 }
