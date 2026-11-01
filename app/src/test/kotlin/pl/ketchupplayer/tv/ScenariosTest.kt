@@ -459,6 +459,22 @@ class ScenariosTest {
         waitForText("TVN 24")
     }
 
+    /** Błąd z testu na boxie: nieudane pobranie listy w kreatorze zostawia formularz z wpisanymi danymi I komunikatem. */
+    @Test
+    fun kreatorPokazujeBladIZachowujeWpisaneDanePoNieudanymPobraniu() {
+        runBlocking { onboarding.setDone(false) }
+        waitForText("Witaj w Ketchup Player")
+        click("Dalej ›")
+        waitForText("Dodaj pierwszą listę")
+        waitFor { compose.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().size >= 2 }
+        compose.onAllNodes(hasSetTextAction())[0].performTextInput("Zepsuta lista")
+        compose.onAllNodes(hasSetTextAction())[1].performTextInput(server.url("/nie-ma-takiej.m3u")) // 404
+        click("Dalej ›")
+        waitForText("pobranie się nie udało", substring = true)
+        waitForText("Zepsuta lista", substring = true)
+        assertTrue(compose.onAllNodes(hasText("Dodaj pierwszą listę")).fetchSemanticsNodes().isNotEmpty())
+    }
+
     /** Scenariusz: lista M3U z filmami i serialami (jak get.php panelu): Filmy, Seriale i odtwarzanie odcinka. */
     @Test
     fun listaM3uZFilmamiISerialamiDajeKatalogVod() {

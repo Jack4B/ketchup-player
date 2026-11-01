@@ -21,6 +21,7 @@ data class ProvidersUiState(
     val providers: List<ProviderInfo> = emptyList(),
     val expandedId: ProviderId? = null,
     val form: ProviderForm? = null,
+    val lastForm: ProviderForm? = null,
     val busy: Boolean = false,
     val message: String? = null,
     val status: pl.ketchupplayer.tv.core.data.catalog.ImportStatus? = null,
@@ -30,6 +31,9 @@ sealed interface ProvidersEvent {
     data object StartAdd : ProvidersEvent
 
     data object Cancel : ProvidersEvent
+
+    /** Powrót do formularza po nieudanym dodaniu: zostają wpisane dane i komunikat błędu. */
+    data object RetryAdd : ProvidersEvent
 
     data class NameChanged(
         val value: String,

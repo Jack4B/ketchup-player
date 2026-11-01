@@ -20,6 +20,13 @@ ENV_FILE="$HOME/.ketchup-test.env"
 [ -f "$ENV_FILE" ] && source "$ENV_FILE"
 DEVICE_IP="${DEVICE_IP:-192.168.1.170}"; PORT="${PORT:-5555}"; TARGET="${DEVICE_IP}:${PORT}"
 M3U_URL="${M3U_URL:-https://iptv-org.github.io/iptv/countries/pl.m3u}"
+# Interaktywnie: wklej własny adres listy M3U (Enter = bierze z ~/.ketchup-test.env albo publiczną iptv-org).
+# Adres trafia tylko do tej sesji; do pliku/raportu nie jest zapisywany (zawiera login i hasło).
+if [ -t 0 ] && [ -z "${KETCHUP_NO_ASK:-}" ]; then
+  printf 'Wklej adres listy M3U i naciśnij Enter (puste = domyślna): '
+  read -r ASK_URL
+  [ -n "$ASK_URL" ] && M3U_URL="$ASK_URL"
+fi
 APK="${1:-}"
 BASE="/storage/emulated/0/Download/KetchupPlayerTest"
 [ -d /storage/emulated/0/Download ] || BASE="$HOME/KetchupPlayerTest"
@@ -130,10 +137,21 @@ wait_text "Dodaj pierwszą listę" 10 && shot 02_krok2 >/dev/null
 adb_s shell input text "Test%sTV" ; key 66          # nazwa, Enter = następne pole
 adb_s shell input text "$(printf '%s' "$M3U_URL" | sed 's/&/\\&/g; s/?/\\?/g')"; key 66   # adres, Enter = zapis
 shot 03_wysylanie >/dev/null
-if wait_text "Lista została dodana" 180; then
+# Czeka do 15 min na wynik importu i co 20 s zapisuje, co widać na ekranie (postęp, błąd, formularz).
+MAX_WAIT="${IMPORT_WAIT_S:-900}"; t0=$(date +%s); okimp=0; lastline=""
+while [ $(( $(date +%s) - t0 )) -lt "$MAX_WAIT" ]; do
+  ui_dump
+  if has_text "Lista została dodana"; then okimp=1; break; fi
+  line=$(sed 's/<node/\n<node/g' "$OUT/ui/last.xml" | grep -oE 'text="(Pobieranie|Zapisywanie|Lista zapisana|Podaj|Nie )[^"]*"' | head -2 | tr '\n' ' ')
+  [ -z "$line" ] && line="(brak komunikatu na ekranie)"
+  log "po $(( $(date +%s) - t0 )) s: $line"
+  case "$line" in *"Lista zapisana"*) break;; esac    # błąd importu: formularz wrócił z komunikatem
+  sleep 20
+done
+if [ "$okimp" = 1 ]; then
   ui_dump; ch=$(grep -o 'Kanały: [0-9]*' "$OUT/ui/last.xml" | head -1)
-  record B1 "Dodanie listy M3U w kreatorze (klawiatura ekranowa/Enter)" PASS "$ch"; shot 04_gotowe >/dev/null
-else record B1 "Dodanie listy M3U w kreatorze" FAIL "brak potwierdzenia w 180 s"; shot 04_blad >/dev/null; save_ui 04_blad; fi
+  record B1 "Dodanie listy M3U w kreatorze (klawiatura ekranowa/Enter)" PASS "$ch, $(( $(date +%s) - t0 )) s"; shot 04_gotowe >/dev/null
+else record B1 "Dodanie listy M3U w kreatorze" FAIL "po $(( $(date +%s) - t0 )) s: $line"; shot 04_blad >/dev/null; save_ui 04_blad; fi
 key 23; sleep 2                                    # „Zaczynamy”
 wait_text "Home" 15 && record A1b "Home z szyną po kreatorze" PASS || record A1b "Home z szyną po kreatorze" FAIL
 shot 05_home >/dev/null; save_ui 05_home

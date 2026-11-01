@@ -62,7 +62,7 @@ fun OnboardingScreen(
     LaunchedEffect(submitted, state.busy, state.form, state.providers.size, state.message) {
         if (submitted && !state.busy && state.form == null) {
             submitted = false
-            if (state.providers.isNotEmpty() && state.message == null) step = 3 else onEvent(ProvidersEvent.StartAdd)
+            if (state.providers.isNotEmpty() && state.message == null) step = 3 else onEvent(ProvidersEvent.RetryAdd)
         }
     }
     ThemedBackground {

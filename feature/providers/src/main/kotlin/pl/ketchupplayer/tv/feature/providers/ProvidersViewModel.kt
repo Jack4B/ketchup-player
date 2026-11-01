@@ -35,6 +35,7 @@ class ProvidersViewModel
             when (event) {
                 ProvidersEvent.StartAdd -> local.update { it.copy(form = ProviderForm(), message = null) }
                 ProvidersEvent.Cancel -> local.update { it.copy(form = null) }
+                ProvidersEvent.RetryAdd -> local.update { it.copy(form = it.lastForm ?: ProviderForm()) }
                 is ProvidersEvent.NameChanged ->
                     local.update {
                         it.copy(
@@ -78,7 +79,7 @@ class ProvidersViewModel
         private fun submit() {
             val form = local.value.form ?: return
             viewModelScope.launch {
-                local.update { it.copy(busy = true) }
+                local.update { it.copy(busy = true, lastForm = form) }
                 when (val r = add(form)) {
                     is AddProviderResult.Added -> local.update { it.copy(form = null, busy = false, message = null) }
                     is AddProviderResult.SavedWithError ->
