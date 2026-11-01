@@ -32,3 +32,19 @@ Ocena wizualna (zrzuty `18_motyw_*`, `20_odtwarzacz_*`), overscan, płynność/z
 
 ## Uwaga
 Dane list z kontem trzymaj tylko w `~/.ketchup-test.env` na telefonie. Nigdy w repo.
+
+## Komplet komend (przy każdym nowym APK)
+Pliki `KetchupPlayer-<wersja>-<commit>.apk` i `ketchup_tvbox_test.sh` wgraj do `Download/player/` na telefonie (nadpisz stare).
+```
+termux-setup-storage            # jednorazowo
+pkg install -y android-tools    # jednorazowo
+rm -f ~/ketchup_tvbox_test.sh
+cp ~/storage/downloads/player/ketchup_tvbox_test.sh ~/
+sed -i 's/\r$//' ~/ketchup_tvbox_test.sh
+chmod +x ~/ketchup_tvbox_test.sh
+adb connect 192.168.1.170:5555
+~/ketchup_tvbox_test.sh ~/storage/downloads/player/KetchupPlayer-<wersja>-<commit>.apk
+```
+Skrypt zapyta o adres listy M3U (nie jest zapisywany). Wyniki: `Download/KetchupPlayerTest/<data>/`. Ctrl+C przerywa, logi i tak się zapiszą.
+Tylko instalacja bez testu: `adb -s 192.168.1.170:5555 install -r -d --user 0 ~/storage/downloads/player/<apk>`.
+Log po awarii: `adb -s 192.168.1.170:5555 logcat -d | grep -iE "ketchup|FATAL|AndroidRuntime|OutOfMemory|lmkd|am_kill" | tail -300 > ~/storage/downloads/player/log.txt`

@@ -1,0 +1,40 @@
+# Plan wydania 1.0 (rewizja z 1.11.2026)
+
+Zakres 1.0 = to, o co chodziło użytkownikowi: **Na żywo + EPG w stylu TiViMate, Radar, Filmy/Seriale, odtwarzacz z OSD
+(ścieżka audio, napisy, przesunięcie dźwięku i napisów, inne bajery), szybki import dużych list, motywy**.
+Tylko TV poziomo, D-pad + OK + BACK. Poza 1.0 (przesunięte na 1.1): nagrywanie, VPN/NAS, migracja z BK Player Next,
+Stalker, profile z PIN-em (zostaje jeden profil), Trakt/TMDB. Debrid/scrapery poza zakresem na stałe.
+
+## Stan na dziś (beta 0.4.1)
+Gotowe: import M3U/Xtream (do 100 tys. pozycji), kreator, Na żywo (nowy układ), Przewodnik + Radar, Filmy, Seriale, szczegóły,
+Moja lista, Szukaj, odtwarzacz VOD z wznowieniem, 3 motywy + akcent, ustawienia dwupoziomowe, failover, EPG, skrypt testowy boxa.
+
+## Kamienie milowe (każdy = jedna paczka commitów + jedno czekanie na CI + jeden APK)
+| # | Zawartość | Test bramkowy |
+|---|---|---|
+| M1 | **Odtwarzacz OSD** (§3.4 raportu TiViMate): HUD z gradientem, auto-hide 4 s, pasek postępu/seek; panel **Audio** (lista ścieżek, wybór), **Napisy** (lista, wyłącz, rozmiar/kolor), **przesunięcie dźwięku** (±25 ms) i **napisów** (±100 ms), tempo odtwarzania, proporcje obrazu, licznik uśpienia, informacje o strumieniu (kodek, bitrate, klatki) | Test jednostkowy logiki ścieżek/offsetów (`PlayerTracks`), Roborazzi każdego panelu, test D-pad (otwórz panel → wybierz → BACK), scenariusz E2E na FakePlayer, test na emulatorze (HLS z kilkoma ścieżkami audio z ffmpeg) |
+| M2 | **Szuflada nawigacji** (szyna z etykietami + scrim, panel playlist/grup, 180 ms) i **Ustawienia jako panel z prawej** (250 ms) | Roborazzi, test fokusu i restauracji fokusu, scenariusz restartu |
+| M3 | **EPG split-view z podglądem wideo** (jedna oś czasu, `EpgTimeState`, żywy podgląd, focus tylko kolorem tła, czas kursora) + lista kanałów jako nakładka w odtwarzaczu + menu kontekstowe (długie OK) | Test oś czasu (jednostkowy), Roborazzi, scenariusz „OK zmienia podgląd, drugie OK = pełny ekran”, pomiar na boxie |
+| M4 | **Radar kompletny**: zakładka „Moje zainteresowania”, przypomnienia o audycjach, zielone znaczniki nowych odcinków | Golden master (jest), test silnika, Roborazzi, scenariusz |
+| M5 | **Wydajność**: import w tle po pokazaniu kanałów (VOD dopisywane po), diff przy odświeżaniu, stronicowanie dużych list (Paging), płynność na słabym boxie | Test budżetu czasu (jest dla parsera), pomiar na boxie skryptem |
+| M6 | **Polityki z §10.2** (BkSmartBufferPolicy, StreamRecoveryPolicy, SeriesEpisodePolicy, BkTvFailoverDeadline) z golden master na starym kodzie | Golden master + testy |
+| M7 | **Wydanie**: podpis (sekrety CI), baseline profile, ikona/banner na boxie, `KNOWN-EDGE-CASES.md`, checklista ręczna, README | Pełny CI + emulator + przebieg skryptu na boxie bez FAIL |
+
+Kolejność: M1 (największa wartość, najbardziej brakuje) → M2 → M3 → M4 → M5 → M6 → M7. Po każdym milestone APK do testu na boxie.
+
+## Zasady pracy (oszczędzanie limitu)
+1. **Paczki:** jeden commit/push na milestone (lub podetap), nie po każdej poprawce. Push anuluje trwający CI, więc po push czekam na wynik, zamiast pchać dalej.
+2. **Lokalnie najpierw** `spotlessApply detekt` + testy zmienionych modułów, dopiero potem push (CI nie ma łapać stylu).
+3. **Test przed poprawką** każdego błędu z boxa.
+4. **Czekanie bez tokenów:** Monitor/until-loop na wynik CI i testów, nie ankietowanie.
+5. **Zrzuty Roborazzi** commituje bot CI na gałęziach `faza-*`; przy konflikcie binarnych zrzutów biorę wersję lokalną.
+6. **Podział sesji:** po każdym milestone aktualizuję ten plik (sekcja „Stan”) i `docs/reports/`, żeby nowa sesja wystartowała z tym dokumentem.
+
+## Pakiet dostarczania (przy KAŻDYM APK)
+APK + aktualny `ketchup_tvbox_test.sh` + gotowe komendy (patrz `docs/TVBOX-TESTY.md`, sekcja „Komplet komend”).
+Zawsze: nazwa APK z numerem wersji i skrótem commita, informacja co sprawdzić ręcznie, co jest znane i nieprzetestowane.
+
+## Ryzyka
+- Wiele ścieżek audio/napisów zależy od strumienia z listy użytkownika; testuję na syntetycznym HLS (ffmpeg) i FakePlayer, na boxie ręcznie.
+- Podgląd wideo w EPG (M3) = jedna instancja ExoPlayer, uwaga na pamięć i dekoder słabego SoC.
+- Czas importu na boxie (M5) zależy od sieci; licznik MB pokaże, ile to sieć, a ile procesor.
