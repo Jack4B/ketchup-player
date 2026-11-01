@@ -459,6 +459,25 @@ class ScenariosTest {
         waitForText("TVN 24")
     }
 
+    /** Błąd z boxa: zatwierdzenie adresu klawiaturą ekranową (✓) zamiast „Dalej” musi też prowadzić do kroku 3. */
+    @Test
+    fun kreatorZatwierdzonyKlawiaturaPrzechodziDoKroku3() {
+        server.serve("/ime.m3u") {
+            "#EXTM3U\n#EXTINF:-1 group-title=\"Info\",TVN 24\nhttp://h.example.invalid/1\n"
+        }
+        runBlocking { onboarding.setDone(false) }
+        waitForText("Witaj w Ketchup Player")
+        click("Dalej ›")
+        waitForText("Dodaj pierwszą listę")
+        waitFor { compose.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().size >= 2 }
+        compose.onAllNodes(hasSetTextAction())[0].performTextInput("Z klawiatury")
+        compose.onAllNodes(hasSetTextAction())[1].performTextInput(server.url("/ime.m3u"))
+        compose.onAllNodes(hasSetTextAction())[1].performImeAction() // ✓ na klawiaturze ekranowej
+        waitForText("Lista została dodana", substring = true)
+        click("Zaczynamy")
+        waitForText("Home")
+    }
+
     /** Błąd z boxa: nieudane pobranie listy w kreatorze zostawia formularz z danymi i komunikatem. */
     @Test
     fun kreatorPokazujeBladIZachowujeWpisaneDanePoNieudanymPobraniu() {

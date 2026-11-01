@@ -53,15 +53,31 @@ fun OnboardingScreen(
     onEvent: (ProvidersEvent) -> Unit,
     onFinished: () -> Unit,
 ) {
+    var submitted by rememberSaveable { mutableStateOf(false) }
+    // Wysłanie formularza liczy się zawsze: przyciskiem „Dalej” i ✓ na klawiaturze ekranowej.
+    val send: (ProvidersEvent) -> Unit = { event ->
+        if (event is ProvidersEvent.Submit) submitted = true
+        onEvent(event)
+    }
+    Onboarding(state, send, submitted, { submitted = false }, onFinished)
+}
+
+@Composable
+private fun Onboarding(
+    state: ProvidersUiState,
+    onEvent: (ProvidersEvent) -> Unit,
+    submitted: Boolean,
+    onHandled: () -> Unit,
+    onFinished: () -> Unit,
+) {
     val c = KetchupTheme.colors
     var step by rememberSaveable { mutableIntStateOf(1) }
-    var submitted by rememberSaveable { mutableStateOf(false) }
     androidx.activity.compose.BackHandler(enabled = step > 1) { step-- }
     if (step == 2 && state.form == null && !submitted) LaunchedEffect(Unit) { onEvent(ProvidersEvent.StartAdd) }
     // Po wysłaniu formularza: sukces (jest dostawca, brak błędu) -> krok 3; błąd -> formularz wraca z komunikatem.
     LaunchedEffect(submitted, state.busy, state.form, state.providers.size, state.message) {
         if (submitted && !state.busy && state.form == null) {
-            submitted = false
+            onHandled()
             if (state.providers.isNotEmpty() && state.message == null) step = 3 else onEvent(ProvidersEvent.RetryAdd)
         }
     }
@@ -97,10 +113,7 @@ fun OnboardingScreen(
                         AddStep(
                             state,
                             onEvent,
-                            onNext = {
-                                submitted = true
-                                onEvent(ProvidersEvent.Submit)
-                            },
+                            onNext = { onEvent(ProvidersEvent.Submit) },
                             onBack = { step = 1 },
                             onSkip = onFinished,
                         )
