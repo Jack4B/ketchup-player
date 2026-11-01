@@ -17,7 +17,7 @@ logo kanałów (Coil); Filmy z chowanymi kategoriami i 6 kolumnami; Home z karta
 Cel: wszystko, co użytkownik codziennie robi, działa na boxie bez błędów.
 - [ ] 1.1 Weryfikacja 0.7.2 na boxie: lista się wczytuje (wybór UA), EPG, pauza w tle, przewijanie, logo (użytkownik, raport zip)
 - [ ] 1.2 Przeskakiwanie fokusu pilota: analiza `keyguard.txt`/`getevent.txt` z testu pilota, poprawka u źródła, zdjęcie obejścia
-- [ ] 1.3 Pełny przegląd BACK/LEWO/PRAWO na każdym ekranie (Home, Na żywo, Filmy, Seriale, Szczegóły, Szukaj, Moja lista, Ustawienia, Odtwarzacz) + test na ekran
+- [ ] 1.3 Pełny przegląd BACK/LEWO/PRAWO na każdym ekranie + test na ekran. Zrobione: Home, Na żywo, Ustawienia (scenariusz), Filmy/Seriale (test siatki), Odtwarzacz. Do zrobienia: Szczegóły, Szukaj, Moja lista z danymi, panel grup w Na żywo
 - [ ] 1.4 Ustawienia jako panel wsuwany z prawej (250 ms), nakładka na treść
 - [ ] 1.5 Na żywo: żywy podgląd wideo (jeden ExoPlayer, zwalniany przed pełnym ekranem), lista kanałów jako nakładka w odtwarzaczu, menu kontekstowe (długie OK)
 - [ ] 1.6 Jedna skala animacji (stałe czasu w designsystemie: fokus 120 ms, panele 180-250 ms) zastosowana wszędzie
@@ -42,3 +42,7 @@ Cel: podpisany APK, dokumentacja, brak znanych blokerów.
 ## Dziennik zgłoszeń z boxa (do testów regresji)
 Zrobione: lista 404 (nagłówki), wyjście z Ustawień pilotem, EPG nie dociąga, dźwięk w tle po wyjściu, biała karta w zrzutach, dubel w OSD.
 Otwarte: przeskoki fokusu pilota (czeka na dane z testu pilota).
+
+## Uwagi procesowe
+- 1.11 wieczór: przy edycji ScenariosTest skryptem usunąłem przez pomyłkę 3 scenariusze (Ustawienia/BACK/EPG); przywrócone z historii. Przy edycjach plików testowych: zawsze `git diff --stat` przed commitem.
+- CI: exit 134 w `:app:testDebugUnitTest` (JniConstants F) = crash natywny runnera; ponowić run.

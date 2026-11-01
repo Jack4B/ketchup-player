@@ -819,6 +819,70 @@ class ScenariosTest {
         waitForText("TVN 24", timeoutMs = BIG_WAIT_MS)
     }
 
+    /** Scenariusz: po dodaniu listy z adresem EPG przewodnik pobiera się sam, bez wchodzenia w Na żywo. */
+    @Test
+    fun epgPobieraSieSamoPoDodaniuListy() {
+        val host = "http://127.0.0.1:${server.port}"
+        val hits =
+            java.util.concurrent.atomic
+                .AtomicInteger()
+        server.serve("/auto.m3u") {
+            "#EXTM3U url-tvg=\"$host/auto-epg.xml\"\n" +
+                "#EXTINF:-1 tvg-id=\"TVN24.pl\" group-title=\"Info\",TVN 24\n$host/t.m3u8\n"
+        }
+        server.serve("/auto-epg.xml") {
+            hits.incrementAndGet()
+            ListFactory.xmltvNow("TVN24.pl", "Fakty", "Dzień po dniu")
+        }
+        runBlocking { catalog.addM3u("Z EPG", server.url("/auto.m3u")) }
+        waitFor(BIG_WAIT_MS) { hits.get() > 0 }
+    }
+
+    private fun pressKeys(keys: List<Key>) =
+        keys.forEach { k ->
+            compose.onRoot().performKeyInput { pressKey(k) }
+            compose.waitForIdle()
+        }
+
+    /** Błąd z boxa: po wejściu w Ustawienia nie dało się wrócić pilotem do szyny i innych sekcji. */
+    @Test
+    fun zUstawienPilotemMoznaWrocicDoSzynyIInnychSekcji() {
+        nav("Ustawienia")
+        waitForText("Listy i dostawcy")
+        pressKeys(listOf(Key.ShiftLeft, Key.DirectionLeft)) // z listy kategorii w szynę (aktywna pozycja)
+        compose.onNodeWithContentDescription("Ustawienia").assertIsFocused()
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(500)) // szyna zdąży się rozwinąć
+        compose.waitForIdle()
+        pressKeys(listOf(Key.DirectionUp)) // wyżej: Moja lista
+        compose.onNodeWithContentDescription("Moja lista").assertIsFocused()
+        pressKeys(listOf(Key.DirectionUp, Key.DirectionUp, Key.DirectionUp))
+        compose.onNodeWithContentDescription("Na żywo").assertIsFocused()
+    }
+
+    /** BACK w Ustawieniach z listy kategorii przenosi na szynę (nie zostaje w miejscu). */
+    @Test
+    fun backZListyKategoriiUstawienPrzenosiNaSzyne() {
+        nav("Ustawienia")
+        waitForText("Listy i dostawcy")
+        pressKeys(listOf(Key.ShiftLeft))
+        back()
+        compose.onNodeWithContentDescription("Ustawienia").assertIsFocused()
+    }
+
+    /** Przegląd nawigacji (plan 1.3): BACK z treści każdej sekcji przenosi fokus na jej pozycję w szynie. */
+    @Test
+    fun backZKazdejSekcjiWracaNaSzyne() {
+        runBlocking { catalog.addM3u("Lista", server.url("/nav.m3u")) } // pusta odpowiedź 404: sekcje w stanie pustym
+        // Sekcje z treścią do fokusu; Filmy i Seriale mają osobne testy, a puste zostawiają fokus na szynie.
+        listOf("Home", "Na żywo", "Ustawienia").forEach { section ->
+            nav(section)
+            compose.waitForIdle()
+            pressKeys(listOf(Key.ShiftLeft))
+            back()
+            compose.onNodeWithContentDescription(section).assertIsFocused()
+        }
+    }
+
     /** Scenariusz: lista z kanałami z kilku krajów; wyłączona w Ustawieniach grupa UK znika z Na żywo. */
     @Test
     fun wylaczonaGrupaZnikaZNaZywo() {
