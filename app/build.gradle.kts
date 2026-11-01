@@ -9,8 +9,21 @@ android {
     namespace = "pl.ketchupplayer.tv"
     defaultConfig {
         applicationId = "pl.ketchupplayer.tv"
-        versionCode = 1
-        versionName = "0.1.0"
+        // Wersję podaje wydanie (workflow release: -PversionName=1.0.0 -PversionCode=100); lokalnie wersja deweloperska.
+        versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 1
+        versionName = (project.findProperty("versionName") as String?) ?: "0.1.0"
+    }
+    // Podpis wydania: dane z zmiennych środowiskowych (sekrety CI), nigdy z repozytorium. Bez nich release jest niepodpisany.
+    val keystorePath = System.getenv("KETCHUP_KEYSTORE_FILE")
+    if (keystorePath != null) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("KETCHUP_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KETCHUP_KEY_ALIAS")
+                keyPassword = System.getenv("KETCHUP_KEY_PASSWORD")
+            }
+        }
     }
     buildTypes {
         debug {
@@ -22,7 +35,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // Podpis release kluczem CI dodaje workflow (sekrety poza repo).
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
     buildFeatures { buildConfig = true }

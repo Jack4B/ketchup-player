@@ -113,7 +113,7 @@ fun VodBrowseScreen(
 }
 
 private val CATEGORIES_WIDTH = 300.dp
-private const val COLUMNS = 6
+private const val COLUMNS = 4
 private const val FOCUS_RETRIES = 20
 
 @OptIn(ExperimentalTvMaterial3Api::class)
