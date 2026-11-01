@@ -61,6 +61,7 @@ fun VodPlayerRoute(
     LaunchedEffect(itemId) { viewModel.startVod(itemId, fromStart) }
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val title by viewModel.vodTitle.collectAsStateWithLifecycle()
+    val clock by viewModel.clockEnabled.collectAsStateWithLifecycle()
     PlayerScreen(
         ui,
         viewModel.controller,
@@ -70,6 +71,7 @@ fun VodPlayerRoute(
             onBack()
         },
         vodTitle = title,
+        showClock = clock,
     )
 }
 
@@ -82,7 +84,8 @@ fun PlayerRoute(
     LaunchedEffect(channelId) { viewModel.start(channelId) }
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val notice by viewModel.notice.collectAsStateWithLifecycle()
-    PlayerScreen(ui, viewModel.controller, viewModel::retry, onBack, notice)
+    val clock by viewModel.clockEnabled.collectAsStateWithLifecycle()
+    PlayerScreen(ui, viewModel.controller, viewModel::retry, onBack, notice, showClock = clock)
 }
 
 /** Odtwarzacz pełnoekranowy. Dowolny klawisz pokazuje nakładkę z nazwą kanału na [OSD_MS]; BACK wychodzi. */
@@ -96,6 +99,7 @@ fun PlayerScreen(
     onBack: () -> Unit,
     notice: String? = null,
     vodTitle: String? = null,
+    showClock: Boolean = true,
 ) {
     BackHandler(onBack = onBack)
     val playback by controller.state.collectAsStateWithLifecycle()
@@ -179,6 +183,7 @@ fun PlayerScreen(
                 }
             PlayerSurface(p, Modifier.fillMaxSize().resizeWithContentScale(scale, presentation.videoSizeDp))
         }
+        if (showClock) PlayerClock(Modifier.align(Alignment.TopEnd))
         if (tracks.textEnabled) {
             SubtitleOverlay(
                 subtitle,
@@ -398,3 +403,45 @@ private const val SEEK_MS = 10_000L
 private const val MS_PER_SECOND = 1000L
 private const val SECONDS_PER_MINUTE = 60L
 private const val SECONDS_PER_HOUR = 3600L
+
+/** Zegar w prawym górnym rogu: biały, zawsze czytelny na jasnym i ciemnym obrazie (cień i półprzezroczyste tło). */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun PlayerClock(modifier: Modifier) {
+    val time by androidx.compose.runtime.produceState(clockNow()) {
+        while (true) {
+            value = clockNow()
+            delay(CLOCK_REFRESH_MS)
+        }
+    }
+    Text(
+        time,
+        fontSize = CLOCK_SP.sp,
+        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+        color = Color.White,
+        style =
+            androidx.compose.ui.text.TextStyle(
+                shadow =
+                    androidx.compose.ui.graphics
+                        .Shadow(
+                            Color.Black,
+                            androidx.compose.ui.geometry
+                                .Offset(2f, 2f),
+                            CLOCK_SHADOW,
+                        ),
+            ),
+        modifier =
+            modifier
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .background(Color.Black.copy(alpha = CLOCK_SCRIM_ALPHA), RoundedCornerShape(10.dp))
+                .padding(horizontal = 14.dp, vertical = 6.dp),
+    )
+}
+
+private fun clockNow(): String =
+    java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date())
+
+private const val CLOCK_REFRESH_MS = 10_000L
+private const val CLOCK_SP = 28
+private const val CLOCK_SHADOW = 4f
+private const val CLOCK_SCRIM_ALPHA = 0.35f

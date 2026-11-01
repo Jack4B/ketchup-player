@@ -40,6 +40,8 @@
     <string name="playback_title">Odtwarzanie</string>
     <string name="playback_failover">Automatyczne przełączanie źródeł</string>
     <string name="playback_failover_hint">Gdy kanał przestaje działać, przełącz na ten sam kanał z innej listy</string>
+    <string name="playback_clock">Zegar w odtwarzaczu</string>
+    <string name="playback_clock_hint">Godzina w prawym górnym rogu podczas oglądania kanału lub filmu</string>
     <string name="playback_sensitivity">Czułość</string>
     <string name="playback_sens_fast">Szybka</string>
     <string name="playback_sens_standard">Standardowa</string>

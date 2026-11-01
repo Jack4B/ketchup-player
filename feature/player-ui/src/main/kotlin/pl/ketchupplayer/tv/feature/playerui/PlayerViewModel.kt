@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import pl.ketchupplayer.tv.core.data.catalog.CatalogRepository
 import pl.ketchupplayer.tv.core.data.playback.FailoverSettingsRepository
@@ -45,8 +46,13 @@ class PlayerViewModel
         private val catalog: CatalogRepository,
         private val vod: VodRepository,
         private val failoverSettings: FailoverSettingsRepository,
+        prefs: pl.ketchupplayer.tv.core.data.playback.PlayerPrefsRepository,
         factory: PlayerControllerFactory,
     ) : ViewModel() {
+        /** Zegar w rogu ekranu (Ustawienia → Odtwarzanie). */
+        val clockEnabled: StateFlow<Boolean> =
+            prefs.clockEnabled.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, true)
+
         val controller: PlayerController = factory.create()
         private val _ui = MutableStateFlow<PlayerUiState>(PlayerUiState.Resolving(""))
         val ui: StateFlow<PlayerUiState> = _ui.asStateFlow()

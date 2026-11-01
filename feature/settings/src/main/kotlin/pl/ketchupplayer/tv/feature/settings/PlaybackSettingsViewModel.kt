@@ -17,7 +17,15 @@ class PlaybackSettingsViewModel
     @Inject
     constructor(
         private val repository: FailoverSettingsRepository,
+        private val prefs: pl.ketchupplayer.tv.core.data.playback.PlayerPrefsRepository,
     ) : ViewModel() {
+        val clockEnabled: StateFlow<Boolean> =
+            prefs.clockEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), true)
+
+        fun toggleClock() {
+            viewModelScope.launch { prefs.setClockEnabled(!prefs.clockEnabled.first()) }
+        }
+
         val state: StateFlow<FailoverSettings> =
             repository.settings.stateIn(
                 viewModelScope,

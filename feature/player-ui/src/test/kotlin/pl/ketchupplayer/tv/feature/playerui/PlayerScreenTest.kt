@@ -2,6 +2,7 @@ package pl.ketchupplayer.tv.feature.playerui
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -89,9 +90,12 @@ class PlayerScreenTest {
         onRetry: () -> Unit = {},
         onBack: () -> Unit = {},
         vodTitle: String? = null,
+        showClock: Boolean = true,
     ) {
         compose.setContent {
-            KetchupTheme(device = DeviceClass.TV) { PlayerScreen(ui, controller, onRetry, onBack, vodTitle = vodTitle) }
+            KetchupTheme(device = DeviceClass.TV) {
+                PlayerScreen(ui, controller, onRetry, onBack, vodTitle = vodTitle, showClock = showClock)
+            }
         }
         compose.waitForIdle()
     }
@@ -244,5 +248,41 @@ class PlayerScreenTest {
         key(Key.DirectionRight)
         key(Key.DirectionCenter)
         compose.onRoot().captureRoboImage("src/test/screenshots/player_panel_sync.png")
+    }
+
+    private val clockRegex = Regex("""\d{2}:\d{2}""")
+
+    private fun hasClock() =
+        compose
+            .onAllNodes(
+                androidx.compose.ui.test.SemanticsMatcher("godzina HH:mm") { node ->
+                    node.config
+                        .getOrNull(androidx.compose.ui.semantics.SemanticsProperties.Text)
+                        ?.any { clockRegex.matches(it.text) } == true
+                },
+            ).fetchSemanticsNodes()
+            .isNotEmpty()
+
+    /** Zegar w prawym górnym rogu jest widoczny podczas oglądania kanału (nawet po zniknięciu paska OSD). */
+    @Test
+    fun zegarWidocznyPodczasOgladania() {
+        show(PlayerUiState.Playing("JEDEN HD"), FakeController(PlayerState(status = PlaybackStatus.READY)))
+        assertTrue(hasClock())
+    }
+
+    @Test
+    fun zegarMoznaWylaczycUstawieniem() {
+        show(
+            PlayerUiState.Playing("JEDEN HD"),
+            FakeController(PlayerState(status = PlaybackStatus.READY)),
+            showClock = false,
+        )
+        assertFalse(hasClock())
+    }
+
+    @Test
+    fun screenshotZegara() {
+        show(PlayerUiState.Playing("JEDEN HD"), FakeController(PlayerState(status = PlaybackStatus.READY)))
+        compose.onRoot().captureRoboImage("src/test/screenshots/player_clock.png")
     }
 }

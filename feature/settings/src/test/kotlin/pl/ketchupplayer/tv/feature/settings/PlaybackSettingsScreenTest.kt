@@ -47,6 +47,7 @@ class PlaybackSettingsScreenTest {
         }
         compose.waitForIdle()
         key(Key.DirectionCenter)
+        key(Key.DirectionDown) // zegar w odtwarzaczu (osobny przełącznik)
         key(Key.DirectionDown)
         key(Key.DirectionCenter)
         key(Key.DirectionDown)
@@ -93,5 +94,20 @@ class PlaybackSettingsScreenTest {
                     10
                 },
         )
+    }
+
+    /** Przełącznik zegara w odtwarzaczu: drugi wiersz, OK zmienia ustawienie. */
+    @Test
+    fun okNaZegarzePrzelaczaUstawienie() {
+        var toggles = 0
+        compose.setContent {
+            KetchupTheme(device = DeviceClass.TV) {
+                PlaybackSettingsScreen(FailoverSettings(), {}, {}, clockEnabled = true, onToggleClock = { toggles++ })
+            }
+        }
+        compose.waitForIdle()
+        key(Key.DirectionDown)
+        key(Key.DirectionCenter)
+        assertEquals(1, toggles)
     }
 }

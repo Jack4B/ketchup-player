@@ -24,7 +24,8 @@ fun PlaybackSettingsRoute(
     viewModel: PlaybackSettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    PlaybackSettingsScreen(state, viewModel::onEvent, onBack)
+    val clock by viewModel.clockEnabled.collectAsStateWithLifecycle()
+    PlaybackSettingsScreen(state, viewModel::onEvent, onBack, clock, viewModel::toggleClock)
 }
 
 /** Ustawienia odtwarzania: automatyczne przełączanie źródeł (failover). Każdy wiersz: OK zmienia wartość. */
@@ -34,6 +35,8 @@ fun PlaybackSettingsScreen(
     settings: FailoverSettings,
     onEvent: (PlaybackSettingsEvent) -> Unit,
     onBack: () -> Unit,
+    clockEnabled: Boolean = true,
+    onToggleClock: () -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
     val c = KetchupTheme.colors
@@ -45,6 +48,12 @@ fun PlaybackSettingsScreen(
             onClick = { onEvent(PlaybackSettingsEvent.ToggleEnabled) },
             modifier = Modifier.requestFocusWhenPlaced(),
             trailing = { Switch(checked = settings.enabled, onCheckedChange = null) },
+        )
+        SettingsListItem(
+            title = stringResource(R.string.playback_clock),
+            subtitle = stringResource(R.string.playback_clock_hint),
+            onClick = onToggleClock,
+            trailing = { Switch(checked = clockEnabled, onCheckedChange = null) },
         )
         SettingsListItem(
             title = stringResource(R.string.playback_sensitivity),

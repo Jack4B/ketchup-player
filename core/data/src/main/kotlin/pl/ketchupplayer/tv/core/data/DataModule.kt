@@ -52,6 +52,11 @@ abstract class DataModule {
     ): pl.ketchupplayer.tv.core.data.vod.VodRepository
 
     @Binds
+    abstract fun bindPlayerPrefs(
+        impl: pl.ketchupplayer.tv.core.data.playback.DataStorePlayerPrefsRepository,
+    ): pl.ketchupplayer.tv.core.data.playback.PlayerPrefsRepository
+
+    @Binds
     abstract fun bindInterests(
         impl: pl.ketchupplayer.tv.core.data.interests.DataStoreInterestsRepository,
     ): pl.ketchupplayer.tv.core.data.interests.InterestsRepository
