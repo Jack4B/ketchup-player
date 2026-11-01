@@ -47,7 +47,23 @@ collect_logs() { # wołane przy każdym wyjściu (także Ctrl+C), żeby log nigd
 }
 trap collect_logs EXIT
 trap 'echo "Przerwano."; exit 130' INT TERM
-key() { adb_s shell input keyevent "$@" >/dev/null 2>&1; sleep "${KEY_DELAY:-0.7}"; }
+# BEZPIECZNIK: skrypt nic nie wciska, jeśli na pierwszym planie nie ma Ketchup Player (np. po wyjściu na pulpit
+# box mógłby odinstalować aplikacje). Przy pierwszej takiej sytuacji kończy pracę i zapisuje logi.
+fg_ok() {
+  [ -z "$PKG" ] && return 0
+  local f; f=$(sh_ "dumpsys window" | grep -m1 -E "mCurrentFocus|mFocusedWindow")
+  case "$f" in *"$PKG"*|*InputMethod*) return 0;; esac
+  FG_LAST="$f"; return 1
+}
+guard() {
+  fg_ok && return 0
+  sleep 2; fg_ok && return 0          # chwilowy brak fokusu w trakcie przejścia ekranów nie jest powodem do przerwania
+  log "STOP: Ketchup Player nie jest na pierwszym planie (${FG_LAST:-brak okna}). Niczego już nie klikam."
+  record "SAFE" "Bezpiecznik: aplikacja opuściła pierwszy plan" FAIL "${FG_LAST:-?}"
+  cat "$REPORT"; exit 2
+}
+inp() { guard; adb_s shell input "$@" >/dev/null 2>&1; }          # każde wciśnięcie przechodzi przez bezpiecznik
+key() { guard; adb_s shell input keyevent "$@" >/dev/null 2>&1; sleep "${KEY_DELAY:-0.7}"; }
 sleepf() { sleep "$1"; }
 
 # ---------- wynik ----------
@@ -90,7 +106,7 @@ tap() { # etykieta (dokładna, potem content-desc, potem prefiks)
   done
   [ -z "$b" ] && { log "tap: nie znaleziono '$1'"; return 1; }
   read -r x1 y1 x2 y2 <<< "$b"
-  adb_s shell input tap $(((x1+x2)/2)) $(((y1+y2)/2)) >/dev/null 2>&1
+  inp tap $(((x1+x2)/2)) $(((y1+y2)/2))
   sleep 1.2
 }
 alive() { [ -n "$(sh_ pidof "$PKG")" ]; }
@@ -143,8 +159,8 @@ alive || record A3 "Aplikacja żyje po starcie" FAIL "brak procesu"
 
 key 23; sleep 1.5                                  # OK na „Dalej”
 wait_text "Dodaj pierwszą listę" 10 && shot 02_krok2 >/dev/null
-adb_s shell input text "Test%sTV" ; key 66          # nazwa, Enter = następne pole
-adb_s shell input text "$(printf '%s' "$M3U_URL" | sed 's/&/\\&/g; s/?/\\?/g')"; key 66   # adres, Enter = zapis
+inp text "Test%sTV" ; key 66          # nazwa, Enter = następne pole
+inp text "$(printf '%s' "$M3U_URL" | sed 's/&/\\&/g; s/?/\\?/g')"; key 66   # adres, Enter = zapis
 shot 03_wysylanie >/dev/null
 # Czeka do 15 min na wynik importu i co 20 s zapisuje, co widać na ekranie (postęp, błąd, formularz).
 MAX_WAIT="${IMPORT_WAIT_S:-900}"; t0=$(date +%s); okimp=0; lastline=""
@@ -206,7 +222,7 @@ cmp -s "$OUT/shots/20_odtwarzacz_a.png" "$OUT/shots/20_odtwarzacz_b.png" && reco
 key 4; sleep 2; ui_dump; has_text "Grupy" && record D4 "BACK z odtwarzacza wraca do listy" PASS || record D4 "BACK z odtwarzacza wraca do listy" FAIL
 
 # ---------- ulubione (długie OK) ----------
-adb_s shell input keyevent --longpress 23 >/dev/null 2>&1; sleep 1.5; ui_dump
+inp keyevent --longpress 23; sleep 1.5; ui_dump
 has_text "Ulubione" && record C4 "Długie OK: ulubione" PASS || record C4 "Długie OK: ulubione" WARN "sprawdź zrzut 21_ulubione"
 shot 21_ulubione >/dev/null
 
@@ -225,8 +241,8 @@ fi
 mem0=$(sh_ "dumpsys meminfo $PKG" | grep -m1 "TOTAL PSS" | awk '{print $3}')
 log "stres: 150 losowych klawiszy"
 for i in $(seq 1 150); do
-  k=$(printf '19 20 21 22 23 4' | tr ' ' '\n' | shuf -n1)
-  adb_s shell input keyevent "$k" >/dev/null 2>&1; sleep 0.25
+  k=$(printf '19 20 21 22 23' | tr ' ' '\n' | shuf -n1)   # bez BACK: BACK z Home wyrzuca na pulpit
+  inp keyevent "$k"; sleep 0.25
 done
 sleep 2; shot 30_po_stresie >/dev/null
 mem1=$(sh_ "dumpsys meminfo $PKG" | grep -m1 "TOTAL PSS" | awk '{print $3}')
