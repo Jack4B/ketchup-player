@@ -53,6 +53,7 @@ class CatalogRepositoryTest {
             db.providers(),
             db.channels(),
             db.channelFlags(),
+            db.vod(),
             ProviderSecrets(
                 secrets,
             ),
@@ -269,6 +270,7 @@ class CatalogRepositoryTest {
                     fileDb.providers(),
                     fileDb.channels(),
                     fileDb.channelFlags(),
+                    fileDb.vod(),
                     ProviderSecrets(
                         secrets,
                     ),

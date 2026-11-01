@@ -32,6 +32,12 @@ data class XtreamCredentials(
         ext: String,
     ): String = "$server/live/${enc(username)}/${enc(password)}/$streamId.$ext"
 
+    fun vodUrl(
+        kind: String,
+        id: String,
+        ext: String,
+    ): String = "$server/${if (kind == "episode") "series" else "movie"}/${enc(username)}/${enc(password)}/$id.$ext"
+
     private fun enc(v: String) = URLEncoder.encode(v, Charsets.UTF_8).replace("+", "%20")
 
     companion object {

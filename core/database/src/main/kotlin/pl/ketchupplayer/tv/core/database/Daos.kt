@@ -151,3 +151,67 @@ data class ChannelEpgKey(
     val epgId: String?,
     val normName: String,
 )
+
+@Dao
+interface VodDao {
+    @Query("SELECT * FROM vod_items WHERE kind = :kind ORDER BY title")
+    fun observeByKind(kind: String): Flow<List<VodItemEntity>>
+
+    @Query("SELECT * FROM vod_items WHERE id = :id")
+    suspend fun get(id: String): VodItemEntity?
+
+    @Query("SELECT * FROM vod_items WHERE kind = :kind")
+    suspend fun byKind(kind: String): List<VodItemEntity>
+
+    @Query("SELECT COUNT(*) FROM vod_items WHERE providerId = :providerId")
+    suspend fun count(providerId: String): Int
+
+    @Query("DELETE FROM vod_items WHERE providerId = :providerId")
+    suspend fun deleteByProvider(providerId: String)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(items: List<VodItemEntity>)
+
+    @Transaction
+    suspend fun replaceAll(
+        providerId: String,
+        items: List<VodItemEntity>,
+    ) {
+        deleteByProvider(providerId)
+        items.chunked(INSERT_CHUNK).forEach { insertAll(it) }
+    }
+
+    @Query("SELECT * FROM vod_episodes WHERE seriesId = :seriesId ORDER BY season, number")
+    fun observeEpisodes(seriesId: String): Flow<List<EpisodeEntity>>
+
+    @Query("SELECT * FROM vod_episodes WHERE id = :id")
+    suspend fun episode(id: String): EpisodeEntity?
+
+    @Query("DELETE FROM vod_episodes WHERE seriesId = :seriesId")
+    suspend fun deleteEpisodes(seriesId: String)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertEpisodes(items: List<EpisodeEntity>)
+
+    @Transaction
+    suspend fun replaceEpisodes(
+        seriesId: String,
+        items: List<EpisodeEntity>,
+    ) {
+        deleteEpisodes(seriesId)
+        insertEpisodes(items)
+    }
+
+    @Query("SELECT * FROM vod_state")
+    fun observeState(): Flow<List<VodStateEntity>>
+
+    @Query("SELECT * FROM vod_state WHERE itemId = :id")
+    suspend fun state(id: String): VodStateEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertState(state: VodStateEntity)
+
+    private companion object {
+        const val INSERT_CHUNK = 500
+    }
+}

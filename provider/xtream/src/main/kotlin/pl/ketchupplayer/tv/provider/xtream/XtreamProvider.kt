@@ -1,9 +1,12 @@
 package pl.ketchupplayer.tv.provider.xtream
 
 import pl.ketchupplayer.tv.core.model.Channel
+import pl.ketchupplayer.tv.core.model.Episode
 import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.ProviderType
 import pl.ketchupplayer.tv.core.model.StreamSpec
+import pl.ketchupplayer.tv.core.model.VodCatalog
+import pl.ketchupplayer.tv.core.model.VodItem
 import pl.ketchupplayer.tv.core.network.NetworkException
 import pl.ketchupplayer.tv.core.network.TextFetcher
 import pl.ketchupplayer.tv.provider.api.Capability
@@ -18,7 +21,7 @@ class XtreamProvider(
 ) : IptvProvider {
     override val type: ProviderType = ProviderType.XTREAM
     override val capabilities: Set<Capability> =
-        setOf(Capability.LIVE, Capability.EPG_URL, Capability.ACCOUNT_INFO)
+        setOf(Capability.LIVE, Capability.VOD, Capability.SERIES, Capability.EPG_URL, Capability.ACCOUNT_INFO)
 
     override suspend fun loadChannels(): Result<List<Channel>> =
         authenticate().fold(onSuccess = { fetchLive() }, onFailure = { Result.failure(it) })
@@ -50,6 +53,42 @@ class XtreamProvider(
             channel.streamUrl?.let(XtreamParser::parseLiveRef)
                 ?: return Result.failure(ProviderError.BadResponse("Nieznane odwołanie do strumienia"))
         return Result.success(StreamSpec(credentials.liveUrl(streamId, ext)))
+    }
+
+    override suspend fun loadVod(): Result<VodCatalog> {
+        val movieCats =
+            fetch(
+                credentials.apiUrl("get_vod_categories"),
+            ).getOrNull()?.let(XtreamParser::categories).orEmpty()
+        val seriesCats =
+            fetch(credentials.apiUrl("get_series_categories")).getOrNull()?.let(XtreamParser::categories).orEmpty()
+        val movies =
+            fetch(credentials.apiUrl("get_vod_streams"))
+                .getOrElse { return Result.failure(it) }
+                .let { XtreamVodParser.movies(id, it, movieCats) }
+                .orEmpty()
+        val series =
+            fetch(credentials.apiUrl("get_series"))
+                .getOrElse { return Result.failure(it) }
+                .let { XtreamVodParser.series(id, it, seriesCats) }
+                .orEmpty()
+        return Result.success(VodCatalog(movies + series))
+    }
+
+    override suspend fun loadEpisodes(series: VodItem): Result<List<Episode>> {
+        val seriesId = series.ref.removePrefix("xtream:series:")
+        val body =
+            fetch(credentials.apiUrl("get_series_info", mapOf("series_id" to seriesId))).getOrElse {
+                return Result.failure(it)
+            }
+        return XtreamVodParser.episodes(series, body)?.let { Result.success(it) }
+            ?: Result.failure(ProviderError.BadResponse("Nieprawidłowa lista odcinków"))
+    }
+
+    override suspend fun resolveVod(ref: String): Result<StreamSpec> {
+        val (kind, vodId, ext) =
+            XtreamVodParser.parseVodRef(ref) ?: return Result.failure(ProviderError.BadResponse("Nieznane odwołanie"))
+        return Result.success(StreamSpec(credentials.vodUrl(kind, vodId, ext)))
     }
 
     override suspend fun epgUrl(): String = credentials.xmltvUrl()

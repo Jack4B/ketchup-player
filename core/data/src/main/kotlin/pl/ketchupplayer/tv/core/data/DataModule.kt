@@ -47,6 +47,11 @@ abstract class DataModule {
     abstract fun bindCatalog(impl: RoomCatalogRepository): CatalogRepository
 
     @Binds
+    abstract fun bindVod(
+        impl: pl.ketchupplayer.tv.core.data.vod.RoomVodRepository,
+    ): pl.ketchupplayer.tv.core.data.vod.VodRepository
+
+    @Binds
     abstract fun bindEpg(impl: RoomEpgRepository): EpgRepository
 
     companion object {
@@ -68,6 +73,9 @@ abstract class DataModule {
         @Provides
         @Singleton
         fun textFetcher(): TextFetcher = OkHttpTextFetcher(NetworkClients.stream())
+
+        @Provides
+        fun vodDao(db: KetchupDatabase): pl.ketchupplayer.tv.core.database.VodDao = db.vod()
 
         @Provides
         fun epgDao(db: KetchupDatabase): EpgDao = db.epg()

@@ -78,3 +78,58 @@ data class EpgStagingEntity(
     val description: String?,
     val category: String?,
 )
+
+/** Film lub serial z katalogu dostawcy (`kind` = MOVIE/SERIES). */
+@Entity(
+    tableName = "vod_items",
+    foreignKeys = [
+        ForeignKey(
+            entity = ProviderEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["providerId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("providerId"), Index("kind", "category"), Index("normTitle")],
+)
+data class VodItemEntity(
+    @PrimaryKey val id: String,
+    val providerId: String,
+    val kind: String,
+    val title: String,
+    val normTitle: String,
+    val ref: String,
+    val poster: String?,
+    val backdrop: String?,
+    val year: Int?,
+    val rating: Double?,
+    val genre: String?,
+    val plot: String?,
+    val durationMin: Int?,
+    val category: String?,
+    val addedMs: Long?,
+)
+
+@Entity(tableName = "vod_episodes", indices = [Index("seriesId", "season", "number")])
+data class EpisodeEntity(
+    @PrimaryKey val id: String,
+    val seriesId: String,
+    val season: Int,
+    val number: Int,
+    val title: String,
+    val ref: String,
+    val plot: String?,
+    val durationMin: Int?,
+    val poster: String?,
+    val addedMs: Long?,
+)
+
+/** „Moja lista” i postęp oglądania (film albo odcinek); osobno, by odświeżenie katalogu ich nie kasowało. */
+@Entity(tableName = "vod_state", primaryKeys = ["itemId"])
+data class VodStateEntity(
+    val itemId: String,
+    val myList: Boolean = false,
+    val positionMs: Long = 0,
+    val durationMs: Long = 0,
+    val updatedMs: Long? = null,
+)

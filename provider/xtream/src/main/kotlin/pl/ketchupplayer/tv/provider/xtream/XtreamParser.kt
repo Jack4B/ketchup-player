@@ -81,9 +81,9 @@ object XtreamParser {
         return if (dot > 0) rest.substring(0, dot) to rest.substring(dot + 1) else rest to DEFAULT_LIVE_EXT
     }
 
-    private fun parse(text: String): JsonElement? = runCatching { json.parseToJsonElement(text) }.getOrNull()
+    internal fun parse(text: String): JsonElement? = runCatching { json.parseToJsonElement(text) }.getOrNull()
 
-    private fun JsonObject.str(key: String): String? =
+    internal fun JsonObject.str(key: String): String? =
         (this[key] as? JsonPrimitive)?.contentOrNull?.trim()?.takeIf { it.isNotEmpty() && it != "null" }
 
     const val DEFAULT_LIVE_EXT = "ts"

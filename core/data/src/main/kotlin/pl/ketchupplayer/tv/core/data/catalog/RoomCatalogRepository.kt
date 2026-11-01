@@ -15,6 +15,7 @@ import pl.ketchupplayer.tv.core.model.ProviderInfo
 import pl.ketchupplayer.tv.core.model.ProviderType
 import pl.ketchupplayer.tv.core.model.StreamSpec
 import pl.ketchupplayer.tv.core.policy.EpgSourcePolicy
+import pl.ketchupplayer.tv.provider.api.Capability
 import pl.ketchupplayer.tv.provider.xtream.XtreamCredentials
 import java.net.URI
 import java.util.UUID
@@ -26,6 +27,7 @@ class RoomCatalogRepository
         private val providerDao: ProviderDao,
         private val channelDao: ChannelDao,
         private val flagDao: ChannelFlagDao,
+        private val vodDao: pl.ketchupplayer.tv.core.database.VodDao,
         private val secrets: ProviderSecrets,
         private val factory: ProviderFactory,
         private val clock: Clock,
@@ -112,6 +114,12 @@ class RoomCatalogRepository
                 onSuccess = { channels ->
                     channelDao.replaceAll(id.value, channels.map { it.toEntity() })
                     provider.epgUrl()?.let { secrets.putEpg(id, it) }
+                    // Filmy i seriale są dodatkiem: ich błąd nie psuje odświeżenia kanałów.
+                    if (Capability.VOD in provider.capabilities) {
+                        provider.loadVod().onSuccess { vod ->
+                            vodDao.replaceAll(id.value, vod.items.map { it.toVodEntity() })
+                        }
+                    }
                     providerDao.markRefreshed(id.value, now, null, null)
                     Result.success(channels.size)
                 },
@@ -177,3 +185,22 @@ class RoomCatalogRepository
 
         private fun hostOf(url: String): String = runCatching { URI(url).host }.getOrNull() ?: "?"
     }
+
+private fun pl.ketchupplayer.tv.core.model.VodItem.toVodEntity() =
+    pl.ketchupplayer.tv.core.database.VodItemEntity(
+        id,
+        providerId.value,
+        kind.name,
+        title,
+        normTitle,
+        ref,
+        poster,
+        backdrop,
+        year,
+        rating,
+        genre,
+        plot,
+        durationMin,
+        category,
+        addedMs,
+    )

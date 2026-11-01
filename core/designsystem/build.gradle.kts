@@ -5,6 +5,8 @@ plugins {
 }
 
 dependencies {
+    api(libs.coil.compose)
+    implementation(libs.coil.okhttp)
     implementation(libs.androidx.activity.compose)
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)

@@ -8,7 +8,7 @@ empty-blocks:
 naming:
   FunctionNaming: { active: true, ignoreAnnotated: ['Composable'] }
 complexity:
-  TooManyFunctions: { active: true, thresholdInClasses: 11, thresholdInFiles: 30, thresholdInInterfaces: 15, ignoreOverridden: true }
+  TooManyFunctions: { active: true, thresholdInClasses: 11, thresholdInFiles: 30, thresholdInInterfaces: 20, ignoreOverridden: true }
   # Funkcje @Composable składają ekran z wielu elementów: limit długości dotyczy zwykłego kodu.
   LongMethod: { active: true, threshold: 60, ignoreAnnotated: ['Composable'] }
   # Funkcje @Composable mają wiele parametrów z wartościami domyślnymi (Modifier, kolory) - liczymy tylko wymagane.

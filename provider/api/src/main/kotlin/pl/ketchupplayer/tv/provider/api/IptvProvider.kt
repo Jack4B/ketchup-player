@@ -1,9 +1,12 @@
 package pl.ketchupplayer.tv.provider.api
 
 import pl.ketchupplayer.tv.core.model.Channel
+import pl.ketchupplayer.tv.core.model.Episode
 import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.ProviderType
 import pl.ketchupplayer.tv.core.model.StreamSpec
+import pl.ketchupplayer.tv.core.model.VodCatalog
+import pl.ketchupplayer.tv.core.model.VodItem
 
 enum class Capability { LIVE, VOD, SERIES, CATCHUP, EPG_URL, ACCOUNT_INFO }
 
@@ -41,4 +44,14 @@ interface IptvProvider {
 
     /** Adres XMLTV dostawcy, jeśli lista go podaje (np. `url-tvg` w M3U). */
     suspend fun epgUrl(): String?
+
+    /** Katalog filmów i seriali (tylko dostawcy z [Capability.VOD] lub [Capability.SERIES]). */
+    suspend fun loadVod(): Result<VodCatalog> = Result.failure(ProviderError.BadResponse("Brak filmów i seriali"))
+
+    /** Odcinki serialu (pobierane przy otwarciu szczegółów). */
+    suspend fun loadEpisodes(series: VodItem): Result<List<Episode>> =
+        Result.failure(ProviderError.BadResponse("Brak odcinków"))
+
+    /** Adres odtwarzania filmu albo odcinka z jego odwołania. */
+    suspend fun resolveVod(ref: String): Result<StreamSpec> = Result.failure(ProviderError.BadResponse("Brak adresu"))
 }
