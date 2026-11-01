@@ -38,6 +38,10 @@ Kolejność: M1 (największa wartość, najbardziej brakuje) → M2 → M3 → M
 2. **„Mam X minut”:** wybierasz, ile masz czasu (np. 45 min, do 22:00), a aplikacja pokazuje filmy, odcinki i audycje na żywo, które się w tym zmieszczą i skończą na czas.
 3. **Kanały wirtualne z mojej biblioteki:** automatyczne kanały „Kryminały”, „Komedie”, „Dla dzieci” odtwarzające kolejne odcinki z twojego katalogu 24/7, z własnym EPG w przewodniku.
 
+## Redesign menu i efekt szkła
+- Zrobione (0.6.2): szuflada jako „szklany” panel (półprzezroczysty gradient, połysk krawędzi, pigułka zaznaczenia w akcencie).
+- Biblioteki do rozważenia: **Haze** (rozmycie tła „frosted glass” w Compose, wymaga API 31+, na starszych tylko półprzezroczystość), **Palette** (kolor akcentu wyliczany z plakatu), **Lottie Compose** (animowane ikony szuflady). Rozmycie jest drogie na słabych SoC boxów, więc jako opcja „Efekt szkła” w Ustawieniach → Wygląd, domyślnie wyłączona na słabszych urządzeniach, sprawdzana pomiarem klatek na boxie.
+
 ## Zasady pracy (oszczędzanie limitu)
 1. **Paczki:** jeden commit/push na milestone (lub podetap), nie po każdej poprawce. Push anuluje trwający CI, więc po push czekam na wynik, zamiast pchać dalej.
 2. **Lokalnie najpierw** `spotlessApply detekt` + testy zmienionych modułów, dopiero potem push (CI nie ma łapać stylu).
