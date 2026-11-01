@@ -6,7 +6,9 @@ import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.ProviderType
 import pl.ketchupplayer.tv.core.model.StreamSpec
 import pl.ketchupplayer.tv.core.model.VodCatalog
+import pl.ketchupplayer.tv.core.model.VodInfo
 import pl.ketchupplayer.tv.core.model.VodItem
+import pl.ketchupplayer.tv.core.model.VodKind
 import pl.ketchupplayer.tv.core.network.NetworkException
 import pl.ketchupplayer.tv.core.network.TextFetcher
 import pl.ketchupplayer.tv.provider.api.Capability
@@ -82,6 +84,21 @@ class XtreamProvider(
             }
         return XtreamVodParser.episodes(series, body)?.let { Result.success(it) }
             ?: Result.failure(ProviderError.BadResponse("Nieprawidłowa lista odcinków"))
+    }
+
+    override suspend fun loadVodInfo(item: VodItem): Result<VodInfo> {
+        val url =
+            if (item.kind == VodKind.SERIES) {
+                credentials.apiUrl("get_series_info", mapOf("series_id" to item.ref.removePrefix("xtream:series:")))
+            } else {
+                val vodId =
+                    XtreamVodParser.parseVodRef(item.ref)?.second
+                        ?: return Result.failure(ProviderError.BadResponse("Nieznane odwołanie"))
+                credentials.apiUrl("get_vod_info", mapOf("vod_id" to vodId))
+            }
+        val body = fetch(url).getOrElse { return Result.failure(it) }
+        return XtreamVodParser.info(body)?.let { Result.success(it) }
+            ?: Result.failure(ProviderError.BadResponse("Brak opisu u dostawcy"))
     }
 
     override suspend fun resolveVod(ref: String): Result<StreamSpec> {

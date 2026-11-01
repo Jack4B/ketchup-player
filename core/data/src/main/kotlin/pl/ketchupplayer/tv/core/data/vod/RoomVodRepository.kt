@@ -39,6 +39,13 @@ class RoomVodRepository
 
         override suspend fun markSeen(seriesId: String) = dao.markSeen(seriesId)
 
+        override suspend fun refreshInfo(itemId: String) {
+            val item = dao.get(itemId)?.toModel() ?: return
+            if (!item.plot.isNullOrBlank() && item.cast != null && item.backdrop != null) return
+            val provider = providerDao.get(item.providerId.value)?.let { factory.create(it) } ?: return
+            provider.loadVodInfo(item).onSuccess { info -> dao.insertAll(listOf(item.withInfo(info).toEntity())) }
+        }
+
         override fun entries(kind: VodKind): Flow<List<VodEntry>> = entries(dao.observeByKind(kind.name))
 
         override fun myList(): Flow<List<VodEntry>> =
@@ -182,6 +189,7 @@ internal fun VodItemEntity.toModel() =
         durationMin,
         category,
         addedMs,
+        cast,
     )
 
 internal fun VodItem.toEntity() =
@@ -201,6 +209,7 @@ internal fun VodItem.toEntity() =
         durationMin,
         category,
         addedMs,
+        cast,
     )
 
 internal fun EpisodeEntity.toModel() =
@@ -208,3 +217,15 @@ internal fun EpisodeEntity.toModel() =
 
 internal fun Episode.toEntity() =
     EpisodeEntity(id, seriesId, season, number, title, ref, plot, durationMin, poster, addedMs)
+
+/** Dane dostawcy uzupełniają tylko to, czego pozycja jeszcze nie ma (lista nie jest nadpisywana). */
+internal fun VodItem.withInfo(info: pl.ketchupplayer.tv.core.model.VodInfo): VodItem =
+    copy(
+        plot = plot?.takeIf { it.isNotBlank() } ?: info.plot,
+        cast = info.cast ?: cast ?: "",
+        genre = genre ?: info.genre,
+        backdrop = info.backdrop ?: backdrop,
+        rating = rating ?: info.rating,
+        durationMin = durationMin ?: info.durationMin,
+        year = year ?: info.year,
+    )

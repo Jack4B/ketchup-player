@@ -53,6 +53,9 @@ interface VodRepository {
     /** Czy jakikolwiek serial ma nowe odcinki (kropka na pozycji „Seriale” w szufladzie). */
     fun anyNewEpisodes(): Flow<Boolean>
 
+    /** Dociąga od dostawcy opis, obsadę, ocenę i grafikę w tle (jeśli ich jeszcze nie mamy); błąd nie psuje ekranu. */
+    suspend fun refreshInfo(itemId: String)
+
     /** Użytkownik otworzył serial: nowe odcinki uznajemy za zobaczone. */
     suspend fun markSeen(seriesId: String)
 

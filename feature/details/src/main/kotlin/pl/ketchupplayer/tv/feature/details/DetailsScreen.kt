@@ -1,12 +1,14 @@
 package pl.ketchupplayer.tv.feature.details
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -21,8 +23,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -91,25 +96,67 @@ private fun Content(
             if (runCatching { primary.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
         }
     }
+    Box(Modifier.fillMaxSize()) {
+        // Grafika w tle (backdrop od dostawcy albo plakat), przyciemniona gradientem: tekst zawsze czytelny.
+        PosterImage(item.backdrop ?: item.poster, item.title, Modifier.fillMaxSize().alpha(BACKDROP_ALPHA))
+        Box(
+            Modifier.fillMaxSize().background(
+                Brush.horizontalGradient(listOf(c.background, c.background.copy(alpha = GRADIENT_END_ALPHA))),
+            ),
+        )
+        Box(
+            Modifier.fillMaxSize().background(
+                Brush.verticalGradient(listOf(Color.Transparent, c.background.copy(alpha = GRADIENT_BOTTOM_ALPHA))),
+            ),
+        )
+        DetailsBody(state, item, primary, onEvent, onPlay, onOpen)
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun DetailsBody(
+    state: DetailsUiState,
+    item: pl.ketchupplayer.tv.core.model.VodItem,
+    primary: FocusRequester,
+    onEvent: (DetailsEvent) -> Unit,
+    onPlay: (String, Boolean) -> Unit,
+    onOpen: (String) -> Unit,
+) {
+    val c = KetchupTheme.colors
     ScreenScaffold {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(item.title, fontSize = 36.sp, fontWeight = FontWeight.Bold, color = c.textPrimary, maxLines = 2)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    InfoPill(stringResource(if (state.isSeries) R.string.details_series else R.string.details_movie))
+                    item.year?.let { InfoPill(it.toString()) }
+                    if (state.isSeries && state.seasons.isNotEmpty()) {
+                        InfoPill(stringResource(R.string.details_seasons_count, state.seasons.size))
+                    }
+                    item.durationMin?.let { InfoPill(stringResource(R.string.details_minutes, it)) }
+                    item.rating?.let {
+                        InfoPill(
+                            "★ " + String.format(java.util.Locale.forLanguageTag("pl"), "%.1f", it),
+                            true,
+                        )
+                    }
+                }
+                (item.genre ?: item.category)?.let { Text(it, fontSize = 15.sp, color = c.textSecondary) }
                 Text(
-                    stringResource(if (state.isSeries) R.string.details_series else R.string.details_movie),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = c.textSecondary,
-                    letterSpacing = 2.sp,
-                )
-                Text(item.title, fontSize = 30.sp, fontWeight = FontWeight.Bold, color = c.textPrimary, maxLines = 2)
-                Text(meta(state), fontSize = 14.sp, color = c.textSecondary)
-                Text(
-                    item.plot ?: stringResource(R.string.details_no_plot),
-                    fontSize = 14.sp,
+                    item.plot?.takeIf { it.isNotBlank() } ?: stringResource(R.string.details_no_plot),
+                    fontSize = 15.sp,
                     color = c.textPrimary,
-                    maxLines = 4,
+                    maxLines = 6,
                     overflow = TextOverflow.Ellipsis,
                 )
+                item.cast?.takeIf { it.isNotBlank() }?.let {
+                    Text(stringResource(R.string.details_cast), fontSize = 12.sp, color = c.textSecondary)
+                    Text(it, fontSize = 14.sp, color = c.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
             }
             Box(
                 Modifier
@@ -126,7 +173,34 @@ private fun Content(
     }
 }
 
-private val POSTER_WIDTH = 100.dp
+private val POSTER_WIDTH = 130.dp
+private const val BACKDROP_ALPHA = 0.5f
+private const val GRADIENT_END_ALPHA = 0.1f
+private const val GRADIENT_BOTTOM_ALPHA = 0.85f
+
+/** Pigułka z krótką informacją (rok, czas, ocena); ocena w kolorze akcentu. */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun InfoPill(
+    text: String,
+    highlight: Boolean = false,
+) {
+    val c = KetchupTheme.colors
+    val color = if (highlight) c.accent else c.textPrimary
+    Text(
+        text,
+        fontSize = 14.sp,
+        color = color,
+        modifier =
+            Modifier
+                .border(1.dp, if (highlight) c.accent else c.outline, RoundedCornerShape(PILL_RADIUS))
+                .background(c.surface2.copy(alpha = PILL_ALPHA), RoundedCornerShape(PILL_RADIUS))
+                .padding(horizontal = 12.dp, vertical = 5.dp),
+    )
+}
+
+private val PILL_RADIUS = 18.dp
+private const val PILL_ALPHA = 0.7f
 private const val FOCUS_RETRIES = 20
 
 @Composable
@@ -266,24 +340,6 @@ private fun Similar(
             PosterCard(s.title, { onOpen(s.id) }, imageUrl = s.poster)
         }
     }
-}
-
-@Composable
-private fun meta(state: DetailsUiState): String {
-    val item = checkNotNull(state.entry).item
-    return listOfNotNull(
-        item.year?.toString(),
-        item.rating?.let { "★ " + String.format(Locale.forLanguageTag("pl"), "%.1f", it) },
-        if (state.isSeries &&
-            state.seasons.isNotEmpty()
-        ) {
-            stringResource(R.string.details_seasons_count, state.seasons.size)
-        } else {
-            null
-        },
-        item.durationMin?.let { stringResource(R.string.details_minutes, it) },
-        item.genre ?: item.category,
-    ).joinToString(" · ")
 }
 
 private fun clock(ms: Long): String {

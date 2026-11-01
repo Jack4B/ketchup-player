@@ -7,6 +7,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.decodeToSequence
 import pl.ketchupplayer.tv.core.model.Episode
 import pl.ketchupplayer.tv.core.model.ProviderId
+import pl.ketchupplayer.tv.core.model.VodInfo
 import pl.ketchupplayer.tv.core.model.VodItem
 import pl.ketchupplayer.tv.core.model.VodKind
 import pl.ketchupplayer.tv.provider.xtream.XtreamParser.parse
@@ -101,6 +102,34 @@ object XtreamVodParser {
             category = o.str("category_id")?.let { categories[it] },
             addedMs = o.str("last_modified")?.toLongOrNull()?.times(MS),
         )
+    }
+
+    /** `info` z `get_vod_info` / `get_series_info`: opis, obsada, gatunek, grafika w tle, ocena, czas, rok. */
+    fun info(text: String): VodInfo? {
+        val root = parse(text) as? JsonObject ?: return null
+        val o = root["info"] as? JsonObject ?: return null
+        val backdrop =
+            when (val b = o["backdrop_path"] ?: o["backdrop"]) {
+                is JsonArray -> (b.firstOrNull() as? kotlinx.serialization.json.JsonPrimitive)?.content
+                is kotlinx.serialization.json.JsonPrimitive -> b.content
+                else -> null
+            }?.takeIf { it.isNotBlank() }
+        val info =
+            VodInfo(
+                plot = (o.str("plot") ?: o.str("description"))?.takeIf { it.isNotBlank() },
+                cast = (o.str("cast") ?: o.str("actors"))?.takeIf { it.isNotBlank() },
+                genre = o.str("genre")?.takeIf { it.isNotBlank() },
+                backdrop = backdrop,
+                rating = o.str("rating")?.toDoubleOrNull()?.takeIf { it > 0 },
+                durationMin =
+                    o
+                        .str("duration_secs")
+                        ?.toIntOrNull()
+                        ?.div(SECS_PER_MIN)
+                        ?.takeIf { it > 0 },
+                year = (o.str("releasedate") ?: o.str("releaseDate"))?.take(YEAR_LEN)?.toIntOrNull(),
+            )
+        return info.takeIf { it != VodInfo() }
     }
 
     /** `get_series_info`: sezony -> odcinki. Zwraca null, gdy odpowiedź nie ma sensu. */

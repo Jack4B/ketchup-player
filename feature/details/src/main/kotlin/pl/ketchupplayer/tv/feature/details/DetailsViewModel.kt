@@ -38,6 +38,7 @@ class DetailsViewModel
             if (itemId.value == id) return
             itemId.value = id
             season.value = null
+            viewModelScope.launch { repo.refreshInfo(id) } // opis, obsada i grafika od dostawcy; wynik wpada do bazy
             viewModelScope.launch {
                 similar.value = repo.similar(id, SIMILAR_LIMIT)
                 loadEpisodesIfSeries(id)

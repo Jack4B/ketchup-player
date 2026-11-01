@@ -6,6 +6,7 @@ import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.ProviderType
 import pl.ketchupplayer.tv.core.model.StreamSpec
 import pl.ketchupplayer.tv.core.model.VodCatalog
+import pl.ketchupplayer.tv.core.model.VodInfo
 import pl.ketchupplayer.tv.core.model.VodItem
 
 enum class Capability { LIVE, VOD, SERIES, CATCHUP, EPG_URL, ACCOUNT_INFO }
@@ -54,4 +55,8 @@ interface IptvProvider {
 
     /** Adres odtwarzania filmu albo odcinka z jego odwołania. */
     suspend fun resolveVod(ref: String): Result<StreamSpec> = Result.failure(ProviderError.BadResponse("Brak adresu"))
+
+    /** Opis, obsada, ocena i grafika w tle dla pozycji; dostawcy bez takich danych zwracają błąd. */
+    suspend fun loadVodInfo(item: VodItem): Result<VodInfo> =
+        Result.failure(ProviderError.BadResponse("Brak opisu u dostawcy"))
 }

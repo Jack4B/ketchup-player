@@ -108,6 +108,7 @@ data class VodItemEntity(
     val durationMin: Int?,
     val category: String?,
     val addedMs: Long?,
+    val cast: String? = null,
 )
 
 @Entity(tableName = "vod_episodes", indices = [Index("seriesId", "season", "number")])

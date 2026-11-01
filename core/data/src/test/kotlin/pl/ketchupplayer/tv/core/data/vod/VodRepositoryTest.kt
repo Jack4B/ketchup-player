@@ -50,6 +50,10 @@ class VodRepositoryTest {
                 """"rating":"7.4","category_id":"10","container_extension":"mkv","added":"1700000000"},""" +
                 """{"stream_id":502,"name":"Seksmisja","rating":"8.1","category_id":"11",""" +
                 """"container_extension":"mp4"}]""",
+            "action=get_vod_info" to
+                """{"info":{"plot":"Opis z panelu.","cast":"Jan Kowalski, Anna Nowak","genre":"Dramat",""" +
+                """"duration_secs":"6000","rating":"7.8","backdrop_path":["http://i.example.invalid/b.jpg"],""" +
+                """"releasedate":"2005-03-01"}}""",
             "action=get_series_categories" to """[{"category_id":"20","category_name":"Kryminał"}]""",
             "action=get_series_info" to
                 """{"episodes":{"1":[{"id":"9001","episode_num":1,"title":"Pilot","season":1,""" +
@@ -299,5 +303,26 @@ class VodRepositoryTest {
                     .single()
                     .hasNewEpisodes,
             )
+        }
+
+    /** Opis, obsada, grafika i ocena z `get_vod_info` trafiają do pozycji przy otwarciu szczegółów. */
+    @Test
+    fun `szczegoly filmu dociagaja opis obsade i grafike od dostawcy`() =
+        runTest {
+            val repo = vodRepo()
+            val movie =
+                repo
+                    .entries(VodKind.MOVIE)
+                    .first()
+                    .first { it.item.title == "Seksmisja" }
+                    .item
+            assertEquals(null, movie.plot)
+            repo.refreshInfo(movie.id)
+            val updated = repo.entry(movie.id).first()!!.item
+            assertEquals("Opis z panelu.", updated.plot)
+            assertEquals("Jan Kowalski, Anna Nowak", updated.cast)
+            assertEquals("http://i.example.invalid/b.jpg", updated.backdrop)
+            assertEquals(100, updated.durationMin)
+            assertEquals(8.1, updated.rating!!, 0.001) // ocena z listy ma pierwszeństwo przed oceną z info
         }
 }

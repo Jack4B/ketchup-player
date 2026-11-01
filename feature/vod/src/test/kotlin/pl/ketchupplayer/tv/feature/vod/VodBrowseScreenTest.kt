@@ -84,6 +84,8 @@ internal class FakeVodRepo(
 
     override suspend fun markSeen(seriesId: String) = Unit
 
+    override suspend fun refreshInfo(itemId: String) = Unit
+
     override fun episodes(seriesId: String) = MutableStateFlow(emptyList<EpisodeEntry>())
 
     override suspend fun refreshEpisodes(seriesId: String) = Result.success(0)
