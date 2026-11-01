@@ -6,9 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import pl.ketchupplayer.tv.core.data.onboarding.OnboardingRepository
@@ -39,25 +37,31 @@ class RootViewModel
         private fun autoRefresh() {
             viewModelScope.launch {
                 onboarding.done.first { it }
-                val providers = catalog.providers.first()
-                if (providers.isNotEmpty() && prefs.autoRefresh.first()) {
-                    providers
-                        // Bez daty odświeżenia lista jest w trakcie importu: nie dublujemy pobierania.
-                        .filter { p -> p.lastRefreshMs?.let { it < clock.nowMs() - LIST_STALE_MS } == true }
-                        .forEach { catalog.refresh(it.id) }
-                    epg.refreshIfStale(EPG_STALE_MS)
-                }
-                // Po starcie: zmiana stanu list (dodanie, ręczne odświeżenie) = świeże EPG.
-                var last = catalog.providers.first().map { it.id to it.lastRefreshMs }
+                val covered = HashMap<String, Long?>()
+                var first = true
+                // Jeden strumień: pierwsza emisja to stan startowy, kolejne to zmiany listy (kończą się pobraniem EPG).
+                // niż 6 h), kolejne to zmiany (dodanie/odświeżenie listy) i kończą się pobraniem EPG.
                 catalog.providers
-                    .map { list -> list.map { it.id to it.lastRefreshMs } }
-                    .distinctUntilChanged()
                     .debounce(DEBOUNCE_MS)
-                    .collect { now ->
-                        if (now != last && now.isNotEmpty()) epg.refresh()
-                        last = now
+                    .collect { list ->
+                        val news = list.filter { it.lastRefreshMs != null && covered[it.id.value] != it.lastRefreshMs }
+                        news.forEach { covered[it.id.value] = it.lastRefreshMs }
+                        if (first) {
+                            first = false
+                            if (list.isNotEmpty() && prefs.autoRefresh.first()) startupRefresh(list)
+                        } else if (news.isNotEmpty()) {
+                            epg.refresh()
+                        }
                     }
             }
+        }
+
+        private suspend fun startupRefresh(list: List<pl.ketchupplayer.tv.core.model.ProviderInfo>) {
+            list
+                // Bez daty odświeżenia lista jest w trakcie importu: nie dublujemy pobierania.
+                .filter { p -> p.lastRefreshMs?.let { it < clock.nowMs() - LIST_STALE_MS } == true }
+                .forEach { catalog.refresh(it.id) }
+            epg.refreshIfStale(EPG_STALE_MS)
         }
 
         /** Są seriale z nowymi odcinkami: zielona kropka na pozycji „Seriale” w szufladzie. */
