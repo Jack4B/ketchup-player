@@ -19,7 +19,7 @@ class ProviderHeadersRepositoryTest {
 
     private fun repo() =
         DataStoreProviderHeadersRepository(
-            PreferenceDataStoreFactory.create { File(tmp.root, "h.pb") },
+            PreferenceDataStoreFactory.create { File(tmp.root, "h.preferences_pb") },
         )
 
     @Test
