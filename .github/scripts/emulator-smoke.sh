@@ -33,8 +33,19 @@ ffmpeg -loglevel error -f lavfi -i testsrc=size=640x360:rate=25 -f lavfi -i sine
   -c:v libx264 -pix_fmt yuv420p -preset ultrafast -c:a aac -f hls -hls_time 4 -hls_list_size 0 "$SRV/hls/good/index.m3u8"
 printf '#EXTM3U\n#EXTINF:-1 tvg-chno="1" group-title="Test",Kanal Testowy\nhttp://127.0.0.1:8099/hls/missing/index.m3u8\n' > "$SRV/a.m3u"
 printf '#EXTM3U\n#EXTINF:-1 tvg-chno="2" group-title="Test",Kanal Testowy\nhttp://127.0.0.1:8099/hls/good/index.m3u8\n' > "$SRV/b.m3u"
-(cd "$SRV" && python3 -m http.server 8099 --bind 0.0.0.0 > "$OUT/http-server.log" 2>&1 &)
-sleep 2
+# Ścieżka logu bezwzględna: po cd do $SRV ścieżka względna wskazywałaby w nieistniejące miejsce i serwer by nie ruszył.
+LOG="$(pwd)/$OUT/http-server.log"
+(cd "$SRV" && exec python3 -m http.server 8099 --bind 0.0.0.0 > "$LOG" 2>&1) &
+SERVER_PID=$!
+for _ in $(seq 1 20); do
+  curl -s -o /dev/null http://127.0.0.1:8099/a.m3u && break
+  sleep 0.5
+done
+if ! curl -sf -o /dev/null http://127.0.0.1:8099/a.m3u; then
+  echo "=== Serwer testowy nie odpowiada (PID $SERVER_PID) ===" >&2
+  cat "$LOG" >&2 || true
+  exit 1
+fi
 # adb reverse: localhost:8099 w emulatorze trafia na serwer hosta (niezależnie od routingu 10.0.2.2).
 adb reverse tcp:8099 tcp:8099
 {
