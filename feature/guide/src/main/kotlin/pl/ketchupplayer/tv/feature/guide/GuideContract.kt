@@ -1,6 +1,7 @@
 package pl.ketchupplayer.tv.feature.guide
 
 import pl.ketchupplayer.tv.core.model.Channel
+import pl.ketchupplayer.tv.epg.radar.InterestHit
 import pl.ketchupplayer.tv.epg.radar.RadarItem
 import pl.ketchupplayer.tv.epg.radar.RadarSlot
 
@@ -56,4 +57,10 @@ data class RadarUiState(
     val slot: RadarSlot = RadarSlot.TOP_DAY,
     val loading: Boolean = true,
     val items: List<RadarItem> = emptyList(),
+)
+
+/** Zakładka „Moje zainteresowania”: słowa kluczowe użytkownika i pasujące audycje z najbliższej doby. */
+data class InterestsUiState(
+    val keywords: List<String> = emptyList(),
+    val hits: List<InterestHit> = emptyList(),
 )

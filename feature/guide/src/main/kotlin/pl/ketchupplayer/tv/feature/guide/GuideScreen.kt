@@ -38,9 +38,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
 import pl.ketchupplayer.tv.core.designsystem.FocusItem
+import pl.ketchupplayer.tv.core.designsystem.KetchupButton
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.designsystem.PillChip
 import pl.ketchupplayer.tv.core.designsystem.ScreenScaffold
+import pl.ketchupplayer.tv.core.designsystem.SearchField
 import pl.ketchupplayer.tv.core.designsystem.ShellHeader
 import pl.ketchupplayer.tv.core.designsystem.StateKind
 import pl.ketchupplayer.tv.core.designsystem.StateView
@@ -63,7 +65,19 @@ fun GuideRoute(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val radar by viewModel.radar.collectAsStateWithLifecycle()
-    GuideScreen(state, viewModel::programmes, onOpenChannel, onOpenProviders, onBack, radar, viewModel::selectRadarSlot)
+    val interests by viewModel.interests.collectAsStateWithLifecycle()
+    GuideScreen(
+        state,
+        viewModel::programmes,
+        onOpenChannel,
+        onOpenProviders,
+        onBack,
+        radar,
+        viewModel::selectRadarSlot,
+        interests,
+        viewModel::addInterest,
+        viewModel::removeInterest,
+    )
 }
 
 /** Zakładki ekranu Przewodnik (makieta 04): Siatka | Radar | Moje zainteresowania. */
@@ -84,6 +98,9 @@ fun GuideScreen(
     onBack: () -> Unit,
     radar: RadarUiState = RadarUiState(),
     onRadarSlot: (RadarSlot) -> Unit = {},
+    interests: InterestsUiState = InterestsUiState(),
+    onAddInterest: (String) -> Unit = {},
+    onRemoveInterest: (String) -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
     var tab by remember { mutableStateOf(GuideTab.GRID) }
@@ -100,7 +117,7 @@ fun GuideScreen(
                 )
             tab == GuideTab.GRID -> Grid(state, loadProgrammes, onOpenChannel)
             tab == GuideTab.RADAR -> RadarTab(radar, state.nowMs, onRadarSlot, onOpenChannel)
-            else -> StateView(StateKind.EMPTY, stringResource(R.string.guide_tab_soon))
+            else -> InterestsTab(interests, state.nowMs, onAddInterest, onRemoveInterest, onOpenChannel)
         }
     }
 }
@@ -482,3 +499,90 @@ private fun clockRange(
     val f = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
     return f.format(java.util.Date(startMs)) + "–" + f.format(java.util.Date(endMs))
 }
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun InterestsTab(
+    interests: InterestsUiState,
+    nowMs: Long,
+    onAdd: (String) -> Unit,
+    onRemove: (String) -> Unit,
+    onOpenChannel: (String) -> Unit,
+) {
+    val c = KetchupTheme.colors
+    var text by remember { mutableStateOf("") }
+    val submit = {
+        onAdd(text)
+        text = ""
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        SearchField(stringResource(R.string.guide_interest_hint), text, {
+            text = it
+        }, Modifier.width(INTEREST_FIELD_WIDTH), submit)
+        KetchupButton(stringResource(R.string.guide_interest_add), submit, primary = true)
+    }
+    if (interests.keywords.isNotEmpty()) {
+        Text(stringResource(R.string.guide_interest_remove_hint), fontSize = 14.sp, color = c.textSecondary)
+        androidx.compose.foundation.layout.FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            interests.keywords.forEach { k -> PillChip("$k  ✕", false, { onRemove(k) }) }
+        }
+    }
+    when {
+        interests.keywords.isEmpty() -> StateView(StateKind.EMPTY, stringResource(R.string.guide_interest_empty))
+        interests.hits.isEmpty() -> StateView(StateKind.EMPTY, stringResource(R.string.guide_interest_none))
+        else ->
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                itemsIndexed(interests.hits, key = { _, h -> h.channel.id + h.programme.startMs }) { _, hit ->
+                    InterestRow(hit, nowMs) { onOpenChannel(hit.channel.id) }
+                }
+            }
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun InterestRow(
+    hit: pl.ketchupplayer.tv.epg.radar.InterestHit,
+    nowMs: Long,
+    onClick: () -> Unit,
+) {
+    val c = KetchupTheme.colors
+    val p = hit.programme
+    FocusItem(
+        onClick,
+        Modifier.fillMaxWidth().height(RADAR_ROW_HEIGHT),
+        container = c.surface2,
+        outlined = false,
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Text(
+                clockRange(p.startMs, p.endMs),
+                fontSize = 16.sp,
+                color = c.textSecondary,
+                modifier = Modifier.width(HOURS_WIDTH),
+            )
+            Column(Modifier.weight(1f)) {
+                Text(p.title, fontSize = 18.sp, color = c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    "${hit.channel.displayName} · ${hit.keyword}" +
+                        if (p.isOnAt(nowMs)) " · ${stringResource(R.string.guide_radar_now)}" else "",
+                    fontSize = 14.sp,
+                    color = c.textSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+private val INTEREST_FIELD_WIDTH = 420.dp
+private val HOURS_WIDTH = 130.dp

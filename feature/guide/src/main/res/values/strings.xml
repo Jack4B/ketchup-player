@@ -7,7 +7,11 @@
     <string name="guide_tab_grid">Siatka</string>
     <string name="guide_tab_radar">Radar</string>
     <string name="guide_tab_interests">Moje zainteresowania</string>
-    <string name="guide_tab_soon">Ta zakładka pojawi się w kolejnej wersji.</string>
+    <string name="guide_interest_hint">Wpisz tytuł, np. Premier League</string>
+    <string name="guide_interest_add">Dodaj</string>
+    <string name="guide_interest_remove_hint">OK na słowie usuwa je z listy</string>
+    <string name="guide_interest_empty">Dodaj słowa kluczowe (film, serial, drużyna), a pokażemy audycje z najbliższej doby.</string>
+    <string name="guide_interest_none">Nic z twojej listy nie leci w ciągu najbliższych 24 godzin.</string>
     <string name="guide_now">TERAZ · %1$s</string>
     <string name="guide_later">PÓŹNIEJ · %1$s</string>
     <string name="guide_radar_top">TOP DNIA</string>

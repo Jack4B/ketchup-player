@@ -13,6 +13,7 @@ import pl.ketchupplayer.tv.core.common.Clock
 import pl.ketchupplayer.tv.core.data.catalog.CatalogRepository
 import pl.ketchupplayer.tv.core.data.epg.EpgRepository
 import pl.ketchupplayer.tv.core.model.EpgProgramme
+import pl.ketchupplayer.tv.epg.radar.InterestMatcher
 import pl.ketchupplayer.tv.epg.radar.RadarEngine
 import pl.ketchupplayer.tv.epg.radar.RadarPolicy
 import pl.ketchupplayer.tv.epg.radar.RadarSlot
@@ -24,6 +25,7 @@ class GuideViewModel
     constructor(
         catalog: CatalogRepository,
         private val epg: EpgRepository,
+        private val interestsRepo: pl.ketchupplayer.tv.core.data.interests.InterestsRepository,
         private val clock: Clock,
     ) : ViewModel() {
         /** Okno liczone raz na wejście do ekranu; przewijanie czasu w przód to kolejna iteracja. */
@@ -72,6 +74,22 @@ class GuideViewModel
                 val programmes = epg.window(window.dayStart, window.dayEnd)
                 RadarUiState(slot, false, RadarEngine.build(slot, now, window, channels, programmes, favorites))
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), RadarUiState())
+
+        /** Moje zainteresowania: słowa kluczowe + audycje z najbliższych 24 h, które do nich pasują. */
+        val interests: StateFlow<InterestsUiState> =
+            combine(interestsRepo.keywords, catalog.liveChannels(), epgRevision) { keywords, channels, _ ->
+                val now = clock.nowMs()
+                val programmes = if (keywords.isEmpty()) emptyList() else epg.window(now, now + 24 * HOUR_MS)
+                InterestsUiState(keywords, InterestMatcher.match(keywords, channels, programmes, now))
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), InterestsUiState())
+
+        fun addInterest(keyword: String) {
+            viewModelScope.launch { interestsRepo.add(keyword) }
+        }
+
+        fun removeInterest(keyword: String) {
+            viewModelScope.launch { interestsRepo.remove(keyword) }
+        }
 
         fun selectRadarSlot(slot: RadarSlot) {
             radarSlot.value = slot
