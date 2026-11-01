@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -25,6 +26,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
 import pl.ketchupplayer.tv.core.designsystem.KetchupButton
+import pl.ketchupplayer.tv.core.designsystem.KetchupLogoWide
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.designsystem.ThemedBackground
 import pl.ketchupplayer.tv.core.designsystem.requestFocusWhenPlaced
@@ -66,7 +68,8 @@ fun OnboardingScreen(
             Modifier.fillMaxSize().padding(horizontal = 96.dp, vertical = 48.dp),
             horizontalArrangement = Arrangement.spacedBy(48.dp),
         ) {
-            Column(Modifier.width(220.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Column(Modifier.width(360.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                KetchupLogoWide(Modifier.fillMaxWidth().padding(bottom = 16.dp))
                 listOf(R.string.onb_step1, R.string.onb_step2, R.string.onb_step3).forEachIndexed { i, label ->
                     Text(
                         stringResource(label),
@@ -136,7 +139,13 @@ private fun AddStep(
     onSkip: () -> Unit,
 ) {
     val c = KetchupTheme.colors
-    Text(stringResource(R.string.onb_add_title), fontSize = 34.sp, fontWeight = FontWeight.Bold, color = c.textPrimary)
+    Text(
+        stringResource(R.string.onb_add_title),
+        fontSize = 30.sp,
+        lineHeight = 36.sp,
+        fontWeight = FontWeight.Bold,
+        color = c.textPrimary,
+    )
     Text(stringResource(R.string.onb_add_text), fontSize = 16.sp, color = c.textPrimary)
     state.message?.let {
         Text(stringResource(R.string.providers_saved_with_error, it), fontSize = 16.sp, color = ERROR_COLOR)
@@ -158,7 +167,13 @@ private fun Done(
     onFinished: () -> Unit,
 ) {
     val c = KetchupTheme.colors
-    Text(stringResource(R.string.onb_done_title), fontSize = 34.sp, fontWeight = FontWeight.Bold, color = c.textPrimary)
+    Text(
+        stringResource(R.string.onb_done_title),
+        fontSize = 30.sp,
+        lineHeight = 36.sp,
+        fontWeight = FontWeight.Bold,
+        color = c.textPrimary,
+    )
     Text(stringResource(R.string.onb_done_text), fontSize = 16.sp, color = c.textPrimary)
     state.providers.firstOrNull()?.let {
         Text(stringResource(R.string.providers_channels, it.channelCount), fontSize = 16.sp, color = c.textSecondary)

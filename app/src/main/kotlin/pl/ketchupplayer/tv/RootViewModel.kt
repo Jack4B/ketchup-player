@@ -16,7 +16,10 @@ class RootViewModel
     @Inject
     constructor(
         private val onboarding: OnboardingRepository,
+        splash: SplashPolicy,
     ) : ViewModel() {
+        val splashMs: Long = splash.durationMs
+
         val onboardingDone: StateFlow<Boolean?> =
             onboarding.done.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
