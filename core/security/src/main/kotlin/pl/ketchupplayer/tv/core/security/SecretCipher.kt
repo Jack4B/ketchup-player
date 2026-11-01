@@ -1,6 +1,5 @@
 package pl.ketchupplayer.tv.core.security
 
-import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
@@ -15,15 +14,15 @@ interface SecretCipher {
 /** AES-256-GCM z podanym kluczem (w aplikacji klucz żyje w Android Keystore i nie opuszcza sprzętu/TEE). */
 class AesGcmCipher(
     private val key: SecretKey,
-    private val random: SecureRandom = SecureRandom(),
 ) : SecretCipher {
+    /**
+     * IV generuje dostawca kryptografii (Android Keystore odrzuca IV podany przez wywołującego:
+     * „Caller-provided IV not permitted”), a my go tylko odczytujemy i dopisujemy z przodu szyfrogramu.
+     */
     override fun encrypt(plain: ByteArray): ByteArray {
-        val iv = ByteArray(IV_BYTES).also(random::nextBytes)
-        val cipher =
-            Cipher
-                .getInstance(
-                    TRANSFORMATION,
-                ).apply { init(Cipher.ENCRYPT_MODE, key, GCMParameterSpec(TAG_BITS, iv)) }
+        val cipher = Cipher.getInstance(TRANSFORMATION).apply { init(Cipher.ENCRYPT_MODE, key) }
+        val iv = cipher.iv
+        check(iv.size == IV_BYTES) { "Nieoczekiwana długość IV: ${iv.size}" }
         return iv + cipher.doFinal(plain)
     }
 
