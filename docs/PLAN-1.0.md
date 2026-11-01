@@ -22,6 +22,13 @@ Moja lista, Szukaj, odtwarzacz VOD z wznowieniem, 3 motywy + akcent, ustawienia 
 
 Kolejność: M1 (największa wartość, najbardziej brakuje) → M2 → M3 → M4 → M5 → M6 → M7. Po każdym milestone APK do testu na boxie.
 
+## Przegląd designu (po M3): wzorce z poprzedniej aplikacji użytkownika (zdjęcia z 1.11.2026)
+- **Home:** hero na całą szerokość z grafiką w tle i gradientem, duży tytuł, pigułki (rok, gatunki, czas, „Lektor PL”), opis, przycisk główny w kolorze akcentu + „Szczegóły”; rzędy z nagłówkiem z akcentowym paskiem i licznikiem „1/32”; karty poziome z grafiką i tekstem na gradiencie (tytuł, rok, ★ ocena).
+- **Szczegóły filmu:** grafika w tle na pełny ekran, tytuł, pigułki (FILM, rok, czas, oceny), gatunki, długi opis, obsada, rząd przycisków (Kontynuuj, Od początku, Ulubione, Opcje, Zamknij), rząd „Podobne”. Dane opisowe z Xtream `get_vod_info` / `get_series_info` (plot, cast, backdrop, ocena, czas), bez TMDB.
+- **Na żywo/EPG:** podgląd wideo u góry po lewej, duży opis audycji po prawej (godziny, „Pozostało 18 min”), lista grup po lewej, stan odtwarzania („bufor 4 s”), licznik „1 / 24 pozycji · filtr”.
+- **Zegar w odtwarzaczu:** zrobione (prawy górny róg, ustawienie).
+- Zasady: jedna skala odstępów, jedna typografia, grafika zamiast pustych kafli, animacje krótkie, bez migotania na słabym SoC.
+
 ## Zasady pracy (oszczędzanie limitu)
 1. **Paczki:** jeden commit/push na milestone (lub podetap), nie po każdej poprawce. Push anuluje trwający CI, więc po push czekam na wynik, zamiast pchać dalej.
 2. **Lokalnie najpierw** `spotlessApply detekt` + testy zmienionych modułów, dopiero potem push (CI nie ma łapać stylu).
