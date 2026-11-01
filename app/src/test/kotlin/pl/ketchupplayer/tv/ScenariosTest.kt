@@ -83,7 +83,7 @@ class ScenariosTest {
         runBlocking {
             epgSources.setEnabled(BuiltInEpgSources.OVH_ID, false)
             epgSources.setEnabled(BuiltInEpgSources.TELEMAN_ID, false)
-            // DataStore jest singletonem procesu, więc ustawienia z poprzedniego scenariusza przeciekają: wartości domyślne.
+            // DataStore jest singletonem procesu: ustawienia poprzedniego scenariusza przeciekają, więc domyślne.
             failoverSettings.setEnabled(true)
             failoverSettings.setSensitivity(FailoverSensitivity.STANDARD)
             failoverSettings.setTvDelaySeconds(BkFailoverPolicy.DEFAULT_TV_DELAY_SECONDS)
