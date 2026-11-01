@@ -38,7 +38,7 @@
     <string name="player_info_bitrate">Przepływność: %1$d kb/s</string>
     <string name="player_info_unknown">Brak danych</string>
     <string name="player_remaining">Pozostało %1$s</string>
-    <string name="player_hint_seek">◀ ▶ przewiń 10 s</string>
+    <string name="player_hint_seek">◀ ▶ przewiń, trzymaj: szybciej</string>
     <string name="player_hint_pause">OK pauza</string>
     <string name="player_hint_info">▲ opis filmu</string>
     <string name="player_hint_opts">▼ audio, napisy, obraz</string>

@@ -212,7 +212,7 @@ fun PlayerScreen(
                     vodTitle != null && (event.key == Key.DirectionUp || event.key == Key.Info) ->
                         true.also { infoOpen = !infoOpen }
                     infoOpen && event.key == Key.Back -> true.also { infoOpen = false }
-                    else -> vodTitle != null && handleVodKey(event.key, controller)
+                    else -> vodTitle != null && handleVodKey(event.key, controller, event.nativeKeyEvent.repeatCount)
                 }
             }.focusRequester(rootFocus)
             .focusable(),
@@ -304,16 +304,34 @@ fun PlayerScreen(
     }
 }
 
-/** LEWO/PRAWO przewijają o [SEEK_MS], OK i Play/Pauza wstrzymują; true = klawisz obsłużony. */
+/**
+ * Krok przewijania zależny od tego, jak długo klawisz jest trzymany (liczba powtórzeń): pojedyncze naciśnięcie
+ * i początek trzymania 10 s, potem 30 s, 60 s i 90 s, żeby dojść do połowy filmu w kilka sekund.
+ */
+internal fun seekStepMs(repeatCount: Int): Long =
+    when {
+        repeatCount < SEEK_FAST_AFTER -> SEEK_MS
+        repeatCount < SEEK_FASTER_AFTER -> SEEK_MS * 3
+        repeatCount < SEEK_FASTEST_AFTER -> SEEK_MS * 6
+        else -> SEEK_MS * 9
+    }
+
+private const val SEEK_FAST_AFTER = 6
+private const val SEEK_FASTER_AFTER = 14
+private const val SEEK_FASTEST_AFTER = 28
+
+/** LEWO/PRAWO przewijają (przy trzymaniu coraz szybciej), OK i Play/Pauza wstrzymują; true = klawisz obsłużony. */
 private fun handleVodKey(
     key: Key,
     controller: PlayerController,
+    repeatCount: Int,
 ): Boolean {
+    val seek = seekStepMs(repeatCount)
     val st = controller.state.value
     val duration = st.durationMs ?: Long.MAX_VALUE
     return when (key) {
-        Key.DirectionLeft -> controller.seekTo((st.positionMs - SEEK_MS).coerceAtLeast(0)).let { true }
-        Key.DirectionRight -> controller.seekTo((st.positionMs + SEEK_MS).coerceAtMost(duration)).let { true }
+        Key.DirectionLeft -> controller.seekTo((st.positionMs - seek).coerceAtLeast(0)).let { true }
+        Key.DirectionRight -> controller.seekTo((st.positionMs + seek).coerceAtMost(duration)).let { true }
         Key.DirectionCenter, Key.Enter, Key.MediaPlayPause ->
             (if (st.isPlaying) controller.pause() else controller.resume()).let { true }
         else -> false

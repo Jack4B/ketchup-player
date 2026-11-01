@@ -352,4 +352,15 @@ class PlayerScreenTest {
         compose.waitForIdle()
         assertEquals(1, c.resumes)
     }
+
+    /** Dłuższe trzymanie klawisza przewijania przyspiesza: 10 s, potem 30, 60 i 90 s na krok. */
+    @Test
+    fun krokPrzewijaniaRosnieZDlugoscia_trzymania() {
+        assertEquals(10_000L, seekStepMs(0))
+        assertEquals(10_000L, seekStepMs(5))
+        assertEquals(30_000L, seekStepMs(6))
+        assertEquals(60_000L, seekStepMs(14))
+        assertEquals(90_000L, seekStepMs(28))
+        assertEquals(90_000L, seekStepMs(200))
+    }
 }
