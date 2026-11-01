@@ -91,10 +91,19 @@ class PlayerScreenTest {
         onBack: () -> Unit = {},
         vodTitle: String? = null,
         showClock: Boolean = true,
+        vodInfo: VodInfoUi? = null,
     ) {
         compose.setContent {
             KetchupTheme(device = DeviceClass.TV) {
-                PlayerScreen(ui, controller, onRetry, onBack, vodTitle = vodTitle, showClock = showClock)
+                PlayerScreen(
+                    ui,
+                    controller,
+                    onRetry,
+                    onBack,
+                    vodTitle = vodTitle,
+                    showClock = showClock,
+                    vodInfo = vodInfo,
+                )
             }
         }
         compose.waitForIdle()
@@ -284,5 +293,43 @@ class PlayerScreenTest {
     fun screenshotZegara() {
         show(PlayerUiState.Playing("JEDEN HD"), FakeController(PlayerState(status = PlaybackStatus.READY)))
         compose.onRoot().captureRoboImage("src/test/screenshots/player_clock.png")
+    }
+
+    private val bigInfo =
+        VodInfoUi(
+            "W mieście strachu",
+            "2026 · Akcja, Kryminał, Dramat · 104 min · ★ 8,4",
+            "W momencie kryzysu w Irlandii 18-letnia Elisa, wychowana na marginesie półświatka, zostaje porwana.",
+            "Anna Kowalska, Jan Nowak, Maria Wiśniewska",
+            "Opis z katalogu dostawcy",
+        )
+
+    /** OSD filmu: dolny pas z tytułem, paskiem, czasami i podpowiedziami; karta z opisem na starcie (zrzut). */
+    @Test
+    fun screenshotOsdFilmuZOpisem() {
+        show(
+            PlayerUiState.Playing("W mieście strachu"),
+            FakeController(PlayerState(status = PlaybackStatus.READY, positionMs = 2_400_000, durationMs = 6_240_000)),
+            vodTitle = "W mieście strachu",
+            vodInfo = bigInfo,
+        )
+        compose.onRoot().captureRoboImage("src/test/screenshots/player_vod_osd.png")
+    }
+
+    /** GÓRA przywołuje i chowa kartę z opisem filmu (obsada, źródło opisu). */
+    @Test
+    fun gora_pokazujeIChoweOpisFilmu() {
+        show(
+            PlayerUiState.Playing("W mieście strachu"),
+            FakeController(PlayerState(status = PlaybackStatus.READY, durationMs = 6_000_000)),
+            vodTitle = "W mieście strachu",
+            vodInfo = bigInfo,
+        )
+        assertTrue(has("Obsada:")) // na starcie karta jest otwarta
+        key(Key.DirectionUp)
+        assertFalse(has("Obsada:"))
+        key(Key.DirectionUp)
+        assertTrue(has("Obsada:"))
+        assertTrue(has("Opis z katalogu dostawcy"))
     }
 }

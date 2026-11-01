@@ -7,11 +7,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -33,6 +37,8 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -61,6 +67,7 @@ fun VodPlayerRoute(
     LaunchedEffect(itemId) { viewModel.startVod(itemId, fromStart) }
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val title by viewModel.vodTitle.collectAsStateWithLifecycle()
+    val info by viewModel.vodInfo.collectAsStateWithLifecycle()
     val clock by viewModel.clockEnabled.collectAsStateWithLifecycle()
     PlayerScreen(
         ui,
@@ -72,6 +79,7 @@ fun VodPlayerRoute(
         },
         vodTitle = title,
         showClock = clock,
+        vodInfo = info,
     )
 }
 
@@ -100,6 +108,7 @@ fun PlayerScreen(
     notice: String? = null,
     vodTitle: String? = null,
     showClock: Boolean = true,
+    vodInfo: VodInfoUi? = null,
 ) {
     BackHandler(onBack = onBack)
     val playback by controller.state.collectAsStateWithLifecycle()
@@ -108,6 +117,15 @@ fun PlayerScreen(
     var osdVisible by remember { mutableStateOf(true) }
     var osdTick by remember { mutableStateOf(0) }
     var chipsOpen by remember { mutableStateOf(false) }
+    // Karta z opisem filmu: na starcie na kilka sekund, potem GÓRA albo INFO ją przywołuje.
+    var infoOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(vodInfo?.plot != null) {
+        if (vodInfo?.plot != null) {
+            infoOpen = true
+            delay(INFO_AUTOHIDE_MS)
+            infoOpen = false
+        }
+    }
     var panel by remember { mutableStateOf<PlayerPanel?>(null) }
     var aspect by rememberSaveable { mutableStateOf(AspectMode.FIT) }
     var subtitleSize by rememberSaveable { mutableStateOf(SubtitleSize.NORMAL) }
@@ -168,6 +186,9 @@ fun PlayerScreen(
                             }
                         }
                     event.key == Key.DirectionDown || event.key == Key.Menu -> true.also { chipsOpen = true }
+                    vodTitle != null && (event.key == Key.DirectionUp || event.key == Key.Info) ->
+                        true.also { infoOpen = !infoOpen }
+                    infoOpen && event.key == Key.Back -> true.also { infoOpen = false }
                     else -> vodTitle != null && handleVodKey(event.key, controller)
                 }
             }.focusRequester(rootFocus)
@@ -195,8 +216,11 @@ fun PlayerScreen(
             )
         }
         val name = channelName(ui)
+        if (infoOpen && vodInfo != null) {
+            VodInfoCard(vodInfo, Modifier.align(Alignment.BottomStart).padding(start = 32.dp, bottom = INFO_BOTTOM))
+        }
         if (osdVisible && vodTitle != null) {
-            VodOsd(vodTitle, playback, Modifier.align(Alignment.BottomCenter))
+            VodOsd(vodTitle, vodInfo, playback, Modifier.align(Alignment.BottomCenter))
         } else if (osdVisible && name.isNotEmpty()) {
             Osd(name, Modifier.align(Alignment.TopStart))
         }
@@ -284,39 +308,135 @@ private fun channelName(ui: PlayerUiState): String =
 @Composable
 private fun VodOsd(
     title: String,
+    info: VodInfoUi?,
     state: PlayerState,
     modifier: Modifier,
 ) {
     val c = KetchupTheme.colors
     val duration = state.durationMs ?: 0L
     val progress = if (duration > 0) (state.positionMs.toFloat() / duration).coerceIn(0f, 1f) else 0f
+    // Dolny pas: gradient od przezroczystości do ciemności zamiast płaskiego prostokąta; tytuł, wiersz meta, pasek z
+    // „gałką”, czasy i podpowiedzi klawiszy w pigułkach.
     Column(
-        modifier.fillMaxWidth().background(c.scrim.copy(alpha = 0.75f)).padding(horizontal = 24.dp, vertical = 16.dp),
+        modifier
+            .fillMaxWidth()
+            .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = OSD_SCRIM))))
+            .padding(horizontal = 32.dp)
+            .padding(top = 48.dp, bottom = 22.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text(title, fontSize = 24.sp, color = c.textPrimary, maxLines = 1)
-        Box(Modifier.fillMaxWidth().height(6.dp).background(c.outline, RoundedCornerShape(3.dp))) {
-            Box(Modifier.fillMaxWidth(progress).fillMaxHeight().background(c.accent, RoundedCornerShape(3.dp)))
+        Text(title, fontSize = 30.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1)
+        if (!info?.meta.isNullOrBlank()) Text(info?.meta.orEmpty(), fontSize = 17.sp, color = c.textSecondary)
+        Box(Modifier.fillMaxWidth().height(THUMB)) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(BAR)
+                    .align(Alignment.CenterStart)
+                    .background(Color.White.copy(alpha = BAR_TRACK), RoundedCornerShape(BAR)),
+            )
+            Box(
+                Modifier
+                    .fillMaxWidth(progress)
+                    .height(BAR)
+                    .align(Alignment.CenterStart)
+                    .background(c.accent, RoundedCornerShape(BAR)),
+            )
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Spacer(Modifier.weight(progress.coerceAtLeast(MIN_WEIGHT)))
+                Box(Modifier.size(THUMB).background(Color.White, CircleShape))
+                Spacer(Modifier.weight((1f - progress).coerceAtLeast(MIN_WEIGHT)))
+            }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(
-                (
-                    if (state.isPlaying) {
-                        ""
-                    } else {
-                        stringResource(
-                            R.string.player_paused,
-                        ) + " · "
-                    }
-                ) + clock(state.positionMs) +
-                    " / " + clock(duration),
+                (if (state.isPlaying) "" else stringResource(R.string.player_paused) + " · ") + clock(state.positionMs),
                 fontSize = 18.sp,
-                color = c.textPrimary,
+                color = Color.White,
             )
-            Text(stringResource(R.string.player_vod_hint), fontSize = 16.sp, color = c.textSecondary)
+            Text(
+                stringResource(R.string.player_remaining, clock((duration - state.positionMs).coerceAtLeast(0))),
+                fontSize = 18.sp,
+                color = Color.White,
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            listOf(
+                R.string.player_hint_seek,
+                R.string.player_hint_pause,
+                R.string.player_hint_info,
+                R.string.player_hint_opts,
+            ).forEach { hint ->
+                Text(
+                    stringResource(hint),
+                    fontSize = 14.sp,
+                    color = Color.White,
+                    modifier =
+                        Modifier
+                            .background(
+                                Color.White.copy(alpha = PILL),
+                                RoundedCornerShape(PILL_R),
+                            ).padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+            }
         }
     }
 }
+
+/** Karta „Co to za film”: tytuł, wiersz meta, opis (do 6 linii), obsada i źródło opisu, na szklanym tle. */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun VodInfoCard(
+    info: VodInfoUi,
+    modifier: Modifier,
+) {
+    val c = KetchupTheme.colors
+    Column(
+        modifier
+            .width(
+                INFO_WIDTH,
+            ).background(Color.Black.copy(alpha = INFO_SCRIM), RoundedCornerShape(16.dp))
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            stringResource(R.string.player_info_title),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = c.accent,
+        )
+        Text(
+            info.plot ?: stringResource(R.string.player_info_none),
+            fontSize = 16.sp,
+            color = Color.White,
+            maxLines = INFO_PLOT_LINES,
+            overflow = TextOverflow.Ellipsis,
+        )
+        info.cast?.let {
+            Text(
+                stringResource(R.string.player_info_cast, it),
+                fontSize = 14.sp,
+                color = c.textSecondary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        info.source?.let { Text(it, fontSize = 12.sp, color = c.textSecondary) }
+    }
+}
+
+private val INFO_WIDTH = 560.dp
+private val INFO_BOTTOM = 190.dp
+private val THUMB = 18.dp
+private val BAR = 6.dp
+private const val INFO_AUTOHIDE_MS = 7_000L
+private const val INFO_PLOT_LINES = 6
+private const val INFO_SCRIM = 0.72f
+private const val OSD_SCRIM = 0.88f
+private const val BAR_TRACK = 0.28f
+private const val PILL = 0.16f
+private val PILL_R = 14.dp
+private const val MIN_WEIGHT = 0.0001f
 
 private fun clock(ms: Long): String {
     val total = ms / MS_PER_SECOND

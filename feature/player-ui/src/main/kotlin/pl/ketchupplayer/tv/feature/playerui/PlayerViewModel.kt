@@ -39,6 +39,15 @@ sealed interface PlayerUiState {
     ) : PlayerUiState
 }
 
+/** Informacje o filmie/odcinku do OSD: tytuł, wiersz meta (rok, gatunek, czas, ocena), opis, obsada i źródło opisu. */
+data class VodInfoUi(
+    val title: String,
+    val meta: String = "",
+    val plot: String? = null,
+    val cast: String? = null,
+    val source: String? = null,
+)
+
 @HiltViewModel
 class PlayerViewModel
     @Inject
@@ -95,6 +104,7 @@ class PlayerViewModel
             vodId = null
             vodJob?.cancel()
             _vodTitle.value = null
+            _vodInfo.value = null
             viewModelScope.launch {
                 val channel = catalog.channel(channelId)
                 if (channel == null) {
@@ -122,6 +132,11 @@ class PlayerViewModel
             }
         }
 
+        private val _vodInfo = MutableStateFlow<VodInfoUi?>(null)
+
+        /** Opis, obsada i dane filmu z katalogu dostawcy; null dla kanałów na żywo. */
+        val vodInfo: StateFlow<VodInfoUi?> = _vodInfo.asStateFlow()
+
         private val _vodTitle = MutableStateFlow<String?>(null)
 
         /** Tytuł odtwarzanego filmu/odcinka; null dla kanałów na żywo (steruje wyglądem OSD). */
@@ -148,6 +163,12 @@ class PlayerViewModel
                     }
                     channelName = info.title
                     _vodTitle.value = info.title
+                    _vodInfo.value = VodInfoUi(info.title)
+                    // Opis i obsada: pobierane w tle (dostawca Xtream: get_vod_info), OSD uzupełnia się, gdy dojdą.
+                    launch {
+                        vod.refreshInfo(itemId)
+                        vod.entry(itemId).first()?.let { _vodInfo.value = it.toInfoUi() }
+                    }
                     _ui.value = PlayerUiState.Resolving(info.title)
                     failover.settings = failoverSettings.settings.first()
                     failover.start(listOf(SourceCandidate(info.title) { vod.resolve(itemId) }))
@@ -164,6 +185,15 @@ class PlayerViewModel
                         saveProgress()
                     }
                 }
+        }
+
+        private fun pl.ketchupplayer.tv.core.data.vod.VodEntry.toInfoUi(): VodInfoUi {
+            val i = item
+            val rating = i.rating?.let { "★ " + String.format(java.util.Locale.forLanguageTag("pl"), "%.1f", it) }
+            val meta =
+                listOfNotNull(i.year?.toString(), i.genre ?: i.category, i.durationMin?.let { "$it min" }, rating)
+                    .joinToString(" · ")
+            return VodInfoUi(i.title, meta, i.plot, i.cast, i.plot?.let { "Opis z katalogu dostawcy" })
         }
 
         private fun resumePosition(

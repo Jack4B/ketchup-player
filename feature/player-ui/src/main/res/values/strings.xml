@@ -37,4 +37,12 @@
     <string name="player_info_audio">Dźwięk: %1$s</string>
     <string name="player_info_bitrate">Przepływność: %1$d kb/s</string>
     <string name="player_info_unknown">Brak danych</string>
+    <string name="player_remaining">Pozostało %1$s</string>
+    <string name="player_hint_seek">◀ ▶ przewiń 10 s</string>
+    <string name="player_hint_pause">OK pauza</string>
+    <string name="player_hint_info">▲ opis filmu</string>
+    <string name="player_hint_opts">▼ audio, napisy, obraz</string>
+    <string name="player_info_none">Brak opisu w katalogu dostawcy.</string>
+    <string name="player_info_cast">Obsada: %1$s</string>
+    <string name="player_info_title">O FILMIE</string>
 </resources>
