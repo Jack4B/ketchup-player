@@ -36,23 +36,12 @@ class ProvidersViewModel
                 ProvidersEvent.StartAdd -> local.update { it.copy(form = ProviderForm(), message = null) }
                 ProvidersEvent.Cancel -> local.update { it.copy(form = null) }
                 ProvidersEvent.RetryAdd -> local.update { it.copy(form = it.lastForm ?: ProviderForm()) }
-                is ProvidersEvent.NameChanged ->
-                    local.update {
-                        it.copy(
-                            form = it.form?.copy(name = event.value, nameError = false),
-                        )
-                    }
-                is ProvidersEvent.UsernameChanged ->
-                    local.update { it.copy(form = it.form?.copy(username = event.value, credentialsError = false)) }
-                is ProvidersEvent.PasswordChanged ->
-                    local.update { it.copy(form = it.form?.copy(password = event.value, credentialsError = false)) }
-                is ProvidersEvent.SelectKind -> local.update { it.copy(form = it.form?.copy(kind = event.kind)) }
-                is ProvidersEvent.UrlChanged ->
-                    local.update {
-                        it.copy(
-                            form = it.form?.copy(url = event.value, urlError = false),
-                        )
-                    }
+                is ProvidersEvent.NameChanged,
+                is ProvidersEvent.UsernameChanged,
+                is ProvidersEvent.PasswordChanged,
+                is ProvidersEvent.SelectKind,
+                is ProvidersEvent.UrlChanged,
+                -> local.update { it.copy(form = it.form?.let { f -> edited(f, event) }) }
                 ProvidersEvent.Submit -> submit()
                 is ProvidersEvent.Toggle ->
                     local.update {
@@ -75,6 +64,19 @@ class ProvidersViewModel
                     }
             }
         }
+
+        private fun edited(
+            form: ProviderForm,
+            event: ProvidersEvent,
+        ): ProviderForm =
+            when (event) {
+                is ProvidersEvent.NameChanged -> form.copy(name = event.value, nameError = false)
+                is ProvidersEvent.UsernameChanged -> form.copy(username = event.value, credentialsError = false)
+                is ProvidersEvent.PasswordChanged -> form.copy(password = event.value, credentialsError = false)
+                is ProvidersEvent.SelectKind -> form.copy(kind = event.kind)
+                is ProvidersEvent.UrlChanged -> form.copy(url = event.value, urlError = false)
+                else -> form
+            }
 
         private fun submit() {
             val form = local.value.form ?: return
