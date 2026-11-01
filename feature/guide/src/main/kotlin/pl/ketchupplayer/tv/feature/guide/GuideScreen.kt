@@ -87,6 +87,9 @@ fun GuideRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val radar by viewModel.radar.collectAsStateWithLifecycle()
     val interests by viewModel.interests.collectAsStateWithLifecycle()
+    val preview by viewModel.preview.collectAsStateWithLifecycle()
+    // Wyjście z Na żywo (też do pełnego ekranu) zwalnia odtwarzacz podglądu: jeden dekoder naraz.
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { viewModel.releasePreview() } }
     GuideScreen(
         state,
         viewModel::programmes,
@@ -100,6 +103,8 @@ fun GuideRoute(
         viewModel::removeInterest,
         viewModel::selectGroup,
         viewModel::toggleFavorite,
+        preview = preview,
+        onPreviewChannel = viewModel::previewChannel,
     )
 }
 
@@ -126,6 +131,8 @@ fun GuideScreen(
     onRemoveInterest: (String) -> Unit = {},
     onSelectGroup: (GuideGroup) -> Unit = {},
     onToggleFavorite: (String) -> Unit = {},
+    preview: PreviewUi = PreviewUi(),
+    onPreviewChannel: (String) -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
     var tab by remember { mutableStateOf(GuideTab.GRID) }
@@ -164,7 +171,10 @@ fun GuideScreen(
                         onAction = onOpenProviders,
                     )
                 tab == GuideTab.GRID ->
-                    Grid(state, loadProgrammes, onOpenChannel, onToggleFavorite, rows) { groupsOpen = true }
+                    Grid(state, loadProgrammes, onOpenChannel, onToggleFavorite, rows, preview, onPreviewChannel) {
+                        groupsOpen =
+                            true
+                    }
                 tab == GuideTab.RADAR -> RadarTab(radar, state.nowMs, onRadarSlot, onOpenChannel)
                 else -> InterestsTab(interests, state.nowMs, onAddInterest, onRemoveInterest, onOpenChannel)
             }
@@ -233,11 +243,13 @@ private fun Grid(
     onOpenChannel: (String) -> Unit,
     onToggleFavorite: (String) -> Unit,
     rows: FocusRequester,
+    preview: PreviewUi,
+    onPreviewChannel: (String) -> Unit,
     onOpenGroups: () -> Unit,
 ) {
     val scroll = rememberScrollState()
     var focused by remember { mutableStateOf<Focused?>(null) }
-    Preview(focused ?: state.channels.firstOrNull()?.let { Focused(it, null) }, state.nowMs)
+    Preview(focused ?: state.channels.firstOrNull()?.let { Focused(it, null) }, state.nowMs, preview)
     Row(Modifier.fillMaxWidth()) {
         Box(Modifier.width(CHANNEL_COLUMN), contentAlignment = Alignment.CenterStart) {
             Text(
@@ -256,7 +268,10 @@ private fun Grid(
                     ch,
                     ch.id in state.favorites,
                     first,
-                    { focused = Focused(ch, null) },
+                    {
+                        focused = Focused(ch, null)
+                        onPreviewChannel(ch.id)
+                    },
                     { onToggleFavorite(ch.id) },
                     onOpenGroups,
                     if (first) rows else null,
@@ -265,7 +280,10 @@ private fun Grid(
                     value = loadProgrammes(ch.id)
                 }
                 Box(Modifier.weight(1f).horizontalScroll(scroll)) {
-                    Timeline(state, programmes, first, { focused = Focused(ch, it) }) { onOpenChannel(ch.id) }
+                    Timeline(state, programmes, first, {
+                        focused = Focused(ch, it)
+                        onPreviewChannel(ch.id)
+                    }) { onOpenChannel(ch.id) }
                 }
             }
         }
@@ -277,6 +295,7 @@ private fun Grid(
 private fun Preview(
     focused: Focused?,
     nowMs: Long,
+    preview: PreviewUi,
 ) {
     val c = KetchupTheme.colors
     Row(Modifier.fillMaxWidth().height(PREVIEW_HEIGHT), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -294,6 +313,12 @@ private fun Preview(
                 Modifier.fillMaxSize(),
                 labelSize = 22.sp,
             )
+            // Żywy obraz kanału nad logo: tylko gdy podgląd gra właśnie zaznaczony kanał.
+            val live = preview.player
+            if (live != null && preview.channelId == focused?.channel?.id) {
+                androidx.media3.ui.compose
+                    .PlayerSurface(live, Modifier.fillMaxSize())
+            }
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             val p = focused?.programme

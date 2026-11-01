@@ -32,6 +32,7 @@ fun PlaybackSettingsRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val clock by viewModel.clockEnabled.collectAsStateWithLifecycle()
     val debounce by viewModel.remoteDebounceMs.collectAsStateWithLifecycle()
+    val preview by viewModel.livePreview.collectAsStateWithLifecycle()
     PlaybackSettingsScreen(
         state,
         viewModel::onEvent,
@@ -40,6 +41,8 @@ fun PlaybackSettingsRoute(
         viewModel::toggleClock,
         debounce,
         viewModel::setRemoteDebounce,
+        preview,
+        viewModel::toggleLivePreview,
     )
 }
 
@@ -54,6 +57,8 @@ fun PlaybackSettingsScreen(
     onToggleClock: () -> Unit = {},
     remoteDebounceMs: Int = 250,
     onSetDebounce: (Int) -> Unit = {},
+    livePreview: Boolean = true,
+    onToggleLivePreview: () -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
     val c = KetchupTheme.colors
@@ -114,6 +119,12 @@ fun PlaybackSettingsScreen(
             subtitle = stringResource(R.string.playback_clock_hint),
             onClick = onToggleClock,
             trailing = { Switch(checked = clockEnabled, onCheckedChange = null) },
+        )
+        SettingsListItem(
+            title = stringResource(R.string.playback_preview),
+            subtitle = stringResource(R.string.playback_preview_hint),
+            onClick = onToggleLivePreview,
+            trailing = { Switch(checked = livePreview, onCheckedChange = null) },
         )
         SettingsListItem(
             title = stringResource(R.string.playback_sensitivity),

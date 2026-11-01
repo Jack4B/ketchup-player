@@ -30,6 +30,13 @@ class PlaybackSettingsViewModel
             viewModelScope.launch { prefs.setRemoteDebounceMs(ms) }
         }
 
+        val livePreview: StateFlow<Boolean> =
+            prefs.livePreview.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), true)
+
+        fun toggleLivePreview() {
+            viewModelScope.launch { prefs.setLivePreview(!prefs.livePreview.first()) }
+        }
+
         fun toggleClock() {
             viewModelScope.launch { prefs.setClockEnabled(!prefs.clockEnabled.first()) }
         }

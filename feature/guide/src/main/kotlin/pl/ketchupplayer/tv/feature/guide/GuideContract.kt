@@ -26,6 +26,12 @@ data class GuideUiState(
     val recentCount: Int = 0,
 )
 
+/** Żywy podgląd: odtwarzacz (null = brak) i kanał, który w nim gra. */
+data class PreviewUi(
+    val player: androidx.media3.common.Player? = null,
+    val channelId: String? = null,
+)
+
 /** Wybór w panelu grup: wszystkie / konkretna grupa / ulubione / ostatnio oglądane. */
 sealed interface GuideGroup {
     data object All : GuideGroup

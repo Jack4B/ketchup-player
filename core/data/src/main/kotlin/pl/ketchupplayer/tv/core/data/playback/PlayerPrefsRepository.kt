@@ -24,6 +24,11 @@ interface PlayerPrefsRepository {
     val autoRefresh: Flow<Boolean>
 
     suspend fun setAutoRefresh(enabled: Boolean)
+
+    /** Żywy podgląd (wyciszony) zaznaczonego kanału w Na żywo; domyślnie włączony. */
+    val livePreview: Flow<Boolean>
+
+    suspend fun setLivePreview(enabled: Boolean)
 }
 
 class DataStorePlayerPrefsRepository
@@ -49,7 +54,16 @@ class DataStorePlayerPrefsRepository
             store.edit { it[AUTO_REFRESH] = enabled }
         }
 
+        override val livePreview: Flow<Boolean> = store.data.map { it[LIVE_PREVIEW] ?: true }
+
+        override suspend fun setLivePreview(enabled: Boolean) {
+            store.edit { it[LIVE_PREVIEW] = enabled }
+        }
+
         private companion object {
+            val LIVE_PREVIEW =
+                androidx.datastore.preferences.core
+                    .booleanPreferencesKey("live_preview")
             val AUTO_REFRESH =
                 androidx.datastore.preferences.core
                     .booleanPreferencesKey("auto_refresh_on_start")

@@ -6,7 +6,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import pl.ketchupplayer.tv.core.common.Clock
@@ -27,6 +30,8 @@ class GuideViewModel
         private val epg: EpgRepository,
         private val interestsRepo: pl.ketchupplayer.tv.core.data.interests.InterestsRepository,
         private val groupsRepo: pl.ketchupplayer.tv.core.data.groups.GroupsRepository,
+        private val playerFactory: pl.ketchupplayer.tv.player.engine.PlayerControllerFactory,
+        private val prefs: pl.ketchupplayer.tv.core.data.playback.PlayerPrefsRepository,
         private val clock: Clock,
     ) : ViewModel() {
         /** Okno liczone raz na wejście do ekranu; przewijanie czasu w przód to kolejna iteracja. */
@@ -46,6 +51,46 @@ class GuideViewModel
             // zasubskrybowaniem też przeładuje wiersze.
             val initialRevision = epg.revision.value
             viewModelScope.launch { epg.revision.collect { if (it > initialRevision) epgRevision.value++ } }
+        }
+
+        private var previewController: pl.ketchupplayer.tv.player.engine.PlayerController? = null
+        private val previewRequests = MutableStateFlow<String?>(null)
+        private val _preview = MutableStateFlow(PreviewUi())
+
+        /** Podgląd wideo zaznaczonego kanału (odtwarzacz powstaje po chwili skupienia; zwalniany po wyjściu). */
+        val preview: StateFlow<PreviewUi> = _preview
+
+        init {
+            @OptIn(kotlinx.coroutines.FlowPreview::class)
+            viewModelScope.launch {
+                previewRequests.debounce(PREVIEW_DELAY_MS).collectLatest { id ->
+                    if (id != null && prefs.livePreview.first()) startPreview(id)
+                }
+            }
+        }
+
+        fun previewChannel(channelId: String) {
+            previewRequests.value = channelId
+        }
+
+        private suspend fun startPreview(channelId: String) {
+            val spec = catalog.resolveStream(channelId).getOrNull() ?: return
+            val controller = previewController ?: playerFactory.create().also { previewController = it }
+            controller.play(spec)
+            controller.player?.volume = 0f // podgląd bez dźwięku: pełny dźwięk dopiero w pełnym ekranie
+            _preview.value = PreviewUi(controller.player, channelId)
+        }
+
+        /** Zatrzymuje i zwalnia podgląd (wyjście z Na żywo, wejście w pełny ekran): jeden dekoder naraz. */
+        fun releasePreview() {
+            previewRequests.value = null
+            previewController?.release()
+            previewController = null
+            _preview.value = PreviewUi()
+        }
+
+        override fun onCleared() {
+            previewController?.release()
         }
 
         private val selection = MutableStateFlow<GuideGroup>(GuideGroup.All)
@@ -170,6 +215,7 @@ class GuideViewModel
 
         private companion object {
             const val STOP_TIMEOUT_MS = 5_000L
+            const val PREVIEW_DELAY_MS = 900L
             const val STALE_MS = 6L * 60 * 60 * 1000
             const val RECENT_LIMIT = 30
             const val HOUR_MS = 60L * 60 * 1000

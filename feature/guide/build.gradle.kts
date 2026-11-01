@@ -11,6 +11,8 @@ dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:designsystem"))
     implementation(project(":epg:radar"))
+    implementation(project(":player:engine"))
+    implementation(libs.media3.ui.compose)
     implementation(libs.coroutines.core)
     implementation(libs.androidx.lifecycle.runtime)
     implementation(libs.lifecycle.viewmodel.compose)

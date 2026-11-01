@@ -122,6 +122,13 @@ class ScenariosTest {
             // DataStore jest singletonem procesu: stan poprzedniego scenariusza (ustawienia, znacznik importu EPG)
             // przeciekałby do kolejnego, więc zaczynamy od czystego.
             dataStore.edit { it.clear() }
+            // Podgląd wideo ma własny scenariusz; w pozostałych odtwarzacz podglądu zakłócałby zapis „co zagrano”.
+            dataStore.edit {
+                it[
+                    androidx.datastore.preferences.core
+                        .booleanPreferencesKey("live_preview"),
+                ] = false
+            }
             onboarding.setDone(true) // kreator ma własny scenariusz; reszta zaczyna od ekranu głównego
             epgSources.setEnabled(BuiltInEpgSources.OVH_ID, false)
             epgSources.setEnabled(BuiltInEpgSources.TELEMAN_ID, false)
@@ -859,6 +866,25 @@ class ScenariosTest {
         }
         runBlocking { catalog.addM3u("Z EPG", server.url("/auto.m3u")) }
         waitFor(BIG_WAIT_MS) { hits.get() > 0 }
+    }
+
+    /** Scenariusz: zaznaczony kanał w Na żywo zaczyna grać w podglądzie po chwili, a pełny ekran zwalnia podgląd. */
+    @Test
+    fun zywyPodgladGraZaznaczonyKanalPoChwili() {
+        val host = "http://127.0.0.1:${server.port}"
+        server.serve("/p.m3u") { "#EXTM3U\n#EXTINF:-1 group-title=\"Info\",TVN 24\n$host/prev/tvn24.m3u8\n" }
+        runBlocking {
+            dataStore.edit {
+                it[
+                    androidx.datastore.preferences.core
+                        .booleanPreferencesKey("live_preview"),
+                ] = true
+            }
+            catalog.addM3u("Podgląd", server.url("/p.m3u"))
+        }
+        nav("Na żywo")
+        waitForText("TVN 24")
+        waitFor(BIG_WAIT_MS) { FakePlayers.played.any { "/prev/" in it } }
     }
 
     private fun pressKeys(keys: List<Key>) =

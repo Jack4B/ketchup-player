@@ -50,7 +50,8 @@ class PlaybackSettingsScreenTest {
         }
         compose.waitForIdle()
         key(Key.DirectionCenter) // przełącznik failoveru
-        key(Key.DirectionDown)
+        key(Key.DirectionDown) // zegar
+        key(Key.DirectionDown) // podgląd na żywo
         key(Key.DirectionDown) // czułość: OK otwiera listę
         key(Key.DirectionCenter)
         compose.waitForIdle()
