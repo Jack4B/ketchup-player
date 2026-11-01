@@ -500,7 +500,8 @@ class ScenariosTest {
     fun zPrzewodnikaOkNaAudycjiOtwieraKanal() {
         val host = "http://127.0.0.1:${server.port}"
         server.serve("/g.m3u") {
-            "#EXTM3U url-tvg=\"$host/epg.xml\"\n#EXTINF:-1 tvg-id=\"TVN24.pl\" group-title=\"Info\",TVN 24\n$host/tvn24.m3u8\n"
+            "#EXTM3U url-tvg=\"$host/epg.xml\"\n" +
+                "#EXTINF:-1 tvg-id=\"TVN24.pl\" group-title=\"Info\",TVN 24\n$host/tvn24.m3u8\n"
         }
         server.serve("/epg.xml") { ListFactory.xmltvNow("TVN24.pl", "Fakty wieczorne", "Dzień po dniu") }
         runBlocking { catalog.addM3u("Z EPG", server.url("/g.m3u")) }
