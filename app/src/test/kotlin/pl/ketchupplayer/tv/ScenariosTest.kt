@@ -438,4 +438,31 @@ class ScenariosTest {
         waitForText("Przełączono na Lista 2 · TVN 24")
         assertTrue("/a/" in FakePlayers.played.first())
     }
+
+    /**
+     * Scenariusz: dostawca zmienił listę. „Odśwież” pobiera nową zawartość; gdy serwer chwilowo nie działa,
+     * dotychczasowe kanały zostają, a użytkownik widzi komunikat o błędzie.
+     */
+    @Test
+    fun odswiezenieListyPobieraZmianyIZostawiaStareKanalyPrzyBledzie() {
+        var body = "#EXTM3U\n#EXTINF:-1 group-title=\"Info\",Kanal Pierwszy\nhttp://127.0.0.1:1/1.m3u8\n"
+        var down = false
+        server.serveRequest("/live.m3u") { if (down) throw IllegalStateException("serwer niedostępny") else body }
+        runBlocking { catalog.addM3u("Zmienna", server.url("/live.m3u")) }
+
+        click("Dostawcy")
+        waitForText("Kanały: 1", substring = true)
+
+        // Dostawca dodał kanał; „Odśwież” (po rozwinięciu pozycji) pobiera nową listę.
+        body += "#EXTINF:-1 group-title=\"Info\",Kanal Drugi\nhttp://127.0.0.1:1/2.m3u8\n"
+        click("Zmienna")
+        click("Odśwież")
+        waitForText("Kanały: 2", substring = true)
+
+        // Serwer pada: kanały zostają, pojawia się komunikat błędu przy dostawcy.
+        down = true
+        click("Odśwież")
+        waitForText("błąd", substring = true)
+        assertEquals(2, runBlocking { catalog.liveChannels().first().size })
+    }
 }

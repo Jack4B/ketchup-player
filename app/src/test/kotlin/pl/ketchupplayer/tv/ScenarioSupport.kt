@@ -20,9 +20,12 @@ class ProviderServer {
                         val path = request.path.orEmpty().substringBefore('?')
                         // Klucz „ścieżka?action” (API Xtream) ma pierwszeństwo przed samą ścieżką.
                         val action = request.requestUrl?.queryParameter("action")
-                        val body =
-                            (action?.let { routes["$path?$it"] } ?: routes[path])?.invoke(request)
+                        val handler =
+                            (action?.let { routes["$path?$it"] } ?: routes[path])
                                 ?: return MockResponse().setResponseCode(404)
+                        // Wyjątek w handlerze = awaria serwera dostawcy: 503, jak prawdziwy serwer za proxy.
+                        val body =
+                            runCatching { handler(request) }.getOrElse { return MockResponse().setResponseCode(503) }
                         return MockResponse().setBody(body)
                     }
                 }
