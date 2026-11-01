@@ -28,6 +28,16 @@ class OkHttpTextFetcherTest {
     private fun url(path: String = "/list.m3u") = server.url(path).toString()
 
     @Test
+    fun `domyslny User-Agent jest w stylu odtwarzacza a klient strumieni uzywa HTTP 1_1`() =
+        runTest {
+            server.enqueue(MockResponse().setBody("x"))
+            OkHttpTextFetcher(NetworkClients.stream()).fetch(url())
+            assertEquals(NetworkClients.DEFAULT_USER_AGENT, server.takeRequest().getHeader("User-Agent"))
+            assertEquals(listOf(okhttp3.Protocol.HTTP_1_1), NetworkClients.stream().protocols)
+            assertEquals(true, NetworkClients.DEFAULT_USER_AGENT.startsWith("VLC/"))
+        }
+
+    @Test
     fun `pobiera tekst i wysyla User-Agent`() =
         runTest {
             server.enqueue(MockResponse().setBody("#EXTM3U"))
