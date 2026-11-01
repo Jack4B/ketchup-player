@@ -67,27 +67,38 @@ key KEYCODE_ENTER            # Enter w ostatnim polu: zapis i pobranie
 sleep 6
 shot 09_po_zapisie_A
 dump() { adb shell uiautomator dump /sdcard/ui.xml >/dev/null; adb pull /sdcard/ui.xml "$OUT/$1.xml" >/dev/null; }
+# Klik po tekście lub opisie z drzewa UI: niezależny od położenia fokusu (D-pad sprawdzają testy aplikacji).
+tap() {
+  adb shell uiautomator dump /sdcard/ui_tap.xml >/dev/null
+  adb pull /sdcard/ui_tap.xml "$OUT/ui_tap.xml" >/dev/null
+  local b
+  for pat in "text=\"$1\"" "content-desc=\"$1\""; do
+    b=$(sed 's/<node/\n<node/g' "$OUT/ui_tap.xml" | grep -F -- "$pat" | head -1 |
+      sed -n 's/.*bounds="\[\([0-9]*\),\([0-9]*\)\]\[\([0-9]*\),\([0-9]*\)\].*/\1 \2 \3 \4/p')
+    [ -n "$b" ] && break
+  done
+  if [ -z "$b" ]; then echo "tap: nie znaleziono '$1'" >&2; return 1; fi
+  read -r x1 y1 x2 y2 <<< "$b"
+  adb shell input tap $(((x1+x2)/2)) $(((y1+y2)/2))
+  sleep 1.5
+}
 dump ui_po_zapisie_A
 if ! grep -q "Kanały: 1" "$OUT/ui_po_zapisie_A.xml"; then
   echo "=== Po zapisie listy A nie widać „Kanały: 1” (zapis lub pobranie listy się nie udało) ===" >&2
   adb logcat -d -b crash | head -80 >&2
   FAIL_PROVIDER=1
 fi
-key KEYCODE_DPAD_DOWN        # Dodaj dostawcę
-key KEYCODE_DPAD_CENTER
+tap "Dodaj dostawcę" || FAIL_PROVIDER=1
 adb shell input text "ListaB"
 key KEYCODE_ENTER
 adb shell input text "http://127.0.0.1:8099/b.m3u"
 key KEYCODE_ENTER
 sleep 6
 shot 10_po_zapisie_B
-key KEYCODE_BACK              # lista ustawień
-key KEYCODE_BACK              # fokus na szynę
-for _ in 1 2 3 4 5; do key KEYCODE_DPAD_UP; done   # z Ustawień w górę do Na żywo
-key KEYCODE_DPAD_CENTER       # Na żywo
+tap "Na żywo" || FAIL_PROVIDER=1   # szyna nawigacji (opis dostępności pozycji)
 sleep 3
 shot 11_na_zywo_dwa_kanaly
-key KEYCODE_DPAD_CENTER      # pierwszy kanał (Lista A, 404) -> failover na Listę B
+tap "Kanal Testowy" || FAIL_PROVIDER=1   # pierwszy kanał (Lista A, 404) -> failover na Listę B
 sleep 3
 shot 12_failover_przelaczenie
 sleep 12
