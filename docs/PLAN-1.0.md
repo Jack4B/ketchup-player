@@ -29,6 +29,15 @@ Kolejność: M1 (największa wartość, najbardziej brakuje) → M2 → M3 → M
 - **Zegar w odtwarzaczu:** zrobione (prawy górny róg, ustawienie).
 - Zasady: jedna skala odstępów, jedna typografia, grafika zamiast pustych kafli, animacje krótkie, bez migotania na słabym SoC.
 
+## Opisy, oceny, nowe odcinki
+- **Opisy i obsada:** najpierw z dostawcy (Xtream `get_vod_info`/`get_series_info`), potem opcjonalnie TMDB (własny klucz użytkownika w Ustawieniach, opisy po polsku, grafiki, obsada). IMDb nie ma darmowego API (OMDb z kluczem użytkownika jako opcja). Trakt (oficjalne API, logowanie kodem na TV): ocena, watchlista, kalendarz, scrobbling; przewidziane na 1.1. moviesranking.com nie ma publicznego API: tylko inspiracja.
+- **Zielone kropki „nowy odcinek”:** stan „widziane” per serial; Xtream: pole `last_modified` z `get_series`; M3U: zmiana liczby odcinków po odświeżeniu. Kropka na karcie serialu, na pozycji „Seriale” w szufladzie, rząd „Nowe odcinki” na Home. Zbieranie przy odświeżaniu listy, bez dodatkowego ruchu.
+
+## Trzy funkcje, których nie mają inne odtwarzacze (propozycje)
+1. **Zdrowie źródeł:** aplikacja sama mierzy, które listy i kanały działają (czas startu, buforowanie, błędy) i wybiera najlepsze źródło zanim wciśniesz OK; zielone/żółte/czerwone kropki przy kanałach i panel „Zdrowie list”. Inni przełączają dopiero po awarii.
+2. **„Mam X minut”:** wybierasz, ile masz czasu (np. 45 min, do 22:00), a aplikacja pokazuje filmy, odcinki i audycje na żywo, które się w tym zmieszczą i skończą na czas.
+3. **Kanały wirtualne z mojej biblioteki:** automatyczne kanały „Kryminały”, „Komedie”, „Dla dzieci” odtwarzające kolejne odcinki z twojego katalogu 24/7, z własnym EPG w przewodniku.
+
 ## Zasady pracy (oszczędzanie limitu)
 1. **Paczki:** jeden commit/push na milestone (lub podetap), nie po każdej poprawce. Push anuluje trwający CI, więc po push czekam na wynik, zamiast pchać dalej.
 2. **Lokalnie najpierw** `spotlessApply detekt` + testy zmienionych modułów, dopiero potem push (CI nie ma łapać stylu).
