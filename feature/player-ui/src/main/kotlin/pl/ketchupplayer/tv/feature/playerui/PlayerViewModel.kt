@@ -96,7 +96,14 @@ class PlayerViewModel
                 failover.settings = failoverSettings.settings.first()
                 failover.start(
                     chain.mapIndexed { i, ch ->
-                        val label = if (i == 0 && chain.size == 1) ch.name else "Lista ${i + 1} · ${ch.name}"
+                        val label =
+                            if (i == 0 &&
+                                chain.size == 1
+                            ) {
+                                ch.displayName
+                            } else {
+                                "Lista ${i + 1} · ${ch.displayName}"
+                            }
                         SourceCandidate(label) { catalog.resolveStream(ch.id) }
                     },
                 )
