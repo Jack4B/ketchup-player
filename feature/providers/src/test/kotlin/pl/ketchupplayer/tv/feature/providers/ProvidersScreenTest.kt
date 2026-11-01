@@ -122,13 +122,15 @@ class ProvidersScreenTest {
         assertEquals(listOf<ProvidersEvent>(ProvidersEvent.SelectKind(ProviderKind.XTREAM)), events)
     }
 
-    /** Kreator: wiersz User-Agent przed zapisem; OK przełącza nagłówek (domyślnie OTT Navigator). */
+    /** Kreator: wiersz User-Agent otwiera listę wyboru z ptaszkiem; wybór pozycji wysyła zdarzenie z jej id. */
     @Test
-    fun wierszUserAgentWFormularzuPrzelaczaNaglowek() {
+    fun wierszUserAgentOtwieraListeWyboru() {
         val events = mutableListOf<ProvidersEvent>()
         show(ProvidersUiState(form = ProviderForm()), events)
-        compose.onNodeWithText("User-Agent: Domyślny (OTT Navigator)", substring = true).assertExists()
         compose.onNodeWithText("User-Agent:", substring = true).performClick()
-        assertEquals(listOf<ProvidersEvent>(ProvidersEvent.CycleUserAgent), events)
+        compose.waitForIdle()
+        compose.onNodeWithText("✓").assertExists()
+        compose.onNodeWithText("VLC").performClick()
+        assertEquals(listOf<ProvidersEvent>(ProvidersEvent.SelectUserAgent("vlc")), events)
     }
 }

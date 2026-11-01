@@ -28,6 +28,8 @@ data class ProvidersUiState(
     val message: String? = null,
     val status: pl.ketchupplayer.tv.core.data.catalog.ImportStatus? = null,
     val downloadedBytes: Long = 0,
+    /** Własne User-Agenty użytkownika (do listy wyboru w formularzu). */
+    val customAgents: List<pl.ketchupplayer.tv.core.network.UserAgentProfile> = emptyList(),
 )
 
 sealed interface ProvidersEvent {
@@ -60,8 +62,10 @@ sealed interface ProvidersEvent {
 
     data object Submit : ProvidersEvent
 
-    /** OK na wierszu User-Agent w formularzu: kolejny z puli (wbudowane i własne). */
-    data object CycleUserAgent : ProvidersEvent
+    /** Wybór User-Agenta z listy w formularzu (ptaszek przy zaznaczonym). */
+    data class SelectUserAgent(
+        val id: String,
+    ) : ProvidersEvent
 
     data class Toggle(
         val id: ProviderId,

@@ -55,7 +55,7 @@ fun ProvidersScreen(
             Text(stringResource(R.string.providers_saved_with_error, it), fontSize = 16.sp, color = c.textSecondary)
         }
         if (state.form != null) {
-            AddForm(state.form, state.busy, onEvent)
+            AddForm(state.form, state.busy, onEvent, customAgents = state.customAgents)
         } else {
             ProviderList(state, onEvent, focusAdd = hadForm)
         }
@@ -123,7 +123,9 @@ internal fun AddForm(
     busy: Boolean,
     onEvent: (ProvidersEvent) -> Unit,
     showActions: Boolean = true,
+    customAgents: List<pl.ketchupplayer.tv.core.network.UserAgentProfile> = emptyList(),
 ) {
+    var pickingAgent by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     val xtream = form.kind == ProviderKind.XTREAM
     val submit: () -> Unit = { if (!busy) onEvent(ProvidersEvent.Submit) }
     // Po wysłaniu chowamy klawiaturę ekranową, żeby nie zasłaniała postępu importu.
@@ -182,8 +184,25 @@ internal fun AddForm(
                 .byId(form.userAgentId)
                 .label,
         ),
-        { onEvent(ProvidersEvent.CycleUserAgent) },
+        { pickingAgent = true },
     )
+    if (pickingAgent) {
+        val auto = stringResource(R.string.providers_ua_auto_hint)
+        pl.ketchupplayer.tv.core.designsystem.ChoiceDialog(
+            title = stringResource(R.string.providers_ua_pick),
+            choices =
+                (pl.ketchupplayer.tv.core.network.UserAgentProfiles.ALL + customAgents).map {
+                    pl.ketchupplayer.tv.core.designsystem
+                        .Choice(it.id, it.label, it.value ?: auto)
+                },
+            selectedId = form.userAgentId,
+            onSelect = {
+                onEvent(ProvidersEvent.SelectUserAgent(it))
+                pickingAgent = false
+            },
+            onDismiss = { pickingAgent = false },
+        )
+    }
     if (showActions) {
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),

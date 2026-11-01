@@ -3,7 +3,10 @@ package pl.ketchupplayer.tv.feature.settings
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onLast
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
@@ -38,7 +41,7 @@ class PlaybackSettingsScreenTest {
         compose.onRoot().captureRoboImage("src/test/screenshots/playback_settings.png")
     }
 
-    /** D-pad: fokus na pierwszym wierszu; OK przełącza, DÓŁ przechodzi do czułości i opóźnienia. */
+    /** D-pad: przełączniki OK; wartości (czułość, opóźnienie) z listy wyboru z ptaszkiem. */
     @Test
     fun dpadFokusIOk() {
         val events = mutableListOf<PlaybackSettingsEvent>()
@@ -46,17 +49,20 @@ class PlaybackSettingsScreenTest {
             KetchupTheme(device = DeviceClass.TV) { PlaybackSettingsScreen(FailoverSettings(), { events += it }, {}) }
         }
         compose.waitForIdle()
-        key(Key.DirectionCenter)
-        key(Key.DirectionDown) // zegar w odtwarzaczu (osobny przełącznik)
+        key(Key.DirectionCenter) // przełącznik failoveru
         key(Key.DirectionDown)
+        key(Key.DirectionDown) // czułość: OK otwiera listę
         key(Key.DirectionCenter)
-        key(Key.DirectionDown)
-        key(Key.DirectionCenter)
+        compose.waitForIdle()
+        compose.onNodeWithText("✓").assertExists()
+        // Okno wyboru to osobny korzeń: klawisze do ostatniego. Domyślnie FAST, DÓŁ = STANDARD.
+        compose.onAllNodes(isRoot()).onLast().performKeyInput { pressKey(Key.DirectionDown) }
+        compose.onAllNodes(isRoot()).onLast().performKeyInput { pressKey(Key.DirectionCenter) }
+        compose.waitForIdle()
         assertEquals(
             listOf(
                 PlaybackSettingsEvent.ToggleEnabled,
-                PlaybackSettingsEvent.CycleSensitivity,
-                PlaybackSettingsEvent.CycleDelay,
+                PlaybackSettingsEvent.SetSensitivity(FailoverSensitivity.STANDARD),
             ),
             events,
         )

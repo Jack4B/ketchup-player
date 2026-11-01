@@ -734,7 +734,8 @@ class ScenariosTest {
 
         compose.onRoot().performKeyInput { pressKey(Key.ShiftLeft) }
         settingsPage("Odtwarzanie")
-        click("Maksymalny czas buforowania") // 25 s -> 5 s (pierwsza wartość listy po zawinięciu)
+        click("Maksymalny czas buforowania") // lista wyboru z ptaszkiem
+        click("5 s")
         waitFor { runBlocking { failoverSettings.settings.first().tvDelaySeconds == 5 } }
 
         nav("Na żywo")

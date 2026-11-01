@@ -33,7 +33,8 @@ class ProvidersViewModel
                 catalog.providers,
                 local,
                 catalog.importStatus,
-            ) { providers, l, st -> l.copy(providers = providers, status = st) }
+                customs,
+            ) { providers, l, st, c -> l.copy(providers = providers, status = st, customAgents = c) }
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), ProvidersUiState())
 
         private var failedId: ProviderId? = null
@@ -49,15 +50,8 @@ class ProvidersViewModel
                 is ProvidersEvent.SelectKind,
                 is ProvidersEvent.UrlChanged,
                 -> local.update { it.copy(form = it.form?.let { f -> edited(f, event) }) }
-                ProvidersEvent.CycleUserAgent ->
-                    local.update {
-                        it.copy(
-                            form =
-                                it.form?.let { f ->
-                                    f.copy(userAgentId = nextUserAgent(f.userAgentId))
-                                },
-                        )
-                    }
+                is ProvidersEvent.SelectUserAgent ->
+                    local.update { it.copy(form = it.form?.copy(userAgentId = event.id)) }
                 ProvidersEvent.Submit -> submit()
                 is ProvidersEvent.Toggle ->
                     local.update {
@@ -125,12 +119,6 @@ class ProvidersViewModel
                         }
                 }
             }
-        }
-
-        private fun nextUserAgent(current: String): String {
-            val pool = pl.ketchupplayer.tv.core.network.UserAgentProfiles.ALL + customs.value
-            val i = pool.indexOfFirst { it.id == current }
-            return pool[(i + 1).mod(pool.size)].id
         }
 
         private suspend fun add(form: ProviderForm): AddProviderResult =

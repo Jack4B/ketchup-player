@@ -25,13 +25,9 @@ class PlaybackSettingsViewModel
         val remoteDebounceMs: StateFlow<Int> =
             prefs.remoteDebounceMs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), 250)
 
-        /** OK: Wyłączony → 150 → 250 → 400 → Wyłączony. */
-        fun cycleRemoteDebounce() {
-            viewModelScope.launch {
-                val steps = listOf(0, 150, 250, 400)
-                val current = prefs.remoteDebounceMs.first()
-                prefs.setRemoteDebounceMs(steps[(steps.indexOf(current) + 1) % steps.size])
-            }
+        /** Wybór czułości pilota z listy: 0 (wyłączona), 150, 250, 400 ms. */
+        fun setRemoteDebounce(ms: Int) {
+            viewModelScope.launch { prefs.setRemoteDebounceMs(ms) }
         }
 
         fun toggleClock() {
