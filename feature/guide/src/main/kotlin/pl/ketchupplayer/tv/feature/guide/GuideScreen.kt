@@ -52,7 +52,7 @@ fun GuideRoute(
 }
 
 /**
- * Przewodnik: wiersze kanałów, oś czasu 4 h od pełnej półgodziny. Wszystkie wiersze przewijają się poziomo razem
+ * Przewodnik: wiersze kanałów, oś czasu 12 h od pełnej półgodziny. Wszystkie wiersze przewijają się poziomo razem
  * (wspólny [rememberScrollState]); audycje wiersza ładują się dopiero, gdy wiersz trafia na ekran.
  * D-pad: GÓRA/DÓŁ zmienia kanał, LEWO/PRAWO audycję, OK otwiera kanał, BACK wychodzi.
  */

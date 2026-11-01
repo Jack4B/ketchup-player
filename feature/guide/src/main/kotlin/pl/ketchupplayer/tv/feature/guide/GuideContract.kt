@@ -15,7 +15,7 @@ data class GuideUiState(
 
 /** Geometria siatki: długość audycji w minutach -> szerokość bloku. */
 object GuideGeometry {
-    const val WINDOW_MINUTES = 4 * 60
+    const val WINDOW_MINUTES = 12 * 60
     const val STEP_MINUTES = 30
     const val DP_PER_MINUTE = 6f
     const val MIN_BLOCK_DP = 36f

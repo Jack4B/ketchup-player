@@ -97,6 +97,22 @@ class GuideScreenTest {
         assertNull(GuideGeometry.place(start - 60 * min, start - 30 * min, start, GuideGeometry.windowEnd(start)))
     }
 
+    @Test
+    fun oknoObejmuje12GodzinIBlokPozno() {
+        assertEquals(start + 12 * 60 * min, GuideGeometry.windowEnd(start))
+        val (offset, _) =
+            GuideGeometry.place(
+                start + 10 * 60 * min,
+                start + 11 * 60 * min,
+                start,
+                GuideGeometry.windowEnd(start),
+            )!!
+        assertEquals(10 * 60 * GuideGeometry.DP_PER_MINUTE, offset, 0.01f)
+        assertNull(
+            GuideGeometry.place(start + 12 * 60 * min, start + 13 * 60 * min, start, GuideGeometry.windowEnd(start)),
+        )
+    }
+
     /** D-pad: fokus startuje na pierwszym kanale, OK otwiera go. */
     @Test
     fun dpadOkOtwieraKanal() {
