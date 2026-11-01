@@ -13,8 +13,8 @@
 #  Wymaga: pkg install android-tools coreutils
 # =============================================================================
 set -o pipefail
-PKG="pl.ketchupplayer.tv"
-ACT="$PKG/.MainActivity"
+PKG=""   # wykrywany po instalacji: wersja debug to pl.ketchupplayer.tv.debug, release pl.ketchupplayer.tv
+ACT=""
 ENV_FILE="$HOME/.ketchup-test.env"
 # shellcheck disable=SC1090
 [ -f "$ENV_FILE" ] && source "$ENV_FILE"
@@ -101,7 +101,12 @@ if [ -n "$APK" ] && [ -f "$APK" ]; then
   out=$(adb -s "$TARGET" install -r -d "$APK" 2>&1 | tr -d '\r'); echo "$out" | grep -q Success \
     && record "—" "Instalacja APK" PASS "$(basename "$APK")" || record "—" "Instalacja APK" FAIL "$out"
 fi
-sh_ "pm path $PKG" | grep -q package || { record "—" "Aplikacja zainstalowana" FAIL "podaj APK jako argument"; cat "$REPORT"; exit 1; }
+for p in pl.ketchupplayer.tv.debug pl.ketchupplayer.tv; do
+  if sh_ "pm path $p" | grep -q package; then PKG="$p"; break; fi
+done
+[ -n "$PKG" ] || { record "—" "Aplikacja zainstalowana" FAIL "nie znaleziono pakietu (podaj APK jako argument)"; cat "$REPORT"; exit 1; }
+ACT="$PKG/pl.ketchupplayer.tv.MainActivity"
+log "pakiet: $PKG"
 sh_ "pm clear $PKG" >/dev/null
 sh_ "settings put global window_animation_scale 1.0" >/dev/null
 
