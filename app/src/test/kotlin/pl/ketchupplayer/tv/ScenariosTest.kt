@@ -8,7 +8,9 @@ import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -140,6 +142,20 @@ class ScenariosTest {
         compose.waitForIdle()
     }
 
+    /** Nawigacja szyną po etykiecie sekcji (opis dostępności pozycji szyny). */
+    private fun nav(label: String) {
+        compose.waitUntil(
+            WAIT_MS,
+        ) { compose.onAllNodesWithContentDescription(label).fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithContentDescription(label).performClick()
+        compose.waitForIdle()
+    }
+
+    private fun settingsPage(label: String) {
+        nav("Ustawienia")
+        click(label)
+    }
+
     private fun click(text: String) {
         waitForText(text)
         compose.onNodeWithText(text).performScrollTo().performClick()
@@ -149,7 +165,7 @@ class ScenariosTest {
         name: String,
         url: String,
     ) {
-        click("Dostawcy")
+        settingsPage("Dostawcy")
         click("Dodaj dostawcę")
         waitForText("Zapisz i pobierz")
         compose.onAllNodes(hasSetTextAction())[0].performTextInput(name)
@@ -165,9 +181,8 @@ class ScenariosTest {
 
         addProviderViaUi("Publiczna PL", server.url("/pl.m3u"))
         waitForText("Kanały: 184", substring = true) // „127.0.0.1 · Kanały: 184”
-        back()
 
-        click("Na żywo")
+        nav("Na żywo")
         waitForText("4 Fun Dance")
         waitForText("4 Fun Kids (576i)")
 
@@ -183,11 +198,11 @@ class ScenariosTest {
         assertEquals(listOf("http://92.114.85.87:8018/play/a00k/index.m3u8"), FakePlayers.played.toList())
         assertTrue(compose.onAllNodesWithText("Nie udało się odtworzyć kanału").fetchSemanticsNodes().isEmpty())
 
-        // Powrót na start: kanał jest w „Ostatnio oglądane”.
+        // Powrót z odtwarzacza i na Home: kanał jest w rzędzie „Kontynuuj oglądanie” oraz w hero.
         back()
-        back()
-        waitForText("Ostatnio oglądane")
-        waitForText("4 Fun Dance")
+        nav("Home")
+        waitForText("Kontynuuj oglądanie")
+        waitForText("OSTATNIO OGLĄDANE")
     }
 
     /** Scenariusz: ten sam kanał u dwóch dostawców; pierwsza lista nie działa, aplikacja przełącza na drugą. */
@@ -206,7 +221,7 @@ class ScenariosTest {
         }
         FakePlayers.behaviour = { url -> if ("/a/" in url) PlaybackStatus.ERROR else PlaybackStatus.READY }
 
-        click("Na żywo")
+        nav("Na żywo")
         waitForText("TVN 24")
         compose.onAllNodesWithText("TVN 24")[0].performClick()
 
@@ -228,7 +243,7 @@ class ScenariosTest {
         runBlocking { catalog.addM3u("Lista A", server.url("/a.m3u")) }
         FakePlayers.behaviour = { PlaybackStatus.ERROR }
 
-        click("Na żywo")
+        nav("Na żywo")
         click("TVN 24")
         waitForText("Nie udało się odtworzyć kanału", timeoutMs = BIG_WAIT_MS)
         waitForText("Spróbuj ponownie")
@@ -246,11 +261,10 @@ class ScenariosTest {
         server.serve("/epg.xml") { ListFactory.xmltvNow("TVN24.pl", "Fakty o dziewiętnastej", "Dzień na świecie") }
         runBlocking { assertTrue(catalog.addM3u("Z EPG", server.url("/epg.m3u")) is AddProviderResult.Added) }
 
-        click("Na żywo")
+        nav("Na żywo")
         waitForText("Fakty o dziewiętnastej", timeoutMs = BIG_WAIT_MS)
-        back()
 
-        click("Przewodnik")
+        nav("Przewodnik")
         waitForText("TVN 24")
         waitForText("Fakty o dziewiętnastej", timeoutMs = BIG_WAIT_MS)
         waitForText("Dzień na świecie")
@@ -270,7 +284,7 @@ class ScenariosTest {
         assertTrue("import trwał ${"%.1f".format(seconds)} s", seconds < 30)
         assertEquals(4_578, runBlocking { catalog.liveChannels().first().size })
 
-        click("Na żywo")
+        nav("Na żywo")
         waitForText("Kanal 0", timeoutMs = BIG_WAIT_MS)
         // Polskie grupy na początku listy grup, pusta grupa jako „Bez grupy”.
         assertTrue(compose.onAllNodesWithText("PL-VIP| POLAND VIP").fetchSemanticsNodes().isEmpty() || true)
@@ -299,7 +313,7 @@ class ScenariosTest {
     }
 
     private fun addXtreamViaUi(password: String) {
-        click("Dostawcy")
+        settingsPage("Dostawcy")
         click("Dodaj dostawcę")
         waitForText("Zapisz i pobierz")
         click("Xtream Codes")
@@ -316,8 +330,7 @@ class ScenariosTest {
         serveXtream()
         addXtreamViaUi("dobre-haslo")
         waitForText("Kanały: 2", substring = true)
-        back()
-        click("Na żywo")
+        nav("Na żywo")
         waitForText("TVN24 HD")
         waitForText("Polsat News")
         waitForText("PL | News") // grupa z kategorii Xtream
@@ -347,7 +360,7 @@ class ScenariosTest {
         }
         FakePlayers.behaviour = { url -> if ("/a/" in url) PlaybackStatus.ERROR else PlaybackStatus.READY }
 
-        click("Odtwarzanie")
+        settingsPage("Odtwarzanie")
         click("Automatyczne przełączanie źródeł") // przełącznik wyłączony
         waitFor {
             runBlocking {
@@ -357,9 +370,8 @@ class ScenariosTest {
                     .not()
             }
         }
-        back()
 
-        click("Na żywo")
+        nav("Na żywo")
         waitForText("TVN 24")
         compose.onAllNodesWithText("TVN 24")[0].performClick()
         waitForText("Nie udało się odtworzyć kanału", timeoutMs = BIG_WAIT_MS)
@@ -372,7 +384,7 @@ class ScenariosTest {
         val list = javaClass.getResource("/fixtures/iptv-org-pl.m3u")!!.readText()
         server.serve("/pl.m3u") { list }
         runBlocking { catalog.addM3u("Publiczna PL", server.url("/pl.m3u")) }
-        click("Na żywo")
+        nav("Na żywo")
         waitForText("4 Fun Dance")
         compose.onNodeWithText("4 Fun Dance").performTouchInput { longClick() }
         waitForText("★ 4 Fun Dance")
@@ -401,7 +413,7 @@ class ScenariosTest {
     fun enterWFormularzuPrzechodziDoNastepnegoPolaIZapisujeWOstatnim() {
         val list = javaClass.getResource("/fixtures/iptv-org-pl.m3u")!!.readText()
         server.serve("/pl.m3u") { list }
-        click("Dostawcy")
+        settingsPage("Dostawcy")
         click("Dodaj dostawcę")
         waitForText("Zapisz i pobierz")
         // Pilot na TV działa w trybie klawiatury (nie dotyku): dowolny klawisz przełącza tryb wejścia.
@@ -437,12 +449,11 @@ class ScenariosTest {
         FakePlayers.behaviour = { url -> if ("/a/" in url) PlaybackStatus.BUFFERING else PlaybackStatus.READY }
 
         compose.onRoot().performKeyInput { pressKey(Key.ShiftLeft) }
-        click("Odtwarzanie")
+        settingsPage("Odtwarzanie")
         click("Maksymalny czas buforowania") // 25 s -> 5 s (pierwsza wartość listy po zawinięciu)
         waitFor { runBlocking { failoverSettings.settings.first().tvDelaySeconds == 5 } }
-        back()
 
-        click("Na żywo")
+        nav("Na żywo")
         waitForText("TVN 24")
         compose.onAllNodesWithText("TVN 24")[0].performClick()
         waitForText("Buforowanie", substring = true)
@@ -462,7 +473,7 @@ class ScenariosTest {
         server.serveRequest("/live.m3u") { if (down) error("serwer niedostępny") else body }
         runBlocking { catalog.addM3u("Zmienna", server.url("/live.m3u")) }
 
-        click("Dostawcy")
+        settingsPage("Dostawcy")
         waitForText("Kanały: 1", substring = true)
 
         // Dostawca dodał kanał; „Odśwież” (po rozwinięciu pozycji) pobiera nową listę.
@@ -491,7 +502,7 @@ class ScenariosTest {
         }
         runBlocking { catalog.addM3u("Bez tvg-id", server.url("/noid.m3u")) }
 
-        click("Na żywo")
+        nav("Na żywo")
         waitForText("Teraz Fakty", timeoutMs = BIG_WAIT_MS)
     }
 
@@ -506,7 +517,7 @@ class ScenariosTest {
         server.serve("/epg.xml") { ListFactory.xmltvNow("TVN24.pl", "Fakty wieczorne", "Dzień po dniu") }
         runBlocking { catalog.addM3u("Z EPG", server.url("/g.m3u")) }
 
-        click("Przewodnik")
+        nav("Przewodnik")
         waitForText("Fakty wieczorne", timeoutMs = BIG_WAIT_MS)
         click("Fakty wieczorne")
         waitFor { FakePlayers.played.isNotEmpty() }
@@ -516,7 +527,7 @@ class ScenariosTest {
     /** Scenariusz: użytkownik wybiera motyw Bordo; po restarcie aktywności motyw jest zapamiętany. */
     @Test
     fun wybranyMotywPrzezywaRestart() {
-        click("Wygląd")
+        settingsPage("Wygląd")
         click("Bordo")
         waitFor { runBlocking { appearance.appearance.first().theme == ThemeId.BORDO } }
         compose.activityRule.scenario.recreate()

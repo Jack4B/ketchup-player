@@ -1,15 +1,20 @@
 package pl.ketchupplayer.tv
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import pl.ketchupplayer.tv.core.designsystem.AppShell
 import pl.ketchupplayer.tv.feature.guide.GuideRoute
+import pl.ketchupplayer.tv.feature.home.HomeRoute
 import pl.ketchupplayer.tv.feature.livetv.LiveTvRoute
 import pl.ketchupplayer.tv.feature.playerui.PlayerRoute
 import pl.ketchupplayer.tv.feature.providers.ProvidersRoute
@@ -18,51 +23,95 @@ import pl.ketchupplayer.tv.feature.settings.EpgSourcesRoute
 import pl.ketchupplayer.tv.feature.settings.PlaybackSettingsRoute
 
 /**
- * Prosta nawigacja ze stosem (kontrakty tras w `core:ui` pojawią się przy większej liczbie ekranów).
- * Feature nie zna innych feature: przejścia ustala wyłącznie `:app`.
+ * Nawigacja: stos tras (String, przeżywa obrót) + powłoka z szyną (makiety v3). Odtwarzacz jest pełnoekranowy,
+ * bez powłoki. Feature nie zna innych feature: przejścia ustala wyłącznie `:app`.
  */
 @Composable
-fun AppNavigation() {
-    // SnapshotStateList nie jest zapisywalny domyślnie: własny Saver (lista Stringów) przeżywa obrót i zabicie procesu.
+fun AppNavigation(onExit: () -> Unit = {}) {
+    // SnapshotStateList nie jest zapisywalny domyślnie: własny Saver (lista Stringów).
     val stack =
         rememberSaveable(
             saver =
-                listSaver<SnapshotStateList<String>, String>(save = {
-                    it.toList()
-                }, restore = { it.toMutableStateList() }),
-        ) {
-            mutableStateListOf(Routes.START)
-        }
+                listSaver<SnapshotStateList<String>, String>(
+                    save = { it.toList() },
+                    restore = { it.toMutableStateList() },
+                ),
+        ) { mutableStateListOf(Routes.HOME) }
     val push: (String) -> Unit = { stack.add(it) }
     val pop: () -> Unit = { if (stack.size > 1) stack.removeAt(stack.lastIndex) }
+    val openPlayer: (String) -> Unit = { push(Routes.player(it)) }
     val top = stack.last()
+
     val playerChannel = Routes.playerChannel(top)
-    when {
-        playerChannel != null -> PlayerRoute(playerChannel, onBack = pop)
-        top == Destination.LIVE.key ->
-            LiveTvRoute(
-                onOpenChannel = { push(Routes.player(it)) },
-                onOpenProviders = { push(Destination.PROVIDERS.key) },
-                onBack = pop,
+    if (playerChannel != null) {
+        PlayerRoute(playerChannel, onBack = pop)
+        return
+    }
+
+    val labels = Section.entries.associateWith { sectionLabel(it) }
+    val entries = railEntries { labels.getValue(it) }
+    // Wybór sekcji z szyny zaczyna stos od nowa: Home -> sekcja (BACK z sekcji wraca na szynę, z szyny na Home).
+    val select: (String) -> Unit = { route ->
+        stack.clear()
+        stack.add(Routes.HOME)
+        if (route != Routes.HOME) stack.add(route)
+    }
+    AppShell(
+        entries = entries,
+        selectedId = Routes.railSection(top)?.route,
+        onSelect = select,
+        onRailBack = { if (top == Routes.HOME) onExit() else select(Routes.HOME) },
+        avatar = {
+            Image(
+                painterResource(R.drawable.sygnet),
+                null,
+                Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
             )
-        top == Destination.GUIDE.key ->
-            GuideRoute(
-                onOpenChannel = { push(Routes.player(it)) },
-                onOpenProviders = { push(Destination.PROVIDERS.key) },
-                onBack = pop,
+        },
+    ) {
+        SectionContent(top, push, pop, openPlayer)
+    }
+}
+
+@Composable
+private fun sectionLabel(section: Section): String =
+    stringResource(
+        when (section) {
+            Section.PROFILE -> R.string.nav_profile
+            Section.SEARCH -> R.string.nav_search
+            Section.HOME -> R.string.nav_home
+            Section.LIVE -> R.string.nav_live
+            Section.GUIDE -> R.string.nav_guide
+            Section.MOVIES -> R.string.nav_movies
+            Section.SERIES -> R.string.nav_series
+            Section.MYLIST -> R.string.nav_mylist
+            Section.SETTINGS -> R.string.nav_settings
+        },
+    )
+
+@Composable
+private fun SectionContent(
+    route: String,
+    push: (String) -> Unit,
+    pop: () -> Unit,
+    openPlayer: (String) -> Unit,
+) {
+    val toRail = pl.ketchupplayer.tv.core.designsystem.LocalFocusRail.current
+    when (route) {
+        Section.LIVE.route -> LiveTvRoute(openPlayer, { push(SettingsPage.PROVIDERS.route) }, toRail)
+        Section.GUIDE.route -> GuideRoute(openPlayer, { push(SettingsPage.PROVIDERS.route) }, toRail)
+        Section.SETTINGS.route -> SettingsHome(push)
+        SettingsPage.PROVIDERS.route -> ProvidersRoute(onBack = pop)
+        SettingsPage.EPG_SOURCES.route -> EpgSourcesRoute(onBack = pop)
+        SettingsPage.PLAYBACK.route -> PlaybackSettingsRoute(onBack = pop)
+        SettingsPage.APPEARANCE.route -> AppearanceRoute(onBack = pop)
+        Section.HOME.route ->
+            HomeRoute(
+                onOpenChannel = openPlayer,
+                onOpenGuide = { push(Section.GUIDE.route) },
+                onOpenProviders = { push(SettingsPage.PROVIDERS.route) },
             )
-        top == Destination.PROVIDERS.key -> ProvidersRoute(onBack = pop)
-        top == Destination.EPG_SOURCES.key -> EpgSourcesRoute(onBack = pop)
-        top == Destination.PLAYBACK.key -> PlaybackSettingsRoute(onBack = pop)
-        top == Destination.APPEARANCE.key -> AppearanceRoute(onBack = pop)
-        else -> {
-            val start: StartViewModel = hiltViewModel()
-            val recent by start.recent.collectAsStateWithLifecycle()
-            StartScreen(
-                onNavigate = { push(Routes.of(it)) },
-                recent = recent,
-                onOpenChannel = { push(Routes.player(it)) },
-            )
-        }
+        else -> ComingSoon(route)
     }
 }

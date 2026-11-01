@@ -2,6 +2,7 @@ package pl.ketchupplayer.tv
 
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -34,24 +35,32 @@ class AppStartTest {
     @get:Rule(order = 1)
     val compose = createAndroidComposeRule<MainActivity>()
 
+    private fun nav(label: String) {
+        compose.onNodeWithContentDescription(label).performClick()
+        compose.waitForIdle()
+    }
+
+    private fun settingsPage(label: String) {
+        nav("Ustawienia")
+        compose.onNodeWithText(label).performScrollTo().performClick()
+        compose.waitForIdle()
+    }
+
     @Test
-    fun aplikacjaStartujeIPokazujeEkranStartowy() {
+    fun aplikacjaStartujeNaHomeZSzynaNawigacji() {
         hilt.inject()
         compose.waitForIdle()
-        compose.onNodeWithText("Na żywo").assertExists()
-        compose.onNodeWithText("Dostawcy").assertExists()
+        compose.onNodeWithContentDescription("Na żywo").assertExists()
+        compose.onNodeWithContentDescription("Ustawienia").assertExists()
+        compose.onNodeWithText("Home").assertExists()
     }
 
     @Test
     fun przejsciaDoDostawcowINaZywoZPrawdziwymGrafem() {
         hilt.inject()
-        compose.onNodeWithText("Dostawcy").performScrollTo().performClick()
-        compose.waitForIdle()
+        settingsPage("Dostawcy")
         compose.onNodeWithText("Dodaj dostawcę").assertExists()
-        compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
-        compose.waitForIdle()
-        compose.onNodeWithText("Na żywo").performClick()
-        compose.waitForIdle()
+        nav("Na żywo")
         // Dane z Room i EPG płyną asynchronicznie: czekamy na pusty stan z przyciskiem „Dostawcy”.
         compose.waitUntil(WAIT_MS) { compose.onAllNodesWithText("Dostawcy").fetchSemanticsNodes().isNotEmpty() }
     }
@@ -59,8 +68,7 @@ class AppStartTest {
     @Test
     fun obrotZachowujeBiezacyEkran() {
         hilt.inject()
-        compose.onNodeWithText("Dostawcy").performScrollTo().performClick()
-        compose.waitForIdle()
+        settingsPage("Dostawcy")
         compose.activityRule.scenario.recreate()
         compose.waitForIdle()
         compose.onNodeWithText("Dodaj dostawcę").assertExists()

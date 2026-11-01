@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_title">Home</string>
+    <string name="home_recent_kicker">OSTATNIO OGLĄDANE</string>
+    <string name="home_welcome_kicker">WITAJ</string>
+    <string name="home_welcome_title">Ketchup Player</string>
+    <string name="home_welcome_text">Dodaj listę kanałów, aby zacząć oglądać. Obsługujemy listy M3U i konta Xtream Codes.</string>
+    <string name="home_watch">▶ Oglądaj</string>
+    <string name="home_add_provider">Dodaj dostawcę</string>
+    <string name="home_guide">Przewodnik</string>
+    <string name="home_row_continue">Kontynuuj oglądanie</string>
+    <string name="home_row_live_now">Na żywo teraz</string>
+    <string name="home_live_badge">na żywo</string>
+    <string name="home_now_until">%1$s · do %2$s</string>
+</resources>

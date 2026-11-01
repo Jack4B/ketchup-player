@@ -24,11 +24,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -54,6 +56,12 @@ import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
+/** Czy ekran jest osadzony w [AppShell] (wtedy tło, marginesy i nagłówek z zegarem daje powłoka). */
+val LocalInShell = staticCompositionLocalOf { false }
+
+/** Przenosi fokus na szynę (BACK z treści sekcji); dostarcza [AppShell]. */
+val LocalFocusRail = staticCompositionLocalOf<() -> Unit> { {} }
 
 /** Pozycja szyny nawigacji; [badge] = zielona kropka (nowe odcinki). */
 data class RailEntry(
@@ -133,21 +141,23 @@ fun AppShell(
     BackHandler(enabled = !railFocused, onBack = toRail)
     BackHandler(enabled = railFocused, onBack = onRailBack)
     ThemedBackground(modifier) {
-        Box(Modifier.fillMaxSize().padding(horizontal = 48.dp, vertical = 27.dp)) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .padding(start = RAIL_COLLAPSED + CONTENT_GAP),
-                content = content,
-            )
-            NavRail(
-                entries,
-                selectedId,
-                onSelect,
-                requesters,
-                avatar,
-                Modifier.align(Alignment.CenterStart).onFocusChanged { railFocused = it.hasFocus }.zIndex(1f),
-            )
+        CompositionLocalProvider(LocalInShell provides true, LocalFocusRail provides toRail) {
+            Box(Modifier.fillMaxSize().padding(horizontal = 48.dp, vertical = 27.dp)) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .padding(start = RAIL_COLLAPSED + CONTENT_GAP),
+                    content = content,
+                )
+                NavRail(
+                    entries,
+                    selectedId,
+                    onSelect,
+                    requesters,
+                    avatar,
+                    Modifier.align(Alignment.CenterStart).onFocusChanged { railFocused = it.hasFocus }.zIndex(1f),
+                )
+            }
         }
     }
 }

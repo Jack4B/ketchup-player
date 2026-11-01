@@ -30,6 +30,18 @@ fun ScreenScaffold(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = KetchupTheme.colors
+    if (LocalInShell.current) {
+        // W powłoce marginesy i tło daje AppShell; ekran dostaje tylko kolumnę treści.
+        Column(
+            modifier =
+                modifier.fillMaxSize().then(
+                    if (scrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier,
+                ),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+            content = content,
+        )
+        return
+    }
     val margins =
         when (KetchupTheme.device) {
             DeviceClass.TV -> Modifier.padding(horizontal = TV_MARGIN_H, vertical = TV_MARGIN_V)
@@ -54,6 +66,10 @@ private val TV_MARGIN_V = 27.dp
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun ScreenTitle(text: String) {
+    if (LocalInShell.current) {
+        ShellHeader(text)
+        return
+    }
     val phone = KetchupTheme.device == DeviceClass.PHONE
     Text(text, fontSize = if (phone) 28.sp else 32.sp, color = KetchupTheme.colors.textPrimary)
 }

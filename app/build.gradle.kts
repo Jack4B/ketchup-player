@@ -44,6 +44,7 @@ dependencies {
     implementation(project(":feature:providers"))
     implementation(project(":feature:livetv"))
     implementation(project(":feature:guide"))
+    implementation(project(":feature:home"))
     implementation(project(":feature:player-ui"))
     implementation(libs.timber)
     implementation(libs.androidx.core.ktx)

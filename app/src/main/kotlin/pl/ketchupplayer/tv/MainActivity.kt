@@ -20,7 +20,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val appearance by viewModel.appearance.collectAsStateWithLifecycle()
             KetchupTheme(appearance.theme, appearance.effectiveAccent) {
-                AppNavigation()
+                AppNavigation(onExit = { finish() })
             }
         }
     }
