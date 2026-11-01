@@ -23,13 +23,13 @@ Oznaczenia: ✅ pokryte automatycznie, 🖐 do sprawdzenia ręcznie na TV, ⚠ z
 | # | Scenariusz | Oczekiwany wynik | Auto |
 |---|---|---|---|
 | B1 | Dostawcy → Dodaj → M3U: nazwa + adres publicznej listy → „Zapisz i pobierz” | Lista zapisana, „Kanały: N” | ✅ scenariusz E2E (lista iptv-org) |
-| B2 | To samo na prawdziwym Android Keystore (zapis zaszyfrowanego adresu) | Bez crasha | ✅ emulator Android TV |
+| B2 | To samo na prawdziwym Android Keystore (zapis zaszyfrowanego adresu) | Bez crasha | ✅ emulator Android TV (Enter w polach formularza) |
 | B3 | Dodaj konto Xtream (serwer, login, hasło) | Kanały z kategoriami jako grupy | ✅ scenariusz E2E |
 | B4 | Złe hasło Xtream | Komunikat „pobranie się nie udało”, aplikacja nie pada | ✅ scenariusz E2E |
 | B5 | Nieistniejący adres (404) / brak sieci | Komunikat błędu, dostawca zostaje do poprawienia | ✅ scenariusz E2E |
 | B6 | Bardzo duża lista (100 tys. wpisów, filmy i seriale razem z kanałami) | Import w kilka sekund, na liście tylko kanały na żywo | ✅ scenariusz E2E (lista 29 MB); 🖐 pamięć na słabym boxie |
 | B7 | Odśwież listę, usuń listę | Kanały odświeżone / znikają razem z listą | ✅ testy repozytorium |
-| B8 | Wpisywanie adresu pilotem (klawiatura ekranowa) | OK w polu otwiera klawiaturę, tekst wpisuje się | 🖐 |
+| B8 | Wpisywanie adresu pilotem (klawiatura ekranowa) | Enter/✓ w polu: następne pole, w ostatnim zapis listy | ✅ E2E i emulator; 🖐 Twoja klawiatura ekranowa |
 | B9 | Własna lista M3U z kontem użytkownika (hasło w adresie) | Działa; hasło nie jest widoczne na ekranie ani w bazie | ✅ test bajtów bazy; 🖐 na Twojej liście |
 | B10 | Stalker, filmy i seriale z M3U/Xtream | ⚠ nieobsługiwane w tej becie | — |
 
@@ -57,7 +57,7 @@ Oznaczenia: ✅ pokryte automatycznie, 🖐 do sprawdzenia ręcznie na TV, ⚠ z
 ## E. Failover (przełączanie źródeł)
 | # | Scenariusz | Oczekiwany wynik | Auto |
 |---|---|---|---|
-| E1 | Ten sam kanał na dwóch listach, pierwsza zepsuta | Jedno ponowienie, potem „Przełączono na Lista 2 · nazwa” i obraz z drugiej | ✅ E2E + emulator z prawdziwym ExoPlayerem |
+| E1 | Ten sam kanał na dwóch listach, pierwsza zepsuta (404) | Szybkie przełączenie (2 próby, ok. kilka sekund), „Przełączono na Lista 2 · nazwa” i obraz z drugiej | ✅ E2E + emulator z prawdziwym ExoPlayerem; 🖐 czas na Twojej sieci |
 | E2 | Wszystkie źródła zepsute | Panel błędu po wyczerpaniu źródeł | ✅ |
 | E3 | Ustawienia → Odtwarzanie → wyłącz przełączanie | Zepsuty kanał nie przełącza się na drugą listę | ✅ |
 | E4 | Czułość: szybka / standardowa / ostrożna; opóźnienie 5/10/15/25 s | Zapamiętane po restarcie; zmienia czas reakcji | ✅ logika; 🖐 odczucie w praktyce |
