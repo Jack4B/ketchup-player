@@ -39,7 +39,8 @@ class ExoPlayerController(
 
     override fun play(spec: StreamSpec) {
         val factory = OkHttpDataSource.Factory(client).apply { spec.userAgent?.let(::setUserAgent) }
-        exo.setMediaSource(DefaultMediaSourceFactory(factory).createMediaSource(MediaItem.fromUri(spec.url)))
+        val sources = DefaultMediaSourceFactory(factory).setLoadErrorHandlingPolicy(FailFastLoadErrorHandlingPolicy())
+        exo.setMediaSource(sources.createMediaSource(MediaItem.fromUri(spec.url)))
         exo.prepare()
         exo.playWhenReady = true
         publish()

@@ -101,6 +101,11 @@ if ! grep -q "hls/good/.*\.ts" "$OUT/http-server.log"; then
   tail -20 "$OUT/http-server.log" >&2
   FAIL_PROVIDER=1
 fi
+MISSING_HITS=$(grep -c "hls/missing" "$OUT/http-server.log" || true)
+if [ "$MISSING_HITS" -gt 4 ]; then
+  echo "=== Martwe źródło (404) ponawiane $MISSING_HITS razy: powinno kończyć się od razu, a failover zdecydować ===" >&2
+  FAIL_PROVIDER=1
+fi
 if ! grep -q "hls/missing" "$OUT/http-server.log"; then
   echo "=== Serwer nie dostał żądania do zepsutej listy A (kanał nie był próbowany) ===" >&2
   FAIL_PROVIDER=1
