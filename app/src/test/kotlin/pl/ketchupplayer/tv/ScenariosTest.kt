@@ -67,7 +67,7 @@ class ScenariosTest {
         const val WAIT_MS = 30_000L
         const val BIG_WAIT_MS = 60_000L
         const val POLL_MS = 25L
-        const val CLOCK_STEP_MS = 100L
+        const val CLOCK_STEP_MS = 500L
     }
 
     @get:Rule(order = 0)
