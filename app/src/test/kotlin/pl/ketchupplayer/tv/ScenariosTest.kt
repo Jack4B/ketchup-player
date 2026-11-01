@@ -459,7 +459,7 @@ class ScenariosTest {
         waitForText("TVN 24")
     }
 
-    /** Błąd z testu na boxie: nieudane pobranie listy w kreatorze zostawia formularz z wpisanymi danymi I komunikatem. */
+    /** Błąd z boxa: nieudane pobranie listy w kreatorze zostawia formularz z danymi i komunikatem. */
     @Test
     fun kreatorPokazujeBladIZachowujeWpisaneDanePoNieudanymPobraniu() {
         runBlocking { onboarding.setDone(false) }
