@@ -3,6 +3,7 @@
     <string name="app_name">Ketchup Player</string>
     <string name="start_tagline">Odtwarzacz IPTV dla Android TV</string>
     <string name="start_epg_sources">Źródła EPG</string>
+    <string name="start_playback">Odtwarzanie</string>
     <string name="start_appearance">Wygląd</string>
     <string name="start_live">Na żywo</string>
     <string name="start_providers">Dostawcy</string>

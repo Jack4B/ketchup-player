@@ -7,8 +7,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import pl.ketchupplayer.tv.core.data.catalog.CatalogRepository
+import pl.ketchupplayer.tv.core.data.playback.FailoverSettingsRepository
 import pl.ketchupplayer.tv.core.policy.FailoverSettings
 import pl.ketchupplayer.tv.player.engine.PlayerController
 import pl.ketchupplayer.tv.player.engine.PlayerControllerFactory
@@ -39,6 +41,7 @@ class PlayerViewModel
     @Inject
     constructor(
         private val catalog: CatalogRepository,
+        private val failoverSettings: FailoverSettingsRepository,
         factory: PlayerControllerFactory,
     ) : ViewModel() {
         val controller: PlayerController = factory.create()
@@ -89,6 +92,7 @@ class PlayerViewModel
                 channelName = channel.name
                 _ui.value = PlayerUiState.Resolving(channel.name)
                 val chain = catalog.equivalents(channelId).ifEmpty { listOf(channel) }
+                failover.settings = failoverSettings.settings.first()
                 failover.start(
                     chain.mapIndexed { i, ch ->
                         val label = if (i == 0 && chain.size == 1) ch.name else "Lista ${i + 1} · ${ch.name}"

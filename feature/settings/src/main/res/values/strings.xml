@@ -37,4 +37,17 @@
     <string name="custom_warn_green">Zielony kojarzy się ze wskaźnikiem nowych odcinków</string>
     <string name="custom_warn_red">Czerwony kojarzy się z błędem i nagrywaniem</string>
     <string name="custom_close">Gotowe</string>
+    <string name="playback_title">Odtwarzanie</string>
+    <string name="playback_failover">Automatyczne przełączanie źródeł</string>
+    <string name="playback_failover_hint">Gdy kanał przestaje działać, przełącz na ten sam kanał z innej listy</string>
+    <string name="playback_sensitivity">Czułość</string>
+    <string name="playback_sens_fast">Szybka</string>
+    <string name="playback_sens_standard">Standardowa</string>
+    <string name="playback_sens_cautious">Ostrożna</string>
+    <string name="playback_sens_fast_hint">Przełącza już po krótkim zacięciu</string>
+    <string name="playback_sens_standard_hint">Zalecana: ignoruje pojedyncze krótkie zacięcia</string>
+    <string name="playback_sens_cautious_hint">Przełącza dopiero po wielu problemach</string>
+    <string name="playback_delay">Maksymalny czas buforowania</string>
+    <string name="playback_delay_hint">Po tym czasie ciągłego buforowania kanał TV zostanie przełączony</string>
+    <string name="playback_seconds">%1$d s</string>
 </resources>

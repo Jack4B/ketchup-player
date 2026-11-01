@@ -17,6 +17,8 @@ import pl.ketchupplayer.tv.core.data.epg.DataStoreEpgSourcesRepository
 import pl.ketchupplayer.tv.core.data.epg.EpgRepository
 import pl.ketchupplayer.tv.core.data.epg.EpgSourcesRepository
 import pl.ketchupplayer.tv.core.data.epg.RoomEpgRepository
+import pl.ketchupplayer.tv.core.data.playback.DataStoreFailoverSettingsRepository
+import pl.ketchupplayer.tv.core.data.playback.FailoverSettingsRepository
 import pl.ketchupplayer.tv.core.database.ChannelDao
 import pl.ketchupplayer.tv.core.database.EpgDao
 import pl.ketchupplayer.tv.core.database.KetchupDatabase
@@ -36,6 +38,9 @@ abstract class DataModule {
 
     @Binds
     abstract fun bindAppearance(impl: DataStoreAppearanceRepository): AppearanceRepository
+
+    @Binds
+    abstract fun bindFailoverSettings(impl: DataStoreFailoverSettingsRepository): FailoverSettingsRepository
 
     @Binds
     abstract fun bindCatalog(impl: RoomCatalogRepository): CatalogRepository

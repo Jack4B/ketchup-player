@@ -31,10 +31,14 @@ import pl.ketchupplayer.tv.player.engine.PlayerController
  */
 class FailoverCoordinator(
     private val controller: PlayerController,
-    private val settings: FailoverSettings,
+    settings: FailoverSettings,
     private val scope: CoroutineScope,
     private val kind: ContentKind = ContentKind.TV,
 ) {
+    /** Można podmienić przed [start] (np. po zmianie w ustawieniach); działa od następnego startu. */
+    @Volatile
+    var settings: FailoverSettings = settings
+
     private val _state = MutableStateFlow<FailoverState>(FailoverState.Idle)
     val state: StateFlow<FailoverState> = _state.asStateFlow()
     private val _events = MutableSharedFlow<FailoverEvent>(extraBufferCapacity = EVENT_BUFFER)

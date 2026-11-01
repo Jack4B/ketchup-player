@@ -7,6 +7,7 @@ enum class Destination(
     LIVE("live"),
     PROVIDERS("providers"),
     EPG_SOURCES("epg"),
+    PLAYBACK("playback"),
     APPEARANCE("look"),
 }
 

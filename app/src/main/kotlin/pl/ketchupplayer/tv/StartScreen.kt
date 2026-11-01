@@ -68,12 +68,13 @@ fun StartScreen(onNavigate: (Destination) -> Unit = {}) {
             textAlign = TextAlign.Center,
             color = c.textSecondary,
         )
-        val buttons = Modifier.padding(top = 12.dp).widthIn(max = 420.dp).fillMaxWidth(if (phone) 1f else 0.4f)
+        val buttons = Modifier.padding(top = 4.dp).widthIn(max = 420.dp).fillMaxWidth(if (phone) 1f else 0.4f)
         val entries =
             listOf(
                 R.string.start_live to Destination.LIVE,
                 R.string.start_providers to Destination.PROVIDERS,
                 R.string.start_epg_sources to Destination.EPG_SOURCES,
+                R.string.start_playback to Destination.PLAYBACK,
                 R.string.start_appearance to Destination.APPEARANCE,
             )
         entries.forEachIndexed { i, (label, destination) ->

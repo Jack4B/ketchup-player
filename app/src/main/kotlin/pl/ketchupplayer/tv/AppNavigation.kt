@@ -11,6 +11,7 @@ import pl.ketchupplayer.tv.feature.playerui.PlayerRoute
 import pl.ketchupplayer.tv.feature.providers.ProvidersRoute
 import pl.ketchupplayer.tv.feature.settings.AppearanceRoute
 import pl.ketchupplayer.tv.feature.settings.EpgSourcesRoute
+import pl.ketchupplayer.tv.feature.settings.PlaybackSettingsRoute
 
 /**
  * Prosta nawigacja ze stosem (kontrakty tras w `core:ui` pojawią się przy większej liczbie ekranów).
@@ -42,6 +43,7 @@ fun AppNavigation() {
             )
         top == Destination.PROVIDERS.key -> ProvidersRoute(onBack = pop)
         top == Destination.EPG_SOURCES.key -> EpgSourcesRoute(onBack = pop)
+        top == Destination.PLAYBACK.key -> PlaybackSettingsRoute(onBack = pop)
         top == Destination.APPEARANCE.key -> AppearanceRoute(onBack = pop)
         else -> StartScreen(onNavigate = { push(Routes.of(it)) })
     }
