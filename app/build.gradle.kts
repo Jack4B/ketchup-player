@@ -50,6 +50,8 @@ dependencies {
     implementation(libs.androidx.splashscreen)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime)
+    implementation(libs.hilt.lifecycle)
+    implementation(libs.lifecycle.runtime.compose)
     testImplementation(libs.junit)
     testImplementation(project(":core:testing"))
     testImplementation(libs.hilt.testing)

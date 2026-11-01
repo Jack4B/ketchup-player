@@ -88,6 +88,13 @@ interface ChannelFlagDao {
     @Query("SELECT * FROM channel_flags WHERE channelId = :channelId")
     suspend fun get(channelId: String): ChannelFlagEntity?
 
+    /** Id ostatnio oglądanych kanałów, od najnowszego. */
+    @Query(
+        "SELECT channelId FROM channel_flags WHERE lastWatchedMs IS NOT NULL " +
+            "ORDER BY lastWatchedMs DESC LIMIT :limit",
+    )
+    fun observeRecentIds(limit: Int): Flow<List<String>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(flag: ChannelFlagEntity)
 }

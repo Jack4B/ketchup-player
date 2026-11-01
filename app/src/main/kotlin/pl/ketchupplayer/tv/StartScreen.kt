@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
@@ -22,13 +23,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
 import pl.ketchupplayer.tv.core.designsystem.DeviceClass
+import pl.ketchupplayer.tv.core.designsystem.FocusItem
 import pl.ketchupplayer.tv.core.designsystem.KetchupButton
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
+import pl.ketchupplayer.tv.core.model.Channel
 
 /**
  * Ekran startowy Fazy 0. TV: marża overscan 48×27 dp, przyciski wyśrodkowane. Telefon: wcięcia systemowe,
@@ -36,7 +40,11 @@ import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
  */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun StartScreen(onNavigate: (Destination) -> Unit = {}) {
+fun StartScreen(
+    onNavigate: (Destination) -> Unit = {},
+    recent: List<Channel> = emptyList(),
+    onOpenChannel: (String) -> Unit = {},
+) {
     val c = KetchupTheme.colors
     val first = remember { FocusRequester() }
     LaunchedEffect(Unit) { first.requestFocus() }
@@ -70,9 +78,49 @@ fun StartScreen(onNavigate: (Destination) -> Unit = {}) {
             textAlign = TextAlign.Center,
             color = c.textSecondary,
         )
+        if (recent.isNotEmpty()) RecentRow(recent, phone, onOpenChannel)
         StartButtons(phone, first, onNavigate)
     }
 }
+
+/** „Kontynuuj oglądanie”: ostatnio oglądane kanały, OK wznawia kanał. */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun RecentRow(
+    recent: List<Channel>,
+    phone: Boolean,
+    onOpenChannel: (String) -> Unit,
+) {
+    val c = KetchupTheme.colors
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(stringResource(R.string.start_recent), fontSize = 16.sp, color = c.textSecondary)
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            recent.take(if (phone) PHONE_RECENT else TV_RECENT).forEach { ch ->
+                FocusItem(
+                    { onOpenChannel(ch.id) },
+                    Modifier.width(if (phone) PHONE_CARD_WIDTH else TV_CARD_WIDTH).height(RECENT_HEIGHT),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        ch.displayName,
+                        fontSize = 16.sp,
+                        color = c.textPrimary,
+                        maxLines = 2,
+                        textAlign = TextAlign.Center,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+private const val TV_RECENT = 5
+private const val PHONE_RECENT = 2
+private val TV_CARD_WIDTH = 180.dp
+private val PHONE_CARD_WIDTH = 150.dp
+private val RECENT_HEIGHT = 56.dp
 
 private val ENTRIES =
     listOf(

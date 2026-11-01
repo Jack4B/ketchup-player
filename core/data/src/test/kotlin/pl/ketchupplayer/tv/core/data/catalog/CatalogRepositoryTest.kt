@@ -80,6 +80,26 @@ class CatalogRepositoryTest {
         }
 
     @Test
+    fun `ostatnio ogladane - najnowszy pierwszy, limit, ulubione nietkniete`() =
+        runTest {
+            response = Result.success(list)
+            val repo = repo()
+            repo.addM3u("A", "http://a.example.invalid/x")
+            val (a, b) = repo.liveChannels().first()
+            repo.setFavorite(a.id, true)
+            now = 10L
+            repo.markWatched(a.id)
+            now = 20L
+            repo.markWatched(b.id)
+            assertEquals(listOf(b.id, a.id), repo.recentChannels(5).first().map { it.id })
+            assertEquals(listOf(b.id), repo.recentChannels(1).first().map { it.id })
+            now = 30L
+            repo.markWatched(a.id)
+            assertEquals(listOf(a.id, b.id), repo.recentChannels(5).first().map { it.id })
+            assertEquals(setOf(a.id), repo.favoriteIds().first())
+        }
+
+    @Test
     fun `equivalents - kanal pierwszy, potem ta sama nazwa u innych dostawcow`() =
         runTest {
             val repo = repo()

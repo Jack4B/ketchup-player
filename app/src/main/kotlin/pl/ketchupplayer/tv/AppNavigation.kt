@@ -1,11 +1,14 @@
 package pl.ketchupplayer.tv
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pl.ketchupplayer.tv.feature.guide.GuideRoute
 import pl.ketchupplayer.tv.feature.livetv.LiveTvRoute
 import pl.ketchupplayer.tv.feature.playerui.PlayerRoute
@@ -52,6 +55,14 @@ fun AppNavigation() {
         top == Destination.EPG_SOURCES.key -> EpgSourcesRoute(onBack = pop)
         top == Destination.PLAYBACK.key -> PlaybackSettingsRoute(onBack = pop)
         top == Destination.APPEARANCE.key -> AppearanceRoute(onBack = pop)
-        else -> StartScreen(onNavigate = { push(Routes.of(it)) })
+        else -> {
+            val start: StartViewModel = hiltViewModel()
+            val recent by start.recent.collectAsStateWithLifecycle()
+            StartScreen(
+                onNavigate = { push(Routes.of(it)) },
+                recent = recent,
+                onOpenChannel = { push(Routes.player(it)) },
+            )
+        }
     }
 }

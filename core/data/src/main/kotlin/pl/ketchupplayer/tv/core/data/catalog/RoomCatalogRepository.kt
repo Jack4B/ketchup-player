@@ -132,6 +132,14 @@ class RoomCatalogRepository
         override fun favoriteIds(): Flow<Set<String>> =
             flagDao.observeAll().map { flags -> flags.filter { it.favorite }.map { it.channelId }.toSet() }
 
+        override fun recentChannels(limit: Int): Flow<List<Channel>> =
+            flagDao.observeRecentIds(limit).map { ids -> ids.mapNotNull { channelDao.get(it)?.toModel() } }
+
+        override suspend fun markWatched(channelId: String) {
+            val current = flagDao.get(channelId) ?: ChannelFlagEntity(channelId)
+            flagDao.upsert(current.copy(lastWatchedMs = clock.nowMs()))
+        }
+
         override suspend fun setFavorite(
             channelId: String,
             favorite: Boolean,

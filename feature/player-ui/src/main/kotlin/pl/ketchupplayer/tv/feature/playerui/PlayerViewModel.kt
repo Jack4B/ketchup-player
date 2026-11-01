@@ -90,6 +90,7 @@ class PlayerViewModel
                     return@launch
                 }
                 channelName = channel.name
+                catalog.markWatched(channelId)
                 _ui.value = PlayerUiState.Resolving(channel.name)
                 val chain = catalog.equivalents(channelId).ifEmpty { listOf(channel) }
                 failover.settings = failoverSettings.settings.first()

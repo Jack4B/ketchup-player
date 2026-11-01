@@ -59,6 +59,11 @@ interface CatalogRepository {
     /** Id kanałów oznaczonych jako ulubione (przeżywają odświeżenie listy dostawcy). */
     fun favoriteIds(): Flow<Set<String>>
 
+    /** Ostatnio oglądane kanały na żywo (najnowszy pierwszy); kanały usunięte z katalogu są pomijane. */
+    fun recentChannels(limit: Int): Flow<List<Channel>>
+
+    suspend fun markWatched(channelId: String)
+
     suspend fun setFavorite(
         channelId: String,
         favorite: Boolean,
