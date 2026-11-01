@@ -25,6 +25,7 @@ enum class SettingsPage(
     PROVIDERS("settings/providers"),
     EPG_SOURCES("settings/epg"),
     GROUPS("settings/groups"),
+    NETWORK("settings/network"),
     PLAYBACK("settings/playback"),
     APPEARANCE("settings/look"),
 }

@@ -39,6 +39,7 @@ import pl.ketchupplayer.tv.feature.providers.ProvidersRoute
 import pl.ketchupplayer.tv.feature.settings.AppearanceRoute
 import pl.ketchupplayer.tv.feature.settings.EpgSourcesRoute
 import pl.ketchupplayer.tv.feature.settings.GroupsSettingsRoute
+import pl.ketchupplayer.tv.feature.settings.NetworkSettingsRoute
 import pl.ketchupplayer.tv.feature.settings.PlaybackSettingsRoute
 
 /** Kategorie ustawień (makieta v3 09). Te bez własnych opcji pokazują krótką informację. */
@@ -52,7 +53,7 @@ enum class SettingsCategory(
     TV(R.string.settings_cat_tv, SettingsPage.EPG_SOURCES),
     VOD(R.string.settings_cat_vod),
     RECORDING(R.string.settings_cat_recording),
-    NETWORK(R.string.settings_cat_network),
+    NETWORK(R.string.settings_cat_network, SettingsPage.NETWORK),
     PROFILES(R.string.settings_cat_profiles),
     APPEARANCE(R.string.settings_cat_appearance, SettingsPage.APPEARANCE),
     REMOTE(R.string.settings_cat_remote),
@@ -136,6 +137,7 @@ private fun CategoryContent(
     when (category) {
         SettingsCategory.PROVIDERS -> ProvidersRoute(onBack = onBack)
         SettingsCategory.GROUPS -> GroupsSettingsRoute(onBack = onBack)
+        SettingsCategory.NETWORK -> NetworkSettingsRoute(onBack = onBack)
         SettingsCategory.PLAYBACK -> PlaybackSettingsRoute(onBack = onBack)
         SettingsCategory.TV -> EpgSourcesRoute(onBack = onBack)
         SettingsCategory.APPEARANCE -> AppearanceRoute(onBack = onBack)

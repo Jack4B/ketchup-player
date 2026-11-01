@@ -23,6 +23,23 @@ class OkHttpTextFetcher(
     private val maxBytes: Long = DEFAULT_MAX_BYTES,
     private val meter: TransferMeter? = null,
 ) : TextFetcher {
+    override fun withUserAgent(userAgent: String): TextFetcher =
+        OkHttpTextFetcher(
+            client
+                .newBuilder()
+                .addInterceptor { chain ->
+                    chain.proceed(
+                        chain
+                            .request()
+                            .newBuilder()
+                            .header("User-Agent", userAgent)
+                            .build(),
+                    )
+                }.build(),
+            maxBytes,
+            meter,
+        )
+
     override suspend fun fetch(url: String): Result<String> =
         try {
             val request = Request.Builder().url(url).build()

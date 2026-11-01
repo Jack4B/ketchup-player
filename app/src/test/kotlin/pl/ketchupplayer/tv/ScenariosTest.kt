@@ -787,6 +787,22 @@ class ScenariosTest {
         assertEquals(listOf("$host/tvn24.m3u8"), FakePlayers.played.toList())
     }
 
+    /** Scenariusz: panel odrzuca nieznane nagłówki (404), ale przepuszcza TiviMate; lista dodaje się sama. */
+    @Test
+    fun listaZ404NaDomyslnymNaglowkuDodajeSiePoAutomatycznejZmianie() {
+        val host = "http://127.0.0.1:${server.port}"
+        server.serveRequest("/blocked.m3u") { req ->
+            if (req.getHeader("User-Agent").orEmpty().startsWith("TiviMate")) {
+                "#EXTM3U\n#EXTINF:-1 group-title=\"PL | Info\",TVN 24\n$host/tvn24.m3u8\n"
+            } else {
+                ProviderServer.NOT_FOUND
+            }
+        }
+        runBlocking { catalog.addM3u("Zablokowana", server.url("/blocked.m3u")) }
+        nav("Na żywo")
+        waitForText("TVN 24", timeoutMs = BIG_WAIT_MS)
+    }
+
     /** Scenariusz: lista z kanałami z kilku krajów; wyłączona w Ustawieniach grupa UK znika z Na żywo. */
     @Test
     fun wylaczonaGrupaZnikaZNaZywo() {

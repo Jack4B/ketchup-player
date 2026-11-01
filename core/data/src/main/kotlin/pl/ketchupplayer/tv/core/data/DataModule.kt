@@ -33,6 +33,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
+@Suppress("TooManyFunctions") // Moduł Hilt: lista powiązań rośnie z każdym repozytorium
 abstract class DataModule {
     @Binds
     abstract fun bindEpgSources(impl: DataStoreEpgSourcesRepository): EpgSourcesRepository
@@ -65,6 +66,11 @@ abstract class DataModule {
     abstract fun bindOnboarding(
         impl: pl.ketchupplayer.tv.core.data.onboarding.DataStoreOnboardingRepository,
     ): pl.ketchupplayer.tv.core.data.onboarding.OnboardingRepository
+
+    @Binds
+    abstract fun bindProviderHeaders(
+        impl: pl.ketchupplayer.tv.core.data.network.DataStoreProviderHeadersRepository,
+    ): pl.ketchupplayer.tv.core.data.network.ProviderHeadersRepository
 
     @Binds
     abstract fun bindGroups(

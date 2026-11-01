@@ -123,6 +123,7 @@ private fun SectionContent(
         SettingsPage.PROVIDERS.route -> SettingsScreen(SettingsPage.PROVIDERS)
         SettingsPage.EPG_SOURCES.route -> SettingsScreen(SettingsPage.EPG_SOURCES)
         SettingsPage.GROUPS.route -> SettingsScreen(SettingsPage.GROUPS)
+        SettingsPage.NETWORK.route -> SettingsScreen(SettingsPage.NETWORK)
         SettingsPage.PLAYBACK.route -> SettingsScreen(SettingsPage.PLAYBACK)
         SettingsPage.APPEARANCE.route -> SettingsScreen(SettingsPage.APPEARANCE)
         Section.MOVIES.route ->

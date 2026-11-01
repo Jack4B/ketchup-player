@@ -26,6 +26,8 @@ class ProviderServer {
                         // Wyjątek w handlerze = awaria serwera dostawcy: 503, jak prawdziwy serwer za proxy.
                         val body =
                             runCatching { handler(request) }.getOrElse { return MockResponse().setResponseCode(503) }
+                        // Treść „HTTP404” = serwer odrzuca żądanie (np. nieznany User-Agent), jak panele IPTV.
+                        if (body == NOT_FOUND) return MockResponse().setResponseCode(404)
                         return MockResponse().setBody(body)
                     }
                 }
@@ -55,6 +57,10 @@ class ProviderServer {
     val port: Int get() = server.port
 
     fun shutdown() = server.shutdown()
+
+    companion object {
+        const val NOT_FOUND = "HTTP404"
+    }
 }
 
 /** Kształt prawdziwych list dostawców IPTV, generowany deterministycznie (bez danych żadnego konta). */

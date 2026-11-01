@@ -40,4 +40,7 @@ fun interface TextFetcher {
         url: String,
         block: (java.io.InputStream) -> T,
     ): Result<T> = fetch(url).map { block(it.byteInputStream()) }
+
+    /** Kopia pobierająca z podanym User-Agent (np. wybór użytkownika). Domyślnie bez zmian. */
+    fun withUserAgent(userAgent: String): TextFetcher = this
 }

@@ -60,4 +60,8 @@
     <string name="groups_hide_all">Ukryj wszystkie</string>
     <string name="groups_empty">Brak grup. Dodaj listę w „Listy i dostawcy”.</string>
     <string name="groups_count">%1$d pozycji</string>
+    <string name="network_title">Nagłówek połączenia</string>
+    <string name="network_hint">Gdy lista nie chce się pobrać (404, odmowa), „Automatyczny” sam wypróbuje inne nagłówki. Tu możesz wybrać stały.</string>
+    <string name="network_empty">Brak list. Dodaj listę w „Listy i dostawcy”.</string>
+    <string name="network_auto_hint">Automatycznie: próbuje kolejnych przy błędzie</string>
 </resources>

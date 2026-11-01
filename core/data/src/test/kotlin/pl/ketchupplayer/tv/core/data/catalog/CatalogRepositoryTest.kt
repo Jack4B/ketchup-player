@@ -3,7 +3,9 @@ package pl.ketchupplayer.tv.core.data.catalog
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -15,9 +17,12 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import pl.ketchupplayer.tv.core.common.Clock
+import pl.ketchupplayer.tv.core.data.network.ProviderHeadersRepository
 import pl.ketchupplayer.tv.core.database.KetchupDatabase
 import pl.ketchupplayer.tv.core.network.NetworkException
 import pl.ketchupplayer.tv.core.network.TextFetcher
+import pl.ketchupplayer.tv.core.network.UserAgentProfile
+import pl.ketchupplayer.tv.core.network.UserAgentProfiles
 import pl.ketchupplayer.tv.core.security.InMemorySecretStore
 
 @RunWith(RobolectricTestRunner::class)
@@ -64,6 +69,38 @@ class CatalogRepositoryTest {
         )
 
     private fun repo() = repoWith(fetcher)
+
+    /** Serwer odrzuca nieznane nagłówki (404), przepuszcza TiviMate: import znajduje działający i go pamięta. */
+    @Test
+    fun `404 na domyslnym naglowku - automatyczna proba innych i zapamietanie dzialajacego`() =
+        runTest {
+            val seen = mutableListOf<String?>()
+            val picky =
+                object : TextFetcher {
+                    override suspend fun fetch(url: String) = Result.failure<String>(NetworkException.Http(404))
+
+                    override fun withUserAgent(userAgent: String): TextFetcher {
+                        seen += userAgent
+                        return if (userAgent.startsWith("TiviMate")) TextFetcher { Result.success(list) } else this
+                    }
+                }
+            val headers = MemoryHeaders()
+            val repo =
+                RoomCatalogRepository(
+                    db.providers(),
+                    db.channels(),
+                    db.channelFlags(),
+                    db.vod(),
+                    ProviderSecrets(secrets),
+                    ProviderFactory(ProviderSecrets(secrets), picky, headers),
+                    Clock { now },
+                )
+            val result = repo.addM3u("Z blokadą", "http://a.example.invalid/x")
+            val id = (result as AddProviderResult.Added).id
+            assertEquals(2, result.channelCount)
+            assertEquals(UserAgentProfiles.TIVIMATE, headers.current(id.value))
+            assertEquals(true, seen.first().orEmpty().isNotEmpty())
+        }
 
     @Test
     fun `ulubione przezywaja odswiezenie listy`() =
@@ -292,4 +329,19 @@ class CatalogRepositoryTest {
             assertTrue("M3U-SEKRET-777" !in text)
             assertTrue("x.example.invalid" in text)
         }
+}
+
+private class MemoryHeaders : ProviderHeadersRepository {
+    private val map = mutableMapOf<String, UserAgentProfile>()
+
+    override fun profile(providerId: String): Flow<UserAgentProfile> = flowOf(map[providerId] ?: UserAgentProfiles.AUTO)
+
+    override suspend fun current(providerId: String) = map[providerId] ?: UserAgentProfiles.AUTO
+
+    override suspend fun set(
+        providerId: String,
+        profile: UserAgentProfile,
+    ) {
+        map[providerId] = profile
+    }
 }
