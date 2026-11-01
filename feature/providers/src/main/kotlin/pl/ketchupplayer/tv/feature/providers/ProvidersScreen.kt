@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -42,6 +45,9 @@ fun ProvidersScreen(
 ) {
     BackHandler { if (state.form != null) onEvent(ProvidersEvent.Cancel) else onBack() }
     val c = KetchupTheme.colors
+    // Po zamknięciu formularza (zapis lub anulowanie) fokus wraca na „Dodaj dostawcę”, także w panelu Ustawień.
+    var hadForm by remember { mutableStateOf(false) }
+    if (state.form != null && !hadForm) hadForm = true
     ScreenScaffold {
         ScreenTitle(stringResource(R.string.providers_title))
         if (state.busy) Text(stringResource(R.string.providers_loading), fontSize = 18.sp, color = c.textSecondary)
@@ -51,7 +57,7 @@ fun ProvidersScreen(
         if (state.form != null) {
             AddForm(state.form, state.busy, onEvent)
         } else {
-            ProviderList(state, onEvent)
+            ProviderList(state, onEvent, focusAdd = hadForm)
         }
     }
 }
@@ -61,6 +67,7 @@ fun ProvidersScreen(
 private fun ProviderList(
     state: ProvidersUiState,
     onEvent: (ProvidersEvent) -> Unit,
+    focusAdd: Boolean,
 ) {
     val c = KetchupTheme.colors
     if (state.providers.isEmpty()) {
@@ -90,7 +97,8 @@ private fun ProviderList(
     KetchupButton(
         stringResource(R.string.providers_add),
         { onEvent(ProvidersEvent.StartAdd) },
-        modifier = if (state.providers.isEmpty()) Modifier.requestFocusWhenPlaced() else Modifier,
+        modifier =
+            if (state.providers.isEmpty() || focusAdd) Modifier.requestFocusWhenPlaced(force = focusAdd) else Modifier,
     )
 }
 
