@@ -122,3 +122,15 @@ wybór ścieżek audio i napisów, zwiastuny, podpisane wydanie (APK jest podpis
 
 ## Jak zgłaszać błędy
 Opis w jednym zdaniu, numer scenariusza z tej listy, zrzut ekranu. Przy crashu: kiedy dokładnie (po jakim kliknięciu).
+
+## Dodatek 1.0-rc (ręcznie na boxie)
+- 🖐 Kreator/Dodaj listę: wiersz „User-Agent” otwiera listę z ptaszkiem; wybór zapisuje się; lista wczytuje się lub pokazuje
+  błąd z odpowiedzią serwera (np. „HTTP 513 · serwer: …”).
+- 🖐 Ustawienia → Sieć i VPN → „Testuj połączenie”: wynik dla każdego nagłówka.
+- 🖐 Ustawienia otwierają się jako panel z prawej, BACK zamyka, fokus wraca na szynę.
+- 🖐 Na żywo: logo kanałów, żywy podgląd (wyciszony) po 1 s, pełny ekran zwalnia podgląd; przełącznik w Odtwarzaniu.
+- 🖐 Filmy/Seriale: PRAWO z kategorii wchodzi na miniatury i chowa kategorie (6 kolumn), LEWO/BACK je przywraca.
+- 🖐 OSD filmu: GÓRA/INFO pokazuje „O FILMIE” (opis, obsada); trzymanie ◀ ▶ przyspiesza przewijanie.
+- 🖐 HOME w trakcie odtwarzania: dźwięk milknie; powrót wznawia.
+- 🖐 Pilot: pojedyncze krótkie naciśnięcie strzałki = jedno pole (skrypt: krok „Test pilota”, pliki keyguard.txt/getevent.txt).
+- 🖐 EPG: po dodaniu listy dociąga się samo; „Odśwież EPG teraz” pokazuje wynik.
