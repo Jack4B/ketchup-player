@@ -21,7 +21,7 @@ fun friendlyImportError(raw: String?): String {
             ?.get(1)
             ?.toInt()
     return when {
-        code != null -> httpMessage(code)
+        code != null -> httpMessage(code) + serverDetail(text)
         text.isBlank() -> "Nieznany błąd pobierania listy."
         "większa niż" in text -> {
             val mb =
@@ -38,6 +38,16 @@ fun friendlyImportError(raw: String?): String {
         else -> networkMessage(text) ?: text
     }
 }
+
+/** Fragment po „ · ” w komunikacie HTTP: co odpowiedział serwer (typ serwera, treść) bez danych logowania. */
+private fun serverDetail(text: String): String {
+    val i = text.indexOf(" · ")
+    if (i < 0) return ""
+    val detail = text.substring(i + 3).trim().take(DETAIL_MAX)
+    return if (detail.isEmpty()) "" else "\nOdpowiedź serwera: $detail"
+}
+
+private const val DETAIL_MAX = 200
 
 private fun httpMessage(code: Int): String =
     when {

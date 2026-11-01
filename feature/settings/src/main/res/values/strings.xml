@@ -84,4 +84,6 @@
     <string name="epg_refresh_hint">Pobiera przewodnik ze wszystkich włączonych źródeł poniżej</string>
     <string name="epg_auto_refresh">Odświeżaj przy starcie</string>
     <string name="epg_auto_refresh_hint">EPG co kilka godzin oraz listy starsze niż doba, po uruchomieniu aplikacji</string>
+    <string name="network_probe">Testuj połączenie: %1$s</string>
+    <string name="network_probe_hint">Sprawdza listę każdym nagłówkiem po kolei i pokazuje odpowiedź serwera (np. HTTP 513)</string>
 </resources>

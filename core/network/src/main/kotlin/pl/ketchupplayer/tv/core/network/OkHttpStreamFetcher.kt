@@ -20,7 +20,7 @@ class OkHttpStreamFetcher(
         withContext(Dispatchers.IO) {
             try {
                 client.newCall(Request.Builder().url(url).build()).execute().use { response ->
-                    if (!response.isSuccessful) return@withContext Result.failure(NetworkException.Http(response.code))
+                    if (!response.isSuccessful) return@withContext Result.failure(response.toHttpFailure())
                     val body =
                         response.body
                             ?: return@withContext Result.failure(NetworkException.Io(IOException("Pusta odpowiedź")))

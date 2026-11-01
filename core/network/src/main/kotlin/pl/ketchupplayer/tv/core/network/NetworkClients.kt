@@ -40,13 +40,12 @@ object NetworkClients {
         Interceptor { chain ->
             val req = chain.request()
             chain.proceed(
-                if (req.header("User-Agent") ==
-                    null
-                ) {
-                    req.newBuilder().header("User-Agent", userAgent).build()
-                } else {
-                    req
-                },
+                req
+                    .newBuilder()
+                    .apply {
+                        if (req.header("User-Agent") == null) header("User-Agent", userAgent)
+                        if (req.header("Accept") == null) header("Accept", "*/*")
+                    }.build(),
             )
         }
 

@@ -2,6 +2,7 @@ package pl.ketchupplayer.tv.core.data.catalog
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.withLock
 import pl.ketchupplayer.tv.core.common.Clock
 import pl.ketchupplayer.tv.core.database.ChannelDao
 import pl.ketchupplayer.tv.core.database.ChannelFlagDao
@@ -100,6 +101,18 @@ class RoomCatalogRepository
             return added(id)
         }
 
+        override suspend fun probeConnection(
+            id: ProviderId,
+            userAgentId: String,
+        ): String {
+            val entity = providerDao.get(id.value) ?: return "nie ma takiego dostawcy"
+            return factory.probe(
+                entity,
+                pl.ketchupplayer.tv.core.network.UserAgentProfiles
+                    .byId(userAgentId),
+            )
+        }
+
         override suspend fun epgUrl(id: ProviderId): String? = secrets.epg(id)
 
         /** Wybrany w kreatorze User-Agent obowiązuje już od pierwszego pobrania listy. */
@@ -126,15 +139,22 @@ class RoomCatalogRepository
         private val status = kotlinx.coroutines.flow.MutableStateFlow<ImportStatus?>(null)
         override val importStatus: kotlinx.coroutines.flow.StateFlow<ImportStatus?> = status
 
-        override suspend fun refresh(id: ProviderId): Result<Int> {
-            meter.reset()
-            status.value = ImportStatus(ImportPhase.DOWNLOADING)
-            try {
-                return doRefresh(id)
-            } finally {
-                status.value = null
+        /**
+         * Importy list idą po jednym: dostawcy IPTV zwykle dopuszczają 1 połączenie na konto, a równoległe pobrania
+         * (start aplikacji + dodawanie listy + odświeżanie) kończyły się odmową albo blokadą.
+         */
+        private val importLock = kotlinx.coroutines.sync.Mutex()
+
+        override suspend fun refresh(id: ProviderId): Result<Int> =
+            importLock.withLock {
+                meter.reset()
+                status.value = ImportStatus(ImportPhase.DOWNLOADING)
+                try {
+                    doRefresh(id)
+                } finally {
+                    status.value = null
+                }
             }
-        }
 
         private suspend fun doRefresh(id: ProviderId): Result<Int> {
             val entity =

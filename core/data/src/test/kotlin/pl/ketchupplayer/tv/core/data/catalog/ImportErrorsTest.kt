@@ -38,4 +38,10 @@ class ImportErrorsTest {
         assertTrue(msg(null).contains("Nieznany"))
         assertTrue(msg("coś innego") == "coś innego")
     }
+
+    @Test
+    fun `komunikat HTTP zawiera odpowiedz serwera`() {
+        val msg = friendlyImportError("HTTP 513 · serwer: nginx, «Too many connections»")
+        assertTrue("HTTP 513" in msg && "Too many connections" in msg && "nginx" in msg)
+    }
 }

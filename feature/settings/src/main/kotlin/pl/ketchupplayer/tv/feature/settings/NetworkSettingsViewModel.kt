@@ -30,9 +30,38 @@ data class ProviderHeaderRow(
 class NetworkSettingsViewModel
     @Inject
     constructor(
-        catalog: CatalogRepository,
+        private val catalog: CatalogRepository,
         private val headers: ProviderHeadersRepository,
     ) : ViewModel() {
+        private val _probe = kotlinx.coroutines.flow.MutableStateFlow<List<String>>(emptyList())
+
+        /** Wyniki testu połączenia: po jednej linii na nagłówek („VLC: HTTP 513 · serwer: nginx …”). */
+        val probe: StateFlow<List<String>> = _probe
+
+        private var probeJob: kotlinx.coroutines.Job? = null
+
+        /** Sprawdza listę po kolei każdym nagłówkiem (1 zapytanie na sekundę, żeby nie wyglądać na atak). */
+        fun probeAll(row: ProviderHeaderRow) {
+            probeJob?.cancel()
+            _probe.value = listOf("Testuję „${row.name}”…")
+            probeJob =
+                viewModelScope.launch {
+                    val pool = UserAgentProfiles.ALL.filter { it != UserAgentProfiles.AUTO } + customs.value
+                    val lines = mutableListOf<String>()
+                    for (p in pool) {
+                        lines +=
+                            "${p.label}: " +
+                            catalog.probeConnection(
+                                pl.ketchupplayer.tv.core.model
+                                    .ProviderId(row.providerId),
+                                p.id,
+                            )
+                        _probe.value = lines.toList()
+                        kotlinx.coroutines.delay(PROBE_GAP_MS)
+                    }
+                }
+        }
+
         val customs: StateFlow<List<UserAgentProfile>> =
             headers.customs.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_MS), emptyList())
 
@@ -74,5 +103,6 @@ class NetworkSettingsViewModel
 
         private companion object {
             const val STOP_MS = 5_000L
+            const val PROBE_GAP_MS = 1_000L
         }
     }

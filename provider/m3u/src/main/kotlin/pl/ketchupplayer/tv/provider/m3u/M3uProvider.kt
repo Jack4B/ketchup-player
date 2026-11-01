@@ -71,9 +71,9 @@ class M3uProvider(
         when (this) {
             is NetworkException.Http ->
                 if (code == HTTP_UNAUTHORIZED || code == HTTP_FORBIDDEN) {
-                    ProviderError.Unauthorized("Dostawca odmówił dostępu (HTTP $code)")
+                    ProviderError.Unauthorized(message ?: "Dostawca odmówił dostępu (HTTP $code)")
                 } else {
-                    ProviderError.Network("HTTP $code")
+                    ProviderError.Network(message ?: "HTTP $code")
                 }
             is NetworkException -> ProviderError.Network(message ?: "Błąd sieci")
             else -> this

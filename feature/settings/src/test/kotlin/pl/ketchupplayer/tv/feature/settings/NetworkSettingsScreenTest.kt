@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
@@ -71,5 +72,31 @@ class NetworkSettingsScreenTest {
         compose.waitForIdle()
         compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         assertEquals(1, backs)
+    }
+
+    /** Test połączenia: wiersz „Testuj połączenie” wywołuje sprawdzenie listy, a wyniki są widoczne na ekranie. */
+    @Test
+    fun testPolaczeniaWywolujeSprawdzenieIPokazujeOdpowiedzSerwera() {
+        val probed = mutableListOf<String>()
+        compose.setContent {
+            KetchupTheme(device = DeviceClass.TV) {
+                NetworkSettingsScreen(
+                    rows,
+                    customs,
+                    {},
+                    { true },
+                    {},
+                    {},
+                    probe = listOf("VLC: HTTP 513 · serwer: nginx, «Too many connections»"),
+                    onProbe = { probed += it.providerId },
+                )
+            }
+        }
+        compose.waitForIdle()
+        compose.onRoot().performKeyInput { pressKey(Key.DirectionDown) }
+        compose.onRoot().performKeyInput { pressKey(Key.DirectionDown) }
+        compose.onRoot().performKeyInput { pressKey(Key.DirectionCenter) }
+        assertEquals(listOf("a"), probed)
+        compose.onNodeWithText("Too many connections", substring = true).assertExists()
     }
 }

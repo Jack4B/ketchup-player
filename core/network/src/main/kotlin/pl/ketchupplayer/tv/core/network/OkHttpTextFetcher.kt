@@ -44,7 +44,7 @@ class OkHttpTextFetcher(
         try {
             val request = Request.Builder().url(url).build()
             client.newCall(request).await().use { response ->
-                if (!response.isSuccessful) return Result.failure(NetworkException.Http(response.code))
+                if (!response.isSuccessful) return Result.failure(response.toHttpFailure())
                 Result.success(readLimited(response))
             }
         } catch (e: CancellationException) {
@@ -64,7 +64,7 @@ class OkHttpTextFetcher(
         withContext(Dispatchers.IO) {
             try {
                 client.newCall(Request.Builder().url(url).build()).execute().use { response ->
-                    if (!response.isSuccessful) return@withContext Result.failure(NetworkException.Http(response.code))
+                    if (!response.isSuccessful) return@withContext Result.failure(response.toHttpFailure())
                     val body = response.body ?: return@withContext Result.success(block("".byteInputStream()))
                     val raw = BufferedInputStream(LimitedInputStream(body.byteStream(), maxBytes, meter), BUFFER)
                     val counted = LimitedInputStream(maybeGunzip(raw), maxBytes)
@@ -88,7 +88,7 @@ class OkHttpTextFetcher(
         withContext(Dispatchers.IO) {
             try {
                 client.newCall(Request.Builder().url(url).build()).execute().use { response ->
-                    if (!response.isSuccessful) return@withContext Result.failure(NetworkException.Http(response.code))
+                    if (!response.isSuccessful) return@withContext Result.failure(response.toHttpFailure())
                     val body = response.body ?: return@withContext Result.success(block(emptySequence()))
                     val raw = BufferedInputStream(LimitedInputStream(body.byteStream(), maxBytes, meter), BUFFER)
                     // Drugi limit liczy bajty po rozpakowaniu, żeby „bomba gzip” też została ucięta.

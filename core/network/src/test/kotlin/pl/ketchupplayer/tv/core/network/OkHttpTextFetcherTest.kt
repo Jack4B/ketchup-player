@@ -36,6 +36,26 @@ class OkHttpTextFetcherTest {
             assertEquals(true, NetworkClients.DEFAULT_USER_AGENT.startsWith("OTT Navigator/"))
         }
 
+    /** Błąd 513 (jak u dostawców blokujących łącze): wyjątek niesie serwer i oczyszczoną treść, bez haseł. */
+    @Test
+    fun `blad HTTP niesie krotki opis serwera bez danych logowania`() =
+        runTest {
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(513)
+                    .setHeader("Server", "nginx")
+                    .setBody("<html><b>Blocked</b> ?username=jan&password=tajne123 too many connections</html>"),
+            )
+            val failure =
+                OkHttpTextFetcher(
+                    NetworkClients.stream(),
+                ).fetch(url()).exceptionOrNull() as NetworkException.Http
+            assertEquals(513, failure.code)
+            val msg = failure.message.orEmpty()
+            assertEquals(true, "nginx" in msg && "Blocked" in msg && "too many connections" in msg)
+            assertEquals(false, "tajne123" in msg || "jan&" in msg)
+        }
+
     @Test
     fun `pobiera tekst i wysyla User-Agent`() =
         runTest {

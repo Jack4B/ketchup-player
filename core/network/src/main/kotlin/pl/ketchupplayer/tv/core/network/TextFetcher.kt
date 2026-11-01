@@ -5,9 +5,11 @@ sealed class NetworkException(
     message: String,
     cause: Throwable? = null,
 ) : Exception(message, cause) {
+    /** Odpowiedź z błędem; [detail] to skrócona, oczyszczona treść/nagłówki serwera (pomaga rozpoznać blokadę). */
     class Http(
         val code: Int,
-    ) : NetworkException("HTTP $code")
+        val detail: String? = null,
+    ) : NetworkException("HTTP $code" + (detail?.let { " · $it" } ?: ""))
 
     class Io(
         cause: Throwable,

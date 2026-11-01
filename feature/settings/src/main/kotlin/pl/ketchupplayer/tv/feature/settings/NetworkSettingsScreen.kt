@@ -35,6 +35,7 @@ fun NetworkSettingsRoute(
 ) {
     val rows by viewModel.rows.collectAsStateWithLifecycle()
     val customs by viewModel.customs.collectAsStateWithLifecycle()
+    val probe by viewModel.probe.collectAsStateWithLifecycle()
     NetworkSettingsScreen(
         rows,
         customs,
@@ -42,6 +43,8 @@ fun NetworkSettingsRoute(
         onAdd = viewModel::addCustom,
         onRemove = viewModel::removeCustom,
         onBack = onBack,
+        probe = probe,
+        onProbe = viewModel::probeAll,
     )
 }
 
@@ -58,6 +61,8 @@ fun NetworkSettingsScreen(
     onAdd: (String) -> Boolean,
     onRemove: (UserAgentProfile) -> Unit,
     onBack: () -> Unit,
+    probe: List<String> = emptyList(),
+    onProbe: (ProviderHeaderRow) -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
     val c = KetchupTheme.colors
@@ -79,6 +84,20 @@ fun NetworkSettingsScreen(
                     modifier = if (i == 0) Modifier.requestFocusWhenPlaced() else Modifier,
                     trailing = { Text(row.profile.label, color = c.textPrimary, maxLines = 1) },
                 )
+            }
+            items(rows, key = { "probe-" + it.providerId }) { row ->
+                SettingsListItem(
+                    title = stringResource(R.string.network_probe, row.name),
+                    subtitle = stringResource(R.string.network_probe_hint),
+                    onClick = { onProbe(row) },
+                )
+            }
+            if (probe.isNotEmpty()) {
+                item(key = "probe-results") {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.padding(top = 8.dp)) {
+                        probe.forEach { Text(it, color = c.textPrimary) }
+                    }
+                }
             }
             item(key = "customs-title") {
                 Text(

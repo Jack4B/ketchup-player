@@ -66,6 +66,12 @@ interface CatalogRepository {
     /** Adres XMLTV dostawcy (może zawierać dane logowania; trzymany w `SecretStore`). */
     suspend fun epgUrl(id: ProviderId): String?
 
+    /** Test połączenia: jedno lekkie zapytanie z podanym nagłówkiem; wynik to krótki tekst (bez danych logowania). */
+    suspend fun probeConnection(
+        id: ProviderId,
+        userAgentId: String,
+    ): String
+
     /** Pobiera listę ponownie; przy błędzie zostawia dotychczasowe kanały i zapisuje komunikat błędu. */
     suspend fun refresh(id: ProviderId): Result<Int>
 
