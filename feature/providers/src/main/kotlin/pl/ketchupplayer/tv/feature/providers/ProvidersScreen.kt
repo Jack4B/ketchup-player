@@ -116,6 +116,7 @@ private fun AddForm(
     onEvent: (ProvidersEvent) -> Unit,
 ) {
     val xtream = form.kind == ProviderKind.XTREAM
+    val submit: () -> Unit = { if (!busy) onEvent(ProvidersEvent.Submit) }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         KetchupButton(
             stringResource(R.string.providers_kind_m3u),
@@ -139,6 +140,7 @@ private fun AddForm(
         stringResource(if (xtream) R.string.providers_field_server else R.string.providers_field_url),
         form.url,
         { onEvent(ProvidersEvent.UrlChanged(it)) },
+        onDone = if (xtream) null else submit,
     )
     if (form.urlError) Text(stringResource(R.string.providers_error_url), color = ERROR_COLOR, fontSize = 16.sp)
     if (xtream) {
@@ -150,6 +152,7 @@ private fun AddForm(
             form.password,
             { onEvent(ProvidersEvent.PasswordChanged(it)) },
             password = true,
+            onDone = submit,
         )
         if (form.credentialsError) {
             Text(

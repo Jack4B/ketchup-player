@@ -113,7 +113,12 @@ private fun AddSourceForm(
         { onEvent(EpgSourcesEvent.NameChanged(it)) },
         Modifier.focusRequester(nameFocus),
     )
-    TextInputField(stringResource(R.string.epg_field_url), form.url, { onEvent(EpgSourcesEvent.UrlChanged(it)) })
+    TextInputField(
+        stringResource(R.string.epg_field_url),
+        form.url,
+        { onEvent(EpgSourcesEvent.UrlChanged(it)) },
+        onDone = { onEvent(EpgSourcesEvent.Submit) },
+    )
     form.error?.let { Text(stringResource(errorRes(it)), color = Color(0xFFFF6B6B)) }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         KetchupButton(stringResource(R.string.epg_save), { onEvent(EpgSourcesEvent.Submit) }, primary = true)

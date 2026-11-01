@@ -1,6 +1,9 @@
 package pl.ketchupplayer.tv
 
 import android.os.Looper
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -9,9 +12,12 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.printToString
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -44,6 +50,7 @@ import javax.inject.Inject
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], application = HiltTestApplication::class, qualifiers = "w960dp-h540dp-xhdpi")
+@OptIn(ExperimentalTestApi::class)
 class ScenariosTest {
     private companion object {
         const val WAIT_MS = 15_000L
@@ -363,5 +370,29 @@ class ScenariosTest {
                     .toSet()
             },
         )
+    }
+
+    /**
+     * Scenariusz z pilota: w formularzu Enter klawiatury ekranowej przechodzi do następnego pola,
+     * a w ostatnim zapisuje.
+     * (Regresja: DÓŁ w polu tekstowym trafia w klawiaturę, więc użytkownik nie mógł dojść do pola adresu i zapisu.)
+     */
+    @Test
+    fun enterWFormularzuPrzechodziDoNastepnegoPolaIZapisujeWOstatnim() {
+        val list = javaClass.getResource("/fixtures/iptv-org-pl.m3u")!!.readText()
+        server.serve("/pl.m3u") { list }
+        click("Dostawcy")
+        click("Dodaj dostawcę")
+        waitForText("Zapisz i pobierz")
+        // Pilot na TV działa w trybie klawiatury (nie dotyku): dowolny klawisz przełącza tryb wejścia.
+        compose.onRoot().performKeyInput { pressKey(Key.ShiftLeft) }
+        val fields = compose.onAllNodes(hasSetTextAction())
+        fields[0].performTextInput("Publiczna PL")
+        fields[0].performImeAction()
+        compose.waitForIdle()
+        fields[1].assertIsFocused()
+        fields[1].performTextInput(server.url("/pl.m3u"))
+        fields[1].performImeAction() // „Gotowe” w ostatnim polu: zapis
+        waitForText("Kanały: 184", substring = true)
     }
 }

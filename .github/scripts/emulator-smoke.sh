@@ -42,11 +42,10 @@ shot 06_dostawcy_pusto
 key KEYCODE_DPAD_CENTER      # Dodaj dostawcę
 shot 07_formularz
 adb shell input text "ListaA"
-key KEYCODE_DPAD_DOWN
+key KEYCODE_ENTER            # Enter w polu nazwy: przejście do adresu
 adb shell input text "http://10.0.2.2:8099/a.m3u"
 shot 08_formularz_wypelniony
-key KEYCODE_DPAD_DOWN
-key KEYCODE_DPAD_CENTER      # Zapisz i pobierz
+key KEYCODE_ENTER            # Enter w ostatnim polu: zapis i pobranie
 sleep 6
 shot 09_po_zapisie_A
 dump() { adb shell uiautomator dump /sdcard/ui.xml >/dev/null; adb pull /sdcard/ui.xml "$OUT/$1.xml" >/dev/null; }
@@ -59,10 +58,9 @@ fi
 key KEYCODE_DPAD_DOWN        # Dodaj dostawcę
 key KEYCODE_DPAD_CENTER
 adb shell input text "ListaB"
-key KEYCODE_DPAD_DOWN
+key KEYCODE_ENTER
 adb shell input text "http://10.0.2.2:8099/b.m3u"
-key KEYCODE_DPAD_DOWN
-key KEYCODE_DPAD_CENTER
+key KEYCODE_ENTER
 sleep 6
 shot 10_po_zapisie_B
 key KEYCODE_BACK
