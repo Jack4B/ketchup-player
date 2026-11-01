@@ -188,7 +188,7 @@ fun AppShell(
     // Jak w TiViMate: rozwinięta szuflada nie nachodzi na treść, tylko przesuwa ją w prawo (nadal widoczną).
     val railWidth by animateDpAsState(
         if (railFocused) RAIL_EXPANDED else RAIL_COLLAPSED,
-        tween(RAIL_ANIMATION_MS),
+        tween(Motion.RAIL_MS),
         label = "rail",
     )
     val toRail: () -> Unit = {
@@ -347,7 +347,6 @@ private const val EDGE_TOP = 0.28f
 private const val EDGE_BOTTOM = 0.05f
 private const val SELECTED_FILL_ALPHA = 0.2f
 private const val FOCUS_FILL_ALPHA = 0.14f
-private const val RAIL_ANIMATION_MS = 160
 private val RAIL_AVATAR = 40.dp
 private val RAIL_AVATAR_CORNER = 10.dp
 private val RAIL_AVATAR_BOX = 52.dp

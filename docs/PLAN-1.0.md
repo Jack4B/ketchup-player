@@ -18,9 +18,9 @@ Cel: wszystko, co użytkownik codziennie robi, działa na boxie bez błędów.
 - [ ] 1.1 Weryfikacja 0.7.2 na boxie: lista się wczytuje (wybór UA), EPG, pauza w tle, przewijanie, logo (użytkownik, raport zip)
 - [ ] 1.2 Przeskakiwanie fokusu pilota: analiza `keyguard.txt`/`getevent.txt` z testu pilota, poprawka u źródła, zdjęcie obejścia
 - [ ] 1.3 Pełny przegląd BACK/LEWO/PRAWO na każdym ekranie + test na ekran. Zrobione: Home, Na żywo, Ustawienia (scenariusz), Filmy/Seriale (test siatki), Odtwarzacz. Do zrobienia: Szczegóły, Szukaj, Moja lista z danymi, panel grup w Na żywo
-- [ ] 1.4 Ustawienia jako panel wsuwany z prawej (250 ms), nakładka na treść
+- [x] 1.4 Ustawienia jako panel wsuwany z prawej (250 ms), nakładka na treść (22:xx 1.11, commit w gałęzi faza-d)
 - [ ] 1.5 Na żywo: żywy podgląd wideo (jeden ExoPlayer, zwalniany przed pełnym ekranem), lista kanałów jako nakładka w odtwarzaczu, menu kontekstowe (długie OK)
-- [ ] 1.6 Jedna skala animacji (stałe czasu w designsystemie: fokus 120 ms, panele 180-250 ms) zastosowana wszędzie
+- [x] 1.6 Jedna skala animacji: `Motion` w designsystemie (fokus 120, szyna 160, panele 220, fade 150), użyta w szynie, FocusItem, Filmach, Na żywo
 - [ ] 1.7 Odtwarzacz: test na strumieniu wielościeżkowym (emulator HLS z ffmpeg) + poprawki audio/napisy
 - [ ] 1.8 Wydajność: pomiar płynności na boxie (zacięcia VOD, otwarcie odtwarzacza), poprawki największych; import w tle po pokazaniu kanałów (VOD dopisywane po)
 - [ ] 1.9 Polityki §10.2 (BkSmartBufferPolicy, StreamRecoveryPolicy, SeriesEpisodePolicy, BkTvFailoverDeadline) z golden masterami

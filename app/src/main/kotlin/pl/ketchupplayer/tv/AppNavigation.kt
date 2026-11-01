@@ -1,19 +1,43 @@
 package pl.ketchupplayer.tv
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pl.ketchupplayer.tv.core.designsystem.AppShell
 import pl.ketchupplayer.tv.core.designsystem.KetchupLogoApp
+import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
+import pl.ketchupplayer.tv.core.designsystem.glassPanel
 import pl.ketchupplayer.tv.feature.details.DetailsRoute
 import pl.ketchupplayer.tv.feature.guide.GuideRoute
 import pl.ketchupplayer.tv.feature.home.HomeRoute
@@ -76,23 +100,92 @@ private fun MainFlow(
     val newEpisodes by root.newEpisodes.collectAsStateWithLifecycle()
     val entries = railEntries(newEpisodes) { labels.getValue(it) }
     // Wybór sekcji z szyny zaczyna stos od nowa: Home -> sekcja (BACK z sekcji wraca na szynę, z szyny na Home).
-    val select: (String) -> Unit = { route ->
-        stack.clear()
-        stack.add(Routes.HOME)
-        if (route != Routes.HOME) stack.add(route)
+    val settingsOpen = Routes.isSettings(top)
+    // Ustawienia to panel z prawej nad bieżącą sekcją: wybór z szyny dokłada go na stos, sekcja pod spodem zostaje,
+    // a zamknięcie (BACK) zdejmuje go ze stosu.
+    var railFocusTick by remember { mutableIntStateOf(0) }
+    val closeSettings: () -> Unit = {
+        while (stack.size > 1 && Routes.isSettings(stack.last())) stack.removeAt(stack.lastIndex)
+        railFocusTick++ // po zamknięciu panelu fokus wraca na pozycję szyny sekcji pod spodem
     }
+    val select: (String) -> Unit = { route ->
+        if (route == Section.SETTINGS.route) {
+            if (!settingsOpen) stack.add(route)
+        } else {
+            stack.clear()
+            stack.add(Routes.HOME)
+            if (route != Routes.HOME) stack.add(route)
+        }
+    }
+    val base = if (settingsOpen) stack.lastOrNull { !Routes.isSettings(it) } ?: Routes.HOME else top
     AppShell(
         entries = entries,
         selectedId = Routes.railSection(top)?.route,
         onSelect = select,
-        onRailBack = { if (top == Routes.HOME) onExit() else select(Routes.HOME) },
+        onRailBack = {
+            when {
+                settingsOpen -> closeSettings()
+                top == Routes.HOME -> onExit()
+                else -> select(Routes.HOME)
+            }
+        },
         avatar = {
             KetchupLogoApp(Modifier.fillMaxSize())
         },
     ) {
-        SectionContent(top, push, openPlayer)
+        val toRailNow = pl.ketchupplayer.tv.core.designsystem.LocalFocusRail.current
+        LaunchedEffect(railFocusTick) {
+            if (railFocusTick > 0) {
+                withFrameNanos { }
+                toRailNow()
+            }
+        }
+        // Pod panelem Ustawień sekcja jest tylko tłem: bez fokusu i semantyki (D-pad nie wchodzi pod spód).
+        Box(
+            if (settingsOpen) {
+                Modifier.alpha(UNDER_PANEL_ALPHA).focusProperties { canFocus = false }.clearAndSetSemantics { }
+            } else {
+                Modifier
+            },
+        ) { SectionContent(base, push, openPlayer) }
+        AnimatedVisibility(
+            visible = settingsOpen,
+            enter = slideInHorizontally(tween(SETTINGS_PANEL_MS)) { it } + fadeIn(tween(SETTINGS_PANEL_MS)),
+            exit = slideOutHorizontally(tween(SETTINGS_PANEL_MS)) { it } + fadeOut(tween(SETTINGS_PANEL_MS)),
+            modifier = Modifier.align(Alignment.CenterEnd),
+        ) {
+            SettingsPanel(initialPage(top), closeSettings)
+        }
     }
 }
+
+private const val SETTINGS_PANEL_MS = 250
+
+private fun initialPage(route: String): SettingsPage? = SettingsPage.entries.firstOrNull { it.route == route }
+
+/** Panel Ustawień z prawej: ciemna szklana tafla na ok. 3/4 szerokości treści; BACK z listy kategorii zamyka. */
+@Composable
+private fun SettingsPanel(
+    page: SettingsPage?,
+    onClose: () -> Unit,
+) {
+    val c = KetchupTheme.colors
+    Box(
+        Modifier
+            .fillMaxHeight()
+            .fillMaxWidth(SETTINGS_PANEL_WIDTH)
+            .background(c.background.copy(alpha = SETTINGS_PANEL_ALPHA), RoundedCornerShape(c.cornerRadius))
+            .glassPanel(),
+    ) {
+        Box(Modifier.padding(horizontal = SETTINGS_PANEL_PADDING)) { SettingsScreen(page, onClose) }
+    }
+}
+
+private val SETTINGS_PANEL_PADDING = 20.dp
+
+private const val SETTINGS_PANEL_WIDTH = 0.74f
+private const val SETTINGS_PANEL_ALPHA = 0.97f
+private const val UNDER_PANEL_ALPHA = 0.4f
 
 @Composable
 private fun sectionLabel(section: Section): String =
@@ -119,13 +212,6 @@ private fun SectionContent(
     when (route) {
         // „Na żywo” to widok EPG z grupami, podglądem audycji, Radarem i zainteresowaniami (dawny osobny Przewodnik).
         Section.LIVE.route -> GuideRoute(openPlayer, { push(SettingsPage.PROVIDERS.route) }, toRail)
-        Section.SETTINGS.route -> SettingsScreen()
-        SettingsPage.PROVIDERS.route -> SettingsScreen(SettingsPage.PROVIDERS)
-        SettingsPage.EPG_SOURCES.route -> SettingsScreen(SettingsPage.EPG_SOURCES)
-        SettingsPage.GROUPS.route -> SettingsScreen(SettingsPage.GROUPS)
-        SettingsPage.NETWORK.route -> SettingsScreen(SettingsPage.NETWORK)
-        SettingsPage.PLAYBACK.route -> SettingsScreen(SettingsPage.PLAYBACK)
-        SettingsPage.APPEARANCE.route -> SettingsScreen(SettingsPage.APPEARANCE)
         Section.MOVIES.route ->
             VodBrowseRoute(VodMode.MOVIES, { push(Routes.details(it)) }, { push(SettingsPage.PROVIDERS.route) })
         Section.SERIES.route ->

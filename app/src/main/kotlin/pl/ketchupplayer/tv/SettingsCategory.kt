@@ -76,7 +76,10 @@ enum class SettingsCategory(
  */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun SettingsScreen(initial: SettingsPage? = null) {
+fun SettingsScreen(
+    initial: SettingsPage? = null,
+    onClose: (() -> Unit)? = null,
+) {
     val categories = SettingsCategory.visible
     var selected by rememberSaveable { mutableIntStateOf(initialCategoryIndex(initial)) }
     val requesters = remember { categories.map { FocusRequester() } }
@@ -124,7 +127,7 @@ fun SettingsScreen(initial: SettingsPage? = null) {
             Column(Modifier.weight(1f).fillMaxHeight()) {
                 val toCategories: () -> Unit = { runCatching { requesters[selected].requestFocus() } }
                 // BACK: z opcji do listy kategorii, z listy kategorii na szynę (do innych sekcji).
-                val back: () -> Unit = { if (inCategories) toRail() else toCategories() }
+                val back: () -> Unit = { if (inCategories) (onClose ?: toRail).invoke() else toCategories() }
                 CompositionLocalProvider(LocalBreadcrumb provides stringResource(R.string.nav_settings)) {
                     // key: przełączenie kategorii czyści stan poprzedniej (formularze, edytory).
                     androidx.compose.runtime.key(selected) { CategoryContent(categories[selected], back) }
@@ -138,7 +141,7 @@ fun SettingsScreen(initial: SettingsPage? = null) {
 internal fun initialCategoryIndex(initial: SettingsPage?): Int =
     if (initial == null) 0 else SettingsCategory.visible.indexOfFirst { it.page == initial }.coerceAtLeast(0)
 
-private val CATEGORIES_WIDTH = 230.dp
+private val CATEGORIES_WIDTH = 200.dp
 private const val FOCUS_RETRIES = 20
 
 @OptIn(ExperimentalTvMaterial3Api::class)

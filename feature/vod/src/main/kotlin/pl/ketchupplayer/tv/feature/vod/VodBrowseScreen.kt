@@ -52,6 +52,7 @@ import androidx.tv.material3.Text
 import pl.ketchupplayer.tv.core.data.vod.VodEntry
 import pl.ketchupplayer.tv.core.designsystem.FocusItem
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
+import pl.ketchupplayer.tv.core.designsystem.Motion
 import pl.ketchupplayer.tv.core.designsystem.PillChip
 import pl.ketchupplayer.tv.core.designsystem.PosterCard
 import pl.ketchupplayer.tv.core.designsystem.PosterImage
@@ -151,8 +152,8 @@ fun VodBrowseScreen(
                     Row(Modifier.fillMaxWidth().fillMaxHeight()) {
                         AnimatedVisibility(
                             visible = categoriesOpen,
-                            enter = expandHorizontally(tween(PANEL_ANIMATION_MS)),
-                            exit = shrinkHorizontally(tween(PANEL_ANIMATION_MS)),
+                            enter = expandHorizontally(tween(Motion.PANEL_MS)),
+                            exit = shrinkHorizontally(tween(Motion.PANEL_MS)),
                         ) {
                             CategoriesPanel(
                                 state,
@@ -208,7 +209,6 @@ private const val BACKDROP_ALPHA = 0.55f
 private val CATEGORIES_WIDTH = 300.dp
 private const val COLUMNS = 4
 private const val COLUMNS_WIDE = 6
-private const val PANEL_ANIMATION_MS = 220
 private const val FOCUS_RETRIES = 20
 private const val FOCUS_SETTLE_FRAMES = 3
 

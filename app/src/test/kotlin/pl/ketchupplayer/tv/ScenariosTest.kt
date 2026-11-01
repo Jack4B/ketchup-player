@@ -26,6 +26,7 @@ import androidx.compose.ui.test.printToString
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import com.github.takahirom.roborazzi.captureRoboImage
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
@@ -881,14 +882,35 @@ class ScenariosTest {
         compose.onNodeWithContentDescription("Na żywo").assertIsFocused()
     }
 
-    /** BACK w Ustawieniach z listy kategorii przenosi na szynę (nie zostaje w miejscu). */
+    /** BACK z listy kategorii zamyka panel Ustawień, a fokus wraca na szynę (sekcja pod spodem: Home). */
     @Test
-    fun backZListyKategoriiUstawienPrzenosiNaSzyne() {
+    fun backZListyKategoriiUstawienZamykaPanelIWracaNaSzyne() {
         nav("Ustawienia")
         waitForText("Listy i dostawcy")
         pressKeys(listOf(Key.ShiftLeft))
         back()
-        compose.onNodeWithContentDescription("Ustawienia").assertIsFocused()
+        waitFor { compose.onAllNodesWithText("Listy i dostawcy").fetchSemanticsNodes().isEmpty() }
+        compose.mainClock.advanceTimeBy(500)
+        compose.waitForIdle()
+        compose.onNodeWithContentDescription("Home").assertIsFocused()
+    }
+
+    /** Panel Ustawień nakłada się na bieżącą sekcję: po zamknięciu wraca ta sama sekcja (tu Na żywo). */
+    @Test
+    fun panelUstawienZostawiaSekcjePodSpodem() {
+        nav("Na żywo")
+        waitForText("Grupy:", substring = true)
+        nav("Ustawienia")
+        waitForText("Listy i dostawcy")
+        compose.mainClock.advanceTimeBy(500)
+        compose.onRoot().captureRoboImage("src/test/screenshots/settings_panel_nad_na_zywo.png")
+        pressKeys(listOf(Key.ShiftLeft))
+        back()
+        waitFor { compose.onAllNodesWithText("Listy i dostawcy").fetchSemanticsNodes().isEmpty() }
+        waitForText("Grupy:", substring = true)
+        compose.mainClock.advanceTimeBy(500)
+        compose.waitForIdle()
+        compose.onNodeWithContentDescription("Na żywo").assertIsFocused()
     }
 
     /** Przegląd nawigacji (plan 1.3): BACK z treści każdej sekcji przenosi fokus na jej pozycję w szynie. */
@@ -896,7 +918,7 @@ class ScenariosTest {
     fun backZKazdejSekcjiWracaNaSzyne() {
         runBlocking { catalog.addM3u("Lista", server.url("/nav.m3u")) } // pusta odpowiedź 404: sekcje w stanie pustym
         // Sekcje z treścią do fokusu; Filmy i Seriale mają osobne testy, a puste zostawiają fokus na szynie.
-        listOf("Home", "Na żywo", "Ustawienia").forEach { section ->
+        listOf("Home", "Na żywo").forEach { section ->
             nav(section)
             compose.waitForIdle()
             pressKeys(listOf(Key.ShiftLeft))

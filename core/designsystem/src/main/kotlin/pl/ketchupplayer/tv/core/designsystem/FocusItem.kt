@@ -25,7 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 /** Czas animacji fokusu (konspekt §4.1: ≤ 150 ms). */
-const val FOCUS_ANIMATION_MS = 120
+const val FOCUS_ANIMATION_MS = Motion.FOCUS_MS
 
 /**
  * Element fokusowalny D-padem i dotykiem: OK/Enter lub tap wywołuje [onClick].

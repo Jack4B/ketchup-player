@@ -2,6 +2,7 @@ package pl.ketchupplayer.tv.feature.guide
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -59,6 +60,7 @@ import pl.ketchupplayer.tv.core.designsystem.ChannelLogo
 import pl.ketchupplayer.tv.core.designsystem.FocusItem
 import pl.ketchupplayer.tv.core.designsystem.KetchupButton
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
+import pl.ketchupplayer.tv.core.designsystem.Motion
 import pl.ketchupplayer.tv.core.designsystem.PillChip
 import pl.ketchupplayer.tv.core.designsystem.ScreenScaffold
 import pl.ketchupplayer.tv.core.designsystem.SearchField
@@ -168,13 +170,13 @@ fun GuideScreen(
             }
         }
         // Panel grup wysuwa się z lewej nad przyciemnioną siatką (jak w TiViMate); OK na grupie zamyka go.
-        AnimatedVisibility(groupsOpen, enter = fadeIn(), exit = fadeOut()) {
+        AnimatedVisibility(groupsOpen, enter = fadeIn(tween(Motion.FADE_MS)), exit = fadeOut(tween(Motion.FADE_MS))) {
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = GROUPS_SCRIM_ALPHA)))
         }
         AnimatedVisibility(
             groupsOpen,
-            enter = slideInHorizontally { -it } + fadeIn(),
-            exit = slideOutHorizontally { -it } + fadeOut(),
+            enter = slideInHorizontally(tween(Motion.PANEL_MS)) { -it } + fadeIn(tween(Motion.PANEL_MS)),
+            exit = slideOutHorizontally(tween(Motion.PANEL_MS)) { -it } + fadeOut(tween(Motion.PANEL_MS)),
         ) {
             GuideGroupsPanel(
                 state,

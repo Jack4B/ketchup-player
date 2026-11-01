@@ -63,6 +63,9 @@ object Routes {
 
     fun section(route: String): Section? = Section.entries.firstOrNull { it.route == route }
 
+    /** Trasa należy do panelu Ustawień (sam panel albo jego podstrona). */
+    fun isSettings(route: String): Boolean = route == Section.SETTINGS.route || route.startsWith("settings/")
+
     /** Sekcja podświetlona na szynie dla trasy (podstrony ustawień należą do „Ustawienia”). */
     fun railSection(route: String): Section? =
         section(route)
