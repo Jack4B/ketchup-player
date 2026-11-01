@@ -1,6 +1,7 @@
 package pl.ketchupplayer.tv.core.designsystem
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -465,3 +466,27 @@ fun PillChip(
         )
     }
 }
+
+/** Pigułka z krótką informacją (rok, czas, ocena); ocena w kolorze akcentu. */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun InfoPill(
+    text: String,
+    highlight: Boolean = false,
+) {
+    val c = KetchupTheme.colors
+    val color = if (highlight) c.accent else c.textPrimary
+    Text(
+        text,
+        fontSize = 14.sp,
+        color = color,
+        modifier =
+            Modifier
+                .border(1.dp, if (highlight) c.accent else c.outline, RoundedCornerShape(PILL_RADIUS))
+                .background(c.surface2.copy(alpha = PILL_ALPHA), RoundedCornerShape(PILL_RADIUS))
+                .padding(horizontal = 12.dp, vertical = 5.dp),
+    )
+}
+
+private val PILL_RADIUS = 18.dp
+private const val PILL_ALPHA = 0.7f

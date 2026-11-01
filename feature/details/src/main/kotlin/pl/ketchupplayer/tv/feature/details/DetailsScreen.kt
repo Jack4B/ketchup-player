@@ -1,7 +1,6 @@
 package pl.ketchupplayer.tv.feature.details
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +38,7 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
 import pl.ketchupplayer.tv.core.data.vod.EpisodeEntry
 import pl.ketchupplayer.tv.core.designsystem.FocusItem
+import pl.ketchupplayer.tv.core.designsystem.InfoPill
 import pl.ketchupplayer.tv.core.designsystem.KetchupButton
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.designsystem.PillChip
@@ -178,29 +178,6 @@ private const val BACKDROP_ALPHA = 0.5f
 private const val GRADIENT_END_ALPHA = 0.1f
 private const val GRADIENT_BOTTOM_ALPHA = 0.85f
 
-/** Pigułka z krótką informacją (rok, czas, ocena); ocena w kolorze akcentu. */
-@OptIn(ExperimentalTvMaterial3Api::class)
-@Composable
-private fun InfoPill(
-    text: String,
-    highlight: Boolean = false,
-) {
-    val c = KetchupTheme.colors
-    val color = if (highlight) c.accent else c.textPrimary
-    Text(
-        text,
-        fontSize = 14.sp,
-        color = color,
-        modifier =
-            Modifier
-                .border(1.dp, if (highlight) c.accent else c.outline, RoundedCornerShape(PILL_RADIUS))
-                .background(c.surface2.copy(alpha = PILL_ALPHA), RoundedCornerShape(PILL_RADIUS))
-                .padding(horizontal = 12.dp, vertical = 5.dp),
-    )
-}
-
-private val PILL_RADIUS = 18.dp
-private const val PILL_ALPHA = 0.7f
 private const val FOCUS_RETRIES = 20
 
 @Composable

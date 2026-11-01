@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -20,6 +21,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -31,6 +34,7 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
 import pl.ketchupplayer.tv.core.data.vod.VodEntry
 import pl.ketchupplayer.tv.core.designsystem.FocusItem
+import pl.ketchupplayer.tv.core.designsystem.InfoPill
 import pl.ketchupplayer.tv.core.designsystem.KetchupButton
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.designsystem.PosterCard
@@ -125,15 +129,23 @@ private fun VodHero(
     val c = KetchupTheme.colors
     val entry = checkNotNull(state.featured)
     val item = entry.item
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .height(HERO_HEIGHT)
-            .panel()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(24.dp),
-    ) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Box(Modifier.fillMaxWidth().height(VOD_HERO_HEIGHT).clip(RoundedCornerShape(c.cornerRadius))) {
+        // Grafika na całą szerokość (backdrop albo plakat) z gradientem od lewej: tekst zawsze czytelny.
+        PosterImage(item.backdrop ?: item.poster, item.title, Modifier.fillMaxSize())
+        Box(
+            Modifier.fillMaxSize().background(
+                Brush.horizontalGradient(listOf(c.background.copy(alpha = HERO_SCRIM_LEFT), Color.Transparent)),
+            ),
+        )
+        Box(
+            Modifier.fillMaxSize().background(
+                Brush.verticalGradient(listOf(Color.Transparent, c.background.copy(alpha = HERO_SCRIM_BOTTOM))),
+            ),
+        )
+        Column(
+            Modifier.fillMaxHeight().fillMaxWidth(HERO_TEXT_FRACTION).padding(horizontal = 24.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.Bottom),
+        ) {
             Text(
                 stringResource(
                     if (state.featuredResumes) R.string.home_continue_kicker else R.string.home_featured_kicker,
@@ -141,21 +153,18 @@ private fun VodHero(
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = c.textSecondary,
+                letterSpacing = 2.sp,
             )
-            Text(item.title, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = c.textPrimary, maxLines = 1)
-            Text(
-                listOfNotNull(
-                    item.year?.toString(),
-                    item.rating?.let { "★ " + String.format(Locale.forLanguageTag("pl"), "%.1f", it) },
-                    item.genre ?: item.category,
-                ).joinToString(" · "),
-                fontSize = 15.sp,
-                color = c.textSecondary,
-            )
+            Text(item.title, fontSize = 34.sp, fontWeight = FontWeight.Bold, color = c.textPrimary, maxLines = 2)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                item.year?.let { InfoPill(it.toString()) }
+                item.rating?.let { InfoPill("★ " + String.format(Locale.forLanguageTag("pl"), "%.1f", it), true) }
+                (item.genre ?: item.category)?.let { InfoPill(it) }
+            }
             item.plot?.let {
                 Text(it, fontSize = 15.sp, color = c.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 6.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 4.dp)) {
                 KetchupButton(
                     stringResource(if (state.featuredResumes) R.string.home_resume else R.string.home_watch),
                     { onPlayVod(item.id) },
@@ -165,13 +174,13 @@ private fun VodHero(
                 KetchupButton(stringResource(R.string.home_details), { onOpenDetails(item.id) })
             }
         }
-        Box(Modifier.width(HERO_POSTER_WIDTH).fillMaxHeight().clip(RoundedCornerShape(c.cornerRadius / 2))) {
-            PosterImage(item.poster, item.title)
-        }
     }
 }
 
-private val HERO_POSTER_WIDTH = 120.dp
+private val VOD_HERO_HEIGHT = 250.dp
+private const val HERO_SCRIM_LEFT = 0.92f
+private const val HERO_SCRIM_BOTTOM = 0.55f
+private const val HERO_TEXT_FRACTION = 0.62f
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -182,7 +191,7 @@ private fun PosterRow(
 ) {
     val c = KetchupTheme.colors
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = c.textPrimary)
+        RowHeader(title, entries.size)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(entries, key = { it.item.id }) { e ->
                 PosterCard(
@@ -296,7 +305,7 @@ private fun CardsSection(
 ) {
     val c = KetchupTheme.colors
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = c.textPrimary)
+        RowHeader(title, items.size)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             items(items, key = { it.channel.id }) { item ->
                 val first = firstFocus && item == items.first()
@@ -375,3 +384,24 @@ private fun ChannelArt(
 private const val ART_CHARS = 8
 
 private fun formatTime(ms: Long): String = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(ms))
+
+/** Nagłówek rzędu: akcentowy pasek, tytuł i liczba pozycji po prawej. */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun RowHeader(
+    title: String,
+    count: Int,
+) {
+    val c = KetchupTheme.colors
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.width(4.dp).height(20.dp).background(c.accent, RoundedCornerShape(2.dp)))
+        Text(
+            title,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = c.textPrimary,
+            modifier = Modifier.padding(start = 10.dp).weight(1f),
+        )
+        Text(count.toString(), fontSize = 14.sp, color = c.textSecondary)
+    }
+}
