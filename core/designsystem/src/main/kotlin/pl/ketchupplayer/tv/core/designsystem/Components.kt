@@ -160,6 +160,8 @@ fun ChannelLogo(
     logoUrl: String?,
     modifier: Modifier = Modifier,
     labelSize: androidx.compose.ui.unit.TextUnit = 13.sp,
+    /** Duże kafle (podgląd, Home): bez logo pokazują pełną nazwę zamiast skrótu. */
+    fullName: Boolean = false,
 ) {
     val c = KetchupTheme.colors
     Box(

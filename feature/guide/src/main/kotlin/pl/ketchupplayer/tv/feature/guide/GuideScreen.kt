@@ -441,7 +441,10 @@ private fun ChannelCell(
                 color = c.textSecondary,
                 modifier = Modifier.width(26.dp),
             )
-            ChannelLogo(channel.displayName, channel.logo, Modifier.width(CELL_LOGO_WIDTH).height(CELL_LOGO_HEIGHT))
+            // Bez logo od dostawcy nie rysujemy pustej płytki ze skrótem: nazwa kanału ma wtedy całe miejsce.
+            if (!channel.logo.isNullOrBlank()) {
+                ChannelLogo(channel.displayName, channel.logo, Modifier.width(CELL_LOGO_WIDTH).height(CELL_LOGO_HEIGHT))
+            }
             Text(
                 (if (favorite) "★ " else "") + channel.displayName,
                 fontSize = 15.sp,
@@ -514,7 +517,7 @@ private fun Timeline(
 
 private fun clock(ms: Long): String = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(ms))
 
-private val CHANNEL_COLUMN = 150.dp
+private val CHANNEL_COLUMN = 190.dp
 private val ROW_HEIGHT = 44.dp
 private val ROW_GAP = 4.dp
 private val CELL_RADIUS = 6.dp
