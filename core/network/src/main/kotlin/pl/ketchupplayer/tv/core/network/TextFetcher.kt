@@ -21,4 +21,14 @@ sealed class NetworkException(
 /** Pobiera tekst spod adresu (listy M3U, JSON API). Implementacja: [OkHttpTextFetcher]. */
 fun interface TextFetcher {
     suspend fun fetch(url: String): Result<String>
+
+    /**
+     * Czyta odpowiedź linia po linii bez trzymania całości w pamięci (duże listy M3U).
+     * [block] dostaje leniwą sekwencję, ważną tylko w jego trakcie.
+     * Domyślnie korzysta z [fetch]; [OkHttpTextFetcher] strumieniuje naprawdę.
+     */
+    suspend fun <T> fetchLines(
+        url: String,
+        block: (Sequence<String>) -> T,
+    ): Result<T> = fetch(url).map { block(it.lineSequence()) }
 }

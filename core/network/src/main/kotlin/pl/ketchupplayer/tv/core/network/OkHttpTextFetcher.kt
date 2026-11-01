@@ -1,14 +1,18 @@
 package pl.ketchupplayer.tv.core.network
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import java.io.BufferedInputStream
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.io.InputStream
 import java.util.zip.GZIPInputStream
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -34,6 +38,45 @@ class OkHttpTextFetcher(
         } catch (e: IllegalArgumentException) {
             Result.failure(NetworkException.Io(e))
         }
+
+    override suspend fun <T> fetchLines(
+        url: String,
+        block: (Sequence<String>) -> T,
+    ): Result<T> =
+        withContext(Dispatchers.IO) {
+            try {
+                client.newCall(Request.Builder().url(url).build()).execute().use { response ->
+                    if (!response.isSuccessful) return@withContext Result.failure(NetworkException.Http(response.code))
+                    val body = response.body ?: return@withContext Result.success(block(emptySequence()))
+                    val raw = BufferedInputStream(LimitedInputStream(body.byteStream(), maxBytes), BUFFER)
+                    // Drugi limit liczy bajty po rozpakowaniu, żeby „bomba gzip” też została ucięta.
+                    val counted = LimitedInputStream(maybeGunzip(raw), maxBytes)
+                    counted.bufferedReader(Charsets.UTF_8).use { reader ->
+                        Result.success(block(reader.lineSequence()))
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: NetworkException) {
+                Result.failure(e)
+            } catch (e: IOException) {
+                Result.failure(NetworkException.Io(e))
+            } catch (e: IllegalArgumentException) {
+                Result.failure(NetworkException.Io(e))
+            }
+        }
+
+    private fun maybeGunzip(input: BufferedInputStream): InputStream {
+        input.mark(2)
+        val b1 = input.read()
+        val b2 = input.read()
+        input.reset()
+        return if (b1 == GZIP_MAGIC_1.toInt() && b2 == (GZIP_MAGIC_2.toInt() and 0xff)) {
+            GZIPInputStream(input, BUFFER)
+        } else {
+            input
+        }
+    }
 
     private fun readLimited(response: Response): String {
         val body = response.body ?: return ""
@@ -96,3 +139,34 @@ private suspend fun Call.await(): Response =
             },
         )
     }
+
+/** Strumień, który po przekroczeniu [limit] bajtów rzuca [NetworkException.TooLarge]. */
+private class LimitedInputStream(
+    private val delegate: InputStream,
+    private val limit: Long,
+) : InputStream() {
+    private var count = 0L
+
+    override fun read(): Int {
+        val b = delegate.read()
+        if (b >= 0) add(1)
+        return b
+    }
+
+    override fun read(
+        b: ByteArray,
+        off: Int,
+        len: Int,
+    ): Int {
+        val n = delegate.read(b, off, len)
+        if (n > 0) add(n)
+        return n
+    }
+
+    override fun close() = delegate.close()
+
+    private fun add(n: Int) {
+        count += n
+        if (count > limit) throw NetworkException.TooLarge(limit)
+    }
+}

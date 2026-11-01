@@ -84,4 +84,45 @@ class OkHttpTextFetcherTest {
             server.shutdown()
             assertTrue(fetcher().fetch(dead).exceptionOrNull() is NetworkException.Io)
         }
+
+    @Test
+    fun `fetchLines czyta linie strumieniowo`() =
+        runTest {
+            server.enqueue(MockResponse().setBody("a\nb\r\nc"))
+            val lines = fetcher().fetchLines(url()) { it.toList() }.getOrThrow()
+            assertEquals(listOf("a", "b", "c"), lines)
+        }
+
+    @Test
+    fun `fetchLines rozpakowuje gzip`() =
+        runTest {
+            val gz = ByteArrayOutputStream().also { o -> GZIPOutputStream(o).use { it.write("x\ny".toByteArray()) } }
+            server.enqueue(MockResponse().setBody(Buffer().write(gz.toByteArray())))
+            assertEquals(listOf("x", "y"), fetcher().fetchLines(url("/l.gz")) { it.toList() }.getOrThrow())
+        }
+
+    @Test
+    fun `fetchLines przerywa po limicie, takze dla bomby gzip`() =
+        runTest {
+            server.enqueue(MockResponse().setBody("x\n".repeat(5000)))
+            assertTrue(fetcher(1000).fetchLines(url()) { it.count() }.exceptionOrNull() is NetworkException.TooLarge)
+            val bomb =
+                ByteArrayOutputStream().also { o ->
+                    GZIPOutputStream(o).use { it.write("y\n".repeat(50_000).toByteArray()) }
+                }
+            server.enqueue(MockResponse().setBody(Buffer().write(bomb.toByteArray())))
+            assertTrue(
+                fetcher(1000).fetchLines(url("/b.gz")) { it.count() }.exceptionOrNull() is NetworkException.TooLarge,
+            )
+        }
+
+    @Test
+    fun `fetchLines - kod HTTP to blad`() =
+        runTest {
+            server.enqueue(MockResponse().setResponseCode(503))
+            assertEquals(
+                503,
+                (fetcher().fetchLines(url()) { it.count() }.exceptionOrNull() as NetworkException.Http).code,
+            )
+        }
 }

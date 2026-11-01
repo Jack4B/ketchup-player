@@ -9,7 +9,7 @@ Gałąź `faza-d` (PR #4, względem `faza-b`). Obejmuje też część faz P (pol
 - **EPG:** strumieniowy parser XMLTV, dopasowanie po `epgId` i po nazwie, atomowa podmiana (staging), single-flight, horyzont 72 h, odświeżanie co 6 h. Własne źródła EPG oraz flagi OVH/Teleman (Teleman domyślnie włączony).
 - **Odtwarzacz (Media3, HLS, OkHttp):** nakładka z nazwą, status buforowania, panel błędu. **Failover:** `BkFailoverPolicy` (stałe ze spec) + `FailoverCoordinator` (ponowienia, rebuffery, wymuszenie po opóźnieniu TV, cooldown, maks. 2 cykle), komunikat „Przełączono na Lista n · nazwa”. Ustawienia failoveru (włącznik, czułość, opóźnienie TV) w DataStore.
 - **Ekrany TV:** start (2 kolumny), Dostawcy (M3U/Xtream), Na żywo (grupy, polskie na początku, ulubione długim OK, „teraz leci” z paskiem postępu), Przewodnik (siatka 4 h), Odtwarzanie (failover), Źródła EPG, Wygląd. Wszystko wykonalne D-pad + OK + BACK.
-- **Naprawy po testach na prawdziwej liście 29 MB (100 tys. wpisów):** import 8,1 s → 0,84 s, pusta grupa jako „Bez grupy”, przewijanie do wybranej grupy, stała szerokość znaczka kanału.
+- **Naprawy po testach na prawdziwej liście 29 MB (100 tys. wpisów):** import 8,1 s → 0,84 s, strumieniowe czytanie listy (`TextFetcher.fetchLines`, limit rozmiaru także po rozpakowaniu gzip), pusta grupa jako „Bez grupy”, przewijanie do wybranej grupy, stała szerokość znaczka kanału.
 - **Crash przy starcie** (`rememberSaveable` na `SnapshotStateList`) naprawiony; `AppStartTest` z prawdziwym grafem Hilt zapobiega regresji.
 
 ## DoD — checklista
@@ -30,7 +30,7 @@ Gałąź `faza-d` (PR #4, względem `faza-b`). Obejmuje też część faz P (pol
 
 ## Metryki
 - Import listy 100 tys. wpisów (4578 na żywo): 0,84 s na JVM (Robolectric), wcześniej 8,1 s.
-- Szczyt pamięci przy 29 MB: nadal pobranie jako jeden tekst (do zmiany na strumieniowe).
+- Szczyt pamięci przy imporcie listy 29 MB (JVM): 226 MB (pełny tekst) → 72 MB (import strumieniowy `fetchLines`), po parsowaniu ok. 6 MB.
 
 ## Odstępstwa od konspektu
 - M3U zapisuje tylko kanały na żywo (filmy i seriale w M3U pominięte do czasu ekranów VOD).
@@ -38,7 +38,7 @@ Gałąź `faza-d` (PR #4, względem `faza-b`). Obejmuje też część faz P (pol
 - Podwyższony próg Detekt dla liczby funkcji w interfejsach (15), `CatalogRepository` jest fasadą katalogu.
 
 ## Ryzyka / znane problemy
-- Pamięć przy bardzo dużych listach na słabych dekoderach nietestowana (potrzebny import strumieniowy).
+- Pamięć przy bardzo dużych listach na prawdziwych słabych dekoderach nietestowana (import jest już strumieniowy; pomiar tylko na JVM).
 - Przewodnik: brak przewijania osi czasu poza 4 h, OK na audycji otwiera kanał (bez szczegółów).
 - Wygląd i fokus na prawdziwym TV (overscan, odległość, panel) niesprawdzone; emulator i Roborazzi pokrywają układ i fokus.
 - Hasła podane w czacie przy testach: właściciel powinien je zmienić u dostawców.
@@ -52,4 +52,4 @@ Gałąź `faza-d` (PR #4, względem `faza-b`). Obejmuje też część faz P (pol
 3. Czy filmy i seriale z M3U mają być w 1.0, czy dopiero z Xtream (VOD API)?
 
 ## Plan następnej fazy
-Test failoveru na lokalnym serwerze HLS, import strumieniowy dużych list, przewijanie osi czasu w przewodniku, potem Home i Ustawienia (Faza U/F).
+Test failoveru na lokalnym serwerze HLS, przewijanie osi czasu w przewodniku, potem Home i Ustawienia (Faza U/F).

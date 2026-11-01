@@ -24,9 +24,8 @@ class M3uProvider(
     private var lastEpgUrl: String? = null
 
     override suspend fun loadChannels(): Result<List<Channel>> =
-        fetcher.fetch(url).fold(
-            onSuccess = { text ->
-                val playlist = M3uParser.parse(id, text, liveOnly = true)
+        fetcher.fetchLines(url) { lines -> M3uParser.parse(id, lines, liveOnly = true) }.fold(
+            onSuccess = { playlist ->
                 lastEpgUrl = playlist.epgUrl
                 if (playlist.channels.isEmpty()) {
                     Result.failure(

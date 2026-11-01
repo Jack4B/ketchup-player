@@ -26,6 +26,13 @@ object M3uParser {
         providerId: ProviderId,
         text: String,
         liveOnly: Boolean = false,
+    ): M3uPlaylist = parse(providerId, text.lineSequence(), liveOnly)
+
+    /** Wersja strumieniowa: linie czytane leniwie, pamięć zależy od liczby kanałów, nie od rozmiaru listy. */
+    fun parse(
+        providerId: ProviderId,
+        lines: Sequence<String>,
+        liveOnly: Boolean = false,
     ): M3uPlaylist {
         val channels = ArrayList<Channel>()
         val acc = Accumulator(providerId, liveOnly, channels)
@@ -33,7 +40,7 @@ object M3uParser {
         var pending: Pending? = null
         var skipped = 0
         var omittedVod = 0
-        for (raw in text.removePrefix("").lineSequence()) {
+        for (raw in lines) {
             val line = raw.trim()
             when {
                 line.isEmpty() -> Unit
