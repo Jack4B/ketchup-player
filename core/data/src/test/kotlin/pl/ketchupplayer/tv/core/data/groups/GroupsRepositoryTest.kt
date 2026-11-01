@@ -94,4 +94,39 @@ class GroupsRepositoryTest {
             repo.setAllVisible(GroupKind.TV, true)
             assertEquals(emptySet<String>(), repo.hidden(GroupKind.TV).first())
         }
+
+    private fun movie(
+        id: String,
+        provider: String,
+        year: Int?,
+    ) = pl.ketchupplayer.tv.core.database.VodItemEntity(
+        id,
+        provider,
+        "MOVIE",
+        "Matrix",
+        "matrix",
+        "ref",
+        null,
+        null,
+        year,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+    )
+
+    /** Ten sam film w dwóch listach = 2 źródła; inny rok albo ta sama lista dwa razy nie zwiększają licznika. */
+    @Test
+    fun `liczba zrodel filmu liczy rozne listy z tym samym tytulem i rokiem`() =
+        runTest {
+            db.providers().upsert(ProviderEntity("p1", "A", "M3U", "http://a.invalid/l.m3u"))
+            db.providers().upsert(ProviderEntity("p2", "B", "M3U", "http://b.invalid/l.m3u"))
+            db.vod().insertAll(
+                listOf(movie("1", "p1", 1999), movie("2", "p2", 1999), movie("3", "p2", 1999), movie("4", "p1", 2021)),
+            )
+            assertEquals(2, db.vod().sourceCount("MOVIE", "matrix", 1999))
+            assertEquals(1, db.vod().sourceCount("MOVIE", "matrix", 2021))
+        }
 }

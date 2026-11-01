@@ -32,3 +32,10 @@ Skala: 1–5 (5 = poziom TiViMate / nowoczesnych aplikacji TV).
 - Fokus widoczny zawsze (ring w kolorze akcentu 3 dp), D-pad bez pułapek, BACK zawsze wraca o jeden poziom.
 - Tekst nie mniejszy niż 13 sp, ważne informacje 14+ sp.
 - Półprzezroczystość zamiast rozmycia domyślnie; rozmycie tylko jako opcja na Androidzie 12+.
+
+## Dopisek 1.11.2026 (noc): porównanie ze starą aplikacją
+- Wzięte: licznik pozycji w siatce Na żywo („5 / 71”), liczba źródeł w szczegółach filmu („Źródła: N”, gdy tytuł jest w kilku listach).
+- Zostaje na później: komunikat stanu failoveru pod podglądem, wybór źródła/jakości przy filmie (np. „Wybierz 4K”), oceny IMDb/Filmweb.
+- Oceny IMDb/Filmweb: stara aplikacja brała je z MoviesRanking.com (bez publicznego API, scraping poza zakresem), archiwum
+  Kaggle (zestawy IMDb do ręcznego importu CSV) i własnej bramki HTTPS. Realne dla nas: opcjonalny import publicznego
+  zestawu ocen z pliku CSV (1.1) albo TMDB/OMDb z kluczem użytkownika. Opisy, obsada i okładki już są od dostawcy (Xtream).

@@ -177,6 +177,17 @@ interface VodDao {
     )
     fun observeCategoryCounts(kind: String): Flow<List<NameCount>>
 
+    /** Ile list (dostawców) ma ten sam tytuł: ten sam rodzaj, znormalizowana nazwa i rok. */
+    @Query(
+        "SELECT COUNT(DISTINCT providerId) FROM vod_items " +
+            "WHERE kind = :kind AND normTitle = :normTitle AND year IS :year",
+    )
+    suspend fun sourceCount(
+        kind: String,
+        normTitle: String,
+        year: Int?,
+    ): Int
+
     @Query("SELECT * FROM vod_items WHERE id = :id")
     suspend fun get(id: String): VodItemEntity?
 

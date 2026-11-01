@@ -85,4 +85,7 @@ interface VodRepository {
 
     /** Dane odtwarzania filmu albo odcinka (tytuł odcinka z nazwą serialu); null, gdy pozycji nie ma. */
     suspend fun playback(itemId: String): VodPlayback?
+
+    /** W ilu listach (u ilu dostawców) jest ten sam film/serial; 1 = tylko ta. */
+    suspend fun sourceCount(itemId: String): Int = 1
 }

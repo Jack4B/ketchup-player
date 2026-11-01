@@ -46,6 +46,11 @@ class RoomVodRepository
             provider.loadVodInfo(item).onSuccess { info -> dao.insertAll(listOf(item.withInfo(info).toEntity())) }
         }
 
+        override suspend fun sourceCount(itemId: String): Int {
+            val item = dao.get(itemId) ?: return 1
+            return dao.sourceCount(item.kind, item.normTitle, item.year).coerceAtLeast(1)
+        }
+
         override fun entries(kind: VodKind): Flow<List<VodEntry>> = entries(dao.observeByKind(kind.name))
 
         override fun myList(): Flow<List<VodEntry>> =

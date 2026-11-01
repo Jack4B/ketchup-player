@@ -24,6 +24,8 @@ data class DetailsUiState(
     val episodesFailed: Boolean = false,
     val similar: List<VodItem> = emptyList(),
     val target: PlayTarget? = null,
+    /** W ilu listach jest ten tytuł (pigułka „Źródła: N”, gdy więcej niż jedna). */
+    val sources: Int = 1,
 ) {
     val isSeries: Boolean get() = entry?.item?.kind == pl.ketchupplayer.tv.core.model.VodKind.SERIES
 }

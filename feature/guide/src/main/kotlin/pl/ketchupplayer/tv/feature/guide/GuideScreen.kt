@@ -251,12 +251,25 @@ private fun Grid(
     var focused by remember { mutableStateOf<Focused?>(null) }
     Preview(focused ?: state.channels.firstOrNull()?.let { Focused(it, null) }, state.nowMs, preview)
     Row(Modifier.fillMaxWidth()) {
-        Box(Modifier.width(CHANNEL_COLUMN), contentAlignment = Alignment.CenterStart) {
+        Row(
+            Modifier.width(CHANNEL_COLUMN).padding(end = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Text(
                 SimpleDateFormat("EEE d.MM", Locale.getDefault()).format(Date(state.windowStartMs)),
                 fontSize = 13.sp,
                 color = KetchupTheme.colors.textSecondary,
             )
+            // Licznik jak w starej aplikacji: pozycja zaznaczonego kanału i liczba kanałów na liście.
+            val index = state.channels.indexOfFirst { it.id == focused?.channel?.id }
+            if (state.channels.isNotEmpty()) {
+                Text(
+                    "${index.coerceAtLeast(0) + 1} / ${state.channels.size}",
+                    fontSize = 13.sp,
+                    color = KetchupTheme.colors.textSecondary,
+                )
+            }
         }
         Box(Modifier.weight(1f).horizontalScroll(scroll)) { TimeScale(state) }
     }

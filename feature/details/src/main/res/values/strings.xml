@@ -19,4 +19,5 @@
     <string name="details_retry">Spróbuj ponownie</string>
     <string name="details_no_plot">Brak opisu.</string>
     <string name="details_cast">OBSADA</string>
+    <string name="details_sources">Źródła: %1$d</string>
 </resources>

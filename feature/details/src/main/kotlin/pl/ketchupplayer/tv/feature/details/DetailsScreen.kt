@@ -138,6 +138,7 @@ private fun DetailsBody(
                         InfoPill(stringResource(R.string.details_seasons_count, state.seasons.size))
                     }
                     item.durationMin?.let { InfoPill(stringResource(R.string.details_minutes, it)) }
+                    if (state.sources > 1) InfoPill(stringResource(R.string.details_sources, state.sources), true)
                     item.rating?.let {
                         InfoPill(
                             "★ " + String.format(java.util.Locale.forLanguageTag("pl"), "%.1f", it),

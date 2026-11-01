@@ -31,6 +31,7 @@ class DetailsViewModel
         private val season = MutableStateFlow<Int?>(null)
         private val episodesStatus = MutableStateFlow(EpisodesStatus.IDLE)
         private val similar = MutableStateFlow<List<VodItem>>(emptyList())
+        private val sources = MutableStateFlow(1)
 
         private enum class EpisodesStatus { IDLE, LOADING, FAILED }
 
@@ -38,6 +39,7 @@ class DetailsViewModel
             if (itemId.value == id) return
             itemId.value = id
             season.value = null
+            viewModelScope.launch { sources.value = repo.sourceCount(id) }
             viewModelScope.launch { repo.refreshInfo(id) } // opis, obsada i grafika od dostawcy; wynik wpada do bazy
             viewModelScope.launch {
                 similar.value = repo.similar(id, SIMILAR_LIMIT)
@@ -66,6 +68,7 @@ class DetailsViewModel
                         episodesStatus,
                         similar,
                     ) { entry, episodes, selected, status, sim -> build(entry, episodes, selected, status, sim) }
+                        .combine(sources) { st, n -> st.copy(sources = n) }
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_MS), DetailsUiState())
 
         fun onEvent(event: DetailsEvent) {
