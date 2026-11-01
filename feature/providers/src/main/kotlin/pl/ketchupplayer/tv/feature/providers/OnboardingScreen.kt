@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -69,7 +70,7 @@ fun OnboardingScreen(
             horizontalArrangement = Arrangement.spacedBy(48.dp),
         ) {
             Column(Modifier.width(360.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                KetchupLogoWide(Modifier.fillMaxWidth().padding(bottom = 16.dp))
+                KetchupLogoWide(Modifier.fillMaxWidth().height(260.dp).padding(bottom = 16.dp))
                 listOf(R.string.onb_step1, R.string.onb_step2, R.string.onb_step3).forEachIndexed { i, label ->
                     Text(
                         stringResource(label),
@@ -118,7 +119,8 @@ private fun Welcome(
     val c = KetchupTheme.colors
     Text(
         stringResource(R.string.onb_welcome_title),
-        fontSize = 34.sp,
+        fontSize = 30.sp,
+        lineHeight = 36.sp,
         fontWeight = FontWeight.Bold,
         color = c.textPrimary,
     )

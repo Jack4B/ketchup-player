@@ -7,9 +7,11 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.ExperimentalTvMaterial3Api
+import androidx.tv.material3.LocalTextStyle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.darkColorScheme
 
@@ -109,6 +111,10 @@ fun KetchupTheme(
             )
         }
     CompositionLocalProvider(LocalKetchupColors provides colors, LocalDeviceClass provides device) {
-        MaterialTheme(colorScheme = scheme, content = content)
+        MaterialTheme(colorScheme = scheme) {
+            // Bazowy styl motywu ma stałą wysokość linii dla swojego rozmiaru czcionki: przy `fontSize` ustawianym
+            // w ekranach zawinięte napisy nachodziłyby na siebie. Bez niej linia skaluje się z czcionką.
+            CompositionLocalProvider(LocalTextStyle provides TextStyle.Default, content = content)
+        }
     }
 }

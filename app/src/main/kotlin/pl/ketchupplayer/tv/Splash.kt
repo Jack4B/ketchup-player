@@ -65,4 +65,4 @@ fun SplashOverlay(
 }
 
 private val SPLASH_BG = Color(0xFF0E1017)
-private const val SPLASH_LOGO_HEIGHT = 0.5f
+private const val SPLASH_LOGO_HEIGHT = 0.72f

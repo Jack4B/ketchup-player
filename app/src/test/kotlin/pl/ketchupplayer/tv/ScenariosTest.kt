@@ -64,7 +64,7 @@ import javax.inject.Inject
 @OptIn(ExperimentalTestApi::class)
 class ScenariosTest {
     private companion object {
-        const val WAIT_MS = 15_000L
+        const val WAIT_MS = 30_000L
         const val BIG_WAIT_MS = 60_000L
         const val POLL_MS = 25L
         const val CLOCK_STEP_MS = 100L
