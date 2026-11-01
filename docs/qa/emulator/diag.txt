@@ -1,5 +1,5 @@
-host curl a.m3u: 000
-host curl hls: 000
+host curl a.m3u: 200
+host curl hls: 200
 emulator curl: ok
 index.m3u8
 index0.ts
