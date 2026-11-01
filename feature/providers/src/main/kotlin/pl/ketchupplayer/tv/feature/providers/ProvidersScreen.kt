@@ -110,10 +110,11 @@ private fun summary(p: ProviderInfo): String {
 
 @OptIn(ExperimentalTvMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-private fun AddForm(
+internal fun AddForm(
     form: ProviderForm,
     busy: Boolean,
     onEvent: (ProvidersEvent) -> Unit,
+    showActions: Boolean = true,
 ) {
     val xtream = form.kind == ProviderKind.XTREAM
     val submit: () -> Unit = { if (!busy) onEvent(ProvidersEvent.Submit) }
@@ -162,14 +163,19 @@ private fun AddForm(
             )
         }
     }
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        KetchupButton(
-            stringResource(R.string.providers_save),
-            { if (!busy) onEvent(ProvidersEvent.Submit) },
-            primary = true,
-        )
-        KetchupButton(stringResource(R.string.providers_cancel), { onEvent(ProvidersEvent.Cancel) })
+    if (showActions) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            KetchupButton(
+                stringResource(R.string.providers_save),
+                { if (!busy) onEvent(ProvidersEvent.Submit) },
+                primary = true,
+            )
+            KetchupButton(stringResource(R.string.providers_cancel), { onEvent(ProvidersEvent.Cancel) })
+        }
     }
 }
 
-private val ERROR_COLOR = Color(0xFFFF6B6B)
+internal val ERROR_COLOR = Color(0xFFFF6B6B)

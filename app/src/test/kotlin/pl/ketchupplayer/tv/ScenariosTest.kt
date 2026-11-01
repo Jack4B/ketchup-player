@@ -84,6 +84,8 @@ class ScenariosTest {
 
     @Inject lateinit var dataStore: DataStore<Preferences>
 
+    @Inject lateinit var onboarding: pl.ketchupplayer.tv.core.data.onboarding.OnboardingRepository
+
     @Inject lateinit var failoverSettings: pl.ketchupplayer.tv.core.data.playback.FailoverSettingsRepository
 
     private val server = ProviderServer()
@@ -97,6 +99,7 @@ class ScenariosTest {
             // DataStore jest singletonem procesu: stan poprzedniego scenariusza (ustawienia, znacznik importu EPG)
             // przeciekałby do kolejnego, więc zaczynamy od czystego.
             dataStore.edit { it.clear() }
+            onboarding.setDone(true) // kreator ma własny scenariusz; reszta zaczyna od ekranu głównego
             epgSources.setEnabled(BuiltInEpgSources.OVH_ID, false)
             epgSources.setEnabled(BuiltInEpgSources.TELEMAN_ID, false)
             appearance.setTheme(ThemeId.GRANAT)
@@ -424,6 +427,28 @@ class ScenariosTest {
         compose.onAllNodes(hasSetTextAction())[0].performTextInput("kowal")
         waitFor { compose.onAllNodesWithText("Seksmisja").fetchSemanticsNodes().isEmpty() }
         waitForText("Rodzina Kowalskich")
+    }
+
+    /** Scenariusz: pierwsze uruchomienie: kreator 3 kroków prowadzi od powitania do działającej listy na Home. */
+    @Test
+    fun kreatorPierwszegoUruchomieniaDodajeListeIPrzechodziNaHome() {
+        server.serve("/pierwsza.m3u") {
+            "#EXTM3U\n#EXTINF:-1 group-title=\"Info\",TVN 24\nhttp://h.example.invalid/1\n"
+        }
+        runBlocking { onboarding.setDone(false) }
+        waitForText("Witaj w Ketchup Player")
+        click("Dalej ›")
+        waitForText("Dodaj pierwszą listę")
+        waitFor { compose.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().size >= 2 }
+        compose.onAllNodes(hasSetTextAction())[0].performTextInput("Moja pierwsza")
+        compose.onAllNodes(hasSetTextAction())[1].performTextInput(server.url("/pierwsza.m3u"))
+        click("Dalej ›")
+        waitForText("Lista została dodana", substring = true)
+        waitForText("Kanały: 1", substring = true)
+        click("Zaczynamy")
+        waitForText("Home")
+        nav("Na żywo")
+        waitForText("TVN 24")
     }
 
     /** Scenariusz: Seriale -> szczegóły ładują odcinki z serwera, sezony przełączają listę, odcinek gra swój adres. */

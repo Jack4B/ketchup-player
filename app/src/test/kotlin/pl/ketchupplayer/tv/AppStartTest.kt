@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.datastore.preferences.core.edit
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
@@ -35,6 +36,21 @@ class AppStartTest {
     @get:Rule(order = 1)
     val compose = createAndroidComposeRule<MainActivity>()
 
+    @javax.inject.Inject
+    lateinit var onboarding: pl.ketchupplayer.tv.core.data.onboarding.OnboardingRepository
+
+    @javax.inject.Inject
+    lateinit var dataStore: androidx.datastore.core.DataStore<androidx.datastore.preferences.core.Preferences>
+
+    @org.junit.Before
+    fun skipOnboarding() {
+        hilt.inject()
+        kotlinx.coroutines.runBlocking {
+            dataStore.edit { it.clear() }
+            onboarding.setDone(true)
+        }
+    }
+
     private fun nav(label: String) {
         compose.onNodeWithContentDescription(label).performClick()
         compose.waitForIdle()
@@ -48,7 +64,6 @@ class AppStartTest {
 
     @Test
     fun aplikacjaStartujeNaHomeZSzynaNawigacji() {
-        hilt.inject()
         compose.waitForIdle()
         compose.onNodeWithContentDescription("Na żywo").assertExists()
         compose.onNodeWithContentDescription("Ustawienia").assertExists()
@@ -57,7 +72,6 @@ class AppStartTest {
 
     @Test
     fun przejsciaDoDostawcowINaZywoZPrawdziwymGrafem() {
-        hilt.inject()
         settingsPage("Dostawcy")
         compose.onNodeWithText("Dodaj dostawcę").assertExists()
         nav("Na żywo")
@@ -67,7 +81,6 @@ class AppStartTest {
 
     @Test
     fun obrotZachowujeBiezacyEkran() {
-        hilt.inject()
         settingsPage("Dostawcy")
         compose.activityRule.scenario.recreate()
         compose.waitForIdle()

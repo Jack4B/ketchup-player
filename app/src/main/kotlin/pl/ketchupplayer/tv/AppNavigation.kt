@@ -3,6 +3,7 @@ package pl.ketchupplayer.tv
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -12,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pl.ketchupplayer.tv.core.designsystem.AppShell
 import pl.ketchupplayer.tv.feature.details.DetailsRoute
 import pl.ketchupplayer.tv.feature.guide.GuideRoute
@@ -19,6 +22,7 @@ import pl.ketchupplayer.tv.feature.home.HomeRoute
 import pl.ketchupplayer.tv.feature.livetv.LiveTvRoute
 import pl.ketchupplayer.tv.feature.playerui.PlayerRoute
 import pl.ketchupplayer.tv.feature.playerui.VodPlayerRoute
+import pl.ketchupplayer.tv.feature.providers.OnboardingRoute
 import pl.ketchupplayer.tv.feature.providers.ProvidersRoute
 import pl.ketchupplayer.tv.feature.settings.AppearanceRoute
 import pl.ketchupplayer.tv.feature.settings.EpgSourcesRoute
@@ -31,7 +35,20 @@ import pl.ketchupplayer.tv.feature.vod.VodMode
  * bez powłoki. Feature nie zna innych feature: przejścia ustala wyłącznie `:app`.
  */
 @Composable
-fun AppNavigation(onExit: () -> Unit = {}) {
+fun AppNavigation(
+    onExit: () -> Unit = {},
+    root: RootViewModel = hiltViewModel(),
+) {
+    val done by root.onboardingDone.collectAsStateWithLifecycle()
+    when (done) {
+        null -> Unit
+        false -> OnboardingRoute(onFinished = root::finishOnboarding)
+        true -> MainFlow(onExit)
+    }
+}
+
+@Composable
+private fun MainFlow(onExit: () -> Unit) {
     // SnapshotStateList nie jest zapisywalny domyślnie: własny Saver (lista Stringów).
     val stack =
         rememberSaveable(
