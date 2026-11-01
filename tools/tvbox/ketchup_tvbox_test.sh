@@ -257,6 +257,16 @@ grep -qE "ANR in $PKG|Process: $PKG|FATAL EXCEPTION.*$PKG" "$OUT/logs/logcat_ful
   && record "—" "Crash/ANR w logach" FAIL "patrz logs/logcat_crash.txt" || record "—" "Crash/ANR w logach" PASS
 grep -E "ketchup|Timber|E/AndroidRuntime" "$OUT/logs/logcat_full.txt" | tail -200 > "$OUT/logs/app_tail.txt"
 
+# ---------- test pilota (ręczny, tylko interaktywnie) ----------
+if [ -t 0 ] && [ -z "${KETCHUP_NO_ASK:-}" ] && fg_ok; then
+  echo; echo ">>> TEST PILOTA: wejdź w Filmy i 5 razy KRÓTKO naciśnij strzałkę w dół na PILOCIE (nie z telefonu). Masz 25 s."
+  sh_ "logcat -c" >/dev/null
+  timeout 28 adb -s "$TARGET" shell getevent -lt > "$OUT/logs/getevent.txt" 2>/dev/null &
+  sleep 25
+  sh_ "logcat -d -s KeyGuard" > "$OUT/logs/keyguard.txt"
+  record P1 "Test pilota: 5 krótkich naciśnięć w dół" PASS "zapis: logs/keyguard.txt, logs/getevent.txt (do analizy)"
+fi
+
 { echo; echo "**Podsumowanie:** PASS=$PASS WARN=$WARN FAIL=$FAIL"; echo; echo "Zrzuty: shots/, zrzuty UI: ui/, logi: logs/"; } >> "$REPORT"
 cat "$REPORT"
 echo; echo "Wyniki: $OUT"
