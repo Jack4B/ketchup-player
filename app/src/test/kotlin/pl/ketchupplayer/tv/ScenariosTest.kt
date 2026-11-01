@@ -228,10 +228,10 @@ class ScenariosTest {
         assertEquals(listOf("http://92.114.85.87:8018/play/a00k/index.m3u8"), FakePlayers.played.toList())
         assertTrue(compose.onAllNodesWithText("Nie udało się odtworzyć kanału").fetchSemanticsNodes().isEmpty())
 
-        // Powrót z odtwarzacza i na Home: kanał jest w rzędzie „Kontynuuj oglądanie” oraz w hero.
+        // Powrót z odtwarzacza i na Home: kanał jest w rzędzie „Ostatnie kanały” oraz w hero.
         back()
         nav("Home")
-        waitForText("Kontynuuj oglądanie")
+        waitForText("Ostatnie kanały")
         waitForText("OSTATNIO OGLĄDANE")
     }
 
