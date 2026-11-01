@@ -25,10 +25,15 @@ key KEYCODE_BACK
 shot 05_po_back
 
 FAIL_PROVIDER=0
-# Dodanie dostawcy M3U z lokalnego serwera: przechodzi przez prawdziwy Android Keystore (szyfrowanie adresu).
+# Scenariusz z prawdziwym odtwarzaniem: dwie listy z tym samym kanałem, pierwsza zepsuta (404), druga gra (HLS z ffmpeg).
+# Dodawanie dostawców przechodzi przez prawdziwy Android Keystore, odtwarzanie przez prawdziwy ExoPlayer.
 SRV=$(mktemp -d)
-printf '#EXTM3U\n#EXTINF:-1 tvg-id="a.pl" group-title="Test",Kanal Testowy\nhttp://10.0.2.2:8099/s.m3u8\n' > "$SRV/t.m3u"
-(cd "$SRV" && python3 -m http.server 8099 >/dev/null 2>&1 &)
+mkdir -p "$SRV/hls/good"
+ffmpeg -loglevel error -f lavfi -i testsrc=size=640x360:rate=25 -f lavfi -i sine=frequency=440 -t 30 \
+  -c:v libx264 -pix_fmt yuv420p -preset ultrafast -c:a aac -f hls -hls_time 4 -hls_list_size 0 "$SRV/hls/good/index.m3u8"
+printf '#EXTM3U\n#EXTINF:-1 tvg-chno="1" group-title="Test",Kanal Testowy\nhttp://10.0.2.2:8099/hls/missing/index.m3u8\n' > "$SRV/a.m3u"
+printf '#EXTM3U\n#EXTINF:-1 tvg-chno="2" group-title="Test",Kanal Testowy\nhttp://10.0.2.2:8099/hls/good/index.m3u8\n' > "$SRV/b.m3u"
+(cd "$SRV" && python3 -m http.server 8099 > "$OUT/../http-server.log" 2>&1 &)
 sleep 2
 key KEYCODE_DPAD_DOWN        # Przewodnik
 key KEYCODE_DPAD_DOWN        # Dostawcy
@@ -36,19 +41,51 @@ key KEYCODE_DPAD_CENTER
 shot 06_dostawcy_pusto
 key KEYCODE_DPAD_CENTER      # Dodaj dostawcę
 shot 07_formularz
-adb shell input text "Test"
+adb shell input text "ListaA"
 key KEYCODE_DPAD_DOWN
-adb shell input text "http://10.0.2.2:8099/t.m3u"
+adb shell input text "http://10.0.2.2:8099/a.m3u"
 shot 08_formularz_wypelniony
 key KEYCODE_DPAD_DOWN
 key KEYCODE_DPAD_CENTER      # Zapisz i pobierz
-sleep 8
-shot 09_po_zapisie
-adb shell uiautomator dump /sdcard/ui.xml >/dev/null
-adb pull /sdcard/ui.xml "$OUT/ui_po_zapisie.xml" >/dev/null
-if ! grep -q "10.0.2.2" "$OUT/ui_po_zapisie.xml"; then
-  echo "=== Po zapisie dostawcy nie widać hosta 10.0.2.2 na liście (zapis się nie udał) ===" >&2
+sleep 6
+shot 09_po_zapisie_A
+dump() { adb shell uiautomator dump /sdcard/ui.xml >/dev/null; adb pull /sdcard/ui.xml "$OUT/$1.xml" >/dev/null; }
+dump ui_po_zapisie_A
+if ! grep -q "10.0.2.2" "$OUT/ui_po_zapisie_A.xml"; then
+  echo "=== Po zapisie listy A nie widać hosta 10.0.2.2 (zapis dostawcy się nie udał) ===" >&2
   adb logcat -d -b crash | head -80 >&2
+  FAIL_PROVIDER=1
+fi
+key KEYCODE_DPAD_DOWN        # Dodaj dostawcę
+key KEYCODE_DPAD_CENTER
+adb shell input text "ListaB"
+key KEYCODE_DPAD_DOWN
+adb shell input text "http://10.0.2.2:8099/b.m3u"
+key KEYCODE_DPAD_DOWN
+key KEYCODE_DPAD_CENTER
+sleep 6
+shot 10_po_zapisie_B
+key KEYCODE_BACK
+key KEYCODE_DPAD_CENTER      # Na żywo
+sleep 3
+shot 11_na_zywo_dwa_kanaly
+key KEYCODE_DPAD_CENTER      # pierwszy kanał (Lista A, 404) -> failover na Listę B
+sleep 3
+shot 12_failover_przelaczenie
+sleep 12
+shot 13_odtwarzanie
+dump ui_odtwarzanie
+if grep -q "Nie udało się odtworzyć" "$OUT/ui_odtwarzanie.xml"; then
+  echo "=== Panel błędu odtwarzacza mimo działającej drugiej listy ===" >&2
+  FAIL_PROVIDER=1
+fi
+if ! grep -q "hls/good/.*\.ts" "$OUT/../http-server.log"; then
+  echo "=== Serwer nie dostał żądań segmentów działającego strumienia: failover nie zadziałał ===" >&2
+  tail -20 "$OUT/../http-server.log" >&2
+  FAIL_PROVIDER=1
+fi
+if ! grep -q "hls/missing" "$OUT/../http-server.log"; then
+  echo "=== Serwer nie dostał żądania do zepsutej listy A (kanał nie był próbowany) ===" >&2
   FAIL_PROVIDER=1
 fi
 if adb logcat -d | grep -qE "FATAL EXCEPTION|ANR in $PKG"; then

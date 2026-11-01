@@ -80,6 +80,9 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - run: ./gradlew :app:assembleDebug
+      - name: ffmpeg (strumień HLS do scenariusza odtwarzania)
+        run: |
+          if ! command -v ffmpeg >/dev/null; then sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg; fi
       - name: Emulator Android TV (API 34) - smoke D-pad
         uses: reactivecircus/android-emulator-runner@v2
         with:
