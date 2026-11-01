@@ -11,7 +11,6 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import pl.ketchupplayer.tv.core.model.VodKind
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class VodBrowseViewModelTest {
@@ -25,7 +24,7 @@ class VodBrowseViewModelTest {
     fun `szukanie, kategoria i sortowanie w ViewModelu`() =
         runTest {
             val vm = VodBrowseViewModel(FakeVodRepo(MOVIES))
-            vm.bind(VodKind.MOVIE)
+            vm.bind(VodMode.MOVIES)
             vm.state.first { !it.loading }
             // Pusty stan startowy zostaje zastąpiony po pierwszej emisji; sprawdzamy wyniki przez zdarzenia.
             vm.onEvent(VodBrowseEvent.SelectCategory("Akcja"))
@@ -70,7 +69,7 @@ class VodBrowseViewModelTest {
             val noDate = MOVIES.map { it.copy(item = it.item.copy(addedMs = null)) }
             val mixed = noDate.take(2) + MOVIES.drop(2)
             val vm = VodBrowseViewModel(FakeVodRepo(mixed))
-            vm.bind(VodKind.MOVIE)
+            vm.bind(VodMode.MOVIES)
             val state = vm.state.first { !it.loading }
             assertEquals(MOVIES.size, state.entries.size)
             // Z datą najpierw (najnowsza pierwsza), bez daty na końcu.

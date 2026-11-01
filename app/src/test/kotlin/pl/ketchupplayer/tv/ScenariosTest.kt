@@ -404,6 +404,28 @@ class ScenariosTest {
         waitForText("Moja lista") // rząd na Home
     }
 
+    /** Scenariusz: Moja lista zbiera dodane pozycje, a Szukaj znajduje film i serial po fragmencie tytułu. */
+    @Test
+    fun mojaListaISzukajDzialajaNaCalymKatalogu() {
+        serveXtreamVod()
+        addXtreamViaUi("dobre-haslo")
+        waitForText("Kanały: 2", substring = true)
+        nav("Moja lista")
+        waitForText("Moja lista jest pusta", substring = true)
+        nav("Filmy")
+        click("Pitbull")
+        click("+ Moja lista")
+        waitForText("✓ Moja lista")
+        nav("Moja lista")
+        waitForText("Pitbull")
+        nav("Szukaj")
+        waitForText("Seksmisja")
+        waitForText("Rodzina Kowalskich") // filmy i seriale razem
+        compose.onAllNodes(hasSetTextAction())[0].performTextInput("kowal")
+        waitFor { compose.onAllNodesWithText("Seksmisja").fetchSemanticsNodes().isEmpty() }
+        waitForText("Rodzina Kowalskich")
+    }
+
     /** Scenariusz: Seriale -> szczegóły ładują odcinki z serwera, sezony przełączają listę, odcinek gra swój adres. */
     @Test
     fun serialZXtreamPokazujeSezonyIOdcinki() {

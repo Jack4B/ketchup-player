@@ -17,4 +17,9 @@
     <string name="vod_no_results">Brak wyników dla „%1$s”</string>
     <string name="vod_open_providers">Dostawcy</string>
     <string name="vod_meta">%1$s · ★ %2$s</string>
+    <string name="vod_search">Szukaj</string>
+    <string name="vod_search_mylist">Szukaj w: Moja lista</string>
+    <string name="vod_search_all">Szukaj filmów i seriali</string>
+    <string name="vod_empty_mylist">Moja lista jest pusta. Dodaj filmy i seriale ze szczegółów.</string>
+    <string name="vod_empty_all">Brak filmów i seriali. Dodaj dostawcę Xtream.</string>
 </resources>

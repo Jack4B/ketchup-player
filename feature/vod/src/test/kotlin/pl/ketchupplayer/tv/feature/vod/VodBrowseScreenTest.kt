@@ -114,7 +114,7 @@ class VodBrowseScreenTest {
     val compose = createAndroidComposeRule<ComponentActivity>()
 
     private fun stateOf(vm: VodBrowseViewModel): VodBrowseUiState {
-        vm.bind(VodKind.MOVIE)
+        vm.bind(VodMode.MOVIES)
         return runCatching { kotlinx.coroutines.runBlocking { vm.state.first { !it.loading } } }.getOrThrow()
     }
 

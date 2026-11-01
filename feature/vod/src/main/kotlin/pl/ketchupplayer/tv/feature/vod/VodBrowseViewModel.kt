@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,14 +26,14 @@ class VodBrowseViewModel
     constructor(
         private val repo: VodRepository,
     ) : ViewModel() {
-        private val kind = MutableStateFlow<VodKind?>(null)
+        private val mode = MutableStateFlow<VodMode?>(null)
         private val category = MutableStateFlow<String?>(null)
         private val query = MutableStateFlow("")
         private val sort = MutableStateFlow(VodSort.NEWEST)
 
-        fun bind(value: VodKind) {
-            if (kind.value != value) {
-                kind.value = value
+        fun bind(value: VodMode) {
+            if (mode.value != value) {
+                mode.value = value
                 category.value = null
                 query.value = ""
             }
@@ -40,13 +41,22 @@ class VodBrowseViewModel
 
         val state: StateFlow<VodBrowseUiState> =
             combine(
-                kind.filterNotNull().flatMapLatest { k -> repo.entries(k) },
-                kind,
+                mode.filterNotNull().flatMapLatest { m -> source(m) },
+                mode,
                 category,
                 query,
                 sort,
-            ) { all, k, cat, q, s -> build(all, k ?: VodKind.MOVIE, cat, q, s) }
+            ) { all, m, cat, q, s -> build(all, m ?: VodMode.MOVIES, cat, q, s) }
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_MS), VodBrowseUiState())
+
+        private fun source(mode: VodMode): Flow<List<VodEntry>> =
+            when (mode) {
+                VodMode.MOVIES -> repo.entries(VodKind.MOVIE)
+                VodMode.SERIES -> repo.entries(VodKind.SERIES)
+                VodMode.MYLIST -> repo.myList()
+                VodMode.SEARCH ->
+                    combine(repo.entries(VodKind.MOVIE), repo.entries(VodKind.SERIES)) { m, s -> m + s }
+            }
 
         fun onEvent(event: VodBrowseEvent) {
             when (event) {
@@ -62,7 +72,7 @@ class VodBrowseViewModel
 
             fun build(
                 all: List<VodEntry>,
-                kind: VodKind,
+                mode: VodMode,
                 category: String?,
                 query: String,
                 sort: VodSort,
@@ -101,7 +111,7 @@ class VodBrowseViewModel
                         VodSort.RATING -> filtered.sortedByDescending { it.item.rating ?: 0.0 }
                         VodSort.YEAR -> filtered.sortedByDescending { it.item.year ?: 0 }
                     }
-                return VodBrowseUiState(kind, false, sorted, categories, all.size, category, query, sort)
+                return VodBrowseUiState(mode, false, sorted, categories, all.size, category, query, sort)
             }
         }
     }

@@ -13,7 +13,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import pl.ketchupplayer.tv.core.designsystem.AppShell
-import pl.ketchupplayer.tv.core.model.VodKind
 import pl.ketchupplayer.tv.feature.details.DetailsRoute
 import pl.ketchupplayer.tv.feature.guide.GuideRoute
 import pl.ketchupplayer.tv.feature.home.HomeRoute
@@ -25,6 +24,7 @@ import pl.ketchupplayer.tv.feature.settings.AppearanceRoute
 import pl.ketchupplayer.tv.feature.settings.EpgSourcesRoute
 import pl.ketchupplayer.tv.feature.settings.PlaybackSettingsRoute
 import pl.ketchupplayer.tv.feature.vod.VodBrowseRoute
+import pl.ketchupplayer.tv.feature.vod.VodMode
 
 /**
  * Nawigacja: stos tras (String, przeżywa obrót) + powłoka z szyną (makiety v3). Odtwarzacz jest pełnoekranowy,
@@ -116,9 +116,13 @@ private fun SectionContent(
         SettingsPage.PLAYBACK.route -> PlaybackSettingsRoute(onBack = pop)
         SettingsPage.APPEARANCE.route -> AppearanceRoute(onBack = pop)
         Section.MOVIES.route ->
-            VodBrowseRoute(VodKind.MOVIE, { push(Routes.details(it)) }, { push(SettingsPage.PROVIDERS.route) })
+            VodBrowseRoute(VodMode.MOVIES, { push(Routes.details(it)) }, { push(SettingsPage.PROVIDERS.route) })
         Section.SERIES.route ->
-            VodBrowseRoute(VodKind.SERIES, { push(Routes.details(it)) }, { push(SettingsPage.PROVIDERS.route) })
+            VodBrowseRoute(VodMode.SERIES, { push(Routes.details(it)) }, { push(SettingsPage.PROVIDERS.route) })
+        Section.MYLIST.route ->
+            VodBrowseRoute(VodMode.MYLIST, { push(Routes.details(it)) }, { push(SettingsPage.PROVIDERS.route) })
+        Section.SEARCH.route ->
+            VodBrowseRoute(VodMode.SEARCH, { push(Routes.details(it)) }, { push(SettingsPage.PROVIDERS.route) })
         Section.HOME.route ->
             HomeRoute(
                 onOpenChannel = openPlayer,

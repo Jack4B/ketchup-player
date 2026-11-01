@@ -39,17 +39,16 @@ import pl.ketchupplayer.tv.core.designsystem.ShellHeader
 import pl.ketchupplayer.tv.core.designsystem.StateKind
 import pl.ketchupplayer.tv.core.designsystem.StateView
 import pl.ketchupplayer.tv.core.designsystem.panel
-import pl.ketchupplayer.tv.core.model.VodKind
 import java.util.Locale
 
 @Composable
 fun VodBrowseRoute(
-    kind: VodKind,
+    mode: VodMode,
     onOpen: (String) -> Unit,
     onOpenProviders: () -> Unit,
-    viewModel: VodBrowseViewModel = hiltViewModel(key = kind.name),
+    viewModel: VodBrowseViewModel = hiltViewModel(key = mode.name),
 ) {
-    viewModel.bind(kind)
+    viewModel.bind(mode)
     val state by viewModel.state.collectAsStateWithLifecycle()
     VodBrowseScreen(state, viewModel::onEvent, onOpen, onOpenProviders)
 }
@@ -62,11 +61,31 @@ fun VodBrowseScreen(
     onOpen: (String) -> Unit,
     onOpenProviders: () -> Unit,
 ) {
-    val movies = state.kind == VodKind.MOVIE
+    val title =
+        when (state.mode) {
+            VodMode.MOVIES -> R.string.vod_movies
+            VodMode.SERIES -> R.string.vod_series
+            VodMode.MYLIST -> R.string.vod_my_list
+            VodMode.SEARCH -> R.string.vod_search
+        }
+    val hint =
+        when (state.mode) {
+            VodMode.MOVIES -> R.string.vod_search_movies
+            VodMode.SERIES -> R.string.vod_search_series
+            VodMode.MYLIST -> R.string.vod_search_mylist
+            VodMode.SEARCH -> R.string.vod_search_all
+        }
+    val empty =
+        when (state.mode) {
+            VodMode.MOVIES -> R.string.vod_empty_movies
+            VodMode.SERIES -> R.string.vod_empty_series
+            VodMode.MYLIST -> R.string.vod_empty_mylist
+            VodMode.SEARCH -> R.string.vod_empty_all
+        }
     ScreenScaffold(scrollable = false) {
-        ShellHeader(stringResource(if (movies) R.string.vod_movies else R.string.vod_series), tabs = {
+        ShellHeader(stringResource(title), tabs = {
             SearchField(
-                hint = stringResource(if (movies) R.string.vod_search_movies else R.string.vod_search_series),
+                hint = stringResource(hint),
                 value = state.query,
                 onChange = { onEvent(VodBrowseEvent.Search(it)) },
                 modifier = Modifier.width(SEARCH_WIDTH),
@@ -77,7 +96,7 @@ fun VodBrowseScreen(
             state.total == 0 ->
                 StateView(
                     StateKind.EMPTY,
-                    stringResource(if (movies) R.string.vod_empty_movies else R.string.vod_empty_series),
+                    stringResource(empty),
                     actionLabel = stringResource(R.string.vod_open_providers),
                     onAction = onOpenProviders,
                 )
@@ -181,7 +200,7 @@ private fun Grid(
         return
     }
     val first = remember { FocusRequester() }
-    LaunchedEffect(state.kind) {
+    LaunchedEffect(state.mode) {
         // Siatka składa elementy leniwie: fokus dopiero, gdy pierwszy plakat jest podpięty.
         repeat(FOCUS_RETRIES) {
             withFrameNanos { }

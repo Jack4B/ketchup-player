@@ -1,7 +1,9 @@
 package pl.ketchupplayer.tv.feature.vod
 
 import pl.ketchupplayer.tv.core.data.vod.VodEntry
-import pl.ketchupplayer.tv.core.model.VodKind
+
+/** Źródło siatki: filmy, seriale, Moja lista albo wyszukiwanie we wszystkim. */
+enum class VodMode { MOVIES, SERIES, MYLIST, SEARCH }
 
 enum class VodSort { NEWEST, AZ, RATING, YEAR }
 
@@ -9,7 +11,7 @@ enum class VodSort { NEWEST, AZ, RATING, YEAR }
 const val CATEGORY_RECENT = "\u0000recent"
 
 data class VodBrowseUiState(
-    val kind: VodKind = VodKind.MOVIE,
+    val mode: VodMode = VodMode.MOVIES,
     val loading: Boolean = true,
     /** Pozycje po filtrach (kategoria, szukanie) i sortowaniu. */
     val entries: List<VodEntry> = emptyList(),
