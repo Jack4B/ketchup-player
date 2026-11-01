@@ -56,12 +56,29 @@ adb reverse tcp:8099 tcp:8099
   echo "emulator curl: $(adb shell 'toybox nc -w 3 127.0.0.1 8099 </dev/null >/dev/null 2>&1 && echo ok || echo brak')"
   ls "$SRV/hls/good" | head -3
 } > "$OUT/diag.txt" 2>&1 || true
+# Wpisywanie z kontrolą: na wolnym emulatorze `input text` potrafi zgubić lub przestawić znaki (np. „127.00.1”),
+# co daje fałszywe błędy testu. Po wpisaniu sprawdzamy zawartość pola w drzewie UI, a w razie różnicy czyścimy i powtarzamy.
+type_checked() {
+  local want="$1" attempt
+  for attempt in 1 2 3 4; do
+    adb shell input text "$want"
+    sleep 1
+    adb shell uiautomator dump /sdcard/ui_type.xml >/dev/null
+    adb pull /sdcard/ui_type.xml "$OUT/ui_type.xml" >/dev/null
+    if grep -qF "text=\"$want\"" "$OUT/ui_type.xml"; then return 0; fi
+    echo "wpisywanie: niezgodne pole (próba $attempt), czyszczę i powtarzam: $want" >&2
+    adb shell input keyevent KEYCODE_MOVE_END
+    adb shell 'for i in $(seq 1 80); do input keyevent KEYCODE_DEL; done'
+  done
+  echo "wpisywanie: nie udało się wpisać '$want'" >&2
+  return 0
+}
 shot 06_dostawcy_pusto
 key KEYCODE_DPAD_CENTER      # Dodaj dostawcę
 shot 07_formularz
-adb shell input text "ListaA"
+type_checked "ListaA"
 key KEYCODE_ENTER            # Enter w polu nazwy: przejście do adresu
-adb shell input text "http://127.0.0.1:8099/a.m3u"
+type_checked "http://127.0.0.1:8099/a.m3u"
 shot 08_formularz_wypelniony
 key KEYCODE_ENTER            # Enter w ostatnim polu: zapis i pobranie
 sleep 6
@@ -89,9 +106,9 @@ if ! grep -q "Kanały: 1" "$OUT/ui_po_zapisie_A.xml"; then
   FAIL_PROVIDER=1
 fi
 tap "Dodaj dostawcę" || FAIL_PROVIDER=1
-adb shell input text "ListaB"
+type_checked "ListaB"
 key KEYCODE_ENTER
-adb shell input text "http://127.0.0.1:8099/b.m3u"
+type_checked "http://127.0.0.1:8099/b.m3u"
 key KEYCODE_ENTER
 sleep 6
 shot 10_po_zapisie_B
