@@ -45,6 +45,8 @@ fun FocusItem(
     focusScale: Float = 1.04f,
     contentAlignment: Alignment = Alignment.TopStart,
     onLongClick: (() -> Unit)? = null,
+    /** false: bez obramowania w spoczynku (listy w panelach); ring akcentu przy fokusie zostaje. */
+    outlined: Boolean = true,
     content: @Composable (focused: Boolean) -> Unit,
 ) {
     val c = KetchupTheme.colors
@@ -65,7 +67,7 @@ fun FocusItem(
                 .scale(scale)
                 .onFocusChanged { focused = it.isFocused }
                 .background(fill, shape)
-                .border(if (focused) 3.dp else 1.dp, ring, shape)
+                .then(if (focused || outlined) Modifier.border(if (focused) 3.dp else 1.dp, ring, shape) else Modifier)
                 .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
                 .combinedClickable(
                     interactionSource = remember { MutableInteractionSource() },

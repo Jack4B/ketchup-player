@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -96,30 +97,44 @@ fun ChannelRow(
     progress: Float? = null,
     favorite: Boolean = false,
     onLongClick: (() -> Unit)? = null,
+    /** Godziny audycji po prawej, np. `19:30–20:00`. */
+    timeRange: String? = null,
 ) {
     val c = KetchupTheme.colors
-    FocusItem(onClick, modifier.fillMaxWidth().height(CHANNEL_ROW_HEIGHT), onLongClick = onLongClick) {
+    FocusItem(
+        onClick,
+        modifier.fillMaxWidth().height(CHANNEL_ROW_HEIGHT),
+        onLongClick = onLongClick,
+        outlined = false,
+    ) {
         Row(
-            Modifier.padding(horizontal = 16.dp).fillMaxHeight(),
+            Modifier.padding(horizontal = 12.dp).fillMaxHeight(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(number.toString(), fontSize = 20.sp, color = c.textSecondary, modifier = Modifier.width(48.dp))
+            Text(number.toString(), fontSize = 16.sp, color = c.textSecondary, modifier = Modifier.width(30.dp))
             Box(
                 Modifier
-                    .width(72.dp)
+                    .width(56.dp)
                     .background(
                         c.channelTile,
                         RoundedCornerShape(8.dp),
                     ).padding(vertical = 6.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(tileLabel(name), fontSize = 18.sp, color = c.channelTileText)
+                Text(
+                    tileLabel(name),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = c.channelTileText,
+                    maxLines = 1,
+                )
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     if (favorite) "★ $name" else name,
-                    fontSize = 20.sp,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
                     color = c.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -127,7 +142,7 @@ fun ChannelRow(
                 if (nowPlaying != null) {
                     Text(
                         nowPlaying,
-                        fontSize = 16.sp,
+                        fontSize = 14.sp,
                         color = c.textSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -145,11 +160,14 @@ fun ChannelRow(
                     }
                 }
             }
+            if (timeRange != null) {
+                Text(timeRange, fontSize = 13.sp, color = c.textSecondary, maxLines = 1)
+            }
         }
     }
 }
 
-private val CHANNEL_ROW_HEIGHT = 72.dp
+private val CHANNEL_ROW_HEIGHT = 64.dp
 private const val CHANNEL_TILE_CHARS = 4
 
 /** Etykieta kafelka: pierwsze słowo (do 4 znaków) albo inicjały, gdy to pojedynczy znak (`4 Fun TV` -> `4FT`). */

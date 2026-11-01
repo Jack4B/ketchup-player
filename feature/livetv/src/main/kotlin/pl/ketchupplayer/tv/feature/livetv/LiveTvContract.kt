@@ -16,6 +16,23 @@ data class LiveTvUiState(
     /** Audycja trwająca teraz: id kanału -> audycja. */
     val onAir: Map<String, EpgProgramme> = emptyMap(),
     val nowMs: Long = 0,
+    /** Liczba kanałów w grupach (do liczników na liście grup) i w grupie „Wszystkie”. */
+    val groupCounts: Map<String, Int> = emptyMap(),
+    val totalCount: Int = 0,
+    /** Liczba ostatnio oglądanych kanałów; wirtualna grupa „Ostatnie”. */
+    val recentCount: Int = 0,
+    val recentSelected: Boolean = false,
+    /** Szczegóły kanału pod fokusem (panel po prawej). */
+    val details: ChannelDetails? = null,
+)
+
+/** Panel szczegółów: audycja teraz i następna, źródło (lista dostawcy). */
+data class ChannelDetails(
+    val channel: Channel,
+    val now: EpgProgramme?,
+    val next: EpgProgramme?,
+    /** np. „Lista 1 · Dostawca A”. */
+    val source: String,
 )
 
 sealed interface LiveTvEvent {
@@ -24,6 +41,13 @@ sealed interface LiveTvEvent {
     ) : LiveTvEvent
 
     data object SelectFavorites : LiveTvEvent
+
+    data object SelectRecent : LiveTvEvent
+
+    /** Fokus wszedł na kanał: panel szczegółów pokazuje jego audycję. */
+    data class FocusChannel(
+        val channelId: String,
+    ) : LiveTvEvent
 
     data class ToggleFavorite(
         val channelId: String,

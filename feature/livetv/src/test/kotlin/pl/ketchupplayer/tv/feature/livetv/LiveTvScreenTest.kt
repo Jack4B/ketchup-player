@@ -17,6 +17,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import pl.ketchupplayer.tv.core.designsystem.DeviceClass
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
+import pl.ketchupplayer.tv.core.designsystem.ShellPreview
 import pl.ketchupplayer.tv.core.model.Channel
 import pl.ketchupplayer.tv.core.model.EpgProgramme
 import pl.ketchupplayer.tv.core.model.ProviderId
@@ -47,11 +48,16 @@ class LiveTvScreenTest {
     ) {
         compose.setContent {
             KetchupTheme(device = DeviceClass.TV) {
-                LiveTvScreen(state, { events += it }, { opened += it }, providers, onBack)
+                ShellPreview("live") {
+                    LiveTvScreen(state, { events += it }, { opened += it }, providers, onBack)
+                }
             }
         }
         compose.waitForIdle()
     }
+
+    /** Zdarzenia użytkownika bez śledzenia fokusu (FocusChannel pojawia się przy każdym ruchu). */
+    private fun List<LiveTvEvent>.actions() = filterNot { it is LiveTvEvent.FocusChannel }
 
     private fun key(k: Key) = compose.onRoot().performKeyInput { pressKey(k) }
 
@@ -109,7 +115,7 @@ class LiveTvScreenTest {
         key(Key.DirectionLeft)
         key(Key.DirectionDown)
         key(Key.DirectionCenter)
-        assertEquals(listOf<LiveTvEvent>(LiveTvEvent.SelectGroup("Info")), events)
+        assertEquals(listOf<LiveTvEvent>(LiveTvEvent.SelectGroup("Info")), events.actions())
     }
 
     @Test
@@ -144,7 +150,7 @@ class LiveTvScreenTest {
             keyUp(Key.DirectionCenter)
         }
         compose.waitForIdle()
-        assertEquals(listOf<LiveTvEvent>(LiveTvEvent.ToggleFavorite("p:1")), events)
+        assertEquals(listOf<LiveTvEvent>(LiveTvEvent.ToggleFavorite("p:1")), events.actions())
         assertEquals(emptyList<String>(), opened)
     }
 
@@ -153,9 +159,8 @@ class LiveTvScreenTest {
         val events = mutableListOf<LiveTvEvent>()
         show(full.copy(favorites = setOf("p:2")), events)
         key(Key.DirectionLeft)
-        key(Key.DirectionDown)
-        key(Key.DirectionCenter)
-        assertEquals(listOf<LiveTvEvent>(LiveTvEvent.SelectFavorites), events)
+        key(Key.DirectionCenter) // pierwsza pozycja listy grup to „Ulubione”
+        assertEquals(listOf<LiveTvEvent>(LiveTvEvent.SelectFavorites), events.actions())
     }
 
     @Test
@@ -164,5 +169,67 @@ class LiveTvScreenTest {
         show(full, onBack = { backs++ })
         compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         assertEquals(1, backs)
+    }
+
+    /** Dane jak na makiecie v3 (03-live): grupy z licznikami, kanały z audycją i godzinami, panel szczegółów. */
+    @Test
+    fun screenshotWgMakiety() {
+        val min = 60_000L
+        val now = 1_800_000_000_000L
+        val names =
+            listOf(
+                Triple("Kanał Jeden", "Wiadomości wieczorne", 101),
+                Triple("Info 24", "Rozmowa dnia", 102),
+                Triple("Sport Plus", "Magazyn piłkarski", 103),
+                Triple("Kino Premium", "Film fabularny", 104),
+                Triple("Mini TV", "Bajki na dobranoc", 105),
+                Triple("Doku HD", "Natura z bliska", 106),
+                Triple("Hity Muzyka", "Lista przebojów", 107),
+            )
+        val chans =
+            names.map { (n, _, no) ->
+                Channel("p:$no", pid, n, "http://h.example.invalid/$no", no, group = "Informacje")
+            }
+        val air =
+            names.associate { (_, t, no) ->
+                "p:$no" to
+                    EpgProgramme(
+                        "p:$no",
+                        now - 30 * min,
+                        now + 30 * min,
+                        t,
+                        "Opis audycji z przewodnika EPG: dwie, trzy linie tekstu zastępczego.",
+                    )
+            }
+        val state =
+            LiveTvUiState(
+                loading = false,
+                groups = listOf("Informacje", "Sport", "Filmy", "Dzieci", "Muzyka", "Dokument"),
+                selectedGroup = "Informacje",
+                channels = chans,
+                favorites = setOf("p:101"),
+                onAir = air,
+                nowMs = now,
+                groupCounts =
+                    mapOf(
+                        "Informacje" to 24,
+                        "Sport" to 38,
+                        "Filmy" to 56,
+                        "Dzieci" to 18,
+                        "Muzyka" to 22,
+                        "Dokument" to 30,
+                    ),
+                totalCount = 642,
+                recentCount = 8,
+                details =
+                    ChannelDetails(
+                        chans[1],
+                        air["p:102"],
+                        EpgProgramme("p:102", now + 30 * min, now + 90 * min, "Serwis informacyjny"),
+                        "Lista 1 · Dostawca A",
+                    ),
+            )
+        show(state)
+        compose.onRoot().captureRoboImage("src/test/screenshots/livetv_makieta.png")
     }
 }
