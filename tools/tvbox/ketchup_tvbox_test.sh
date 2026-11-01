@@ -101,10 +101,16 @@ if [ -n "$APK" ] && [ -f "$APK" ]; then
   out=$(adb -s "$TARGET" install -r -d "$APK" 2>&1 | tr -d '\r'); echo "$out" | grep -q Success \
     && record "—" "Instalacja APK" PASS "$(basename "$APK")" || record "—" "Instalacja APK" FAIL "$out"
 fi
+sleep 3
+pk=$(ADB_TIMEOUT=90 sh_ "pm list packages" ; ADB_TIMEOUT=90 sh_ "cmd package list packages")
+echo "$pk" > "$OUT/logs/packages.txt"
 for p in pl.ketchupplayer.tv.debug pl.ketchupplayer.tv; do
-  if sh_ "pm path $p" | grep -q package; then PKG="$p"; break; fi
+  if echo "$pk" | grep -q "package:$p\$"; then PKG="$p"; break; fi
 done
-[ -n "$PKG" ] || { record "—" "Aplikacja zainstalowana" FAIL "nie znaleziono pakietu (podaj APK jako argument)"; cat "$REPORT"; exit 1; }
+if [ -z "$PKG" ]; then
+  [ -z "$(echo "$pk" | tr -d '[:space:]')" ] && why="pusta odpowiedź pm (adb/uprawnienia/timeout)" || why="pakietu nie ma na liście ($(echo "$pk" | grep -ci ketchup) trafień 'ketchup')"
+  record "—" "Aplikacja zainstalowana" FAIL "$why"; cat "$REPORT"; exit 1
+fi
 ACT="$PKG/pl.ketchupplayer.tv.MainActivity"
 log "pakiet: $PKG"
 sh_ "pm clear $PKG" >/dev/null
