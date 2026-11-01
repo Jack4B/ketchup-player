@@ -46,3 +46,17 @@ Otwarte: przeskoki fokusu pilota (czeka na dane z testu pilota).
 ## Uwagi procesowe
 - 1.11 wieczór: przy edycji ScenariosTest skryptem usunąłem przez pomyłkę 3 scenariusze (Ustawienia/BACK/EPG); przywrócone z historii. Przy edycjach plików testowych: zawsze `git diff --stat` przed commitem.
 - CI: exit 134 w `:app:testDebugUnitTest` (JniConstants F) = crash natywny runnera; ponowić run.
+
+## Etap 3: UI v5 (decyzja użytkownika, 2026-11-01)
+
+Makiety: artefakt „Ketchup Player v4 makiety” (4 plansze 1920x1080: Na żywo, Home, Filmy, System).
+
+- [ ] Paleta stonowana jak TiviMate: motyw Morski (turkus #35C2B4 na ciemnym szaro-turkusowym tle, domyślny), Grafit, Czerń OLED, Własny (akcent + odcień tła + poziom szkła). Zielenie/niebieskie z v3 wycofane.
+- [ ] Szkło: panele z półprzezroczystością i rozmyciem tła (Modifier.blur, API 31+), poziomy Pełne/Lekkie/Wyłączone; domyślny poziom wybiera test płynności na boxie (słabszy SoC = Lekkie).
+- [ ] Szyna jako pływająca szklana kapsuła; aktywna pozycja: turkusowa poświata; fokus: obrys + glow.
+- [ ] Ambientowe tło: rozmyta grafika zaznaczonego filmu/kanału pod całym ekranem; akcent opcjonalnie z grafiki (Palette API).
+- [ ] Logo stacji, łańcuch: (1) tvg-logo z listy, (2) baza iptv-org (https://iptv-org.github.io/api/logos.json + channels.json, dopasowanie po tvg-id, potem nazwa/alt_names; dane CC0), (3) własne logo użytkownika, (4) zastępnik w tonie motywu. Repo tv-logo/tv-logos: licencja niejasna, tylko opcjonalnie, po sprawdzeniu LICENSE.
+- [ ] EPG: źródła z listy (url-tvg), iptv-org/epg (PL) jako opcja, własne adresy XMLTV.
+- [ ] Home wg makiety: hero z „Mam czas na…” (30 min/90 min/2 h+/Zaskocz mnie), rzędy Nowe odcinki i Na żywo teraz.
+- [ ] Filmy/Seriale: segment sortowania w pasku narzędzi, ambientowe tło z plakatu.
+- [ ] Zdrowie źródeł: stan list i EPG w Ustawieniach (sprawna/częściowo/napraw).
