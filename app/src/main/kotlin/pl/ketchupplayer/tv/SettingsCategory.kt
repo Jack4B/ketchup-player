@@ -15,6 +15,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -32,6 +33,7 @@ import androidx.tv.material3.Text
 import pl.ketchupplayer.tv.core.designsystem.FocusItem
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.designsystem.LocalBreadcrumb
+import pl.ketchupplayer.tv.core.designsystem.LocalFocusRail
 import pl.ketchupplayer.tv.core.designsystem.ScreenScaffold
 import pl.ketchupplayer.tv.core.designsystem.ScreenTitle
 import pl.ketchupplayer.tv.core.designsystem.panel
@@ -85,6 +87,8 @@ fun SettingsScreen(initial: SettingsPage? = null) {
         }
     }
     val c = KetchupTheme.colors
+    val toRail = LocalFocusRail.current
+    var inCategories by remember { mutableStateOf(true) }
     ScreenScaffold(scrollable = false) {
         ScreenTitle(stringResource(R.string.nav_settings))
         Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -92,6 +96,7 @@ fun SettingsScreen(initial: SettingsPage? = null) {
                 Modifier
                     .width(CATEGORIES_WIDTH)
                     .fillMaxHeight()
+                    .onFocusChanged { inCategories = it.hasFocus }
                     .panel()
                     .padding(10.dp),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -118,9 +123,11 @@ fun SettingsScreen(initial: SettingsPage? = null) {
             }
             Column(Modifier.weight(1f).fillMaxHeight()) {
                 val toCategories: () -> Unit = { runCatching { requesters[selected].requestFocus() } }
+                // BACK: z opcji do listy kategorii, z listy kategorii na szynę (do innych sekcji).
+                val back: () -> Unit = { if (inCategories) toRail() else toCategories() }
                 CompositionLocalProvider(LocalBreadcrumb provides stringResource(R.string.nav_settings)) {
                     // key: przełączenie kategorii czyści stan poprzedniej (formularze, edytory).
-                    androidx.compose.runtime.key(selected) { CategoryContent(categories[selected], toCategories) }
+                    androidx.compose.runtime.key(selected) { CategoryContent(categories[selected], back) }
                 }
             }
         }

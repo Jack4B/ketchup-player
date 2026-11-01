@@ -803,6 +803,37 @@ class ScenariosTest {
         waitForText("TVN 24", timeoutMs = BIG_WAIT_MS)
     }
 
+    private fun pressKeys(keys: List<Key>) =
+        keys.forEach { k ->
+            compose.onRoot().performKeyInput { pressKey(k) }
+            compose.waitForIdle()
+        }
+
+    /** Błąd z boxa: po wejściu w Ustawienia nie dało się wrócić pilotem do szyny i innych sekcji. */
+    @Test
+    fun zUstawienPilotemMoznaWrocicDoSzynyIInnychSekcji() {
+        nav("Ustawienia")
+        waitForText("Listy i dostawcy")
+        pressKeys(listOf(Key.ShiftLeft, Key.DirectionLeft)) // z listy kategorii w szynę (aktywna pozycja)
+        compose.onNodeWithContentDescription("Ustawienia").assertIsFocused()
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(500)) // szyna zdąży się rozwinąć
+        compose.waitForIdle()
+        pressKeys(listOf(Key.DirectionUp)) // wyżej: Moja lista
+        compose.onNodeWithContentDescription("Moja lista").assertIsFocused()
+        pressKeys(listOf(Key.DirectionUp, Key.DirectionUp, Key.DirectionUp))
+        compose.onNodeWithContentDescription("Na żywo").assertIsFocused()
+    }
+
+    /** BACK w Ustawieniach z listy kategorii przenosi na szynę (nie zostaje w miejscu). */
+    @Test
+    fun backZListyKategoriiUstawienPrzenosiNaSzyne() {
+        nav("Ustawienia")
+        waitForText("Listy i dostawcy")
+        pressKeys(listOf(Key.ShiftLeft))
+        back()
+        compose.onNodeWithContentDescription("Ustawienia").assertIsFocused()
+    }
+
     /** Scenariusz: lista z kanałami z kilku krajów; wyłączona w Ustawieniach grupa UK znika z Na żywo. */
     @Test
     fun wylaczonaGrupaZnikaZNaZywo() {

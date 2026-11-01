@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -43,6 +44,11 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -230,6 +236,14 @@ private fun NavRail(
 ) {
     val c = KetchupTheme.colors
     var expanded by remember { mutableStateOf(false) }
+    // Kolejność pozycji od góry do dołu (Ustawienia na końcu); GÓRA/DÓŁ w szynie przechodzą po niej jawnie, a nie
+    // przez wyszukiwanie fokusu (to gubiło fokus po wejściu w szynę z Ustawień).
+    val order =
+        remember(entries) {
+            entries.filter { it.icon != RailIcon.SETTINGS } +
+                entries.filter { it.icon == RailIcon.SETTINGS }
+        }
+    var current by remember { mutableIntStateOf(-1) }
     // „Szkło”: półprzezroczysty gradient w tonie motywu + cienki połysk na krawędzi. Bez rozmycia (słabe SoC boxów):
     // przezroczystość daje głębię, a tło ekranu prześwituje przez szynę.
     val shape = RoundedCornerShape(if (c.theme == ThemeId.CZERN) c.cornerRadius else RAIL_GLASS_RADIUS)
@@ -265,7 +279,23 @@ private fun NavRail(
             ).fillMaxHeight()
             .then(railFill)
             .onFocusChanged { expanded = it.hasFocus }
-            .padding(vertical = 8.dp),
+            .onPreviewKeyEvent { e ->
+                val step =
+                    when {
+                        e.type != KeyEventType.KeyDown -> 0
+                        e.key == Key.DirectionUp -> -1
+                        e.key == Key.DirectionDown -> 1
+                        else -> 0
+                    }
+                val target = order.getOrNull(current + step)?.let { requesters[it.id] }
+                if (step != 0 && current >= 0 && target != null) {
+                    // canFocus pozycji zależy od „expanded”, więc przy pierwszym ruchu wymuszamy je przez requestFocus.
+                    runCatching { target.requestFocus() }
+                    true
+                } else {
+                    step != 0 && current >= 0 // na krańcach szyny strzałka nie ucieka do treści
+                }
+            }.padding(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Box(Modifier.fillMaxWidth().height(RAIL_AVATAR_BOX), contentAlignment = Alignment.Center) {
@@ -277,7 +307,16 @@ private fun NavRail(
             }
         }
         val top = entries.filter { it.icon != RailIcon.SETTINGS }
-        top.forEach { RailItem(it, it.id == selectedId, expanded, requesters.getValue(it.id)) { onSelect(it.id) } }
+        top.forEach { entry ->
+            RailItem(entry, entry.id == selectedId, expanded, requesters.getValue(entry.id), {
+                if (it) {
+                    current =
+                        order.indexOf(entry)
+                }
+            }) {
+                onSelect(entry.id)
+            }
+        }
         Spacer(Modifier.weight(1f))
         Box(
             Modifier
@@ -286,8 +325,15 @@ private fun NavRail(
                 .height(1.dp)
                 .background(c.outline),
         )
-        entries.filter { it.icon == RailIcon.SETTINGS }.forEach {
-            RailItem(it, it.id == selectedId, expanded, requesters.getValue(it.id)) { onSelect(it.id) }
+        entries.filter { it.icon == RailIcon.SETTINGS }.forEach { entry ->
+            RailItem(entry, entry.id == selectedId, expanded, requesters.getValue(entry.id), {
+                if (it) {
+                    current =
+                        order.indexOf(entry)
+                }
+            }) {
+                onSelect(entry.id)
+            }
         }
     }
 }
@@ -313,6 +359,7 @@ private fun RailItem(
     selected: Boolean,
     expanded: Boolean,
     requester: FocusRequester,
+    onFocused: (Boolean) -> Unit,
     onClick: () -> Unit,
 ) {
     val c = KetchupTheme.colors
@@ -327,8 +374,10 @@ private fun RailItem(
             // Spoza szyny fokus przyjmuje tylko aktywna pozycja (makiety v3, NOTATKI §5); w środku wszystkie.
             .focusProperties { canFocus = expanded || selected }
             .focusRequester(requester)
-            .onFocusChanged { focused = it.isFocused }
-            .semantics(mergeDescendants = true) {
+            .onFocusChanged {
+                focused = it.isFocused
+                onFocused(it.isFocused)
+            }.semantics(mergeDescendants = true) {
                 contentDescription = entry.label
                 this.selected = selected
             }.then(if (selected) Modifier.background(c.accent.copy(alpha = SELECTED_FILL_ALPHA), shape) else Modifier)
