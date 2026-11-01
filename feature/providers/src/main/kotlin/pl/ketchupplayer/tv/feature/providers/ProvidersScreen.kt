@@ -126,6 +126,9 @@ internal fun AddForm(
 ) {
     val xtream = form.kind == ProviderKind.XTREAM
     val submit: () -> Unit = { if (!busy) onEvent(ProvidersEvent.Submit) }
+    // Po wysłaniu chowamy klawiaturę ekranową, żeby nie zasłaniała postępu importu.
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    androidx.compose.runtime.LaunchedEffect(busy) { if (busy) keyboard?.hide() }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         KetchupButton(
             stringResource(R.string.providers_kind_m3u),

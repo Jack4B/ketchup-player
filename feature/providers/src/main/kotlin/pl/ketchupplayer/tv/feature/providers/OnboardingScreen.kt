@@ -158,8 +158,9 @@ private fun AddStep(
         Text(stringResource(R.string.onb_error, it), fontSize = 16.sp, color = ERROR_COLOR)
     }
     val form = state.form
+    // Postęp nad formularzem: klawiatura ekranowa zasłania dół ekranu.
+    if (state.busy) ImportProgress(state.status, fontSizeSp = 18)
     if (form != null) AddForm(form, state.busy, onEvent, showActions = false)
-    if (state.busy) ImportProgress(state.status, fontSizeSp = 16)
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
