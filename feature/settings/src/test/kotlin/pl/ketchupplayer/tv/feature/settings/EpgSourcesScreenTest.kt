@@ -74,6 +74,10 @@ class EpgSourcesScreenTest {
         }
         compose.waitForIdle()
 
+        key(Key.DirectionCenter) // „Odśwież EPG teraz” (pierwszy wiersz)
+        key(Key.DirectionDown)
+        key(Key.DirectionCenter) // „Odświeżaj przy starcie”
+        key(Key.DirectionDown)
         key(Key.DirectionCenter)
         key(Key.DirectionDown)
         key(Key.DirectionCenter)
@@ -83,6 +87,8 @@ class EpgSourcesScreenTest {
 
         assertEquals(
             listOf(
+                EpgSourcesEvent.RefreshNow,
+                EpgSourcesEvent.ToggleAuto,
                 EpgSourcesEvent.Toggle(BuiltInEpgSources.OVH_ID, false),
                 EpgSourcesEvent.Toggle(BuiltInEpgSources.TELEMAN_ID, false),
                 EpgSourcesEvent.StartAdd,
@@ -121,7 +127,7 @@ class EpgSourcesScreenTest {
         state = EpgSourcesUiState(sources)
         compose.waitForIdle()
         key(Key.DirectionCenter)
-        assertEquals(listOf<EpgSourcesEvent>(EpgSourcesEvent.Toggle(BuiltInEpgSources.OVH_ID, false)), events)
+        assertEquals(listOf<EpgSourcesEvent>(EpgSourcesEvent.RefreshNow), events)
     }
 
     @Test

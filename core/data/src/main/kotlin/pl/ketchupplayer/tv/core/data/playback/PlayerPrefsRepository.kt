@@ -19,6 +19,11 @@ interface PlayerPrefsRepository {
     val remoteDebounceMs: Flow<Int>
 
     suspend fun setRemoteDebounceMs(value: Int)
+
+    /** Odświeżanie EPG (i starych list) przy starcie aplikacji; domyślnie włączone. */
+    val autoRefresh: Flow<Boolean>
+
+    suspend fun setAutoRefresh(enabled: Boolean)
 }
 
 class DataStorePlayerPrefsRepository
@@ -38,7 +43,16 @@ class DataStorePlayerPrefsRepository
             store.edit { it[DEBOUNCE] = value }
         }
 
+        override val autoRefresh: Flow<Boolean> = store.data.map { it[AUTO_REFRESH] ?: true }
+
+        override suspend fun setAutoRefresh(enabled: Boolean) {
+            store.edit { it[AUTO_REFRESH] = enabled }
+        }
+
         private companion object {
+            val AUTO_REFRESH =
+                androidx.datastore.preferences.core
+                    .booleanPreferencesKey("auto_refresh_on_start")
             const val DEFAULT_DEBOUNCE_MS = 250
             val DEBOUNCE =
                 androidx.datastore.preferences.core

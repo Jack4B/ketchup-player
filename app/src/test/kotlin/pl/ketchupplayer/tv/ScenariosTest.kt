@@ -803,6 +803,25 @@ class ScenariosTest {
         waitForText("TVN 24", timeoutMs = BIG_WAIT_MS)
     }
 
+    /** Scenariusz: po dodaniu listy z adresem EPG przewodnik pobiera się sam, bez wchodzenia w Na żywo. */
+    @Test
+    fun epgPobieraSieSamoPoDodaniuListy() {
+        val host = "http://127.0.0.1:${server.port}"
+        val hits =
+            java.util.concurrent.atomic
+                .AtomicInteger()
+        server.serve("/auto.m3u") {
+            "#EXTM3U url-tvg=\"$host/auto-epg.xml\"\n" +
+                "#EXTINF:-1 tvg-id=\"TVN24.pl\" group-title=\"Info\",TVN 24\n$host/t.m3u8\n"
+        }
+        server.serve("/auto-epg.xml") {
+            hits.incrementAndGet()
+            ListFactory.xmltvNow("TVN24.pl", "Fakty", "Dzień po dniu")
+        }
+        runBlocking { catalog.addM3u("Z EPG", server.url("/auto.m3u")) }
+        waitFor(BIG_WAIT_MS) { hits.get() > 0 }
+    }
+
     private fun pressKeys(keys: List<Key>) =
         keys.forEach { k ->
             compose.onRoot().performKeyInput { pressKey(k) }

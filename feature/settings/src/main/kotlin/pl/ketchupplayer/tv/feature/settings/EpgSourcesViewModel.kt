@@ -19,12 +19,15 @@ class EpgSourcesViewModel
     @Inject
     constructor(
         private val repository: EpgSourcesRepository,
+        private val epg: pl.ketchupplayer.tv.core.data.epg.EpgRepository,
+        private val prefs: pl.ketchupplayer.tv.core.data.playback.PlayerPrefsRepository,
     ) : ViewModel() {
         private val form = MutableStateFlow<AddForm?>(null)
+        private val refresh = MutableStateFlow<Pair<Boolean, String?>>(false to null)
 
         val state: StateFlow<EpgSourcesUiState> =
-            combine(repository.sources, form) { sources, f ->
-                EpgSourcesUiState(sources, f)
+            combine(repository.sources, form, refresh, prefs.autoRefresh) { sources, f, r, auto ->
+                EpgSourcesUiState(sources, f, r.first, r.second, auto)
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), EpgSourcesUiState())
 
         fun onEvent(event: EpgSourcesEvent) {
@@ -32,10 +35,27 @@ class EpgSourcesViewModel
                 is EpgSourcesEvent.Toggle -> viewModelScope.launch { repository.setEnabled(event.id, event.enabled) }
                 is EpgSourcesEvent.Remove -> viewModelScope.launch { repository.removeCustom(event.id) }
                 EpgSourcesEvent.StartAdd -> form.value = AddForm()
+                EpgSourcesEvent.RefreshNow -> refreshNow()
+                EpgSourcesEvent.ToggleAuto ->
+                    viewModelScope.launch { prefs.setAutoRefresh(!state.value.autoRefresh) }
                 is EpgSourcesEvent.NameChanged -> form.update { it?.copy(name = event.value, error = null) }
                 is EpgSourcesEvent.UrlChanged -> form.update { it?.copy(url = event.value, error = null) }
                 EpgSourcesEvent.Cancel -> form.value = null
                 EpgSourcesEvent.Submit -> submit()
+            }
+        }
+
+        private fun refreshNow() {
+            if (refresh.value.first) return
+            refresh.value = true to null
+            viewModelScope.launch {
+                val result = epg.refresh()
+                val text =
+                    result.fold(
+                        onSuccess = { "Zaimportowano ${it.programmes} audycji dla ${it.matchedChannels} kanałów." },
+                        onFailure = { "Błąd: ${it.message ?: "nie udało się pobrać EPG"}" },
+                    )
+                refresh.value = false to text
             }
         }
 

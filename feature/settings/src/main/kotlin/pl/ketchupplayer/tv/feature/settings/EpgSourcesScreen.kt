@@ -53,7 +53,7 @@ fun EpgSourcesScreen(
     ScreenScaffold {
         ScreenTitle(stringResource(R.string.epg_sources_title))
         if (state.form == null) {
-            SourceList(state.sources, onEvent)
+            SourceList(state, onEvent)
         } else {
             AddSourceForm(state.form, onEvent)
         }
@@ -63,18 +63,34 @@ fun EpgSourcesScreen(
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun SourceList(
-    sources: List<EpgSource>,
+    state: EpgSourcesUiState,
     onEvent: (EpgSourcesEvent) -> Unit,
 ) {
+    val sources = state.sources
     val first = remember { FocusRequester() }
-    // Lista z ViewModelu startuje pusta; fokus dopiero gdy pierwszy wiersz (z requesterem) istnieje.
-    InitialFocusEffect(first, key = sources.firstOrNull()?.id, enabled = sources.isNotEmpty())
+    InitialFocusEffect(first)
+    SettingsListItem(
+        title = stringResource(R.string.epg_refresh_now),
+        subtitle =
+            if (state.refreshing) {
+                stringResource(R.string.epg_refreshing)
+            } else {
+                state.refreshStatus ?: stringResource(R.string.epg_refresh_hint)
+            },
+        onClick = { onEvent(EpgSourcesEvent.RefreshNow) },
+        modifier = Modifier.focusRequester(first),
+    )
+    SettingsListItem(
+        title = stringResource(R.string.epg_auto_refresh),
+        subtitle = stringResource(R.string.epg_auto_refresh_hint),
+        onClick = { onEvent(EpgSourcesEvent.ToggleAuto) },
+        trailing = { Switch(checked = state.autoRefresh, onCheckedChange = null) },
+    )
     sources.forEachIndexed { i, source ->
         SettingsListItem(
             title = source.name,
             subtitle = hint(source),
             onClick = { onEvent(EpgSourcesEvent.Toggle(source.id, !source.enabled)) },
-            modifier = if (i == 0) Modifier.focusRequester(first) else Modifier,
             trailing = {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

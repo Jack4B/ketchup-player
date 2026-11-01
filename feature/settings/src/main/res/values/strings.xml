@@ -79,4 +79,9 @@
     <string name="network_custom_add">Dodaj własny User-Agent</string>
     <string name="network_custom_field">User-Agent (np. Wink/1.31.1)</string>
     <string name="network_custom_invalid">Niepoprawny: tylko drukowalne znaki ASCII, do 512 znaków.</string>
+    <string name="epg_refresh_now">Odśwież EPG teraz</string>
+    <string name="epg_refreshing">Pobieranie przewodnika…</string>
+    <string name="epg_refresh_hint">Pobiera przewodnik ze wszystkich włączonych źródeł poniżej</string>
+    <string name="epg_auto_refresh">Odświeżaj przy starcie</string>
+    <string name="epg_auto_refresh_hint">EPG co kilka godzin oraz listy starsze niż doba, po uruchomieniu aplikacji</string>
 </resources>

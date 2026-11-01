@@ -13,6 +13,10 @@ data class AddForm(
 data class EpgSourcesUiState(
     val sources: List<EpgSource> = emptyList(),
     val form: AddForm? = null,
+    val refreshing: Boolean = false,
+    /** Wynik ostatniego odświeżenia: liczba audycji i kanałów albo błąd; null = jeszcze nie odświeżano. */
+    val refreshStatus: String? = null,
+    val autoRefresh: Boolean = true,
 )
 
 sealed interface EpgSourcesEvent {
@@ -26,6 +30,10 @@ sealed interface EpgSourcesEvent {
     ) : EpgSourcesEvent
 
     data object StartAdd : EpgSourcesEvent
+
+    data object RefreshNow : EpgSourcesEvent
+
+    data object ToggleAuto : EpgSourcesEvent
 
     data class NameChanged(
         val value: String,
