@@ -183,13 +183,15 @@ private fun ChannelRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    now?.title.orEmpty(),
-                    fontSize = 14.sp,
-                    color = c.textSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                if (now != null) {
+                    Text(
+                        now.title,
+                        fontSize = 14.sp,
+                        color = c.textSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             if (now != null) ProgressBar(now.progressAt(state.nowMs), Modifier.width(PROGRESS_WIDTH))
         }

@@ -164,15 +164,17 @@ fun ChannelLogo(
     fullName: Boolean = false,
 ) {
     val c = KetchupTheme.colors
+    // Prawdziwe logo leży na jasnej płytce (ciemne loga giną na ciemnym); zastępnik bez logo jest w tonie motywu.
+    val hasLogo = !logoUrl.isNullOrBlank()
     Box(
-        modifier.background(c.channelTile, RoundedCornerShape(LOGO_RADIUS)),
+        modifier.background(if (hasLogo) c.channelTile else c.surface3, RoundedCornerShape(LOGO_RADIUS)),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             if (fullName) name else tileLabel(name),
             fontSize = labelSize,
             fontWeight = FontWeight.Bold,
-            color = c.channelTileText,
+            color = if (hasLogo) c.channelTileText else c.textPrimary,
             maxLines = if (fullName) 2 else 1,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             modifier = Modifier.padding(horizontal = 6.dp),
