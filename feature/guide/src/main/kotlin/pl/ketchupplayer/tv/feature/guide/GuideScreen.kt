@@ -291,6 +291,7 @@ private fun Grid(
 }
 
 @OptIn(ExperimentalTvMaterial3Api::class)
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 private fun Preview(
     focused: Focused?,

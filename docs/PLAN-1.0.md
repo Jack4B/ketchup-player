@@ -21,17 +21,17 @@ Cel: wszystko, co użytkownik codziennie robi, działa na boxie bez błędów.
 - [x] 1.4 Ustawienia jako panel wsuwany z prawej (250 ms), nakładka na treść (22:xx 1.11, commit w gałęzi faza-d)
 - [~] 1.5 Na żywo: żywy podgląd wideo ZROBIONY (wyciszony, po 0,9 s, zwalniany przy wyjściu, przełącznik w Odtwarzaniu; nieprzetestowany na boxie). Zostaje: lista kanałów w odtwarzaczu, menu kontekstowe (długie OK)
 - [x] 1.6 Jedna skala animacji: `Motion` w designsystemie (fokus 120, szyna 160, panele 220, fade 150), użyta w szynie, FocusItem, Filmach, Na żywo
-- [ ] 1.7 Odtwarzacz: test na strumieniu wielościeżkowym (emulator HLS z ffmpeg) + poprawki audio/napisy
-- [ ] 1.8 Wydajność: pomiar płynności na boxie (zacięcia VOD, otwarcie odtwarzacza), poprawki największych; import w tle po pokazaniu kanałów (VOD dopisywane po)
-- [ ] 1.9 Polityki §10.2 (BkSmartBufferPolicy, StreamRecoveryPolicy, SeriesEpisodePolicy, BkTvFailoverDeadline) z golden masterami
-- [ ] 1.10 Radar: przypomnienia o audycjach
+- [ ] 1.7 (wymaga emulatora/strumienia, NIE ZROBIONE) Odtwarzacz: test na strumieniu wielościeżkowym (emulator HLS z ffmpeg) + poprawki audio/napisy
+- [ ] 1.8 (wymaga pomiaru na boxie po 0.8) Wydajność: pomiar płynności na boxie (zacięcia VOD, otwarcie odtwarzacza), poprawki największych; import w tle po pokazaniu kanałów (VOD dopisywane po)
+- [ ] 1.9 (NIE ZROBIONE, do 1.1 lub po testach na boxie) Polityki §10.2 (BkSmartBufferPolicy, StreamRecoveryPolicy, SeriesEpisodePolicy, BkTvFailoverDeadline) z golden masterami
+- [ ] 1.10 Radar: przypomnienia o audycjach (PRZESUNIĘTE NA 1.1: wymaga powiadomień/harmonogramu, nie blokuje 1.0)
 
 ## ETAP 2: wydanie 1.0 i szlif
 Cel: podpisany APK, dokumentacja, brak znanych blokerów.
 - [ ] 2.1 Keystore i sekrety GitHub (użytkownik, wg `docs/RELEASE.md`), workflow release, podpisany APK
 - [ ] 2.2 Baseline profile zmierzony na urządzeniu (Macrobenchmark) zamiast ręcznego
 - [ ] 2.3 Własna siatka EPG na LazyLayout (jeśli pomiary z 1.8 pokażą potrzebę) i prefetch obrazków Coil
-- [ ] 2.4 Dokumenty: `KNOWN-EDGE-CASES.md`, aktualna `TEST-CHECKLIST.md`, README, ikona i banner TV
+- [x] 2.4 Dokumenty: KNOWN-EDGE-CASES.md i dodatek do TEST-CHECKLIST.md gotowe (README i ikona/banner bez zmian)
 - [ ] 2.5 Pełny przebieg: CI zielony + emulator + skrypt na boxie bez FAIL + checklista ręczna
 - [ ] 2.6 Tag 1.0.0 i wydanie
 
