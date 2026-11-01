@@ -60,6 +60,9 @@ import java.util.Locale
 /** Czy ekran jest osadzony w [AppShell] (wtedy tło, marginesy i nagłówek z zegarem daje powłoka). */
 val LocalInShell = staticCompositionLocalOf { false }
 
+/** Ekran osadzony w panelu (np. strona Ustawień): tytuł jako okruszki „Ustawienia › Tytuł”, bez zegara. */
+val LocalBreadcrumb = staticCompositionLocalOf<String?> { null }
+
 /** Przenosi fokus na szynę (BACK z treści sekcji); dostarcza [AppShell]. */
 val LocalFocusRail = staticCompositionLocalOf<() -> Unit> { {} }
 

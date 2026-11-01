@@ -15,4 +15,19 @@
     <string name="nav_mylist">Moja lista</string>
     <string name="nav_settings">Ustawienia</string>
     <string name="coming_soon">Ten ekran pojawi się w kolejnej wersji.</string>
+    <string name="settings_cat_providers">Listy i dostawcy</string>
+    <string name="settings_cat_playback">Odtwarzanie</string>
+    <string name="settings_cat_tv">Telewizja i przewodnik</string>
+    <string name="settings_cat_vod">Filmy i seriale</string>
+    <string name="settings_cat_recording">Nagrywanie</string>
+    <string name="settings_cat_network">Sieć i VPN</string>
+    <string name="settings_cat_profiles">Profile i kontrola rodz.</string>
+    <string name="settings_cat_appearance">Wygląd</string>
+    <string name="settings_cat_remote">Pilot</string>
+    <string name="settings_cat_services">Usługi zewnętrzne</string>
+    <string name="settings_cat_data">Dane i pamięć</string>
+    <string name="settings_cat_about">O aplikacji</string>
+    <string name="settings_about_name">Ketchup Player</string>
+    <string name="settings_about_version">Wersja %1$s</string>
+    <string name="settings_about_text">Odtwarzacz własnych list IPTV. Aplikacja nie dostarcza żadnych treści.</string>
 </resources>

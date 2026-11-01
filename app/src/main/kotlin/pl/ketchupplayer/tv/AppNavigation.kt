@@ -23,10 +23,6 @@ import pl.ketchupplayer.tv.feature.livetv.LiveTvRoute
 import pl.ketchupplayer.tv.feature.playerui.PlayerRoute
 import pl.ketchupplayer.tv.feature.playerui.VodPlayerRoute
 import pl.ketchupplayer.tv.feature.providers.OnboardingRoute
-import pl.ketchupplayer.tv.feature.providers.ProvidersRoute
-import pl.ketchupplayer.tv.feature.settings.AppearanceRoute
-import pl.ketchupplayer.tv.feature.settings.EpgSourcesRoute
-import pl.ketchupplayer.tv.feature.settings.PlaybackSettingsRoute
 import pl.ketchupplayer.tv.feature.vod.VodBrowseRoute
 import pl.ketchupplayer.tv.feature.vod.VodMode
 
@@ -96,7 +92,7 @@ private fun MainFlow(onExit: () -> Unit) {
             )
         },
     ) {
-        SectionContent(top, push, pop, openPlayer)
+        SectionContent(top, push, openPlayer)
     }
 }
 
@@ -120,18 +116,17 @@ private fun sectionLabel(section: Section): String =
 private fun SectionContent(
     route: String,
     push: (String) -> Unit,
-    pop: () -> Unit,
     openPlayer: (String) -> Unit,
 ) {
     val toRail = pl.ketchupplayer.tv.core.designsystem.LocalFocusRail.current
     when (route) {
         Section.LIVE.route -> LiveTvRoute(openPlayer, { push(SettingsPage.PROVIDERS.route) }, toRail)
         Section.GUIDE.route -> GuideRoute(openPlayer, { push(SettingsPage.PROVIDERS.route) }, toRail)
-        Section.SETTINGS.route -> SettingsHome(push)
-        SettingsPage.PROVIDERS.route -> ProvidersRoute(onBack = pop)
-        SettingsPage.EPG_SOURCES.route -> EpgSourcesRoute(onBack = pop)
-        SettingsPage.PLAYBACK.route -> PlaybackSettingsRoute(onBack = pop)
-        SettingsPage.APPEARANCE.route -> AppearanceRoute(onBack = pop)
+        Section.SETTINGS.route -> SettingsScreen()
+        SettingsPage.PROVIDERS.route -> SettingsScreen(SettingsPage.PROVIDERS)
+        SettingsPage.EPG_SOURCES.route -> SettingsScreen(SettingsPage.EPG_SOURCES)
+        SettingsPage.PLAYBACK.route -> SettingsScreen(SettingsPage.PLAYBACK)
+        SettingsPage.APPEARANCE.route -> SettingsScreen(SettingsPage.APPEARANCE)
         Section.MOVIES.route ->
             VodBrowseRoute(VodMode.MOVIES, { push(Routes.details(it)) }, { push(SettingsPage.PROVIDERS.route) })
         Section.SERIES.route ->

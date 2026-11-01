@@ -156,10 +156,18 @@ class ScenariosTest {
         compose.waitForIdle()
     }
 
+    /** Kategoria w dwupoziomowych Ustawieniach (po lewej); jej opcje pojawiają się po prawej. */
     private fun settingsPage(label: String) {
         nav("Ustawienia")
-        click(label)
+        click(settingsCategory(label))
     }
+
+    private fun settingsCategory(label: String) =
+        when (label) {
+            "Dostawcy" -> "Listy i dostawcy"
+            "Źródła EPG" -> "Telewizja i przewodnik"
+            else -> label
+        }
 
     /** Pierwszy węzeł z akcją kliknięcia o danym tekście (ten sam tekst bywa też w panelu szczegółów/podglądzie). */
     private fun clickable(text: String) = compose.onAllNodesWithText(text).filter(hasClickAction())[0]

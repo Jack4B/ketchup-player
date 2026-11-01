@@ -58,7 +58,7 @@ class AppStartTest {
 
     private fun settingsPage(label: String) {
         nav("Ustawienia")
-        compose.onNodeWithText(label).performScrollTo().performClick()
+        compose.onNodeWithText(if (label == "Dostawcy") "Listy i dostawcy" else label).performScrollTo().performClick()
         compose.waitForIdle()
     }
 

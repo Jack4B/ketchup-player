@@ -66,6 +66,15 @@ private val TV_MARGIN_V = 27.dp
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun ScreenTitle(text: String) {
+    val parent = LocalBreadcrumb.current
+    if (parent != null) {
+        Text(
+            "$parent › $text",
+            fontSize = 14.sp,
+            color = KetchupTheme.colors.textSecondary,
+        )
+        return
+    }
     if (LocalInShell.current) {
         ShellHeader(text)
         return
