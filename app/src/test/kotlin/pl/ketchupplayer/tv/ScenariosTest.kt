@@ -39,6 +39,8 @@ import pl.ketchupplayer.tv.core.data.catalog.AddProviderResult
 import pl.ketchupplayer.tv.core.data.catalog.CatalogRepository
 import pl.ketchupplayer.tv.core.data.epg.EpgSourcesRepository
 import pl.ketchupplayer.tv.core.model.BuiltInEpgSources
+import pl.ketchupplayer.tv.core.policy.BkFailoverPolicy
+import pl.ketchupplayer.tv.core.policy.FailoverSensitivity
 import pl.ketchupplayer.tv.player.engine.PlaybackStatus
 import javax.inject.Inject
 
@@ -56,6 +58,7 @@ class ScenariosTest {
         const val WAIT_MS = 15_000L
         const val BIG_WAIT_MS = 60_000L
         const val POLL_MS = 25L
+        const val CLOCK_STEP_MS = 100L
     }
 
     @get:Rule(order = 0)
@@ -80,6 +83,10 @@ class ScenariosTest {
         runBlocking {
             epgSources.setEnabled(BuiltInEpgSources.OVH_ID, false)
             epgSources.setEnabled(BuiltInEpgSources.TELEMAN_ID, false)
+            // DataStore jest singletonem procesu, więc ustawienia z poprzedniego scenariusza przeciekają: wartości domyślne.
+            failoverSettings.setEnabled(true)
+            failoverSettings.setSensitivity(FailoverSensitivity.STANDARD)
+            failoverSettings.setTvDelaySeconds(BkFailoverPolicy.DEFAULT_TV_DELAY_SECONDS)
         }
     }
 
@@ -96,7 +103,8 @@ class ScenariosTest {
     ) {
         val end = System.nanoTime() + timeoutMs * 1_000_000
         while (!condition()) {
-            Shadows.shadowOf(Looper.getMainLooper()).idle()
+            // Zegar Robolectric (PAUSED) nie płynie sam: przesuwamy go, żeby opóźnienia korutyn (delay) mijały.
+            Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(CLOCK_STEP_MS))
             compose.waitForIdle()
             check(System.nanoTime() < end) {
                 "Warunek niespełniony po $timeoutMs ms. Ekran:\n" + compose.onRoot().printToString(maxDepth = 14)
@@ -394,5 +402,40 @@ class ScenariosTest {
         fields[1].performTextInput(server.url("/pl.m3u"))
         fields[1].performImeAction() // „Gotowe” w ostatnim polu: zapis
         waitForText("Kanały: 184", substring = true)
+    }
+
+    /**
+     * Scenariusz: strumień zawiesza się na buforowaniu (bez błędu); użytkownik ustawił opóźnienie 5 s,
+     * więc po tym czasie aplikacja przełącza na drugą listę i kanał gra.
+     */
+    @Test
+    fun zawieszoneBuforowanieKanaluPrzelaczaPoCzasieZUstawien() {
+        val host = "http://127.0.0.1:${server.port}"
+        server.serve(
+            "/a.m3u",
+        ) { "#EXTM3U\n#EXTINF:-1 tvg-chno=\"1\" group-title=\"Info\",TVN 24\n$host/a/tvn24.m3u8\n" }
+        server.serve(
+            "/b.m3u",
+        ) { "#EXTM3U\n#EXTINF:-1 tvg-chno=\"2\" group-title=\"Info\",TVN 24\n$host/b/tvn24.m3u8\n" }
+        runBlocking {
+            catalog.addM3u("Lista A", server.url("/a.m3u"))
+            catalog.addM3u("Lista B", server.url("/b.m3u"))
+        }
+        // Lista A buforuje bez końca, lista B gra.
+        FakePlayers.behaviour = { url -> if ("/a/" in url) PlaybackStatus.BUFFERING else PlaybackStatus.READY }
+
+        compose.onRoot().performKeyInput { pressKey(Key.ShiftLeft) }
+        click("Odtwarzanie")
+        click("Maksymalny czas buforowania") // 25 s -> 5 s (pierwsza wartość listy po zawinięciu)
+        waitFor { runBlocking { failoverSettings.settings.first().tvDelaySeconds == 5 } }
+        back()
+
+        click("Na żywo")
+        waitForText("TVN 24")
+        compose.onAllNodesWithText("TVN 24")[0].performClick()
+        waitForText("Buforowanie", substring = true)
+        waitFor(timeoutMs = BIG_WAIT_MS) { FakePlayers.played.any { "/b/" in it } }
+        waitForText("Przełączono na Lista 2 · TVN 24")
+        assertTrue("/a/" in FakePlayers.played.first())
     }
 }
