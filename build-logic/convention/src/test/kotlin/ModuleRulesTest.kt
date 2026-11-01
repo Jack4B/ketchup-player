@@ -6,7 +6,7 @@ class ModuleRulesTest {
     @Test
     fun `poprawny graf nie ma naruszen`() {
         val graph = mapOf(
-            ":app" to setOf(":feature:home", ":feature:livetv", ":core:ui"),
+            ":app" to setOf(":feature:home", ":core:ui"),
             ":feature:home" to setOf(":core:ui", ":core:designsystem", ":provider:api"),
             ":core:policy" to setOf(":core:model"),
             ":provider:xtream" to setOf(":provider:api", ":core:network"),

@@ -294,7 +294,7 @@ class ScenariosTest {
         nav("Na żywo")
         waitForText("Fakty o dziewiętnastej", timeoutMs = BIG_WAIT_MS)
 
-        nav("Przewodnik")
+        nav("Na żywo")
         waitForText("TVN 24")
         waitForText("Fakty o dziewiętnastej", timeoutMs = BIG_WAIT_MS)
         waitForText("Dzień na świecie")
@@ -780,7 +780,7 @@ class ScenariosTest {
         server.serve("/epg.xml") { ListFactory.xmltvNow("TVN24.pl", "Fakty wieczorne", "Dzień po dniu") }
         runBlocking { catalog.addM3u("Z EPG", server.url("/g.m3u")) }
 
-        nav("Przewodnik")
+        nav("Na żywo")
         waitForText("Fakty wieczorne", timeoutMs = BIG_WAIT_MS)
         click("Fakty wieczorne")
         waitFor { FakePlayers.played.isNotEmpty() }

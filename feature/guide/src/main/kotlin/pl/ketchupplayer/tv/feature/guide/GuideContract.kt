@@ -16,7 +16,28 @@ data class GuideUiState(
     val nowMs: Long = 0,
     /** Rośnie po zakończeniu importu EPG; wiersze przeładowują wtedy swoje audycje. */
     val epgRevision: Int = 0,
+    /** Grupy kanałów (polskie pierwsze), wybrana grupa i liczniki do panelu grup. */
+    val groups: List<String> = emptyList(),
+    val selectedGroup: String? = null,
+    val favoritesSelected: Boolean = false,
+    val recentSelected: Boolean = false,
+    val groupCounts: Map<String, Int> = emptyMap(),
+    val totalCount: Int = 0,
+    val recentCount: Int = 0,
 )
+
+/** Wybór w panelu grup: wszystkie / konkretna grupa / ulubione / ostatnio oglądane. */
+sealed interface GuideGroup {
+    data object All : GuideGroup
+
+    data class Named(
+        val name: String,
+    ) : GuideGroup
+
+    data object Favorites : GuideGroup
+
+    data object Recent : GuideGroup
+}
 
 /** Geometria siatki: długość audycji w minutach -> szerokość bloku. */
 object GuideGeometry {

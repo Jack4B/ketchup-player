@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="guide_title">Przewodnik</string>
+    <string name="guide_title">Na żywo</string>
     <string name="guide_no_data">Brak danych przewodnika</string>
     <string name="guide_empty">Brak kanałów. Dodaj listę u dostawców.</string>
     <string name="guide_open_providers">Dostawcy</string>
+    <string name="guide_groups">Grupy</string>
+    <string name="guide_groups_chip">Grupy:</string>
+    <string name="guide_group_all">Wszystkie</string>
+    <string name="guide_group_favorites">★ Ulubione</string>
+    <string name="guide_group_recent">Ostatnie</string>
+    <string name="guide_group_none">Bez grupy</string>
     <string name="guide_tab_grid">Siatka</string>
     <string name="guide_tab_radar">Radar</string>
     <string name="guide_tab_interests">Moje zainteresowania</string>

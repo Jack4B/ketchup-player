@@ -195,8 +195,7 @@ check_section() { # id etykieta-szyny oczekiwany-tekst nazwa-zrzutu
   shot "$4" >/dev/null; save_ui "$4"
   alive || record "$2" "Crash w sekcji $1" FAIL "$(crashes)"
 }
-check_section "Na żywo" C1 "Grupy" 10_live
-check_section "Przewodnik" F1 "Siatka" 11_guide
+check_section "Na żywo" C1 "Siatka" 10_live
 check_section "Filmy" J1 "Najnowsze" 12_filmy
 check_section "Seriale" J1s "Najnowsze" 13_seriale
 check_section "Moja lista" J6 "Moja lista" 14_mojalista

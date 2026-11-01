@@ -17,7 +17,6 @@ import pl.ketchupplayer.tv.core.designsystem.KetchupLogoApp
 import pl.ketchupplayer.tv.feature.details.DetailsRoute
 import pl.ketchupplayer.tv.feature.guide.GuideRoute
 import pl.ketchupplayer.tv.feature.home.HomeRoute
-import pl.ketchupplayer.tv.feature.livetv.LiveTvRoute
 import pl.ketchupplayer.tv.feature.playerui.PlayerRoute
 import pl.ketchupplayer.tv.feature.playerui.VodPlayerRoute
 import pl.ketchupplayer.tv.feature.providers.OnboardingRoute
@@ -99,7 +98,6 @@ private fun sectionLabel(section: Section): String =
             Section.SEARCH -> R.string.nav_search
             Section.HOME -> R.string.nav_home
             Section.LIVE -> R.string.nav_live
-            Section.GUIDE -> R.string.nav_guide
             Section.MOVIES -> R.string.nav_movies
             Section.SERIES -> R.string.nav_series
             Section.MYLIST -> R.string.nav_mylist
@@ -115,8 +113,8 @@ private fun SectionContent(
 ) {
     val toRail = pl.ketchupplayer.tv.core.designsystem.LocalFocusRail.current
     when (route) {
-        Section.LIVE.route -> LiveTvRoute(openPlayer, { push(SettingsPage.PROVIDERS.route) }, toRail)
-        Section.GUIDE.route -> GuideRoute(openPlayer, { push(SettingsPage.PROVIDERS.route) }, toRail)
+        // „Na żywo” to widok EPG z grupami, podglądem audycji, Radarem i zainteresowaniami (dawny osobny Przewodnik).
+        Section.LIVE.route -> GuideRoute(openPlayer, { push(SettingsPage.PROVIDERS.route) }, toRail)
         Section.SETTINGS.route -> SettingsScreen()
         SettingsPage.PROVIDERS.route -> SettingsScreen(SettingsPage.PROVIDERS)
         SettingsPage.EPG_SOURCES.route -> SettingsScreen(SettingsPage.EPG_SOURCES)
@@ -133,7 +131,7 @@ private fun SectionContent(
         Section.HOME.route ->
             HomeRoute(
                 onOpenChannel = openPlayer,
-                onOpenGuide = { push(Section.GUIDE.route) },
+                onOpenGuide = { push(Section.LIVE.route) },
                 onOpenProviders = { push(SettingsPage.PROVIDERS.route) },
                 onOpenDetails = { push(Routes.details(it)) },
                 onPlayVod = { push(Routes.vodPlayer(it, false)) },

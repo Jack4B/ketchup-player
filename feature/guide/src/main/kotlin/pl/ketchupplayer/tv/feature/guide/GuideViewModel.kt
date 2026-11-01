@@ -23,7 +23,7 @@ import javax.inject.Inject
 class GuideViewModel
     @Inject
     constructor(
-        catalog: CatalogRepository,
+        private val catalog: CatalogRepository,
         private val epg: EpgRepository,
         private val interestsRepo: pl.ketchupplayer.tv.core.data.interests.InterestsRepository,
         private val clock: Clock,
@@ -42,22 +42,55 @@ class GuideViewModel
             }
         }
 
+        private val selection = MutableStateFlow<GuideGroup>(GuideGroup.All)
+
         val state: StateFlow<GuideUiState> =
-            combine(catalog.liveChannels(), catalog.favoriteIds(), epgRevision) { channels, favorites, revision ->
+            combine(
+                combine(catalog.liveChannels(), catalog.liveGroups(), selection) { c, g, sel -> Triple(c, g, sel) },
+                combine(catalog.favoriteIds(), catalog.recentChannels(RECENT_LIMIT), epgRevision) { f, r, rev ->
+                    Triple(f, r, rev)
+                },
+            ) { (channels, groups, sel), (favorites, recent, revision) ->
+                val showFavorites = sel is GuideGroup.Favorites && favorites.isNotEmpty()
+                val showRecent = sel is GuideGroup.Recent && recent.isNotEmpty()
+                val group = (sel as? GuideGroup.Named)?.name?.takeIf { it in groups }
+                val visible =
+                    when {
+                        showFavorites -> channels.filter { it.id in favorites }
+                        showRecent -> recent
+                        group != null -> channels.filter { it.group == group }
+                        else -> channels.sortedByDescending { it.id in favorites }
+                    }
                 GuideUiState(
                     loading = false,
-                    channels = channels.sortedByDescending { it.id in favorites },
+                    channels = visible,
                     favorites = favorites,
                     windowStartMs = windowStart,
                     windowEndMs = GuideGeometry.windowEnd(windowStart),
                     nowMs = clock.nowMs(),
                     epgRevision = revision,
+                    groups = orderGroups(groups),
+                    selectedGroup = group,
+                    favoritesSelected = showFavorites,
+                    recentSelected = showRecent,
+                    groupCounts = channels.groupingBy { it.group.orEmpty() }.eachCount(),
+                    totalCount = channels.size,
+                    recentCount = recent.size,
                 )
             }.stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS),
                 GuideUiState(windowStartMs = windowStart, windowEndMs = GuideGeometry.windowEnd(windowStart)),
             )
+
+        fun selectGroup(group: GuideGroup) {
+            selection.value = group
+        }
+
+        /** Długie OK na kanale: ulubiony/nieulubiony (przeżywa odświeżenie listy dostawcy). */
+        fun toggleFavorite(channelId: String) {
+            viewModelScope.launch { catalog.setFavorite(channelId, channelId !in state.value.favorites) }
+        }
 
         private val radarSlot = MutableStateFlow(RadarSlot.TOP_DAY)
 
@@ -124,8 +157,15 @@ class GuideViewModel
         private companion object {
             const val STOP_TIMEOUT_MS = 5_000L
             const val STALE_MS = 6L * 60 * 60 * 1000
+            const val RECENT_LIMIT = 30
             const val HOUR_MS = 60L * 60 * 1000
             const val EVENING_FROM_H = 18
             const val EVENING_TO_H = 23
         }
     }
+
+private val polishGroup = Regex("^(PL|POLSKA|POLAND)([^A-Za-z]|$)", RegexOption.IGNORE_CASE)
+
+/** Grupy polskie (`PL| ...`, `Polska`) na początku, reszta alfabetycznie; sortowanie jest stabilne. */
+internal fun orderGroups(groups: List<String>): List<String> =
+    groups.sortedWith(compareBy({ !polishGroup.containsMatchIn(it) }, { it.lowercase() }))

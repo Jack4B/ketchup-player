@@ -12,7 +12,6 @@ enum class Section(
     SEARCH("search", RailIcon.SEARCH),
     HOME("home", RailIcon.HOME),
     LIVE("live", RailIcon.TV),
-    GUIDE("guide", RailIcon.GUIDE),
     MOVIES("movies", RailIcon.MOVIES),
     SERIES("series", RailIcon.SERIES),
     MYLIST("mylist", RailIcon.FAVORITES),

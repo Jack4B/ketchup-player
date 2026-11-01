@@ -27,7 +27,7 @@ val modules = listOf(
     ":provider:api", ":provider:m3u", ":provider:xtream", ":provider:stalker",
     ":epg:xmltv", ":epg:teleman", ":epg:radar",
     ":player:engine", ":player:failover",
-    ":feature:home", ":feature:livetv", ":feature:guide", ":feature:vod", ":feature:series",
+    ":feature:home", ":feature:guide", ":feature:vod", ":feature:series",
     ":feature:details", ":feature:player-ui", ":feature:search", ":feature:mylist",
     ":feature:settings", ":feature:providers", ":feature:profiles", ":feature:recording",
     ":feature:onboarding",

@@ -1,6 +1,11 @@
 package pl.ketchupplayer.tv.feature.guide
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -8,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -16,18 +22,30 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -77,6 +95,8 @@ fun GuideRoute(
         interests,
         viewModel::addInterest,
         viewModel::removeInterest,
+        viewModel::selectGroup,
+        viewModel::toggleFavorite,
     )
 }
 
@@ -101,33 +121,89 @@ fun GuideScreen(
     interests: InterestsUiState = InterestsUiState(),
     onAddInterest: (String) -> Unit = {},
     onRemoveInterest: (String) -> Unit = {},
+    onSelectGroup: (GuideGroup) -> Unit = {},
+    onToggleFavorite: (String) -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
     var tab by remember { mutableStateOf(GuideTab.GRID) }
-    ScreenScaffold(scrollable = false) {
-        ShellHeader(stringResource(R.string.guide_title), tabs = { Tabs(tab) { tab = it } })
-        when {
-            state.loading -> StateView(StateKind.LOADING, "")
-            state.channels.isEmpty() ->
-                StateView(
-                    StateKind.EMPTY,
-                    stringResource(R.string.guide_empty),
-                    actionLabel = stringResource(R.string.guide_open_providers),
-                    onAction = onOpenProviders,
-                )
-            tab == GuideTab.GRID -> Grid(state, loadProgrammes, onOpenChannel)
-            tab == GuideTab.RADAR -> RadarTab(radar, state.nowMs, onRadarSlot, onOpenChannel)
-            else -> InterestsTab(interests, state.nowMs, onAddInterest, onRemoveInterest, onOpenChannel)
+    var groupsOpen by rememberSaveable { mutableStateOf(false) }
+    val rows = remember { FocusRequester() }
+    val selectedGroupFocus = remember { FocusRequester() }
+    val groupsList = rememberLazyListState()
+    LaunchedEffect(groupsOpen) {
+        if (groupsOpen) {
+            val index = state.groups.indexOf(state.selectedGroup)
+            if (index >= 0) groupsList.scrollToItem(index + VIRTUAL_GROUPS)
+            withFrameNanos { }
+            runCatching { selectedGroupFocus.requestFocus() }
+        }
+    }
+    BackHandler(enabled = groupsOpen) {
+        groupsOpen = false
+        runCatching { rows.requestFocus() }
+    }
+    Box(Modifier.fillMaxSize()) {
+        ScreenScaffold(scrollable = false) {
+            ShellHeader(
+                stringResource(R.string.guide_title),
+                tabs = {
+                    val label = groupTitle(state).takeIf { tab == GuideTab.GRID }
+                    Tabs(tab, label, { groupsOpen = true }) { tab = it }
+                },
+            )
+            when {
+                state.loading -> StateView(StateKind.LOADING, "")
+                state.channels.isEmpty() ->
+                    StateView(
+                        StateKind.EMPTY,
+                        stringResource(R.string.guide_empty),
+                        actionLabel = stringResource(R.string.guide_open_providers),
+                        onAction = onOpenProviders,
+                    )
+                tab == GuideTab.GRID ->
+                    Grid(state, loadProgrammes, onOpenChannel, onToggleFavorite, rows) { groupsOpen = true }
+                tab == GuideTab.RADAR -> RadarTab(radar, state.nowMs, onRadarSlot, onOpenChannel)
+                else -> InterestsTab(interests, state.nowMs, onAddInterest, onRemoveInterest, onOpenChannel)
+            }
+        }
+        // Panel grup wysuwa się z lewej nad przyciemnioną siatką (jak w TiViMate); OK na grupie zamyka go.
+        AnimatedVisibility(groupsOpen, enter = fadeIn(), exit = fadeOut()) {
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = GROUPS_SCRIM_ALPHA)))
+        }
+        AnimatedVisibility(
+            groupsOpen,
+            enter = slideInHorizontally { -it } + fadeIn(),
+            exit = slideOutHorizontally { -it } + fadeOut(),
+        ) {
+            GuideGroupsPanel(
+                state,
+                groupsList,
+                selectedGroupFocus,
+                { pick ->
+                    onSelectGroup(pick)
+                    groupsOpen = false
+                    runCatching { rows.requestFocus() }
+                },
+                Modifier.width(GROUPS_WIDTH).fillMaxHeight(),
+            )
         }
     }
 }
 
+private val GROUPS_WIDTH = 360.dp
+private const val GROUPS_SCRIM_ALPHA = 0.5f
+
 @Composable
 private fun Tabs(
     selected: GuideTab,
+    groupLabel: String?,
+    onOpenGroups: () -> Unit,
     onSelect: (GuideTab) -> Unit,
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (groupLabel != null) {
+            PillChip(stringResource(R.string.guide_groups_chip) + " " + groupLabel, false, onOpenGroups)
+        }
         TabChip(stringResource(R.string.guide_tab_grid), selected == GuideTab.GRID, { onSelect(GuideTab.GRID) })
         TabChip(stringResource(R.string.guide_tab_radar), selected == GuideTab.RADAR, { onSelect(GuideTab.RADAR) })
         TabChip(
@@ -149,6 +225,9 @@ private fun Grid(
     state: GuideUiState,
     loadProgrammes: suspend (String) -> List<EpgProgramme>,
     onOpenChannel: (String) -> Unit,
+    onToggleFavorite: (String) -> Unit,
+    rows: FocusRequester,
+    onOpenGroups: () -> Unit,
 ) {
     val scroll = rememberScrollState()
     var focused by remember { mutableStateOf<Focused?>(null) }
@@ -172,6 +251,9 @@ private fun Grid(
                     ch.id in state.favorites,
                     first,
                     { focused = Focused(ch, null) },
+                    { onToggleFavorite(ch.id) },
+                    onOpenGroups,
+                    if (first) rows else null,
                 ) { onOpenChannel(ch.id) }
                 val programmes by produceState<List<EpgProgramme>?>(null, ch.id, state.epgRevision) {
                     value = loadProgrammes(ch.id)
@@ -291,6 +373,9 @@ private fun ChannelCell(
     favorite: Boolean,
     initialFocus: Boolean,
     onFocus: () -> Unit,
+    onLongClick: () -> Unit,
+    onLeft: () -> Unit,
+    requester: FocusRequester?,
     onClick: () -> Unit,
 ) {
     val c = KetchupTheme.colors
@@ -300,7 +385,13 @@ private fun ChannelCell(
             .width(CHANNEL_COLUMN - 6.dp)
             .height(ROW_HEIGHT)
             .onFocusChanged { if (it.hasFocus) onFocus() }
+            .onPreviewKeyEvent {
+                // LEWO na kanale wysuwa grupy (dopiero kolejne LEWO trafia do szyny nawigacji).
+                val left = it.key == Key.DirectionLeft && it.type == KeyEventType.KeyDown
+                left.also { if (it) onLeft() }
+            }.then(if (requester != null) Modifier.focusRequester(requester) else Modifier)
             .then(if (initialFocus) Modifier.requestFocusWhenPlaced() else Modifier),
+        onLongClick = onLongClick,
         container = c.surface2,
         outlined = false,
         contentAlignment = Alignment.CenterStart,

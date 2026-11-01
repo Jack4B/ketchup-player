@@ -55,7 +55,6 @@ dependencies {
     implementation(project(":core:datastore"))
     implementation(project(":feature:settings"))
     implementation(project(":feature:providers"))
-    implementation(project(":feature:livetv"))
     implementation(project(":feature:guide"))
     implementation(project(":feature:vod"))
     implementation(project(":feature:details"))
