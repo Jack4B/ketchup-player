@@ -15,7 +15,6 @@ import pl.ketchupplayer.tv.core.model.ProviderInfo
 import pl.ketchupplayer.tv.core.model.ProviderType
 import pl.ketchupplayer.tv.core.model.StreamSpec
 import pl.ketchupplayer.tv.core.network.TransferMeter
-import pl.ketchupplayer.tv.core.network.UserAgentProfiles
 import pl.ketchupplayer.tv.core.policy.EpgSourcePolicy
 import pl.ketchupplayer.tv.provider.api.Capability
 import pl.ketchupplayer.tv.provider.xtream.XtreamCredentials
@@ -123,17 +122,10 @@ class RoomCatalogRepository
         private suspend fun doRefresh(id: ProviderId): Result<Int> {
             val entity =
                 providerDao.get(id.value) ?: return Result.failure(IllegalStateException("Nie ma takiego dostawcy"))
-            var provider =
+            val provider =
                 factory.create(entity)
                     ?: return Result.failure(IllegalStateException("Brak zapisanych danych dostawcy"))
-            var result = loadChannelsSafely(provider)
-            // Tryb automatyczny: po błędzie typu „odmowa/404” próbujemy kolejnych nagłówków i zapamiętujemy działający.
-            if (result.isFailure && factory.profile(id.value) == UserAgentProfiles.AUTO && retryable(result)) {
-                tryOtherHeaders(entity)?.let { (alt, attempt) ->
-                    provider = alt
-                    result = attempt
-                }
-            }
+            val result = loadChannelsSafely(provider)
             val now = clock.nowMs()
             return result.fold(
                 onSuccess = { channels ->
@@ -153,32 +145,11 @@ class RoomCatalogRepository
             )
         }
 
-        /** Pierwszy nagłówek z listy rezerwowej, z którym lista się pobiera; zapamiętany dla dostawcy. */
-        private suspend fun tryOtherHeaders(
-            entity: pl.ketchupplayer.tv.core.database.ProviderEntity,
-        ): Pair<pl.ketchupplayer.tv.provider.api.IptvProvider, Result<List<Channel>>>? {
-            for (candidate in UserAgentProfiles.FALLBACKS) {
-                val alt = factory.create(entity, candidate) ?: return null
-                val attempt = loadChannelsSafely(alt)
-                if (attempt.isSuccess) {
-                    factory.remember(entity.id, candidate)
-                    return alt to attempt
-                }
-            }
-            return null
-        }
-
         private suspend fun loadChannelsSafely(provider: pl.ketchupplayer.tv.provider.api.IptvProvider) =
             try {
                 provider.loadChannels()
             } catch (e: OutOfMemoryError) {
                 Result.failure(IllegalStateException("Za mało pamięci na tak dużą listę", e))
-            }
-
-        /** Błędy, które często znikają po zmianie nagłówka: odmowa dostępu, 404, zerwane połączenie. */
-        private fun retryable(result: Result<*>): Boolean =
-            result.exceptionOrNull()?.message.orEmpty().let { m ->
-                HTTP_RETRY.containsMatchIn(m) || "reset" in m || "unexpected end" in m
             }
 
         /** Zwraca notatkę dla użytkownika, gdy katalog filmów i seriali trzeba było pominąć; null = bez uwag. */
@@ -273,8 +244,6 @@ class RoomCatalogRepository
 
         private fun hostOf(url: String): String = runCatching { URI(url).host }.getOrNull() ?: "?"
     }
-
-private val HTTP_RETRY = Regex("""HTTP (401|403|404|405|406|429|5\d\d)""")
 
 private fun pl.ketchupplayer.tv.core.model.VodItem.toVodEntity() =
     pl.ketchupplayer.tv.core.database.VodItemEntity(

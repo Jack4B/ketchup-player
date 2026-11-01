@@ -157,10 +157,23 @@ fun PosterImage(
     title: String,
     modifier: Modifier = Modifier,
     contentScale: androidx.compose.ui.layout.ContentScale = androidx.compose.ui.layout.ContentScale.Crop,
+    /** false: bez litery zastępczej (duże tła, gdzie napis wyglądałby jak błąd). */
+    showInitial: Boolean = true,
 ) {
     val c = KetchupTheme.colors
-    Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(tileLabel(title), fontSize = 18.sp, color = c.textSecondary)
+    Box(
+        modifier.fillMaxSize().background(Brush.linearGradient(listOf(c.surface3, c.surface2))),
+        contentAlignment = Alignment.Center,
+    ) {
+        // Zastępnik bez grafiki: jedna duża, przygaszona litera tytułu zamiast ucinanego słowa.
+        if (showInitial) {
+            Text(
+                title.trim().take(1).uppercase(),
+                fontSize = 44.sp,
+                fontWeight = FontWeight.Bold,
+                color = c.textSecondary.copy(alpha = INITIAL_ALPHA),
+            )
+        }
         if (!url.isNullOrBlank()) {
             coil3.compose.AsyncImage(
                 model = url,
@@ -172,6 +185,7 @@ fun PosterImage(
     }
 }
 
+private const val INITIAL_ALPHA = 0.35f
 private val POSTER_WIDTH = 170.dp
 private const val POSTER_ASPECT = 2f / 3f
 

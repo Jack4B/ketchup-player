@@ -147,7 +147,7 @@ private fun VodHero(
     val item = entry.item
     Box(Modifier.fillMaxWidth().height(VOD_HERO_HEIGHT).clip(RoundedCornerShape(c.cornerRadius))) {
         // Grafika na całą szerokość (backdrop albo plakat) z gradientem od lewej: tekst zawsze czytelny.
-        PosterImage(item.backdrop ?: item.poster, item.title, Modifier.fillMaxSize())
+        PosterImage(item.backdrop ?: item.poster, item.title, Modifier.fillMaxSize(), showInitial = false)
         Box(
             Modifier.fillMaxSize().background(
                 Brush.horizontalGradient(listOf(c.background.copy(alpha = HERO_SCRIM_LEFT), Color.Transparent)),

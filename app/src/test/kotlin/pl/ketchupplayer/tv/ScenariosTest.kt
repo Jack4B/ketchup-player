@@ -787,18 +787,18 @@ class ScenariosTest {
         assertEquals(listOf("$host/tvn24.m3u8"), FakePlayers.played.toList())
     }
 
-    /** Scenariusz: panel odrzuca nieznane nagłówki (404), ale przepuszcza TiviMate; lista dodaje się sama. */
+    /** Scenariusz: pobranie listy idzie z nagłówkiem jak w starym BK Playerze (panele odrzucają nieznane). */
     @Test
-    fun listaZ404NaDomyslnymNaglowkuDodajeSiePoAutomatycznejZmianie() {
+    fun listaPobieranaZNaglowkiemJakWBkPlayer() {
         val host = "http://127.0.0.1:${server.port}"
-        server.serveRequest("/blocked.m3u") { req ->
-            if (req.getHeader("User-Agent").orEmpty().startsWith("TiviMate")) {
+        server.serveRequest("/bk.m3u") { req ->
+            if (req.getHeader("User-Agent") == "BK-player-Next/1.0") {
                 "#EXTM3U\n#EXTINF:-1 group-title=\"PL | Info\",TVN 24\n$host/tvn24.m3u8\n"
             } else {
                 ProviderServer.NOT_FOUND
             }
         }
-        runBlocking { catalog.addM3u("Zablokowana", server.url("/blocked.m3u")) }
+        runBlocking { catalog.addM3u("Jak BK", server.url("/bk.m3u")) }
         nav("Na żywo")
         waitForText("TVN 24", timeoutMs = BIG_WAIT_MS)
     }

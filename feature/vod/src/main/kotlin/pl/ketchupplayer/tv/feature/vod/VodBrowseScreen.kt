@@ -141,7 +141,7 @@ private fun Backdrop(entry: VodEntry?) {
     val item = entry?.item ?: return
     val url = item.backdrop ?: item.poster ?: return
     Box(Modifier.fillMaxSize()) {
-        PosterImage(url, item.title, Modifier.fillMaxSize().glassBlur().alpha(BACKDROP_ALPHA))
+        PosterImage(url, item.title, Modifier.fillMaxSize().glassBlur().alpha(BACKDROP_ALPHA), showInitial = false)
         Box(
             Modifier.fillMaxSize().background(
                 Brush.horizontalGradient(listOf(c.background, c.background.copy(alpha = 0.7f), Color.Transparent)),

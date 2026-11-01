@@ -33,11 +33,11 @@ import pl.ketchupplayer.tv.core.model.VodKind
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], qualifiers = "w960dp-h540dp-xhdpi")
-class HomeScreenTest {
+open class HomeScreenTest {
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
 
-    private fun item(
+    protected fun item(
         id: String,
         title: String,
         kind: VodKind,
@@ -53,16 +53,48 @@ class HomeScreenTest {
         genre = "Dramat",
     )
 
-    private val resume = VodEntry(item("m1", "Burza", VodKind.MOVIE), positionMs = 1_000, durationMs = 4_000)
-    private val fresh = VodEntry(item("s1", "Dom nad jeziorem", VodKind.SERIES), hasNewEpisodes = true)
-    private val state =
+    protected fun movie(
+        n: Int,
+        title: String,
+        rating: Double,
+        year: Int,
+    ) = VodEntry(
+        item("m$n", title, VodKind.MOVIE).copy(rating = rating, year = year),
+        positionMs = if (n <= 3) n * 1_000L else 0,
+        durationMs = if (n <= 3) 4_000L else 0,
+    )
+
+    protected fun series(
+        n: Int,
+        title: String,
+    ) = VodEntry(item("s$n", title, VodKind.SERIES), hasNewEpisodes = true)
+
+    protected val resume = movie(1, "W mieście strachu", 8.4, 2026)
+    protected val continueRow =
+        listOf(
+            resume,
+            movie(2, "Piekielna robota", 9.1, 2026),
+            movie(3, "Ukryte w ciemności", 7.9, 2025),
+            movie(4, "Doctor X", 9.0, 2026),
+            movie(5, "Skandalistki", 8.0, 2025),
+        )
+    protected val freshRow =
+        listOf(
+            series(1, "Jaga"),
+            series(2, "Dom nad jeziorem"),
+            series(3, "Moja ukryta prawda"),
+            series(4, "Zombie Sagashitemas"),
+            series(5, "Magic Knight Rayearth"),
+        )
+    protected val state =
         HomeUiState(
             loading = false,
             hasProviders = true,
             featured = resume,
             featuredResumes = true,
-            continueVod = listOf(resume),
-            newEpisodes = listOf(fresh),
+            continueVod = continueRow,
+            newEpisodes = freshRow,
+            myList = continueRow.reversed(),
         )
 
     private fun key(k: Key) = compose.onRoot().performKeyInput { pressKey(k) }
@@ -97,5 +129,24 @@ class HomeScreenTest {
         key(Key.DirectionCenter)
         assertEquals(listOf("m1"), played)
         assertEquals(true, opened.size <= 1)
+    }
+}
+
+/** Wysoki ekran (pełna lista rzędów Home) do zrzutu poglądowego. */
+@OptIn(ExperimentalTestApi::class)
+@RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [34], qualifiers = "w960dp-h900dp-xhdpi")
+class HomeScreenTallTest : HomeScreenTest() {
+    @Test
+    fun screenshotWysoki() {
+        compose.setContent {
+            KetchupTheme(device = DeviceClass.TV) {
+                Box(Modifier.fillMaxSize().background(KetchupTheme.colors.background).padding(16.dp)) {
+                    HomeScreen(state, {}, {}, {})
+                }
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/home_rows_tall.png")
     }
 }

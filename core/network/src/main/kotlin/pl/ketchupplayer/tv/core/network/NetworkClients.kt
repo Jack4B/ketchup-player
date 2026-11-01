@@ -3,7 +3,6 @@ package pl.ketchupplayer.tv.core.network
 import okhttp3.ConnectionSpec
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
-import okhttp3.Protocol
 import java.util.concurrent.TimeUnit
 
 /**
@@ -13,20 +12,18 @@ import java.util.concurrent.TimeUnit
  */
 object NetworkClients {
     /**
-     * Nagłówek w stylu odtwarzacza: panele IPTV często odrzucają (404/403) nieznane aplikacje i przeglądarki,
-     * a przepuszczają VLC. Nie podszywamy się pod konkretną aplikację dostawcy; wartość zastępuje `#EXTVLCOPT`.
+     * Jak w starym BK Playerze (1.8.x), który z listami dostawców działał: ten sam nagłówek przy pobieraniu list
+     * i API oraz osobny przy odtwarzaniu. Panele IPTV potrafią odrzucać (404) nieznane nagłówki.
      */
-    const val DEFAULT_USER_AGENT = "VLC/3.0.20 LibVLC/3.0.20"
+    const val DEFAULT_USER_AGENT = "BK-player-Next/1.0"
+    const val PLAYER_USER_AGENT = "BK-player-Next/1.7.2 AndroidXMedia3/1.11.1"
 
     fun stream(userAgent: String = DEFAULT_USER_AGENT): OkHttpClient =
         base(
             userAgent,
         ).connectionSpecs(
             listOf(ConnectionSpec.MODERN_TLS, ConnectionSpec.COMPATIBLE_TLS, ConnectionSpec.CLEARTEXT),
-        )
-            // Panele IPTV odpowiadają na handshake HTTP/2 błędem protokołu; HTTP/1.1 działa wszędzie.
-            .protocols(listOf(Protocol.HTTP_1_1))
-            .build()
+        ).build()
 
     fun metadata(userAgent: String = DEFAULT_USER_AGENT): OkHttpClient =
         base(userAgent).connectionSpecs(listOf(ConnectionSpec.MODERN_TLS)).build()
@@ -53,6 +50,6 @@ object NetworkClients {
             )
         }
 
-    private const val CONNECT_TIMEOUT_S = 15L
-    private const val READ_TIMEOUT_S = 30L
+    private const val CONNECT_TIMEOUT_S = 20L
+    private const val READ_TIMEOUT_S = 60L
 }

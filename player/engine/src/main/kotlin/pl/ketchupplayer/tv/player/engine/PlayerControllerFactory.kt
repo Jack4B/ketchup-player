@@ -19,7 +19,8 @@ class ExoPlayerControllerFactory
     constructor(
         @ApplicationContext private val context: Context,
     ) : PlayerControllerFactory {
-        override fun create(): PlayerController = ExoPlayerController(context, NetworkClients.stream())
+        override fun create(): PlayerController =
+            ExoPlayerController(context, NetworkClients.stream(NetworkClients.PLAYER_USER_AGENT))
     }
 
 @Module
