@@ -15,7 +15,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -37,6 +39,7 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
 import pl.ketchupplayer.tv.core.designsystem.FocusItem
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
+import pl.ketchupplayer.tv.core.designsystem.PillChip
 import pl.ketchupplayer.tv.core.designsystem.ScreenScaffold
 import pl.ketchupplayer.tv.core.designsystem.ShellHeader
 import pl.ketchupplayer.tv.core.designsystem.StateKind
@@ -45,6 +48,8 @@ import pl.ketchupplayer.tv.core.designsystem.TabChip
 import pl.ketchupplayer.tv.core.designsystem.requestFocusWhenPlaced
 import pl.ketchupplayer.tv.core.model.Channel
 import pl.ketchupplayer.tv.core.model.EpgProgramme
+import pl.ketchupplayer.tv.epg.radar.RadarItem
+import pl.ketchupplayer.tv.epg.radar.RadarSlot
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -57,7 +62,8 @@ fun GuideRoute(
     viewModel: GuideViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    GuideScreen(state, viewModel::programmes, onOpenChannel, onOpenProviders, onBack)
+    val radar by viewModel.radar.collectAsStateWithLifecycle()
+    GuideScreen(state, viewModel::programmes, onOpenChannel, onOpenProviders, onBack, radar, viewModel::selectRadarSlot)
 }
 
 /** Zakładki ekranu Przewodnik (makieta 04): Siatka | Radar | Moje zainteresowania. */
@@ -76,6 +82,8 @@ fun GuideScreen(
     onOpenChannel: (String) -> Unit,
     onOpenProviders: () -> Unit,
     onBack: () -> Unit,
+    radar: RadarUiState = RadarUiState(),
+    onRadarSlot: (RadarSlot) -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
     var tab by remember { mutableStateOf(GuideTab.GRID) }
@@ -91,6 +99,7 @@ fun GuideScreen(
                     onAction = onOpenProviders,
                 )
             tab == GuideTab.GRID -> Grid(state, loadProgrammes, onOpenChannel)
+            tab == GuideTab.RADAR -> RadarTab(radar, state.nowMs, onRadarSlot, onOpenChannel)
             else -> StateView(StateKind.EMPTY, stringResource(R.string.guide_tab_soon))
         }
     }
@@ -371,3 +380,105 @@ private val PREVIEW_ART = 200.dp
 private const val BLOCK_GAP = 4f
 private const val MS_PER_MINUTE = 60_000L
 private const val ON_AIR_ALPHA = 0.9f
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun RadarTab(
+    radar: RadarUiState,
+    nowMs: Long,
+    onSlot: (RadarSlot) -> Unit,
+    onOpenChannel: (String) -> Unit,
+) {
+    val slots =
+        listOf(
+            RadarSlot.TOP_DAY to R.string.guide_radar_top,
+            RadarSlot.NOW to R.string.guide_radar_now,
+            RadarSlot.SOON to R.string.guide_radar_soon,
+            RadarSlot.EVENING to R.string.guide_radar_evening,
+        )
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        slots.forEach { (slot, label) -> PillChip(stringResource(label), radar.slot == slot, { onSlot(slot) }) }
+    }
+    when {
+        radar.loading -> StateView(StateKind.LOADING, "")
+        radar.items.isEmpty() -> StateView(StateKind.EMPTY, stringResource(R.string.guide_radar_empty))
+        else ->
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                itemsIndexed(radar.items, key = { _, entry -> entry.channel.id + entry.programme.startMs }) { i, item ->
+                    RadarRow(item, nowMs, i == 0) { onOpenChannel(item.channel.id) }
+                }
+            }
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun RadarRow(
+    item: RadarItem,
+    nowMs: Long,
+    first: Boolean,
+    onClick: () -> Unit,
+) {
+    val c = KetchupTheme.colors
+    val p = item.programme
+    FocusItem(
+        onClick,
+        Modifier
+            .fillMaxWidth()
+            .height(RADAR_ROW_HEIGHT)
+            .then(if (first) Modifier.requestFocusWhenPlaced() else Modifier),
+        container = c.surface2,
+        outlined = false,
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Text(
+                clockRange(p.startMs, p.endMs),
+                fontSize = 14.sp,
+                color = c.textSecondary,
+                modifier = Modifier.width(110.dp),
+            )
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    p.title,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = c.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    listOfNotNull(item.channel.displayName, p.category).joinToString(" · "),
+                    fontSize = 13.sp,
+                    color = c.textSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (p.isOnAt(nowMs)) {
+                    Box(Modifier.fillMaxWidth().height(3.dp).background(c.outline, CircleShape)) {
+                        val done = p.progressAt(nowMs)
+                        Box(Modifier.fillMaxHeight().fillMaxWidth(done).background(c.accent, CircleShape))
+                    }
+                }
+            }
+            item.ratingTenths?.let {
+                val rating = String.format(java.util.Locale.forLanguageTag("pl"), "%.1f", it / 10f)
+                Text("★ $rating", fontSize = 15.sp, color = c.textPrimary)
+            }
+        }
+    }
+}
+
+private val RADAR_ROW_HEIGHT = 62.dp
+
+private fun clockRange(
+    startMs: Long,
+    endMs: Long,
+): String {
+    val f = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+    return f.format(java.util.Date(startMs)) + "–" + f.format(java.util.Date(endMs))
+}

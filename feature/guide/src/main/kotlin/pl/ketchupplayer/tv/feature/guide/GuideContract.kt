@@ -1,6 +1,8 @@
 package pl.ketchupplayer.tv.feature.guide
 
 import pl.ketchupplayer.tv.core.model.Channel
+import pl.ketchupplayer.tv.epg.radar.RadarItem
+import pl.ketchupplayer.tv.epg.radar.RadarSlot
 
 /** Okno czasu siatki i kanały w kolejności wyświetlania (ulubione na początku). */
 data class GuideUiState(
@@ -48,3 +50,10 @@ object GuideGeometry {
 
     fun totalWidthDp(): Float = WINDOW_MINUTES * DP_PER_MINUTE
 }
+
+/** Zakładka Radar: wybrany slot i jego pozycje (przeliczane po imporcie EPG i zmianie ulubionych). */
+data class RadarUiState(
+    val slot: RadarSlot = RadarSlot.TOP_DAY,
+    val loading: Boolean = true,
+    val items: List<RadarItem> = emptyList(),
+)

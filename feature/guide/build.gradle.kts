@@ -10,6 +10,7 @@ dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:common"))
     implementation(project(":core:designsystem"))
+    implementation(project(":epg:radar"))
     implementation(libs.coroutines.core)
     implementation(libs.androidx.lifecycle.runtime)
     implementation(libs.lifecycle.viewmodel.compose)

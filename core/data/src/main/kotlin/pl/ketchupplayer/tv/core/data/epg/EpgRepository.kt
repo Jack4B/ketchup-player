@@ -21,6 +21,12 @@ interface EpgRepository {
         toMs: Long,
     ): List<EpgProgramme>
 
+    /** Audycje wszystkich kanałów zachodzące na okno [fromMs, toMs) (Radar). */
+    suspend fun window(
+        fromMs: Long,
+        toMs: Long,
+    ): List<EpgProgramme>
+
     /**
      * Pobiera i importuje włączone źródła XMLTV (epg.ovh, własne, adresy dostawców).
      * Jednoczesne wywołania nie dublują importu (single-flight). Gdy żadne źródło się nie powiedzie,

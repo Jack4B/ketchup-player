@@ -131,6 +131,13 @@ interface EpgDao {
     @Query("SELECT * FROM epg_programmes WHERE startMs <= :nowMs AND endMs > :nowMs")
     fun observeOnAir(nowMs: Long): Flow<List<EpgProgrammeEntity>>
 
+    /** Audycje wszystkich kanałów zachodzące na okno (Radar). */
+    @Query("SELECT * FROM epg_programmes WHERE endMs > :fromMs AND startMs < :toMs")
+    suspend fun between(
+        fromMs: Long,
+        toMs: Long,
+    ): List<EpgProgrammeEntity>
+
     @Query(
         "SELECT * FROM epg_programmes WHERE channelId = :channelId AND endMs > :fromMs " +
             "AND startMs < :toMs ORDER BY startMs",

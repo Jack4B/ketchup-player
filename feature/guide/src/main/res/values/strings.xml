@@ -10,4 +10,9 @@
     <string name="guide_tab_soon">Ta zakładka pojawi się w kolejnej wersji.</string>
     <string name="guide_now">TERAZ · %1$s</string>
     <string name="guide_later">PÓŹNIEJ · %1$s</string>
+    <string name="guide_radar_top">TOP DNIA</string>
+    <string name="guide_radar_now">Teraz</string>
+    <string name="guide_radar_soon">Za chwilę</string>
+    <string name="guide_radar_evening">Wieczorem</string>
+    <string name="guide_radar_empty">Brak audycji w tym oknie. Sprawdź źródła EPG w Ustawieniach.</string>
 </resources>

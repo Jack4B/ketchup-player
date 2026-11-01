@@ -41,6 +41,11 @@ class RoomEpgRepository
             toMs: Long,
         ): List<EpgProgramme> = epg.range(channelId, fromMs, toMs).map { it.toModel() }
 
+        override suspend fun window(
+            fromMs: Long,
+            toMs: Long,
+        ): List<EpgProgramme> = epg.between(fromMs, toMs).map { it.toModel() }
+
         override suspend fun refreshIfStale(maxAgeMs: Long): Result<EpgRefreshReport>? {
             val last = prefs.data.first()[LAST_REFRESH]
             val stale = last == null || clock.nowMs() - last > maxAgeMs
