@@ -1,14 +1,14 @@
-127.0.0.1 - - [01/Nov/2026 06:18:25] "GET /a.m3u HTTP/1.1" 200 -
-127.0.0.1 - - [01/Nov/2026 06:18:25] "GET /a.m3u HTTP/1.1" 200 -
-127.0.0.1 - - [01/Nov/2026 06:18:25] "GET /a.m3u HTTP/1.1" 200 -
-127.0.0.1 - - [01/Nov/2026 06:18:25] "GET /hls/good/index.m3u8 HTTP/1.1" 200 -
-127.0.0.1 - - [01/Nov/2026 06:18:37] "GET /a.m3u HTTP/1.1" 200 -
-127.0.0.1 - - [01/Nov/2026 06:18:55] "GET /b.m3u HTTP/1.1" 200 -
-127.0.0.1 - - [01/Nov/2026 06:19:09] code 404, message File not found
-127.0.0.1 - - [01/Nov/2026 06:19:09] "GET /hls/missing/index.m3u8 HTTP/1.1" 404 -
-127.0.0.1 - - [01/Nov/2026 06:19:10] code 404, message File not found
-127.0.0.1 - - [01/Nov/2026 06:19:10] "GET /hls/missing/index.m3u8 HTTP/1.1" 404 -
-127.0.0.1 - - [01/Nov/2026 06:19:10] "GET /hls/good/index.m3u8 HTTP/1.1" 200 -
-127.0.0.1 - - [01/Nov/2026 06:19:10] "GET /hls/good/index0.ts HTTP/1.1" 200 -
-127.0.0.1 - - [01/Nov/2026 06:19:10] "GET /hls/good/index1.ts HTTP/1.1" 200 -
-127.0.0.1 - - [01/Nov/2026 06:19:10] "GET /hls/good/index2.ts HTTP/1.1" 200 -
+127.0.0.1 - - [01/Nov/2026 06:42:29] "GET /a.m3u HTTP/1.1" 200 -
+127.0.0.1 - - [01/Nov/2026 06:42:29] "GET /a.m3u HTTP/1.1" 200 -
+127.0.0.1 - - [01/Nov/2026 06:42:29] "GET /a.m3u HTTP/1.1" 200 -
+127.0.0.1 - - [01/Nov/2026 06:42:29] "GET /hls/good/index.m3u8 HTTP/1.1" 200 -
+127.0.0.1 - - [01/Nov/2026 06:42:42] "GET /a.m3u HTTP/1.1" 200 -
+127.0.0.1 - - [01/Nov/2026 06:43:00] "GET /b.m3u HTTP/1.1" 200 -
+127.0.0.1 - - [01/Nov/2026 06:43:14] code 404, message File not found
+127.0.0.1 - - [01/Nov/2026 06:43:14] "GET /hls/missing/index.m3u8 HTTP/1.1" 404 -
+127.0.0.1 - - [01/Nov/2026 06:43:14] code 404, message File not found
+127.0.0.1 - - [01/Nov/2026 06:43:14] "GET /hls/missing/index.m3u8 HTTP/1.1" 404 -
+127.0.0.1 - - [01/Nov/2026 06:43:14] "GET /hls/good/index.m3u8 HTTP/1.1" 200 -
+127.0.0.1 - - [01/Nov/2026 06:43:14] "GET /hls/good/index0.ts HTTP/1.1" 200 -
+127.0.0.1 - - [01/Nov/2026 06:43:15] "GET /hls/good/index1.ts HTTP/1.1" 200 -
+127.0.0.1 - - [01/Nov/2026 06:43:15] "GET /hls/good/index2.ts HTTP/1.1" 200 -
