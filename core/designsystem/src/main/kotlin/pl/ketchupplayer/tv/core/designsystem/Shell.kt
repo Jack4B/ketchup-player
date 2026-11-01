@@ -117,7 +117,7 @@ fun Modifier.panel(): Modifier {
 
 private const val GRANAT_PANEL_ALPHA = 0.72f
 
-private val RAIL_COLLAPSED = 52.dp
+private val RAIL_COLLAPSED = 58.dp
 private val RAIL_EXPANDED = 210.dp
 
 // Małe marginesy: telewizory nie przycinają obrazu (overscan wyłączony), więc zawartość może iść blisko krawędzi.
@@ -194,17 +194,33 @@ private fun NavRail(
 ) {
     val c = KetchupTheme.colors
     var expanded by remember { mutableStateOf(false) }
-    val shape = RoundedCornerShape(c.cornerRadius)
+    // „Szkło”: półprzezroczysty gradient w tonie motywu + cienki połysk na krawędzi. Bez rozmycia (słabe SoC boxów):
+    // przezroczystość daje głębię, a tło ekranu prześwituje przez szynę.
+    val shape = RoundedCornerShape(if (c.theme == ThemeId.CZERN) c.cornerRadius else RAIL_GLASS_RADIUS)
+    val glassTop = if (expanded) GLASS_TOP_OPEN else GLASS_TOP
+    val glassBottom = if (expanded) GLASS_BOTTOM_OPEN else GLASS_BOTTOM
     val railFill =
         when (c.theme) {
-            ThemeId.GRANAT ->
+            ThemeId.CZERN ->
                 Modifier
                     .background(
-                        Color(if (expanded) RAIL_GRANAT_OPEN else RAIL_GRANAT),
+                        Color.Black.copy(alpha = glassBottom),
                         shape,
                     ).border(1.dp, c.outline, shape)
-            ThemeId.CZERN -> Modifier.border(1.dp, c.outline, shape)
-            ThemeId.BORDO -> Modifier.background(Color(RAIL_BORDO), shape)
+            else ->
+                Modifier
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(c.surface3.copy(alpha = glassTop), c.surface2.copy(alpha = glassBottom)),
+                        ),
+                        shape,
+                    ).border(
+                        1.dp,
+                        Brush.verticalGradient(
+                            listOf(Color.White.copy(alpha = EDGE_TOP), Color.White.copy(alpha = EDGE_BOTTOM)),
+                        ),
+                        shape,
+                    )
         }
     Column(
         modifier
@@ -240,9 +256,15 @@ private fun NavRail(
     }
 }
 
-private const val RAIL_GRANAT = 0xD9092C44 // rgba(9,24,44,.85)
-private const val RAIL_GRANAT_OPEN = 0xFF092C44
-private const val RAIL_BORDO = 0xFF4A252A
+private val RAIL_GLASS_RADIUS = 28.dp
+private const val GLASS_TOP = 0.62f
+private const val GLASS_BOTTOM = 0.42f
+private const val GLASS_TOP_OPEN = 0.82f
+private const val GLASS_BOTTOM_OPEN = 0.68f
+private const val EDGE_TOP = 0.28f
+private const val EDGE_BOTTOM = 0.05f
+private const val SELECTED_FILL_ALPHA = 0.2f
+private const val FOCUS_FILL_ALPHA = 0.14f
 private const val RAIL_ANIMATION_MS = 160
 private val RAIL_AVATAR = 40.dp
 private val RAIL_AVATAR_CORNER = 10.dp
@@ -259,7 +281,7 @@ private fun RailItem(
 ) {
     val c = KetchupTheme.colors
     var focused by remember { mutableStateOf(false) }
-    val shape = RoundedCornerShape((c.cornerRadius / 2).coerceAtMost(14.dp))
+    val shape = RoundedCornerShape(RAIL_ITEM_RADIUS)
     val tint = if (selected || focused) c.accent else c.textSecondary
     Row(
         Modifier
@@ -273,7 +295,8 @@ private fun RailItem(
             .semantics(mergeDescendants = true) {
                 contentDescription = entry.label
                 this.selected = selected
-            }.then(if (selected) Modifier.background(c.surface3, shape) else Modifier)
+            }.then(if (selected) Modifier.background(c.accent.copy(alpha = SELECTED_FILL_ALPHA), shape) else Modifier)
+            .then(if (focused) Modifier.background(Color.White.copy(alpha = FOCUS_FILL_ALPHA), shape) else Modifier)
             .then(if (focused) Modifier.border(2.dp, c.accent, shape) else Modifier)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
@@ -301,7 +324,8 @@ private fun RailItem(
     }
 }
 
-private val RAIL_ITEM_HEIGHT = 40.dp
+private val RAIL_ITEM_HEIGHT = 44.dp
+private val RAIL_ITEM_RADIUS = 16.dp
 
 /** Nagłówek ekranu w powłoce: tytuł, opcjonalne zakładki, po prawej zegar. */
 @OptIn(ExperimentalTvMaterial3Api::class)
