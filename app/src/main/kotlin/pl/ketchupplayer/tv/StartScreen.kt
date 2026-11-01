@@ -72,6 +72,7 @@ fun StartScreen(onNavigate: (Destination) -> Unit = {}) {
         val entries =
             listOf(
                 R.string.start_live to Destination.LIVE,
+                R.string.start_guide to Destination.GUIDE,
                 R.string.start_providers to Destination.PROVIDERS,
                 R.string.start_epg_sources to Destination.EPG_SOURCES,
                 R.string.start_playback to Destination.PLAYBACK,

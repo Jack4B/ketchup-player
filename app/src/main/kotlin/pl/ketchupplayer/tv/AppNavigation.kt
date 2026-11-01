@@ -6,6 +6,7 @@ import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
+import pl.ketchupplayer.tv.feature.guide.GuideRoute
 import pl.ketchupplayer.tv.feature.livetv.LiveTvRoute
 import pl.ketchupplayer.tv.feature.playerui.PlayerRoute
 import pl.ketchupplayer.tv.feature.providers.ProvidersRoute
@@ -37,6 +38,12 @@ fun AppNavigation() {
         playerChannel != null -> PlayerRoute(playerChannel, onBack = pop)
         top == Destination.LIVE.key ->
             LiveTvRoute(
+                onOpenChannel = { push(Routes.player(it)) },
+                onOpenProviders = { push(Destination.PROVIDERS.key) },
+                onBack = pop,
+            )
+        top == Destination.GUIDE.key ->
+            GuideRoute(
                 onOpenChannel = { push(Routes.player(it)) },
                 onOpenProviders = { push(Destination.PROVIDERS.key) },
                 onBack = pop,

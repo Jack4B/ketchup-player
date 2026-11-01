@@ -5,6 +5,7 @@ enum class Destination(
     val key: String,
 ) {
     LIVE("live"),
+    GUIDE("guide"),
     PROVIDERS("providers"),
     EPG_SOURCES("epg"),
     PLAYBACK("playback"),

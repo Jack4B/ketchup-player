@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="guide_title">Przewodnik</string>
+    <string name="guide_no_data">Brak danych przewodnika</string>
+    <string name="guide_empty">Brak kanałów. Dodaj listę u dostawców.</string>
+    <string name="guide_open_providers">Dostawcy</string>
+</resources>
