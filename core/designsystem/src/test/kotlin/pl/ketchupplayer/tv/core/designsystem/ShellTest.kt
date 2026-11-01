@@ -12,6 +12,7 @@ import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -90,6 +91,26 @@ class ShellTest {
         key(Key.DirectionLeft)
         compose.waitForIdle()
         compose.onRoot().captureRoboImage("src/test/screenshots/shell_rozwinieta.png")
+    }
+
+    /** Jak w TiViMate: rozwinięta szuflada przesuwa treść w prawo (nadal widoczną), a nie nachodzi na nią. */
+    @Test
+    fun rozwinietaSzynaPrzesuwaTresc() {
+        show()
+        keyboardMode()
+        val before =
+            compose
+                .onNodeWithText("Pierwszy")
+                .fetchSemanticsNode()
+                .boundsInRoot.left
+        key(Key.DirectionLeft)
+        compose.waitForIdle()
+        val after =
+            compose
+                .onNodeWithText("Pierwszy")
+                .fetchSemanticsNode()
+                .boundsInRoot.left
+        assertTrue("treść powinna przesunąć się w prawo ($before -> $after)", after > before + 40f)
     }
 
     /** Pilot: LEWO z treści trafia w szynę na aktywną pozycję („Na żywo”), OK ją wybiera. */

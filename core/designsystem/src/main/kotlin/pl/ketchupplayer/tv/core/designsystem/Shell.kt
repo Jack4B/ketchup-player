@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -47,6 +48,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -118,7 +120,7 @@ fun Modifier.panel(): Modifier {
 private const val GRANAT_PANEL_ALPHA = 0.72f
 
 private val RAIL_COLLAPSED = 52.dp
-private val RAIL_EXPANDED = 168.dp
+private val RAIL_EXPANDED = 210.dp
 
 // Małe marginesy: telewizory nie przycinają obrazu (overscan wyłączony), więc zawartość może iść blisko krawędzi.
 private val SHELL_MARGIN_H = 16.dp
@@ -142,6 +144,12 @@ fun AppShell(
 ) {
     val requesters = remember(entries) { entries.associate { it.id to FocusRequester() } }
     var railFocused by remember { mutableStateOf(false) }
+    // Jak w TiViMate: rozwinięta szuflada nie nachodzi na treść, tylko przesuwa ją w prawo (nadal widoczną).
+    val railWidth by animateDpAsState(
+        if (railFocused) RAIL_EXPANDED else RAIL_COLLAPSED,
+        tween(RAIL_ANIMATION_MS),
+        label = "rail",
+    )
     val toRail: () -> Unit = {
         (requesters[selectedId] ?: requesters.values.firstOrNull())?.let { runCatching { it.requestFocus() } }
     }
@@ -153,7 +161,8 @@ fun AppShell(
                 Box(
                     Modifier
                         .fillMaxSize()
-                        .padding(start = RAIL_COLLAPSED + CONTENT_GAP),
+                        .padding(start = RAIL_COLLAPSED + CONTENT_GAP)
+                        .offset { IntOffset((railWidth - RAIL_COLLAPSED).roundToPx(), 0) },
                     content = content,
                 )
                 NavRail(
@@ -162,6 +171,7 @@ fun AppShell(
                     onSelect,
                     requesters,
                     avatar,
+                    railWidth,
                     Modifier.align(Alignment.CenterStart).onFocusChanged { railFocused = it.hasFocus }.zIndex(1f),
                 )
             }
@@ -177,15 +187,11 @@ private fun NavRail(
     onSelect: (String) -> Unit,
     requesters: Map<String, FocusRequester>,
     avatar: @Composable () -> Unit,
+    width: androidx.compose.ui.unit.Dp,
     modifier: Modifier,
 ) {
     val c = KetchupTheme.colors
     var expanded by remember { mutableStateOf(false) }
-    val width by animateDpAsState(
-        if (expanded) RAIL_EXPANDED else RAIL_COLLAPSED,
-        tween(RAIL_ANIMATION_MS),
-        label = "rail",
-    )
     val shape = RoundedCornerShape(c.cornerRadius)
     val railFill =
         when (c.theme) {
