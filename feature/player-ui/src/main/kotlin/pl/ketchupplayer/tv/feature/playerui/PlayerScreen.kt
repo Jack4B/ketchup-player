@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -111,6 +112,28 @@ fun PlayerScreen(
     vodInfo: VodInfoUi? = null,
 ) {
     BackHandler(onBack = onBack)
+    // Po wyjściu z aplikacji (HOME, inna aplikacja, radio) dźwięk nie może grać w tle: pauza przy ON_STOP,
+    // a po powrocie wznowienie tylko wtedy, gdy wcześniej coś grało.
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, controller) {
+        var resumeOnStart = false
+        val observer =
+            androidx.lifecycle.LifecycleEventObserver { _, event ->
+                when (event) {
+                    androidx.lifecycle.Lifecycle.Event.ON_STOP -> {
+                        resumeOnStart = controller.state.value.isPlaying
+                        controller.pause()
+                    }
+                    androidx.lifecycle.Lifecycle.Event.ON_START -> {
+                        if (resumeOnStart) controller.resume()
+                        resumeOnStart = false
+                    }
+                    else -> Unit
+                }
+            }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     val playback by controller.state.collectAsStateWithLifecycle()
     val tracks by controller.tracks.collectAsStateWithLifecycle()
     val subtitle by controller.subtitle.collectAsStateWithLifecycle()

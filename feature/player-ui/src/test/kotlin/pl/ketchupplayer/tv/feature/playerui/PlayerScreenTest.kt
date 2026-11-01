@@ -67,9 +67,16 @@ internal class FakeController(
         played += spec
     }
 
-    override fun pause() = Unit
+    var pauses = 0
+    var resumes = 0
 
-    override fun resume() = Unit
+    override fun pause() {
+        pauses++
+    }
+
+    override fun resume() {
+        resumes++
+    }
 
     override fun stop() = Unit
 
@@ -331,5 +338,18 @@ class PlayerScreenTest {
         key(Key.DirectionUp)
         assertTrue(has("Obsada:"))
         assertTrue(has("Opis z katalogu dostawcy"))
+    }
+
+    /** Błąd z boxa: po wyjściu z aplikacji dźwięk grał w tle. ON_STOP wstrzymuje, powrót wznawia. */
+    @Test
+    fun wyjscieZAplikacjiWstrzymujeOdtwarzanieAPowrotWznawia() {
+        val c = FakeController(PlayerState(status = PlaybackStatus.READY, isPlaying = true))
+        show(PlayerUiState.Playing("JEDEN HD"), c)
+        compose.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED) // ON_STOP
+        compose.waitForIdle()
+        assertEquals(1, c.pauses)
+        compose.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
+        compose.waitForIdle()
+        assertEquals(1, c.resumes)
     }
 }
