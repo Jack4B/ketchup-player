@@ -152,14 +152,20 @@ fun ChannelRow(
     onLongClick: (() -> Unit)? = null,
     /** Godziny audycji po prawej, np. `19:30–20:00`. */
     timeRange: String? = null,
+    /** Jedna linia (nazwa, audycja, godziny, cienki pasek): mieści ok. 7 kanałów na ekranie, jak w TiViMate. */
+    compact: Boolean = false,
 ) {
     val c = KetchupTheme.colors
     FocusItem(
         onClick,
-        modifier.fillMaxWidth().height(CHANNEL_ROW_HEIGHT),
+        modifier.fillMaxWidth().height(if (compact) COMPACT_ROW_HEIGHT else CHANNEL_ROW_HEIGHT),
         onLongClick = onLongClick,
         outlined = false,
     ) {
+        if (compact) {
+            CompactChannelRow(number, name, favorite, nowPlaying, progress, timeRange)
+            return@FocusItem
+        }
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 12.dp).fillMaxHeight(),
             verticalAlignment = Alignment.CenterVertically,
@@ -221,6 +227,73 @@ fun ChannelRow(
 }
 
 private val CHANNEL_ROW_HEIGHT = 64.dp
+private val COMPACT_ROW_HEIGHT = 52.dp
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun CompactChannelRow(
+    number: Int,
+    name: String,
+    favorite: Boolean,
+    nowPlaying: String?,
+    progress: Float?,
+    timeRange: String?,
+) {
+    val c = KetchupTheme.colors
+    Box(Modifier.fillMaxWidth().fillMaxHeight()) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp).fillMaxHeight(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(number.toString(), fontSize = 16.sp, color = c.textSecondary, modifier = Modifier.width(36.dp))
+            Box(
+                Modifier.width(52.dp).background(c.channelTile, RoundedCornerShape(8.dp)).padding(vertical = 4.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    tileLabel(name),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = c.channelTileText,
+                    maxLines = 1,
+                )
+            }
+            Text(
+                if (favorite) "★ $name" else name,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                color = c.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(COMPACT_NAME_WEIGHT),
+            )
+            Text(
+                nowPlaying.orEmpty(),
+                fontSize = 15.sp,
+                color = c.textSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(COMPACT_TITLE_WEIGHT),
+            )
+            if (timeRange != null) Text(timeRange, fontSize = 13.sp, color = c.textSecondary, maxLines = 1)
+        }
+        if (progress != null) {
+            Box(
+                Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .height(3.dp)
+                    .background(c.outline),
+            ) {
+                Box(Modifier.fillMaxHeight().fillMaxWidth(progress.coerceIn(0f, 1f)).background(c.accent))
+            }
+        }
+    }
+}
+
+private const val COMPACT_NAME_WEIGHT = 1f
+private const val COMPACT_TITLE_WEIGHT = 1.3f
 private const val CHANNEL_TILE_CHARS = 4
 
 /** Etykieta kafelka: pierwsze słowo (do 4 znaków) albo inicjały, gdy to pojedynczy znak (`4 Fun TV` -> `4FT`). */

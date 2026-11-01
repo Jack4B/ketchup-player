@@ -5,10 +5,7 @@
     <string name="livetv_favorites">★ Ulubione</string>
     <string name="livetv_recent">Ostatnie</string>
     <string name="livetv_groups">Grupy</string>
-    <string name="livetv_channels">Kanały · %1$s</string>
     <string name="livetv_live_badge">NA ŻYWO</string>
-    <string name="livetv_next">Następnie: %1$s %2$s</string>
-    <string name="livetv_source">Źródło: %1$s</string>
     <string name="livetv_no_group">Bez grupy</string>
     <string name="livetv_empty">Brak kanałów. Dodaj listę u dostawców.</string>
     <string name="livetv_open_providers">Dostawcy</string>

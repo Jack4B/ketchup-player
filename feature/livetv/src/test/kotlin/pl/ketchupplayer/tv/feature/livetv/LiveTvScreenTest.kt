@@ -158,8 +158,9 @@ class LiveTvScreenTest {
     fun grupaUlubioneWidocznaTylkoGdyJestUlubiony() {
         val events = mutableListOf<LiveTvEvent>()
         show(full.copy(favorites = setOf("p:2")), events)
-        key(Key.DirectionLeft)
-        key(Key.DirectionCenter) // pierwsza pozycja listy grup to „Ulubione”
+        key(Key.DirectionLeft) // wysuwa panel grup, fokus na wybranej („Wszystkie”)
+        key(Key.DirectionUp) // wyżej leży „Ulubione”
+        key(Key.DirectionCenter)
         assertEquals(listOf<LiveTvEvent>(LiveTvEvent.SelectFavorites), events.actions())
     }
 
