@@ -350,7 +350,8 @@ class ScenariosTest {
         server.serve("/player_api.php?get_vod_streams") {
             """[{"stream_id":501,"name":"PL - Pitbull (2005)","rating":"7.4","category_id":"10",""" +
                 """"container_extension":"mkv","added":"1700000000"},""" +
-                """{"stream_id":502,"name":"Seksmisja","rating":"8.1","category_id":"11","container_extension":"mp4"}]"""
+                """{"stream_id":502,"name":"Seksmisja","rating":"8.1","category_id":"11",""" +
+                """"container_extension":"mp4"}]"""
         }
         server.serve(
             "/player_api.php?get_series_categories",

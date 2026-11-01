@@ -67,7 +67,7 @@ object Routes {
         section(route)
             ?: when {
                 route.startsWith("settings/") -> Section.SETTINGS
-                // Szczegóły podświetlają sekcję, z której je otwarto: tu po rodzaju zapisanym w trasie nie wiemy, więc Filmy.
+                // Rodzaju nie ma w trasie szczegółów, więc podświetlamy Filmy.
                 route.startsWith(DETAILS_PREFIX) -> Section.MOVIES
                 else -> null
             }

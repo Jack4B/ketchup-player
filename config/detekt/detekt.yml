@@ -10,6 +10,7 @@ naming:
 complexity:
   TooManyFunctions: { active: true, thresholdInClasses: 11, thresholdInFiles: 30, thresholdInInterfaces: 20, ignoreOverridden: true }
   # Funkcje @Composable składają ekran z wielu elementów: limit długości dotyczy zwykłego kodu.
+  CyclomaticComplexMethod: { active: true, threshold: 15, ignoreAnnotated: ['Composable'] }
   LongMethod: { active: true, threshold: 60, ignoreAnnotated: ['Composable'] }
   # Funkcje @Composable mają wiele parametrów z wartościami domyślnymi (Modifier, kolory) - liczymy tylko wymagane.
   LongParameterList: { active: true, functionThreshold: 6, constructorThreshold: 8, ignoreDefaultParameters: true, ignoreAnnotated: ['Composable'] }
