@@ -1,5 +1,10 @@
 package pl.ketchupplayer.tv.feature.vod
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,6 +36,11 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -97,6 +107,25 @@ fun VodBrowseScreen(
         }
     var focused by remember { mutableStateOf<VodEntry?>(null) }
     var focusedIndex by remember { mutableIntStateOf(0) }
+    // Kategorie chowają się, gdy fokus wchodzi na miniatury (siatka dostaje całą szerokość: 6 kolumn zamiast 4),
+    // i wracają po LEWO z pierwszej kolumny albo BACK.
+    var categoriesOpen by remember { mutableStateOf(true) }
+    val categoryFocus = remember { FocusRequester() }
+    val gridFirst = remember { FocusRequester() }
+    var revealTick by remember { mutableIntStateOf(0) }
+    val reveal: () -> Unit = {
+        categoriesOpen = true
+        revealTick++
+    }
+    BackHandler(enabled = !categoriesOpen, onBack = reveal)
+    LaunchedEffect(revealTick, state.loading, state.total == 0) {
+        // Start i powrót: fokus na wybranej kategorii (panel potrzebuje chwili na złożenie).
+        repeat(FOCUS_SETTLE_FRAMES) { withFrameNanos { } }
+        repeat(FOCUS_RETRIES) {
+            withFrameNanos { }
+            if (runCatching { categoryFocus.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
+        }
+    }
     Box(Modifier.fillMaxSize()) {
         // Grafika zaznaczonego tytułu pod całą treścią: ciemniejsza po lewej (czytelne panele), płynnie ciemna u dołu.
         Backdrop(focused)
@@ -119,11 +148,30 @@ fun VodBrowseScreen(
                         onAction = onOpenProviders,
                     )
                 else ->
-                    Row(Modifier.fillMaxWidth().fillMaxHeight(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        CategoriesPanel(state, onEvent, Modifier.width(CATEGORIES_WIDTH).fillMaxHeight())
+                    Row(Modifier.fillMaxWidth().fillMaxHeight()) {
+                        AnimatedVisibility(
+                            visible = categoriesOpen,
+                            enter = expandHorizontally(tween(PANEL_ANIMATION_MS)),
+                            exit = shrinkHorizontally(tween(PANEL_ANIMATION_MS)),
+                        ) {
+                            CategoriesPanel(
+                                state,
+                                onEvent,
+                                Modifier.padding(end = 16.dp).width(CATEGORIES_WIDTH).fillMaxHeight(),
+                                categoryFocus,
+                                gridFirst,
+                            )
+                        }
                         Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Toolbar(state, onEvent, focusedIndex)
-                            Grid(state, onOpen) { index, entry ->
+                            Grid(
+                                state,
+                                onOpen,
+                                if (categoriesOpen) COLUMNS else COLUMNS_WIDE,
+                                reveal,
+                                gridFirst,
+                            ) { index, entry ->
+                                categoriesOpen = false
                                 focusedIndex = index
                                 focused = entry
                             }
@@ -159,7 +207,10 @@ private const val BACKDROP_ALPHA = 0.55f
 
 private val CATEGORIES_WIDTH = 300.dp
 private const val COLUMNS = 4
+private const val COLUMNS_WIDE = 6
+private const val PANEL_ANIMATION_MS = 220
 private const val FOCUS_RETRIES = 20
+private const val FOCUS_SETTLE_FRAMES = 3
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -167,21 +218,42 @@ private fun CategoriesPanel(
     state: VodBrowseUiState,
     onEvent: (VodBrowseEvent) -> Unit,
     modifier: Modifier,
+    focus: FocusRequester,
+    toGrid: FocusRequester,
 ) {
-    Column(modifier.glassPanel().padding(10.dp)) {
+    // PRAWO z dowolnej kategorii wchodzi na pierwszą miniaturę (a nie na chipy sortowania obok górnych kategorii).
+    Column(
+        modifier
+            .glassPanel()
+            .padding(10.dp)
+            .onPreviewKeyEvent { k ->
+                val right = k.type == KeyEventType.KeyDown && k.key == Key.DirectionRight
+                if (right) runCatching { toGrid.requestFocus() }
+                right
+            },
+    ) {
         LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             item(key = "all") {
-                CategoryItem(stringResource(R.string.vod_all), state.category == null) {
+                CategoryItem(
+                    stringResource(R.string.vod_all),
+                    state.category == null,
+                    focus.takeIf {
+                        state.category ==
+                            null
+                    },
+                ) {
                     onEvent(VodBrowseEvent.SelectCategory(null))
                 }
             }
             item(key = "recent") {
-                CategoryItem(stringResource(R.string.vod_recent), state.category == CATEGORY_RECENT) {
+                val recent = state.category == CATEGORY_RECENT
+                CategoryItem(stringResource(R.string.vod_recent), recent, focus.takeIf { recent }) {
                     onEvent(VodBrowseEvent.SelectCategory(CATEGORY_RECENT))
                 }
             }
             items(state.categories, key = { it.first }) { (name, _) ->
-                CategoryItem(name, state.category == name) { onEvent(VodBrowseEvent.SelectCategory(name)) }
+                val selected = state.category == name
+                CategoryItem(name, selected, focus.takeIf { selected }) { onEvent(VodBrowseEvent.SelectCategory(name)) }
             }
         }
     }
@@ -192,6 +264,7 @@ private fun CategoriesPanel(
 private fun CategoryItem(
     text: String,
     selected: Boolean,
+    focusRequester: FocusRequester?,
     onClick: () -> Unit,
 ) {
     val c = KetchupTheme.colors
@@ -199,6 +272,7 @@ private fun CategoryItem(
         onClick,
         Modifier.fillMaxWidth(),
         selected = selected,
+        focusRequester = focusRequester,
         container = if (selected) c.surface3 else Color.Transparent,
         outlined = false,
     ) {
@@ -248,22 +322,17 @@ private val SEARCH_WIDTH = 320.dp
 private fun Grid(
     state: VodBrowseUiState,
     onOpen: (String) -> Unit,
+    columns: Int,
+    onLeftEdge: () -> Unit,
+    firstFocus: FocusRequester,
     onFocus: (Int, VodEntry) -> Unit,
 ) {
     if (state.entries.isEmpty()) {
         StateView(StateKind.EMPTY, stringResource(R.string.vod_no_results, state.query))
         return
     }
-    val first = remember { FocusRequester() }
-    LaunchedEffect(state.mode) {
-        // Siatka składa elementy leniwie: fokus dopiero, gdy pierwszy plakat jest podpięty.
-        repeat(FOCUS_RETRIES) {
-            withFrameNanos { }
-            if (runCatching { first.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
-        }
-    }
     LazyVerticalGrid(
-        columns = GridCells.Fixed(COLUMNS),
+        columns = GridCells.Fixed(columns),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -271,9 +340,18 @@ private fun Grid(
             PosterCard(
                 title = e.item.title,
                 onClick = { onOpen(e.item.id) },
-                modifier = Modifier.onFocusChanged { if (it.hasFocus) onFocus(index, e) },
+                focusRequester = if (index == 0) firstFocus else null,
+                modifier =
+                    Modifier
+                        .onFocusChanged { if (it.hasFocus) onFocus(index, e) }
+                        .onPreviewKeyEvent { k ->
+                            // LEWO z pierwszej kolumny wysuwa kategorie i daje im fokus.
+                            val leftEdge =
+                                k.type == KeyEventType.KeyDown && k.key == Key.DirectionLeft && index % columns == 0
+                            if (leftEdge) onLeftEdge()
+                            leftEdge
+                        },
                 overlay = true,
-                focusRequester = if (index == 0) first else null,
                 imageUrl = e.item.poster,
                 subtitle = subtitle(e),
                 progress = e.progress.takeIf { it > 0f },

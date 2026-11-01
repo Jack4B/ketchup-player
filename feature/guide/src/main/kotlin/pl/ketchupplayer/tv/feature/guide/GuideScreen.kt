@@ -55,6 +55,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
+import pl.ketchupplayer.tv.core.designsystem.ChannelLogo
 import pl.ketchupplayer.tv.core.designsystem.FocusItem
 import pl.ketchupplayer.tv.core.designsystem.KetchupButton
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
@@ -214,6 +215,9 @@ private fun Tabs(
     }
 }
 
+private val CELL_LOGO_WIDTH = 46.dp
+private val CELL_LOGO_HEIGHT = 30.dp
+
 private data class Focused(
     val channel: Channel,
     val programme: EpgProgramme?,
@@ -282,11 +286,11 @@ private fun Preview(
                 .background(c.channelTile, RoundedCornerShape(c.cornerRadius / 2)),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
+            ChannelLogo(
                 focused?.channel?.displayName.orEmpty(),
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = c.channelTileText,
+                focused?.channel?.logo,
+                Modifier.fillMaxSize(),
+                labelSize = 22.sp,
             )
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -410,6 +414,7 @@ private fun ChannelCell(
                 color = c.textSecondary,
                 modifier = Modifier.width(26.dp),
             )
+            ChannelLogo(channel.displayName, channel.logo, Modifier.width(CELL_LOGO_WIDTH).height(CELL_LOGO_HEIGHT))
             Text(
                 (if (favorite) "★ " else "") + channel.displayName,
                 fontSize = 15.sp,

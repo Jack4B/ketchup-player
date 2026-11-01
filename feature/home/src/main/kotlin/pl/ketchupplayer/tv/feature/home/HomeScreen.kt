@@ -33,6 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
 import pl.ketchupplayer.tv.core.data.vod.VodEntry
+import pl.ketchupplayer.tv.core.designsystem.ChannelLogo
 import pl.ketchupplayer.tv.core.designsystem.FocusItem
 import pl.ketchupplayer.tv.core.designsystem.InfoPill
 import pl.ketchupplayer.tv.core.designsystem.KetchupButton
@@ -322,7 +323,13 @@ private fun Hero(
                 )
             }
         }
-        featured?.let { ChannelArt(it.channel.displayName, Modifier.width(HERO_ART_WIDTH).fillMaxHeight()) }
+        featured?.let {
+            ChannelArt(
+                it.channel.displayName,
+                it.channel.logo,
+                Modifier.width(HERO_ART_WIDTH).fillMaxHeight(),
+            )
+        }
     }
 }
 
@@ -366,7 +373,7 @@ private fun ChannelCard(
     val c = KetchupTheme.colors
     FocusItem(onClick, modifier.width(CARD_WIDTH)) {
         Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            ChannelArt(item.channel.displayName, Modifier.fillMaxWidth().height(CARD_ART_HEIGHT))
+            ChannelArt(item.channel.displayName, item.channel.logo, Modifier.fillMaxWidth().height(CARD_ART_HEIGHT))
             Text(
                 item.channel.displayName,
                 fontSize = 15.sp,
@@ -394,29 +401,15 @@ private fun ChannelCard(
 private val CARD_WIDTH = 190.dp
 private val CARD_ART_HEIGHT = 84.dp
 
-/** Grafika kanału (do czasu logo z dostawcy): płytka z nazwą w kolorach motywu, jak w liście kanałów. */
-@OptIn(ExperimentalTvMaterial3Api::class)
+/** Grafika kanału: logo z listy dostawcy na płytce w kolorach motywu (a bez logo skrót nazwy). */
 @Composable
 private fun ChannelArt(
     name: String,
+    logo: String?,
     modifier: Modifier,
 ) {
-    val c = KetchupTheme.colors
-    Box(
-        modifier.background(c.channelTile, RoundedCornerShape(c.cornerRadius / 2)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            name.take(ART_CHARS),
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            color = c.channelTileText,
-            maxLines = 1,
-        )
-    }
+    ChannelLogo(name, logo, modifier, labelSize = 22.sp)
 }
-
-private const val ART_CHARS = 8
 
 private fun formatTime(ms: Long): String = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(ms))
 

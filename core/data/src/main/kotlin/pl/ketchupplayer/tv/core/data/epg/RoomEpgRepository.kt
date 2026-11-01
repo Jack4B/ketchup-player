@@ -31,6 +31,8 @@ class RoomEpgRepository
         private val prefs: DataStore<Preferences>,
     ) : EpgRepository {
         private val running = Mutex()
+        private val revisionState = kotlinx.coroutines.flow.MutableStateFlow(0)
+        override val revision: kotlinx.coroutines.flow.StateFlow<Int> = revisionState
 
         override fun onAir(nowMs: Long): Flow<Map<String, EpgProgramme>> =
             epg.observeOnAir(nowMs).map { list -> list.associate { it.channelId to it.toModel() } }
@@ -84,6 +86,7 @@ class RoomEpgRepository
             }
             epg.swapInStaging()
             prefs.edit { it[LAST_REFRESH] = clock.nowMs() }
+            revisionState.value++
             return Result.success(EpgRefreshReport(urls.size, failed, imported, matched.size))
         }
 

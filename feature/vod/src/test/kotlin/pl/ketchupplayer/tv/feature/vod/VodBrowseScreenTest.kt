@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
@@ -127,10 +128,11 @@ class VodBrowseScreenTest {
     private fun show(
         state: VodBrowseUiState,
         opened: MutableList<String> = mutableListOf(),
+        events: MutableList<VodBrowseEvent> = mutableListOf(),
     ) {
         compose.setContent {
             KetchupTheme(device = DeviceClass.TV) {
-                ShellPreview("movies") { VodBrowseScreen(state, {}, { opened += it }, {}) }
+                ShellPreview("movies") { VodBrowseScreen(state, { events += it }, { opened += it }, {}) }
             }
         }
         compose.waitForIdle()
@@ -147,10 +149,12 @@ class VodBrowseScreenTest {
     }
 
     @Test
-    fun `fokus startuje na pierwszym plakacie, OK otwiera szczegoly`() {
+    fun `fokus startuje na kategoriach, PRAWO wchodzi na pierwszy plakat, OK otwiera szczegoly`() {
         val opened = mutableListOf<String>()
         val s = base
         show(s, opened)
+        key(Key.ShiftLeft) // pierwszy klawisz po starcie tylko przełącza tryb wejścia
+        key(Key.DirectionRight)
         key(Key.DirectionCenter)
         assertEquals(
             listOf(
@@ -167,8 +171,45 @@ class VodBrowseScreenTest {
         val s = base
         val opened = mutableListOf<String>()
         show(s, opened)
+        key(Key.ShiftLeft)
+        key(Key.DirectionRight) // z kategorii na pierwszy plakat
         key(Key.DirectionRight)
         key(Key.DirectionCenter)
         assertEquals(listOf(s.entries[1].item.id), opened)
+    }
+
+    /** Po wejściu na miniatury kategorie się chowają; LEWO z pierwszej kolumny wysuwa je i daje im fokus. */
+    @Test
+    fun `LEWO z pierwszej kolumny wysuwa kategorie`() {
+        val events = mutableListOf<VodBrowseEvent>()
+        show(base, mutableListOf(), events)
+        key(Key.ShiftLeft)
+        key(Key.DirectionRight)
+        compose.waitForIdle()
+        compose.onNodeWithText("Wszystkie").assertDoesNotExist()
+        key(Key.DirectionLeft)
+        settle()
+        compose.onNodeWithText("Wszystkie").assertExists()
+        key(Key.DirectionCenter) // OK trafia w kategorię, więc fokus jest w panelu
+        assertEquals(listOf<VodBrowseEvent>(VodBrowseEvent.SelectCategory(null)), events)
+    }
+
+    @Test
+    fun `BACK z siatki wysuwa kategorie`() {
+        val events = mutableListOf<VodBrowseEvent>()
+        show(base, mutableListOf(), events)
+        key(Key.ShiftLeft)
+        key(Key.DirectionRight)
+        compose.waitForIdle()
+        compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        settle()
+        compose.onNodeWithText("Wszystkie").assertExists()
+        key(Key.DirectionCenter)
+        assertEquals(listOf<VodBrowseEvent>(VodBrowseEvent.SelectCategory(null)), events)
+    }
+
+    private fun settle() {
+        compose.mainClock.advanceTimeBy(600) // animacja panelu i ponowienia fokusu
+        compose.waitForIdle()
     }
 }

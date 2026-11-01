@@ -11,6 +11,9 @@ data class EpgRefreshReport(
 )
 
 interface EpgRepository {
+    /** Rośnie po każdym zakończonym imporcie; ekrany przeładowują wtedy audycje (EPG może dojść w tle). */
+    val revision: kotlinx.coroutines.flow.StateFlow<Int>
+
     /** Audycje trwające w chwili [nowMs]: id kanału katalogu -> audycja. Odświeża się też po imporcie. */
     fun onAir(nowMs: Long): Flow<Map<String, EpgProgramme>>
 

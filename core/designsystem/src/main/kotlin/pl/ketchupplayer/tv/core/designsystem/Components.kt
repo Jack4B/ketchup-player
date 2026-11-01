@@ -149,6 +149,44 @@ fun PosterCard(
 private const val OVERLAY_SCRIM = 0xE6000000
 private const val OVERLAY_SUBTITLE = 0xFFE6E6E6
 
+/**
+ * Logo kanału z listy dostawcy (Coil, z cache dyskowym i pamięciowym). Płytka w kolorze motywu pod spodem sprawia,
+ * że ciemne i jasne logo są czytelne; gdy logo brakuje albo się nie wczyta, widać skrót nazwy kanału.
+ */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun ChannelLogo(
+    name: String,
+    logoUrl: String?,
+    modifier: Modifier = Modifier,
+    labelSize: androidx.compose.ui.unit.TextUnit = 13.sp,
+) {
+    val c = KetchupTheme.colors
+    Box(
+        modifier.background(c.channelTile, RoundedCornerShape(LOGO_RADIUS)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            tileLabel(name),
+            fontSize = labelSize,
+            fontWeight = FontWeight.Bold,
+            color = c.channelTileText,
+            maxLines = 1,
+        )
+        if (!logoUrl.isNullOrBlank()) {
+            coil3.compose.AsyncImage(
+                model = logoUrl,
+                contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                modifier = Modifier.fillMaxSize().padding(LOGO_PADDING).background(c.channelTile),
+            )
+        }
+    }
+}
+
+private val LOGO_RADIUS = 8.dp
+private val LOGO_PADDING = 3.dp
+
 /** Obraz z sieci (Coil); bez adresu lub przy błędzie zostaje tło kafla z inicjałem tytułu. */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -205,6 +243,7 @@ fun ChannelRow(
     timeRange: String? = null,
     /** Jedna linia (nazwa, audycja, godziny, cienki pasek): mieści ok. 7 kanałów na ekranie, jak w TiViMate. */
     compact: Boolean = false,
+    logo: String? = null,
 ) {
     val c = KetchupTheme.colors
     FocusItem(
@@ -214,7 +253,7 @@ fun ChannelRow(
         outlined = false,
     ) {
         if (compact) {
-            CompactChannelRow(number, name, favorite, nowPlaying, progress, timeRange)
+            CompactChannelRow(number, name, favorite, nowPlaying, progress, timeRange, logo)
             return@FocusItem
         }
         Row(
@@ -223,23 +262,7 @@ fun ChannelRow(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(number.toString(), fontSize = 16.sp, color = c.textSecondary, modifier = Modifier.width(30.dp))
-            Box(
-                Modifier
-                    .width(56.dp)
-                    .background(
-                        c.channelTile,
-                        RoundedCornerShape(8.dp),
-                    ).padding(vertical = 6.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    tileLabel(name),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = c.channelTileText,
-                    maxLines = 1,
-                )
-            }
+            ChannelLogo(name, logo, Modifier.width(56.dp).height(36.dp), labelSize = 14.sp)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     if (favorite) "★ $name" else name,
@@ -289,6 +312,7 @@ private fun CompactChannelRow(
     nowPlaying: String?,
     progress: Float?,
     timeRange: String?,
+    logo: String?,
 ) {
     val c = KetchupTheme.colors
     Box(Modifier.fillMaxWidth().fillMaxHeight()) {
@@ -298,18 +322,7 @@ private fun CompactChannelRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(number.toString(), fontSize = 16.sp, color = c.textSecondary, modifier = Modifier.width(36.dp))
-            Box(
-                Modifier.width(52.dp).background(c.channelTile, RoundedCornerShape(8.dp)).padding(vertical = 4.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    tileLabel(name),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = c.channelTileText,
-                    maxLines = 1,
-                )
-            }
+            ChannelLogo(name, logo, Modifier.width(52.dp).height(32.dp))
             Text(
                 if (favorite) "★ $name" else name,
                 fontSize = 17.sp,
