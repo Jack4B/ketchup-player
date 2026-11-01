@@ -77,7 +77,14 @@ abstract class DataModule {
 
         @Provides
         @Singleton
-        fun textFetcher(): TextFetcher = OkHttpTextFetcher(NetworkClients.stream())
+        fun textFetcher(meter: pl.ketchupplayer.tv.core.network.TransferMeter): TextFetcher =
+            OkHttpTextFetcher(NetworkClients.stream(), meter = meter)
+
+        @Provides
+        @Singleton
+        fun transferMeter(): pl.ketchupplayer.tv.core.network.TransferMeter =
+            pl.ketchupplayer.tv.core.network
+                .TransferMeter()
 
         @Provides
         fun vodDao(db: KetchupDatabase): pl.ketchupplayer.tv.core.database.VodDao = db.vod()

@@ -36,6 +36,18 @@ class OkHttpTextFetcherTest {
         }
 
     @Test
+    fun `licznik bajtow rosnie podczas czytania linii`() =
+        runTest {
+            val body = "#EXTM3U\n" + "x".repeat(5000)
+            server.enqueue(MockResponse().setBody(body))
+            val meter = TransferMeter()
+            val fetcher = OkHttpTextFetcher(NetworkClients.stream("TestUA/1"), 1024 * 1024, meter)
+            val lines = fetcher.fetchLines(url()) { it.count() }.getOrThrow()
+            assertEquals(2, lines)
+            assertEquals(body.length.toLong(), meter.bytes.value)
+        }
+
+    @Test
     fun `rozpakowuje surowy gzip`() =
         runTest {
             val gz =

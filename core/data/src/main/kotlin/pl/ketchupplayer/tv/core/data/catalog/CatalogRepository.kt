@@ -42,6 +42,9 @@ interface CatalogRepository {
     /** Etap trwającego pobierania/zapisu listy albo null, gdy nic się nie dzieje. */
     val importStatus: kotlinx.coroutines.flow.StateFlow<ImportStatus?>
 
+    /** Bajty pobrane w bieżącym imporcie (0 po zakończeniu); UI pokazuje to przy wolnej sieci. */
+    val downloadedBytes: kotlinx.coroutines.flow.StateFlow<Long>
+
     fun liveChannels(): Flow<List<Channel>>
 
     fun liveGroups(): Flow<List<String>>

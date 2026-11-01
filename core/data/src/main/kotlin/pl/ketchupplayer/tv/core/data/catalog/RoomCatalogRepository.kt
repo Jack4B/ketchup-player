@@ -14,6 +14,7 @@ import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.ProviderInfo
 import pl.ketchupplayer.tv.core.model.ProviderType
 import pl.ketchupplayer.tv.core.model.StreamSpec
+import pl.ketchupplayer.tv.core.network.TransferMeter
 import pl.ketchupplayer.tv.core.policy.EpgSourcePolicy
 import pl.ketchupplayer.tv.provider.api.Capability
 import pl.ketchupplayer.tv.provider.xtream.XtreamCredentials
@@ -31,7 +32,10 @@ class RoomCatalogRepository
         private val secrets: ProviderSecrets,
         private val factory: ProviderFactory,
         private val clock: Clock,
+        private val meter: TransferMeter = TransferMeter(),
     ) : CatalogRepository {
+        override val downloadedBytes: kotlinx.coroutines.flow.StateFlow<Long> = meter.bytes
+
         override val providers: Flow<List<ProviderInfo>> =
             providerDao.observeAll().map { list ->
                 list.map { e ->
@@ -106,6 +110,7 @@ class RoomCatalogRepository
         override val importStatus: kotlinx.coroutines.flow.StateFlow<ImportStatus?> = status
 
         override suspend fun refresh(id: ProviderId): Result<Int> {
+            meter.reset()
             status.value = ImportStatus(ImportPhase.DOWNLOADING)
             try {
                 return doRefresh(id)

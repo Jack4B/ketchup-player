@@ -20,6 +20,10 @@ class M3uVodCollector(
     private val series = LinkedHashMap<String, VodItem>()
     private val episodes = ArrayList<Episode>()
 
+    /** Ten sam serial wraca dziesiątki razy (odcinki): normalizacja nazwy (NFD + regexy) liczona raz na tytuł. */
+    private val showKeys = HashMap<String, String>()
+    private val digest = MessageDigest.getInstance("SHA-1")
+
     val isEmpty: Boolean get() = movies.isEmpty() && episodes.isEmpty()
 
     fun add(
@@ -65,7 +69,7 @@ class M3uVodCollector(
     ) {
         val m = EPISODE.matchEntire(name)
         val show = VodTitles.clean(m?.groupValues?.get(1)?.ifBlank { null } ?: name)
-        val key = Channel.normalizeName(show)
+        val key = showKeys.getOrPut(show) { Channel.normalizeName(show) }
         val seriesItem =
             series.getOrPut(key) {
                 VodItem(
@@ -99,13 +103,10 @@ class M3uVodCollector(
             )
     }
 
-    private fun hash(value: String): String =
-        MessageDigest
-            .getInstance(
-                "SHA-1",
-            ).digest(value.toByteArray())
-            .take(HASH_BYTES)
-            .joinToString("") { "%02x".format(it) }
+    private fun hash(value: String): String {
+        digest.reset()
+        return Hex.of(digest.digest(value.toByteArray()), HASH_BYTES)
+    }
 
     private companion object {
         /** Limity chronią słabe boxy (kilkaset MB sterty) przed brakiem pamięci na bardzo dużych listach. */

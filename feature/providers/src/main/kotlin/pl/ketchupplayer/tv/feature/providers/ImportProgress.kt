@@ -22,6 +22,7 @@ private const val SECONDS_PER_MINUTE = 60
 @Composable
 internal fun ImportProgress(
     status: ImportStatus?,
+    downloadedBytes: Long = 0,
     fontSizeSp: Int = 18,
 ) {
     val c = KetchupTheme.colors
@@ -38,10 +39,15 @@ internal fun ImportProgress(
         when (status?.phase) {
             ImportPhase.SAVING_CHANNELS -> stringResource(R.string.import_saving_channels, time, status.count)
             ImportPhase.SAVING_VOD -> stringResource(R.string.import_saving_vod, time, status.count)
-            else -> stringResource(R.string.import_downloading, time)
+            else -> stringResource(R.string.import_downloading, time) + megabytes(downloadedBytes)
         }
     Column {
         Text(line, fontSize = fontSizeSp.sp, color = c.textSecondary)
         Text(stringResource(R.string.import_hint), fontSize = (fontSizeSp - 2).sp, color = c.textSecondary)
     }
 }
+
+private const val BYTES_PER_MB = 1024.0 * 1024.0
+
+/** „ · 12,3 MB”: pokazuje, że pobieranie idzie, także gdy sieć jest wolna. */
+private fun megabytes(bytes: Long): String = if (bytes <= 0) "" else " · " + "%.1f".format(bytes / BYTES_PER_MB) + " MB"

@@ -132,20 +132,10 @@ object M3uParser {
     private fun parseExtinf(line: String): Pending {
         val comma = commaOutsideQuotes(line)
         val title = if (comma >= 0) line.substring(comma + 1).trim() else ""
-        val attrs =
-            attrRegex
-                .findAll(
-                    if (comma >=
-                        0
-                    ) {
-                        line.substring(0, comma)
-                    } else {
-                        line
-                    },
-                ).associate { it.groupValues[1].lowercase() to it.groupValues[2] }
-        val name = title.ifEmpty { attrs["tvg-name"].orEmpty() }.ifEmpty { "Bez nazwy" }
+        val attrs = M3uAttributeScanner(line).scan(if (comma >= 0) comma else line.length)
+        val name = title.ifEmpty { attrs.tvgName.orEmpty() }.ifEmpty { "Bez nazwy" }
         val number =
-            attrs["tvg-chno"]?.toIntOrNull() ?: attrs["channel-number"]?.toIntOrNull()
+            attrs.chno?.toIntOrNull() ?: attrs.channelNumber?.toIntOrNull()
                 ?: numberRegex
                     .find(name)
                     ?.groupValues
@@ -153,10 +143,10 @@ object M3uParser {
                     ?.toIntOrNull()
         return Pending(
             name = name,
-            tvgId = attrs["tvg-id"]?.ifBlank { null },
+            tvgId = attrs.tvgId?.ifBlank { null },
             tvgNumber = number,
-            logo = attrs["tvg-logo"]?.ifBlank { null },
-            group = attrs["group-title"]?.ifBlank { null },
+            logo = attrs.logo?.ifBlank { null },
+            group = attrs.group?.ifBlank { null },
         )
     }
 
@@ -207,6 +197,6 @@ object M3uParser {
         url: String,
     ): String {
         val digest = MessageDigest.getInstance("SHA-1").digest("$name|$url".toByteArray())
-        return providerId.value + ":" + digest.take(6).joinToString("") { "%02x".format(it) }
+        return providerId.value + ":" + Hex.of(digest, 6)
     }
 }

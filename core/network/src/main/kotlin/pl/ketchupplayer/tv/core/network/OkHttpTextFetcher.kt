@@ -21,6 +21,7 @@ import kotlin.coroutines.resumeWithException
 class OkHttpTextFetcher(
     private val client: OkHttpClient,
     private val maxBytes: Long = DEFAULT_MAX_BYTES,
+    private val meter: TransferMeter? = null,
 ) : TextFetcher {
     override suspend fun fetch(url: String): Result<String> =
         try {
@@ -48,7 +49,7 @@ class OkHttpTextFetcher(
                 client.newCall(Request.Builder().url(url).build()).execute().use { response ->
                     if (!response.isSuccessful) return@withContext Result.failure(NetworkException.Http(response.code))
                     val body = response.body ?: return@withContext Result.success(block("".byteInputStream()))
-                    val raw = BufferedInputStream(LimitedInputStream(body.byteStream(), maxBytes), BUFFER)
+                    val raw = BufferedInputStream(LimitedInputStream(body.byteStream(), maxBytes, meter), BUFFER)
                     val counted = LimitedInputStream(maybeGunzip(raw), maxBytes)
                     counted.use { Result.success(block(it)) }
                 }
@@ -72,7 +73,7 @@ class OkHttpTextFetcher(
                 client.newCall(Request.Builder().url(url).build()).execute().use { response ->
                     if (!response.isSuccessful) return@withContext Result.failure(NetworkException.Http(response.code))
                     val body = response.body ?: return@withContext Result.success(block(emptySequence()))
-                    val raw = BufferedInputStream(LimitedInputStream(body.byteStream(), maxBytes), BUFFER)
+                    val raw = BufferedInputStream(LimitedInputStream(body.byteStream(), maxBytes, meter), BUFFER)
                     // Drugi limit liczy bajty po rozpakowaniu, żeby „bomba gzip” też została ucięta.
                     val counted = LimitedInputStream(maybeGunzip(raw), maxBytes)
                     counted.bufferedReader(Charsets.UTF_8).use { reader ->
@@ -168,6 +169,7 @@ private suspend fun Call.await(): Response =
 private class LimitedInputStream(
     private val delegate: InputStream,
     private val limit: Long,
+    private val meter: TransferMeter? = null,
 ) : InputStream() {
     private var count = 0L
 
@@ -183,7 +185,10 @@ private class LimitedInputStream(
         len: Int,
     ): Int {
         val n = delegate.read(b, off, len)
-        if (n > 0) add(n)
+        if (n > 0) {
+            add(n)
+            meter?.add(n)
+        }
         return n
     }
 

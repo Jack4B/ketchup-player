@@ -25,6 +25,7 @@ data class ProvidersUiState(
     val busy: Boolean = false,
     val message: String? = null,
     val status: pl.ketchupplayer.tv.core.data.catalog.ImportStatus? = null,
+    val downloadedBytes: Long = 0,
 )
 
 sealed interface ProvidersEvent {

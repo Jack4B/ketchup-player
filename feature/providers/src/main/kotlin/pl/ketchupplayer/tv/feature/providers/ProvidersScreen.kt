@@ -50,7 +50,7 @@ fun ProvidersScreen(
     if (state.form != null && !hadForm) hadForm = true
     ScreenScaffold {
         ScreenTitle(stringResource(R.string.providers_title))
-        if (state.busy) ImportProgress(state.status)
+        if (state.busy) ImportProgress(state.status, state.downloadedBytes)
         state.message?.let {
             Text(stringResource(R.string.providers_saved_with_error, it), fontSize = 16.sp, color = c.textSecondary)
         }
