@@ -8,7 +8,9 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.pressKey
@@ -85,9 +87,18 @@ class GuideGroupsTest {
     private fun has(text: String) =
         compose.onAllNodesWithText(text, substring = true).fetchSemanticsNodes().isNotEmpty()
 
+    /** Lista kanałów: grupy są zawsze widoczne po lewej (bez wysuwania), z licznikami. */
     @Test
-    fun przyciskGrupPokazujeWybranaGrupe() {
+    fun grupySaWidoczneBezWysuwania() {
         show()
+        assertTrue(has("PL | Informacje"))
+    }
+
+    @Test
+    fun przyciskGrupWPrzewodnikuPokazujeWybranaGrupe() {
+        show()
+        compose.onNodeWithText("Przewodnik").performClick()
+        compose.waitForIdle()
         assertTrue(has("Grupy: Wszystkie"))
     }
 

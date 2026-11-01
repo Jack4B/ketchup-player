@@ -10,7 +10,8 @@
     <string name="guide_group_favorites">★ Ulubione</string>
     <string name="guide_group_recent">Ostatnie</string>
     <string name="guide_group_none">Bez grupy</string>
-    <string name="guide_tab_grid">Siatka</string>
+    <string name="guide_tab_list">Kanały</string>
+    <string name="guide_tab_grid">Przewodnik</string>
     <string name="guide_tab_radar">Radar</string>
     <string name="guide_tab_interests">Moje zainteresowania</string>
     <string name="guide_interest_hint">Wpisz tytuł, np. Premier League</string>

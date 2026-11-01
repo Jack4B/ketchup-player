@@ -386,11 +386,11 @@ private fun RailItem(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = onClick,
-            ).padding(start = 9.dp),
+            ).padding(start = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box {
+        Box(Modifier.size(RAIL_ICON_CELL), contentAlignment = Alignment.Center) {
             RailIconView(entry.icon, tint)
             if (entry.badge) {
                 Box(Modifier.align(Alignment.TopEnd).size(7.dp).background(c.newEpisode, CircleShape))
@@ -408,8 +408,9 @@ private fun RailItem(
     }
 }
 
-private val RAIL_ITEM_HEIGHT = 44.dp
+private val RAIL_ITEM_HEIGHT = 48.dp
 private val RAIL_ITEM_RADIUS = 16.dp
+private val RAIL_ICON_CELL = 36.dp
 
 /** Nagłówek ekranu w powłoce: tytuł, opcjonalne zakładki, po prawej zegar. */
 @OptIn(ExperimentalTvMaterial3Api::class)

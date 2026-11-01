@@ -4,12 +4,16 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -76,10 +80,46 @@ class GuideScreenTest {
 
     private fun key(k: Key) = compose.onRoot().performKeyInput { pressKey(k) }
 
+    /** Przełącza na zakładkę „Przewodnik” (oś czasu); domyślny widok to lista kanałów z grupami. */
+    private fun openTimeline() {
+        compose.onNodeWithText("Przewodnik").performClick()
+        compose.waitForIdle()
+    }
+
+    @Test
+    fun screenshotListyKanalow() {
+        show()
+        compose.onRoot().captureRoboImage("src/test/screenshots/guide_list.png")
+    }
+
     @Test
     fun screenshotSiatki() {
         show()
+        openTimeline()
         compose.onRoot().captureRoboImage("src/test/screenshots/guide_grid.png")
+    }
+
+    /** Lista kanałów: nazwa i to, co leci teraz, są widoczne bez wchodzenia w przewodnik. */
+    @Test
+    fun listaPokazujeCoLeciTeraz() {
+        show()
+        compose.onAllNodesWithText("Wiadomości").fetchSemanticsNodes().let { assertTrue(it.isNotEmpty()) }
+        compose
+            .onAllNodesWithText(
+                "JEDEN HD",
+                substring = true,
+            ).fetchSemanticsNodes()
+            .let { assertTrue(it.isNotEmpty()) }
+    }
+
+    /** Lista: DÓŁ + OK otwiera drugi kanał, PRAWO nie ucieka poza listę. */
+    @Test
+    fun dpadNaLiscieKanalow() {
+        val opened = mutableListOf<String>()
+        show(opened)
+        key(Key.DirectionDown)
+        key(Key.DirectionCenter)
+        assertEquals(listOf("p:2"), opened)
     }
 
     @Test
@@ -127,6 +167,7 @@ class GuideScreenTest {
     fun dpadPrawoPrzechodziDoAudycjiADolDoKolejnegoKanalu() {
         val opened = mutableListOf<String>()
         show(opened)
+        openTimeline()
         key(Key.DirectionRight) // z komórki kanału na pierwszą audycję
         key(Key.DirectionCenter)
         key(Key.DirectionDown)

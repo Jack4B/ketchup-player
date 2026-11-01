@@ -202,15 +202,9 @@ class ScenariosTest {
     /** Pierwszy węzeł z akcją kliknięcia o danym tekście (ten sam tekst bywa też w panelu szczegółów/podglądzie). */
     private fun clickable(text: String) = compose.onAllNodesWithText(text).filter(hasClickAction())[0]
 
-    /** Na żywo: grupy są w wysuwanym panelu; przycisk „Grupy: …” (jak LEWO na liście) otwiera go. */
+    /** Na żywo (widok Kanały): grupy są zawsze widoczne po lewej, więc wystarczy poczekać na załadowanie ekranu. */
     private fun openGroups() {
-        waitFor {
-            compose
-                .onAllNodes(hasText("Grupy:", substring = true) and hasClickAction())
-                .fetchSemanticsNodes()
-                .isNotEmpty()
-        }
-        compose.onAllNodes(hasText("Grupy:", substring = true) and hasClickAction())[0].performClick()
+        waitForText("Przewodnik")
         compose.waitForIdle()
     }
 
@@ -925,7 +919,7 @@ class ScenariosTest {
     @Test
     fun panelUstawienZostawiaSekcjePodSpodem() {
         nav("Na żywo")
-        waitForText("Grupy:", substring = true)
+        waitForText("Przewodnik")
         nav("Ustawienia")
         waitForText("Listy i dostawcy")
         compose.mainClock.advanceTimeBy(500)
@@ -933,7 +927,7 @@ class ScenariosTest {
         pressKeys(listOf(Key.ShiftLeft))
         back()
         waitFor { compose.onAllNodesWithText("Listy i dostawcy").fetchSemanticsNodes().isEmpty() }
-        waitForText("Grupy:", substring = true)
+        waitForText("Przewodnik")
         compose.mainClock.advanceTimeBy(500)
         compose.waitForIdle()
         compose.onNodeWithContentDescription("Na żywo").assertIsFocused()

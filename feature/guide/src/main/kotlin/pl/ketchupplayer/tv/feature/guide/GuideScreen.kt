@@ -110,7 +110,7 @@ fun GuideRoute(
 }
 
 /** Zakładki ekranu Przewodnik (makieta 04): Siatka | Radar | Moje zainteresowania. */
-enum class GuideTab { GRID, RADAR, INTERESTS }
+enum class GuideTab { LIST, GRID, RADAR, INTERESTS }
 
 /**
  * Przewodnik (makieta v3 04-epg): nagłówek z zakładkami, blok podglądu zaznaczonej audycji, oś czasu 12 h z linią
@@ -136,7 +136,7 @@ fun GuideScreen(
     onPreviewChannel: (String) -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
-    var tab by remember { mutableStateOf(GuideTab.GRID) }
+    var tab by remember { mutableStateOf(GuideTab.LIST) }
     var groupsOpen by rememberSaveable { mutableStateOf(false) }
     val rows = remember { FocusRequester() }
     val selectedGroupFocus = remember { FocusRequester() }
@@ -170,6 +170,14 @@ fun GuideScreen(
                         stringResource(R.string.guide_empty),
                         actionLabel = stringResource(R.string.guide_open_providers),
                         onAction = onOpenProviders,
+                    )
+                tab == GuideTab.LIST ->
+                    ChannelsTab(
+                        state,
+                        loadProgrammes,
+                        ChannelsActions(onOpenChannel, onToggleFavorite, onSelectGroup, onPreviewChannel),
+                        rows,
+                        preview,
                     )
                 tab == GuideTab.GRID ->
                     Grid(state, loadProgrammes, onOpenChannel, onToggleFavorite, rows, preview, onPreviewChannel) {
@@ -218,6 +226,7 @@ private fun Tabs(
         if (groupLabel != null) {
             PillChip(stringResource(R.string.guide_groups_chip) + " " + groupLabel, false, onOpenGroups)
         }
+        TabChip(stringResource(R.string.guide_tab_list), selected == GuideTab.LIST, { onSelect(GuideTab.LIST) })
         TabChip(stringResource(R.string.guide_tab_grid), selected == GuideTab.GRID, { onSelect(GuideTab.GRID) })
         TabChip(stringResource(R.string.guide_tab_radar), selected == GuideTab.RADAR, { onSelect(GuideTab.RADAR) })
         TabChip(
@@ -563,7 +572,7 @@ private fun Timeline(
     }
 }
 
-private fun clock(ms: Long): String = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(ms))
+internal fun clock(ms: Long): String = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(ms))
 
 private val CHANNEL_COLUMN = 190.dp
 private val ROW_HEIGHT = 44.dp
