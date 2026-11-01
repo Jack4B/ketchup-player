@@ -10,23 +10,21 @@ adb shell am start -n "$PKG/pl.ketchupplayer.tv.MainActivity"
 sleep 6
 shot() { adb exec-out screencap -p > "$OUT/$1.png"; }
 key() { adb shell input keyevent "$1"; sleep 1.5; }
-shot 01_start                  # Home bez list: hero „Witaj” z przyciskiem Dodaj dostawcę
+shot 01_start                  # pierwsze uruchomienie: kreator (krok 1 Witaj)
+key KEYCODE_DPAD_RIGHT         # z „Dalej” na „Pomiń”
+key KEYCODE_DPAD_CENTER        # pominięcie kreatora -> Home
+shot 01a_home
 key KEYCODE_DPAD_LEFT          # fokus na szynę (aktywna pozycja: Home)
 shot 01b_szyna
 for _ in 1 2 3 4 5 6; do key KEYCODE_DPAD_DOWN; done   # Ustawienia (ostatnia pozycja szyny)
 key KEYCODE_DPAD_CENTER
-shot 01c_ustawienia
-key KEYCODE_DPAD_DOWN          # Źródła EPG
-key KEYCODE_DPAD_CENTER
-shot 02_zrodla_epg
+shot 01c_ustawienia            # lista kategorii po lewej, opcje „Listy i dostawcy” po prawej
 key KEYCODE_DPAD_DOWN
-shot 03_teleman_fokus
-key KEYCODE_DPAD_CENTER        # przełącz Telemana
-shot 04_teleman_przelaczony
-key KEYCODE_BACK               # powrót do listy ustawień
-shot 05_po_back
-key KEYCODE_DPAD_UP            # Dostawcy
-key KEYCODE_DPAD_CENTER
+key KEYCODE_DPAD_DOWN          # Telewizja i przewodnik (źródła EPG)
+shot 02_zrodla_epg
+key KEYCODE_DPAD_UP
+key KEYCODE_DPAD_UP            # Listy i dostawcy
+key KEYCODE_DPAD_RIGHT         # z kategorii do opcji (Dodaj dostawcę)
 
 FAIL_PROVIDER=0
 # Scenariusz z prawdziwym odtwarzaniem: dwie listy z tym samym kanałem, pierwsza zepsuta (404), druga gra (HLS z ffmpeg).
