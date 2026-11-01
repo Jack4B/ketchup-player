@@ -1,22 +1,16 @@
-127.0.0.1 - - [01/Nov/2026 22:35:46] "GET /a.m3u HTTP/1.1" 200 -
-127.0.0.1 - - [01/Nov/2026 22:35:46] "GET /a.m3u HTTP/1.1" 200 -
-127.0.0.1 - - [01/Nov/2026 22:35:46] "GET /a.m3u HTTP/1.1" 200 -
-127.0.0.1 - - [01/Nov/2026 22:35:46] "GET /hls/good/index.m3u8 HTTP/1.1" 200 -
-127.0.0.1 - - [01/Nov/2026 22:36:03] "GET /a.m3u HTTP/1.1" 200 -
-127.0.0.1 - - [01/Nov/2026 22:36:29] "GET /b.m3u HTTP/1.1" 200 -
-127.0.0.1 - - [01/Nov/2026 22:36:40] code 404, message File not found
-127.0.0.1 - - [01/Nov/2026 22:36:40] "GET /hls/missing/index.m3u8 HTTP/1.1" 404 -
-127.0.0.1 - - [01/Nov/2026 22:36:52] "GET /hls/good/index.m3u8 HTTP/1.1" 200 -
-127.0.0.1 - - [01/Nov/2026 22:36:52] "GET /hls/good/index0.ts HTTP/1.1" 200 -
-127.0.0.1 - - [01/Nov/2026 22:36:52] "GET /hls/good/index1.ts HTTP/1.1" 200 -
-127.0.0.1 - - [01/Nov/2026 22:36:53] "GET /hls/good/index2.ts HTTP/1.1" 200 -
-127.0.0.1 - - [01/Nov/2026 22:36:54] code 404, message File not found
-127.0.0.1 - - [01/Nov/2026 22:36:54] "GET /hls/missing/index.m3u8 HTTP/1.1" 404 -
-127.0.0.1 - - [01/Nov/2026 22:36:55] code 404, message File not found
-127.0.0.1 - - [01/Nov/2026 22:36:55] "GET /hls/missing/index.m3u8 HTTP/1.1" 404 -
-127.0.0.1 - - [01/Nov/2026 22:36:55] code 404, message File not found
-127.0.0.1 - - [01/Nov/2026 22:36:55] "GET /hls/missing/index.m3u8 HTTP/1.1" 404 -
-127.0.0.1 - - [01/Nov/2026 22:36:55] "GET /hls/good/index.m3u8 HTTP/1.1" 200 -
-127.0.0.1 - - [01/Nov/2026 22:36:55] "GET /hls/good/index0.ts HTTP/1.1" 200 -
-127.0.0.1 - - [01/Nov/2026 22:36:55] "GET /hls/good/index1.ts HTTP/1.1" 200 -
-127.0.0.1 - - [01/Nov/2026 22:36:55] "GET /hls/good/index2.ts HTTP/1.1" 200 -
+127.0.0.1 - - [01/Nov/2026 23:46:17] "GET /a.m3u HTTP/1.1" 200 -
+127.0.0.1 - - [01/Nov/2026 23:46:17] "GET /a.m3u HTTP/1.1" 200 -
+127.0.0.1 - - [01/Nov/2026 23:46:17] "GET /a.m3u HTTP/1.1" 200 -
+127.0.0.1 - - [01/Nov/2026 23:46:17] "GET /hls/good/index.m3u8 HTTP/1.1" 200 -
+127.0.0.1 - - [01/Nov/2026 23:46:33] "GET /a.m3u HTTP/1.1" 200 -
+127.0.0.1 - - [01/Nov/2026 23:46:58] "GET /b.m3u HTTP/1.1" 200 -
+127.0.0.1 - - [01/Nov/2026 23:47:09] code 404, message File not found
+127.0.0.1 - - [01/Nov/2026 23:47:09] "GET /hls/missing/index.m3u8 HTTP/1.1" 404 -
+127.0.0.1 - - [01/Nov/2026 23:47:15] code 404, message File not found
+127.0.0.1 - - [01/Nov/2026 23:47:15] "GET /hls/missing/index.m3u8 HTTP/1.1" 404 -
+127.0.0.1 - - [01/Nov/2026 23:47:15] code 404, message File not found
+127.0.0.1 - - [01/Nov/2026 23:47:15] "GET /hls/missing/index.m3u8 HTTP/1.1" 404 -
+127.0.0.1 - - [01/Nov/2026 23:47:15] "GET /hls/good/index.m3u8 HTTP/1.1" 200 -
+127.0.0.1 - - [01/Nov/2026 23:47:15] "GET /hls/good/index0.ts HTTP/1.1" 200 -
+127.0.0.1 - - [01/Nov/2026 23:47:15] "GET /hls/good/index1.ts HTTP/1.1" 200 -
+127.0.0.1 - - [01/Nov/2026 23:47:16] "GET /hls/good/index2.ts HTTP/1.1" 200 -
