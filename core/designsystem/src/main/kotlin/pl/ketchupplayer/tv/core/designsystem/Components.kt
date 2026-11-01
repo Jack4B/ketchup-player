@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -71,6 +72,8 @@ fun PosterCard(
     fillWidth: Boolean = false,
     onLongClick: (() -> Unit)? = null,
     focusRequester: FocusRequester? = null,
+    /** true: tytuł i podtytuł na dolnym gradiencie obrazu (jak karty w poprzedniej aplikacji), bez tekstu pod kartą. */
+    overlay: Boolean = false,
     poster: @Composable BoxScope.() -> Unit = {},
 ) {
     val c = KetchupTheme.colors
@@ -93,6 +96,30 @@ fun PosterCard(
             ) {
                 PosterImage(imageUrl, title)
                 poster()
+                if (overlay) {
+                    Column(
+                        Modifier
+                            .align(Alignment.BottomStart)
+                            .fillMaxWidth()
+                            .background(Brush.verticalGradient(listOf(Color.Transparent, Color(OVERLAY_SCRIM))))
+                            .padding(horizontal = 10.dp)
+                            .padding(top = 28.dp, bottom = if (progress != null && progress > 0f) 10.dp else 8.dp),
+                    ) {
+                        Text(
+                            title,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (subtitle !=
+                            null
+                        ) {
+                            Text(subtitle, fontSize = 12.sp, color = Color(OVERLAY_SUBTITLE), maxLines = 1)
+                        }
+                    }
+                }
                 if (progress != null && progress > 0f) {
                     Box(
                         Modifier
@@ -108,11 +135,16 @@ fun PosterCard(
                     NewEpisodeBadge(Modifier.align(Alignment.TopEnd).padding(8.dp), newEpisodes, newEpisodeLabel)
                 }
             }
-            Text(title, fontSize = 12.sp, color = c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (subtitle != null) Text(subtitle, fontSize = 11.sp, color = c.textSecondary, maxLines = 1)
+            if (!overlay) {
+                Text(title, fontSize = 12.sp, color = c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (subtitle != null) Text(subtitle, fontSize = 11.sp, color = c.textSecondary, maxLines = 1)
+            }
         }
     }
 }
+
+private const val OVERLAY_SCRIM = 0xE6000000
+private const val OVERLAY_SUBTITLE = 0xFFE6E6E6
 
 /** Obraz z sieci (Coil); bez adresu lub przy błędzie zostaje tło kafla z inicjałem tytułu. */
 @OptIn(ExperimentalTvMaterial3Api::class)

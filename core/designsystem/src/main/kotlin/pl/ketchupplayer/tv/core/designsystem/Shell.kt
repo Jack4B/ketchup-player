@@ -115,6 +115,27 @@ fun Modifier.panel(): Modifier {
     }
 }
 
+/**
+ * Panel „szkło”: półprzezroczysty gradient z cienką jasną krawędzią; grafika pod spodem prześwituje.
+ * Bez rozmycia (tanie na słabych boxach); działa na każdej wersji Androida.
+ */
+@Composable
+fun Modifier.glassPanel(): Modifier {
+    val c = KetchupTheme.colors
+    val shape = RoundedCornerShape(c.cornerRadius)
+    return this
+        .background(
+            Brush.verticalGradient(
+                listOf(c.surface3.copy(alpha = GLASS_PANEL_TOP), c.surface2.copy(alpha = GLASS_PANEL_BOTTOM)),
+            ),
+            shape,
+        ).border(1.dp, Color.White.copy(alpha = GLASS_PANEL_EDGE), shape)
+}
+
+private const val GLASS_PANEL_TOP = 0.62f
+private const val GLASS_PANEL_BOTTOM = 0.42f
+private const val GLASS_PANEL_EDGE = 0.10f
+
 private const val GRANAT_PANEL_ALPHA = 0.72f
 
 private val RAIL_COLLAPSED = 58.dp

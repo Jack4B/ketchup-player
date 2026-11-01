@@ -1,9 +1,13 @@
 package pl.ketchupplayer.tv.feature.vod
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -15,10 +19,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -33,12 +44,13 @@ import pl.ketchupplayer.tv.core.designsystem.FocusItem
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.designsystem.PillChip
 import pl.ketchupplayer.tv.core.designsystem.PosterCard
+import pl.ketchupplayer.tv.core.designsystem.PosterImage
 import pl.ketchupplayer.tv.core.designsystem.ScreenScaffold
 import pl.ketchupplayer.tv.core.designsystem.SearchField
 import pl.ketchupplayer.tv.core.designsystem.ShellHeader
 import pl.ketchupplayer.tv.core.designsystem.StateKind
 import pl.ketchupplayer.tv.core.designsystem.StateView
-import pl.ketchupplayer.tv.core.designsystem.panel
+import pl.ketchupplayer.tv.core.designsystem.glassPanel
 import java.util.Locale
 
 @Composable
@@ -82,35 +94,67 @@ fun VodBrowseScreen(
             VodMode.MYLIST -> R.string.vod_empty_mylist
             VodMode.SEARCH -> R.string.vod_empty_all
         }
-    ScreenScaffold(scrollable = false) {
-        ShellHeader(stringResource(title), tabs = {
-            SearchField(
-                hint = stringResource(hint),
-                value = state.query,
-                onChange = { onEvent(VodBrowseEvent.Search(it)) },
-                modifier = Modifier.width(SEARCH_WIDTH),
-            )
-        })
-        when {
-            state.loading -> StateView(StateKind.LOADING, stringResource(R.string.vod_loading))
-            state.total == 0 ->
-                StateView(
-                    StateKind.EMPTY,
-                    stringResource(empty),
-                    actionLabel = stringResource(R.string.vod_open_providers),
-                    onAction = onOpenProviders,
+    var focused by remember { mutableStateOf<VodEntry?>(null) }
+    var focusedIndex by remember { mutableIntStateOf(0) }
+    Box(Modifier.fillMaxSize()) {
+        // Grafika zaznaczonego tytułu pod całą treścią: ciemniejsza po lewej (czytelne panele), płynnie ciemna u dołu.
+        Backdrop(focused)
+        ScreenScaffold(scrollable = false) {
+            ShellHeader(stringResource(title), tabs = {
+                SearchField(
+                    hint = stringResource(hint),
+                    value = state.query,
+                    onChange = { onEvent(VodBrowseEvent.Search(it)) },
+                    modifier = Modifier.width(SEARCH_WIDTH),
                 )
-            else ->
-                Row(Modifier.fillMaxWidth().fillMaxHeight(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    CategoriesPanel(state, onEvent, Modifier.width(CATEGORIES_WIDTH).fillMaxHeight())
-                    Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Toolbar(state, onEvent)
-                        Grid(state, onOpen)
+            })
+            when {
+                state.loading -> StateView(StateKind.LOADING, stringResource(R.string.vod_loading))
+                state.total == 0 ->
+                    StateView(
+                        StateKind.EMPTY,
+                        stringResource(empty),
+                        actionLabel = stringResource(R.string.vod_open_providers),
+                        onAction = onOpenProviders,
+                    )
+                else ->
+                    Row(Modifier.fillMaxWidth().fillMaxHeight(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        CategoriesPanel(state, onEvent, Modifier.width(CATEGORIES_WIDTH).fillMaxHeight())
+                        Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Toolbar(state, onEvent, focusedIndex)
+                            Grid(state, onOpen) { index, entry ->
+                                focusedIndex = index
+                                focused = entry
+                            }
+                        }
                     }
-                }
+            }
         }
     }
 }
+
+/** Pełnoekranowa grafika zaznaczonego tytułu z gradientami; bez zaznaczenia nic nie rysuje. */
+@Composable
+private fun Backdrop(entry: VodEntry?) {
+    val c = KetchupTheme.colors
+    val item = entry?.item ?: return
+    val url = item.backdrop ?: item.poster ?: return
+    Box(Modifier.fillMaxSize()) {
+        PosterImage(url, item.title, Modifier.fillMaxSize().alpha(BACKDROP_ALPHA))
+        Box(
+            Modifier.fillMaxSize().background(
+                Brush.horizontalGradient(listOf(c.background, c.background.copy(alpha = 0.7f), Color.Transparent)),
+            ),
+        )
+        Box(
+            Modifier.fillMaxSize().background(
+                Brush.verticalGradient(listOf(Color.Transparent, c.background.copy(alpha = 0.85f))),
+            ),
+        )
+    }
+}
+
+private const val BACKDROP_ALPHA = 0.55f
 
 private val CATEGORIES_WIDTH = 300.dp
 private const val COLUMNS = 4
@@ -123,7 +167,7 @@ private fun CategoriesPanel(
     onEvent: (VodBrowseEvent) -> Unit,
     modifier: Modifier,
 ) {
-    Column(modifier.panel().padding(10.dp)) {
+    Column(modifier.glassPanel().padding(10.dp)) {
         LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             item(key = "all") {
                 CategoryItem(stringResource(R.string.vod_all), state.category == null) {
@@ -172,6 +216,7 @@ private fun CategoryItem(
 private fun Toolbar(
     state: VodBrowseUiState,
     onEvent: (VodBrowseEvent) -> Unit,
+    focusedIndex: Int,
 ) {
     val sorts =
         listOf(
@@ -184,6 +229,14 @@ private fun Toolbar(
         sorts.forEach { (sort, label) ->
             PillChip(stringResource(label), state.sort == sort, { onEvent(VodBrowseEvent.Sort(sort)) })
         }
+        Spacer(Modifier.weight(1f))
+        // Licznik jak w poprzedniej aplikacji: „12 / 340” (pozycja zaznaczonej karty i liczba wyników).
+        Text(
+            "${(focusedIndex + 1).coerceAtMost(state.entries.size)} / ${state.entries.size}",
+            fontSize = 14.sp,
+            color = KetchupTheme.colors.textSecondary,
+            modifier = Modifier.align(Alignment.CenterVertically),
+        )
     }
 }
 
@@ -194,6 +247,7 @@ private val SEARCH_WIDTH = 320.dp
 private fun Grid(
     state: VodBrowseUiState,
     onOpen: (String) -> Unit,
+    onFocus: (Int, VodEntry) -> Unit,
 ) {
     if (state.entries.isEmpty()) {
         StateView(StateKind.EMPTY, stringResource(R.string.vod_no_results, state.query))
@@ -216,6 +270,8 @@ private fun Grid(
             PosterCard(
                 title = e.item.title,
                 onClick = { onOpen(e.item.id) },
+                modifier = Modifier.onFocusChanged { if (it.hasFocus) onFocus(index, e) },
+                overlay = true,
                 focusRequester = if (index == 0) first else null,
                 imageUrl = e.item.poster,
                 subtitle = subtitle(e),
