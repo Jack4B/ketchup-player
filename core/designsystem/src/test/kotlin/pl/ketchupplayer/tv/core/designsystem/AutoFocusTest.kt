@@ -102,4 +102,21 @@ class AutoFocusTest {
         compose.waitForIdle()
         compose.onNodeWithTag("cel").assertIsNotFocused()
     }
+
+    @Test
+    fun wymuszonyFokusDzialaTakzeWPaneluPoAkcjiUzytkownika() {
+        compose.setContent {
+            CompositionLocalProvider(LocalBreadcrumb provides "Ustawienia") {
+                Box(
+                    Modifier
+                        .size(40.dp)
+                        .testTag("cel")
+                        .requestFocusWhenPlaced(force = true)
+                        .focusable(),
+                )
+            }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithTag("cel").assertIsFocused()
+    }
 }

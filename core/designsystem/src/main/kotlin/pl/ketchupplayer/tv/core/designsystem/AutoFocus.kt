@@ -16,11 +16,15 @@ import androidx.compose.ui.layout.onGloballyPositioned
  * po lewej, a do opcji wchodzi się strzałką w prawo.
  * Bezpieczne dla leniwych list: requester jest na pewno podpięty, więc nie ma `FocusRequester is not initialized`.
  */
-fun Modifier.requestFocusWhenPlaced(enabled: Boolean = true): Modifier =
+fun Modifier.requestFocusWhenPlaced(
+    enabled: Boolean = true,
+    /** true: fokus także na stronie osadzonej w panelu (po akcji użytkownika, np. otwarciu formularza). */
+    force: Boolean = false,
+): Modifier =
     composed {
         val requester = remember { FocusRequester() }
         var done by remember { mutableStateOf(false) }
-        if (!enabled || LocalBreadcrumb.current != null) {
+        if (!enabled || (!force && LocalBreadcrumb.current != null)) {
             this
         } else {
             this.focusRequester(requester).onGloballyPositioned {

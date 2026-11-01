@@ -134,7 +134,7 @@ internal fun AddForm(
         stringResource(R.string.providers_field_name),
         form.name,
         { onEvent(ProvidersEvent.NameChanged(it)) },
-        Modifier.requestFocusWhenPlaced(),
+        Modifier.requestFocusWhenPlaced(force = true),
     )
     if (form.nameError) Text(stringResource(R.string.providers_error_name), color = ERROR_COLOR, fontSize = 16.sp)
     TextInputField(
