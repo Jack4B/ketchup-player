@@ -300,6 +300,16 @@ case "$FOCUS_CAT" in
 esac
 if ! echo "$FOCUS_IN" | grep -qE "Morski|Czerń|Grafit|Własny"; then
   echo "=== Wygląd: PRAWO z kategorii nie weszło w opcje (fokus: '$FOCUS_IN') ===" >&2
+  # Diagnostyka: elementy fokusowalne i zaznaczone z drzewa UI po PRAWO (klasa, ramka, tekst).
+  python3 - "$OUT/ui_focus_opcje.xml" >&2 <<'PY'
+import re, sys
+s = open(sys.argv[1], encoding="utf-8").read()
+for m in re.finditer(r"<node [^>]*>", s):
+    n = m.group(0)
+    if 'focusable="true"' in n or 'focused="true"' in n:
+        g = lambda k: (re.search(k + r'="([^"]*)"', n) or [None, ""])[1]
+        print("  FOCUS", "F" if 'focused="true"' in n else "-", g("class").split(".")[-1], g("bounds"), g("text") or g("content-desc"))
+PY
   FAIL_PROVIDER=1
 fi
 if ! echo "$FOCUS_OUT" | grep -q "Wygląd"; then
