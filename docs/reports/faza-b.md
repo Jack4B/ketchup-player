@@ -18,7 +18,7 @@ Gałąź `faza-b` (PR #3, względem `faza-0`). Zakres zmieniony decyzjami właś
 | Screenshoty ikony i banera na launcherze Google TV i Fire TV | ❌ | brak launchera/urządzenia w chmurze; do sprawdzenia przez właściciela |
 | Przezroczysty wariant bez halo (jasne i ciemne tło) | ✅ | `branding/derived/preview-transparent-light.png`, `-dark.png` |
 | `core:designsystem`: tokeny z palety, `FocusCard`/`PosterCard`, `ChannelRow`, `NewEpisodeBadge`, przyciski, `SettingsListItem`, stany loading/empty/error | ✅ | `core/designsystem`, galeria `components_*.png` |
-| Galeria w `docs/mockups/components/` | ⚠️ | zrzuty w `core/designsystem/src/test/screenshots/`, kopia do `docs/mockups/components/` po akceptacji motywów |
+| Galeria w `docs/mockups/components/` | ✅ | `components_*.png` i `theme_*.png` skopiowane z baseline Roborazzi (CI) |
 | Tokeny zgodne z makietami v3 | ✅ | `PaletteContrastTest`: wartości z tabel kontrastu ±0,02, wszystkie akcenty AA we wszystkich motywach |
 | Akceptacja właściciela | ⏳ | pytania poniżej |
 
