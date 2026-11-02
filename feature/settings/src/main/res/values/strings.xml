@@ -39,6 +39,8 @@
     <string name="custom_warn_green">Zielony kojarzy się ze wskaźnikiem nowych odcinków</string>
     <string name="custom_warn_red">Czerwony kojarzy się z błędem i nagrywaniem</string>
     <string name="custom_close">Gotowe</string>
+    <string name="custom_preview_button">Przycisk główny</string>
+    <string name="custom_contrast">Kontrast tekstu na akcencie: %1$s : 1 (minimum 4,5)</string>
     <string name="playback_title">Odtwarzanie</string>
     <string name="playback_failover">Automatyczne przełączanie źródeł</string>
     <string name="playback_failover_hint">Gdy kanał przestaje działać, przełącz na ten sam kanał z innej listy</string>

@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -36,6 +37,7 @@ import androidx.tv.material3.Text
 import pl.ketchupplayer.tv.core.designsystem.AccentChoice
 import pl.ketchupplayer.tv.core.designsystem.AccentId
 import pl.ketchupplayer.tv.core.designsystem.AccentWarning
+import pl.ketchupplayer.tv.core.designsystem.Contrast
 import pl.ketchupplayer.tv.core.designsystem.FocusItem
 import pl.ketchupplayer.tv.core.designsystem.InitialFocusEffect
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
@@ -140,6 +142,7 @@ private fun CustomEditorPanel(
         LabeledSlider(R.string.custom_lightness, "slider_lightness", e.lightness) {
             onEvent(AppearanceEvent.LightnessChanged(it))
         }
+        AccentPreview()
         EditorNotes(e)
         FocusItem(onClick = { onEvent(AppearanceEvent.CloseCustom) }, modifier = Modifier.width(160.dp)) {
             Text(
@@ -151,6 +154,35 @@ private fun CustomEditorPanel(
         }
     }
 }
+
+/** Podgląd na żywo (makieta v5): przycisk w wybranym akcencie i kontrast jego tekstu (WCAG, min. 4,5:1). */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun AccentPreview() {
+    val c = KetchupTheme.colors
+    val ratio = Contrast.ratio(c.accent.toArgb().toLong() and ARGB_MASK, c.onAccent.toArgb().toLong() and ARGB_MASK)
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier
+                .background(
+                    c.accent,
+                    RoundedCornerShape(c.cornerRadius),
+                ).padding(horizontal = 20.dp, vertical = 10.dp),
+        ) {
+            Text(stringResource(R.string.custom_preview_button), fontSize = 18.sp, color = c.onAccent)
+        }
+        Text(
+            stringResource(
+                R.string.custom_contrast,
+                String.format(java.util.Locale.forLanguageTag("pl"), "%.1f", ratio),
+            ),
+            fontSize = 16.sp,
+            color = c.textSecondary,
+        )
+    }
+}
+
+private const val ARGB_MASK = 0xFFFFFFFFL
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable

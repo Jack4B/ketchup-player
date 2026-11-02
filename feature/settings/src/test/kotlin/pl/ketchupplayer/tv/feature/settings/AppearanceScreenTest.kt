@@ -95,6 +95,16 @@ class AppearanceScreenTest {
         )
     }
 
+    /** Makieta v5: edytor własnego akcentu pokazuje podgląd przycisku i kontrast tekstu na akcencie. */
+    @Test
+    fun edytorPokazujePodgladIKontrastAkcentu() {
+        val state = AppearanceUiState(editor = CustomEditor("#8844CC", 270f, 0.5f, 0.5f))
+        compose.setContent { KetchupTheme(device = DeviceClass.TV) { AppearanceScreen(state, {}, {}) } }
+        compose.waitForIdle()
+        compose.onNodeWithText("Przycisk główny").assertExists()
+        compose.onNodeWithText("Kontrast tekstu na akcencie", substring = true).assertExists()
+    }
+
     /** D-pad na suwaku edytora: PRAWO zmienia wartość o krok (dokładny suwak zależy od kolejności fokusu). */
     @Test
     fun dpadSuwakZmieniaWartosc() {
