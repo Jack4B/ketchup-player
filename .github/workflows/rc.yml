@@ -20,18 +20,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Bramka - CI zielony na tym SHA
+        with:
+          fetch-depth: 50
+      - name: Bramka - CI zielony na tym kodzie
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Commity bota (baseline Roborazzi, zrzuty emulatora) nie uruchamiają CI, więc je pomijamy: liczy się najbliższy
+          # commit z kodem, o ile wszystko nad nim zmienia wyłącznie pliki zrzutów.
           sha="$(git rev-parse HEAD)"
-          result="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${sha}&status=completed&per_page=20" \
-            --jq '[.workflow_runs[] | select(.event == "push")] | sort_by(.created_at) | last | .conclusion // "brak"')"
-          echo "CI dla ${sha}: ${result}"
-          if [ "${result}" != "success" ]; then
-            echo "::error::CI na ${sha} nie jest zielony (${result}). Wydanie rc dopiero po zielonym CI i emulatorze."
+          for _ in $(seq 1 10); do
+            result="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${sha}&status=completed&per_page=20" \
+              --jq '[.workflow_runs[] | select(.event == "push")] | sort_by(.created_at) | last | .conclusion // "brak"')"
+            echo "CI dla ${sha}: ${result}"
+            if [ "${result}" = "success" ]; then ok=1; break; fi
+            others="$(git show --name-only --format= "${sha}" | grep -vE '(/src/test/screenshots/|^docs/qa/emulator/)' || true)"
+            if [ -n "${others}" ]; then break; fi
+            sha="$(git rev-parse "${sha}^")"
+          done
+          if [ "${ok:-0}" != "1" ]; then
+            echo "::error::CI (z emulatorem) nie jest zielony na kodzie tego commitu. Wydanie rc dopiero po zielonym CI."
             exit 1
           fi
+          echo "Bramka OK: CI zielony na ${sha}; wszystkie nowsze commity zmieniają tylko zrzuty."
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
