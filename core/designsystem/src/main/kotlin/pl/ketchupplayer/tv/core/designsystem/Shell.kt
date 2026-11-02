@@ -92,6 +92,7 @@ fun ThemedBackground(
         when (c.theme) {
             ThemeId.MORSKI -> Color(MORSKI_GLOW)
             ThemeId.GRAFIT -> Color(GRAFIT_GLOW)
+            ThemeId.WLASNY -> c.surface3.copy(alpha = CUSTOM_GLOW_ALPHA)
             ThemeId.CZERN -> Color.Transparent
         }
     val base = Brush.linearGradient(listOf(c.surface2, c.background), Offset(0f, 0f), Offset(GRADIENT_DX, GRADIENT_DY))
@@ -107,6 +108,7 @@ private fun backgroundFor(
 
 private const val MORSKI_GLOW = 0x4D2FB3A6
 private const val GRAFIT_GLOW = 0x264A5560
+private const val CUSTOM_GLOW_ALPHA = 0.6f
 private const val GRADIENT_DX = 900f
 private const val GRADIENT_DY = 1900f
 private const val GLOW_X = 1500f
@@ -119,7 +121,11 @@ fun Modifier.panel(): Modifier {
     val c = KetchupTheme.colors
     val shape = RoundedCornerShape(c.cornerRadius)
     return when (c.theme) {
-        ThemeId.MORSKI, ThemeId.GRAFIT -> this.background(c.surface2.copy(alpha = GLASS_PANEL_ALPHA), shape)
+        ThemeId.MORSKI, ThemeId.GRAFIT, ThemeId.WLASNY ->
+            this.background(
+                c.surface2.copy(alpha = GLASS_PANEL_ALPHA),
+                shape,
+            )
         ThemeId.CZERN -> this.border(1.dp, c.outline, shape)
     }
 }

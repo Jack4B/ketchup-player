@@ -40,6 +40,17 @@ class AppearanceRepositoryTest {
         }
 
     @Test
+    fun `odcien motywu wlasnego jest trwaly i ograniczony do zakresu`() =
+        runTest {
+            val r = repo()
+            assertEquals(pl.ketchupplayer.tv.core.designsystem.Palettes.DEFAULT_HUE, r.appearance.first().customHue)
+            r.setCustomHue(280)
+            assertEquals(280, r.appearance.first().customHue)
+            r.setCustomHue(999)
+            assertEquals(360, r.appearance.first().customHue)
+        }
+
+    @Test
     fun `wlasny akcent HEX jest trwaly i przezywa zmiane motywu`() =
         runTest {
             val r = repo()

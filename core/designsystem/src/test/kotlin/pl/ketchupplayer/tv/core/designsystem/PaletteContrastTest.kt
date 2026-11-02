@@ -60,4 +60,19 @@ class PaletteContrastTest {
         assertEquals(AccentId.BIEL, ThemeId.CZERN.defaultAccent)
         assertEquals(AccentId.TURKUS, ThemeId.GRAFIT.defaultAccent)
     }
+
+    /** Motyw „Własny” musi być czytelny w każdym odcieniu tła, jaki da się ustawić suwakiem. */
+    @Test
+    fun `motyw wlasny przechodzi AA w kazdym odcieniu`() {
+        for (hue in 0..360 step 15) {
+            val t = Palettes.tokens(ThemeId.WLASNY, hue)
+            for (text in listOf(t.textPrimary, t.textSecondary)) {
+                for (bg in listOf(t.background, t.surface2, t.surface3)) {
+                    assertTrue("odcien $hue $text/$bg", Contrast.ratio(text, bg) >= 4.5)
+                }
+            }
+            assertTrue("odcien $hue kafel", Contrast.ratio(t.channelTileText, t.channelTile) >= 4.5)
+            assertTrue("odcien $hue akcent", Contrast.ratio(AccentId.TURKUS.argb, t.surface3) >= 3.0)
+        }
+    }
 }

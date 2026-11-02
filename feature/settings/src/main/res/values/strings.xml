@@ -21,6 +21,8 @@
     <string name="appearance_theme_morski">Morski</string>
     <string name="appearance_theme_czern">Czerń</string>
     <string name="appearance_theme_grafit">Grafit</string>
+    <string name="appearance_theme_wlasny">Własny</string>
+    <string name="appearance_bg_hue">Odcień tła motywu Własny</string>
     <string name="accent_turkus">Turkus</string>
     <string name="accent_biel">Biel</string>
     <string name="accent_bursztyn">Bursztyn</string>

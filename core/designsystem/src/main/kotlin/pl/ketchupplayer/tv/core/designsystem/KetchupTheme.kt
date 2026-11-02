@@ -80,16 +80,16 @@ fun KetchupTheme(
     theme: ThemeId = ThemeId.MORSKI,
     accent: AccentChoice = AccentChoice.Preset(theme.defaultAccent),
     device: DeviceClass = rememberDeviceClass(),
+    customHue: Int = Palettes.DEFAULT_HUE,
     content: @Composable () -> Unit,
 ) {
     val colors =
-        remember(theme, accent) {
+        remember(theme, accent, customHue) {
+            val tokens = Palettes.tokens(theme, customHue)
             when (accent) {
-                is AccentChoice.Preset -> Palettes.tokens(theme).toColors(theme, accent.id.argb, Palettes.ON_ACCENT)
+                is AccentChoice.Preset -> tokens.toColors(theme, accent.id.argb, Palettes.ON_ACCENT)
                 is AccentChoice.Custom ->
-                    AccentFit.fit(theme, accent.argb).let {
-                        Palettes.tokens(theme).toColors(theme, it.argb, it.onAccent)
-                    }
+                    AccentFit.fit(theme, accent.argb).let { tokens.toColors(theme, it.argb, it.onAccent) }
             }
         }
     val scheme =

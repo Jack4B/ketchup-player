@@ -13,6 +13,7 @@ import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -23,6 +24,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.printToString
+import androidx.compose.ui.test.requestFocus
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -1001,6 +1003,24 @@ class ScenariosTest {
         compose.waitForIdle()
         assertEquals(ThemeId.GRAFIT, runBlocking { appearance.appearance.first().theme })
         waitForText("Motyw") // ekran Wygląd po restarcie dalej widoczny
+    }
+
+    /** Scenariusz: motyw Własny: pojawia się suwak odcienia tła, pilot zmienia odcień, wybór przeżywa restart. */
+    @Test
+    fun motywWlasnyPozwalaUstawicOdcienTla() {
+        settingsPage("Wygląd")
+        click("Własny")
+        waitFor { runBlocking { appearance.appearance.first().theme == ThemeId.WLASNY } }
+        waitForText("Odcień tła motywu Własny")
+        val before = runBlocking { appearance.appearance.first().customHue }
+        compose.onNodeWithTag("slider_bg_hue").requestFocus()
+        pressKeys(listOf(Key.ShiftLeft, Key.DirectionRight, Key.DirectionRight))
+        waitFor { runBlocking { appearance.appearance.first().customHue } != before }
+        val hue = runBlocking { appearance.appearance.first().customHue }
+        compose.activityRule.scenario.recreate()
+        compose.waitForIdle()
+        assertEquals(hue, runBlocking { appearance.appearance.first().customHue })
+        assertEquals(ThemeId.WLASNY, runBlocking { appearance.appearance.first().theme })
     }
 
     /** Scenariusz: „Mam czas na…” na Home: audycja kończy się za 50 min, więc mieści się w 60 min, ale nie w 30. */

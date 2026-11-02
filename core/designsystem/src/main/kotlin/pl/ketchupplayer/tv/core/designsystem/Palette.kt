@@ -7,6 +7,9 @@ enum class ThemeId(
     MORSKI(AccentId.TURKUS),
     CZERN(AccentId.BIEL),
     GRAFIT(AccentId.TURKUS),
+
+    /** Motyw użytkownika: ciemne tło w odcieniu wybranym suwakiem (0–360), reszta jak w pozostałych. */
+    WLASNY(AccentId.TURKUS),
 }
 
 /** Kolor akcentu (NOTATKI-v3 §3). Bez zieleni (zarezerwowana dla nowych odcinków) i bez czerwieni (błędy). */
@@ -45,8 +48,37 @@ object Palettes {
     /** Tekst na przycisku w kolorze akcentu (NOTATKI-v3 §3). */
     const val ON_ACCENT: Long = 0xFF0B0B0B
 
-    fun tokens(theme: ThemeId): PaletteTokens =
+    /** Odcień tła motywu „Własny”, gdy użytkownik jeszcze go nie ustawił (turkus, jak Morski). */
+    const val DEFAULT_HUE = 195
+
+    /** Tokeny motywu „Własny” dla odcienia [hue]: ciemne, mało nasycone powierzchnie, jasny tekst (AA w każdym). */
+    private fun custom(hue: Int): PaletteTokens {
+        fun hsl(
+            s: Double,
+            l: Double,
+        ) = AccentFit.fromHsl(hue.coerceIn(0, MAX_HUE).toDouble(), s, l)
+        return PaletteTokens(
+            background = hsl(0.22, 0.06),
+            surface2 = hsl(0.20, 0.11),
+            surface3 = hsl(0.18, 0.16),
+            textPrimary = hsl(0.15, 0.94),
+            textSecondary = hsl(0.12, 0.72),
+            outline = hsl(0.16, 0.24),
+            scrim = hsl(0.25, 0.03),
+            channelTile = hsl(0.20, 0.92),
+            channelTileText = hsl(0.22, 0.06),
+            cornerRadiusDp = 20,
+        )
+    }
+
+    private const val MAX_HUE = 360
+
+    fun tokens(
+        theme: ThemeId,
+        customHue: Int = DEFAULT_HUE,
+    ): PaletteTokens =
         when (theme) {
+            ThemeId.WLASNY -> custom(customHue)
             ThemeId.MORSKI ->
                 PaletteTokens(
                     background = 0xFF0B1112,

@@ -47,7 +47,7 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch { viewModel.remoteDebounceMs.collect { keyGuard.debounceMs = it.toLong() } }
         setContent {
             val appearance by viewModel.appearance.collectAsStateWithLifecycle()
-            KetchupTheme(appearance.theme, appearance.effectiveAccent) {
+            KetchupTheme(appearance.theme, appearance.effectiveAccent, customHue = appearance.customHue) {
                 CompositionLocalProvider(LocalGlassBlur provides appearance.glassBlur) {
                     AppNavigation(onExit = { finish() })
                 }

@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.map
 import pl.ketchupplayer.tv.core.designsystem.AccentChoice
 import pl.ketchupplayer.tv.core.designsystem.AccentId
 import pl.ketchupplayer.tv.core.designsystem.HexColor
+import pl.ketchupplayer.tv.core.designsystem.Palettes
 import pl.ketchupplayer.tv.core.designsystem.ThemeId
 import javax.inject.Inject
 
@@ -24,11 +25,16 @@ class DataStoreAppearanceRepository
                     theme = themeFromStored(prefs[THEME]),
                     accent = decode(prefs[ACCENT]),
                     glassBlur = prefs[BLUR] ?: false,
+                    customHue = prefs[HUE] ?: Palettes.DEFAULT_HUE,
                 )
             }
 
         override suspend fun setTheme(theme: ThemeId) {
             store.edit { it[THEME] = theme.name }
+        }
+
+        override suspend fun setCustomHue(hue: Int) {
+            store.edit { it[HUE] = hue.coerceIn(0, MAX_HUE) }
         }
 
         override suspend fun setGlassBlur(enabled: Boolean) {
@@ -55,6 +61,10 @@ class DataStoreAppearanceRepository
             }
 
         private companion object {
+            const val MAX_HUE = 360
+            val HUE =
+                androidx.datastore.preferences.core
+                    .intPreferencesKey("appearance_custom_hue")
             val THEME = stringPreferencesKey("appearance_theme")
             val ACCENT = stringPreferencesKey("appearance_accent")
             val BLUR =

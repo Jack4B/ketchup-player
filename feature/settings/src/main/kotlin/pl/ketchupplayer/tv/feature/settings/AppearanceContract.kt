@@ -21,9 +21,15 @@ data class AppearanceUiState(
     val accent: AccentChoice = AccentChoice.Preset(AccentId.TURKUS),
     val editor: CustomEditor? = null,
     val glassBlur: Boolean = false,
+    val customHue: Int = pl.ketchupplayer.tv.core.designsystem.Palettes.DEFAULT_HUE,
 )
 
 sealed interface AppearanceEvent {
+    /** Odcień tła motywu „Własny” (0–360). */
+    data class CustomHue(
+        val hue: Int,
+    ) : AppearanceEvent
+
     data object ToggleGlassBlur : AppearanceEvent
 
     data class SelectTheme(

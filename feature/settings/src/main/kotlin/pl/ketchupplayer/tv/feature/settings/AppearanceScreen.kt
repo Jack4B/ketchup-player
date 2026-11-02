@@ -102,6 +102,11 @@ fun AppearanceScreen(
                 )
             }
         }
+        if (state.theme == ThemeId.WLASNY) {
+            LabeledSlider(R.string.appearance_bg_hue, "slider_bg_hue", state.customHue / HUE_MAX) {
+                onEvent(AppearanceEvent.CustomHue((it * HUE_MAX).toInt()))
+            }
+        }
         state.editor?.let { CustomEditorPanel(it, onEvent) }
         // Rozmycie wymaga Androida 12+ (RenderEffect); na starszych zostaje sama półprzezroczystość.
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
@@ -132,7 +137,7 @@ private fun ThemeCards(
                 modifier = if (phone) Modifier.weight(1f) else Modifier.width(200.dp),
                 focusRequester = if (i == 0) first else null,
             ) {
-                ThemeCard(theme, theme == state.theme)
+                ThemeCard(theme, theme == state.theme, state.customHue)
             }
         }
     }
@@ -143,13 +148,14 @@ private fun ThemeCards(
 private fun ThemeCard(
     theme: ThemeId,
     selected: Boolean,
+    hue: Int,
 ) {
     val c = KetchupTheme.colors
     Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         // Miniatura: tło + panel motywu, żeby karta pokazywała jego charakter.
         val t =
             pl.ketchupplayer.tv.core.designsystem.Palettes
-                .tokens(theme)
+                .tokens(theme, hue)
         Box(
             Modifier.fillMaxWidth().height(56.dp).background(
                 Color(t.background),
@@ -274,6 +280,7 @@ private fun themeName(t: ThemeId) =
         ThemeId.MORSKI -> R.string.appearance_theme_morski
         ThemeId.CZERN -> R.string.appearance_theme_czern
         ThemeId.GRAFIT -> R.string.appearance_theme_grafit
+        ThemeId.WLASNY -> R.string.appearance_theme_wlasny
     }
 
 private fun accentName(a: AccentId) =
