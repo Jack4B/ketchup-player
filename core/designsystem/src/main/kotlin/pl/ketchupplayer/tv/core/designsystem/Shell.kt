@@ -430,17 +430,22 @@ fun ShellHeader(
 ) {
     val c = KetchupTheme.colors
     Row(modifier.fillMaxWidth().height(HEADER_HEIGHT), verticalAlignment = Alignment.CenterVertically) {
-        Text(title, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = c.textPrimary)
+        Text(title, fontSize = TITLE_SIZE, fontWeight = FontWeight.Bold, color = c.textPrimary)
         if (tabs != null) {
             Spacer(Modifier.width(16.dp))
             tabs()
         }
         Spacer(Modifier.weight(1f))
+        LocalListBadge.current?.let {
+            ListBadgePill(it)
+            Spacer(Modifier.width(24.dp))
+        }
         ClockText()
     }
 }
 
-private val HEADER_HEIGHT = 40.dp
+private val HEADER_HEIGHT = 56.dp
+private val TITLE_SIZE = 32.sp
 
 /** Zegar HH:mm w nagłówku; odświeża się co kilka sekund. */
 @OptIn(ExperimentalTvMaterial3Api::class)
@@ -453,7 +458,7 @@ fun ClockText(modifier: Modifier = Modifier) {
             delay(CLOCK_TICK_MS)
         }
     }
-    Text(text, fontSize = 20.sp, fontWeight = FontWeight.Medium, color = c.textPrimary, modifier = modifier)
+    Text(text, fontSize = 24.sp, fontWeight = FontWeight.Medium, color = c.textSecondary, modifier = modifier)
 }
 
 private const val CLOCK_TICK_MS = 5_000L

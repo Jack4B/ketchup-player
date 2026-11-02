@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Ketchup Player</string>
+    <string name="list_badge_name">Lista „%1$s”</string>
+    <string name="list_badge_connections">Lista „%1$s” · połączenia %2$d z %3$d</string>
     <string name="nav_profile">Profil</string>
     <string name="nav_search">Szukaj</string>
     <string name="nav_home">Home</string>

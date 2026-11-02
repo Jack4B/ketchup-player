@@ -45,6 +45,9 @@ object Palettes {
     /** Zieleń zarezerwowana wyłącznie dla wskaźnika nowych odcinków (KONSPEKT §7.2, NOTATKI-v3 §3). */
     const val NEW_EPISODE_GREEN: Long = 0xFF3DBE4B
 
+    /** Ostrzeżenie (limit połączeń, brak kluczy): zawsze z tekstem, nigdy samym kolorem. */
+    const val WARNING_AMBER: Long = 0xFFE3A857
+
     /** Tekst na przycisku w kolorze akcentu (NOTATKI-v3 §3). */
     const val ON_ACCENT: Long = 0xFF0B0B0B
 

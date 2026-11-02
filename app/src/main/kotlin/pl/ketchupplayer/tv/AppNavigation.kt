@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -118,43 +119,46 @@ private fun MainFlow(
         }
     }
     val base = if (settingsOpen) stack.lastOrNull { !Routes.isSettings(it) } ?: Routes.HOME else top
-    AppShell(
-        entries = entries,
-        selectedId = Routes.railSection(top)?.route,
-        onSelect = select,
-        onRailBack = {
-            when {
-                settingsOpen -> closeSettings()
-                top == Routes.HOME -> onExit()
-                else -> select(Routes.HOME)
-            }
-        },
-        avatar = {
-            KetchupLogoApp(Modifier.fillMaxSize())
-        },
-    ) {
-        val toRailNow = pl.ketchupplayer.tv.core.designsystem.LocalFocusRail.current
-        LaunchedEffect(railFocusTick) {
-            if (railFocusTick > 0) {
-                withFrameNanos { }
-                toRailNow()
-            }
-        }
-        // Pod panelem Ustawień sekcja jest tylko tłem: bez fokusu i semantyki (D-pad nie wchodzi pod spód).
-        Box(
-            if (settingsOpen) {
-                Modifier.alpha(UNDER_PANEL_ALPHA).focusProperties { canFocus = false }.clearAndSetSemantics { }
-            } else {
-                Modifier
+    val listBadge = rememberListBadge()
+    CompositionLocalProvider(pl.ketchupplayer.tv.core.designsystem.LocalListBadge provides listBadge) {
+        AppShell(
+            entries = entries,
+            selectedId = Routes.railSection(top)?.route,
+            onSelect = select,
+            onRailBack = {
+                when {
+                    settingsOpen -> closeSettings()
+                    top == Routes.HOME -> onExit()
+                    else -> select(Routes.HOME)
+                }
             },
-        ) { SectionContent(base, push, openPlayer, previewActive = !settingsOpen) }
-        AnimatedVisibility(
-            visible = settingsOpen,
-            enter = slideInHorizontally(tween(SETTINGS_PANEL_MS)) { it } + fadeIn(tween(SETTINGS_PANEL_MS)),
-            exit = slideOutHorizontally(tween(SETTINGS_PANEL_MS)) { it } + fadeOut(tween(SETTINGS_PANEL_MS)),
-            modifier = Modifier.align(Alignment.CenterEnd),
+            avatar = {
+                KetchupLogoApp(Modifier.fillMaxSize())
+            },
         ) {
-            SettingsPanel(initialPage(top), closeSettings)
+            val toRailNow = pl.ketchupplayer.tv.core.designsystem.LocalFocusRail.current
+            LaunchedEffect(railFocusTick) {
+                if (railFocusTick > 0) {
+                    withFrameNanos { }
+                    toRailNow()
+                }
+            }
+            // Pod panelem Ustawień sekcja jest tylko tłem: bez fokusu i semantyki (D-pad nie wchodzi pod spód).
+            Box(
+                if (settingsOpen) {
+                    Modifier.alpha(UNDER_PANEL_ALPHA).focusProperties { canFocus = false }.clearAndSetSemantics { }
+                } else {
+                    Modifier
+                },
+            ) { SectionContent(base, push, openPlayer, previewActive = !settingsOpen) }
+            AnimatedVisibility(
+                visible = settingsOpen,
+                enter = slideInHorizontally(tween(SETTINGS_PANEL_MS)) { it } + fadeIn(tween(SETTINGS_PANEL_MS)),
+                exit = slideOutHorizontally(tween(SETTINGS_PANEL_MS)) { it } + fadeOut(tween(SETTINGS_PANEL_MS)),
+                modifier = Modifier.align(Alignment.CenterEnd),
+            ) {
+                SettingsPanel(initialPage(top), closeSettings)
+            }
         }
     }
 }

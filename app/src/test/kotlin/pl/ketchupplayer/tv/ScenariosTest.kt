@@ -1279,6 +1279,18 @@ class ScenariosTest {
         waitForText("ważne do 01.01.2030", substring = true)
     }
 
+    /** Scenariusz (makieta v5): nagłówek każdego ekranu pokazuje aktywną listę i jej połączenia („1 z 2”). */
+    @Test
+    fun naglowekPokazujePigulkeListyZPolaczeniami() {
+        serveXtream()
+        addXtreamViaUi("dobre-haslo")
+        waitForText("Kanały: 2", substring = true)
+        nav("Na żywo")
+        waitForText("połączenia 1 z 2", substring = true)
+        nav("Filmy")
+        waitForText("połączenia 1 z 2", substring = true)
+    }
+
     /** Scenariusz: w odtwarzaczu na żywo OK otwiera listę kanałów grupy; wybór drugiego przełącza kanał, BACK wraca. */
     @Test
     fun zOdtwarzaczaNaZywoMoznaPrzelaczycKanalZListy() {
