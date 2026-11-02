@@ -32,14 +32,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           # Commity bota (baseline Roborazzi, zrzuty emulatora) nie uruchamiają CI, więc je pomijamy: liczy się najbliższy
-          # commit z kodem, o ile wszystko nad nim zmienia wyłącznie pliki zrzutów.
+          # commit z kodem, o ile wszystko nad nim zmienia wyłącznie zrzuty albo dokumentację (docs/).
           sha="$(git rev-parse HEAD)"
           for _ in $(seq 1 10); do
             result="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${sha}&status=completed&per_page=20" \
               --jq '[.workflow_runs[] | select(.event == "push")] | sort_by(.created_at) | last | .conclusion // "brak"')"
             echo "CI dla ${sha}: ${result}"
             if [ "${result}" = "success" ]; then ok=1; break; fi
-            others="$(git show --name-only --format= "${sha}" | grep -vE '(/src/test/screenshots/|^docs/qa/emulator/)' || true)"
+            others="$(git show --name-only --format= "${sha}" | grep -vE '(/src/test/screenshots/|^docs/)' || true)"
             if [ -n "${others}" ]; then break; fi
             sha="$(git rev-parse "${sha}^")"
           done
@@ -47,7 +47,7 @@ jobs:
             echo "::error::CI (z emulatorem) nie jest zielony na kodzie tego commitu. Wydanie rc dopiero po zielonym CI."
             exit 1
           fi
-          echo "Bramka OK: CI zielony na ${sha}; wszystkie nowsze commity zmieniają tylko zrzuty."
+          echo "Bramka OK: CI zielony na ${sha}; wszystkie nowsze commity zmieniają tylko zrzuty i dokumentację."
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
