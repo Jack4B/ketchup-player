@@ -16,3 +16,4 @@ Jedna linia na decyzję: co wygrało, co przegrało, jaka zasada z tego wynika (
 - Brak tokenów typografii (role: caption/body/title/headline) w `core:designsystem`; dziś rozmiary są literałami `sp`.
 - Brak tokenów odstępów (4/8/12/16/24/32); dziś literały `dp`.
 - Hero na Home bywa przycięte u góry po przewinięciu (wymaga decyzji: przewijać całą sekcję czy tylko rzędy).
+- 2.11.2026 Makiety v5 (Artifact, 8 plansz TV 1920x1080): oceny w pigułkach z podpisem źródła (IMDb/TMDB/RT), nowość = kropka + etykieta, panel INFO z diagnostyką (bufor, stabilność, połączenia), kreator motywu Własny z podglądem i kontrastem, stany puste/błąd/ładowanie/brak kluczy. Zasada: dane zawsze z podpisem źródła, stan nigdy samym kolorem. Luka: plansze nie mają jeszcze Seriali i Przewodnika (do v5.1).
