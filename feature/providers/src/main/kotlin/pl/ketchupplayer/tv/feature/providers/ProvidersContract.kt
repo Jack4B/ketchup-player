@@ -30,6 +30,8 @@ data class ProvidersUiState(
     val downloadedBytes: Long = 0,
     /** Własne User-Agenty użytkownika (do listy wyboru w formularzu). */
     val customAgents: List<pl.ketchupplayer.tv.core.network.UserAgentProfile> = emptyList(),
+    /** Stan kont Xtream po id listy: połączenia w użyciu, limit, ważność (dociągany przy otwarciu ekranu). */
+    val accounts: Map<String, pl.ketchupplayer.tv.core.model.AccountInfo> = emptyMap(),
 )
 
 sealed interface ProvidersEvent {

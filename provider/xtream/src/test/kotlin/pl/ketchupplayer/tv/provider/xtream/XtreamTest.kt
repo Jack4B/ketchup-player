@@ -44,6 +44,35 @@ class XtreamTest {
     }
 
     @Test
+    fun `informacje o koncie daja polaczenia waznosc i status`() =
+        runTest {
+            val info =
+                """{"user_info":{"auth":1,"status":"Active","exp_date":"1893456000","is_trial":"0",""" +
+                    """"active_cons":"1","max_connections":"3"}}"""
+            val account = provider("player_api.php?username" to Result.success(info)).accountInfo().getOrThrow()
+            assertEquals(1, account.activeConnections)
+            assertEquals(3, account.maxConnections)
+            assertEquals(1893456000L, account.expiresEpochSec)
+            assertTrue(account.active)
+            assertFalse(account.trial)
+        }
+
+    @Test
+    fun `informacje o koncie bez pol polaczen daja null a nie blad`() =
+        runTest {
+            val account = provider("player_api.php?username" to Result.success(auth)).accountInfo().getOrThrow()
+            assertNull(account.activeConnections)
+            assertEquals(2, account.maxConnections)
+        }
+
+    @Test
+    fun `informacje o koncie przy bledzie sieci to porazka`() =
+        runTest {
+            val r = provider("player_api.php?username" to Result.failure(NetworkException.Http(503))).accountInfo()
+            assertTrue(r.isFailure)
+        }
+
+    @Test
     fun `adresy API koduja dane logowania`() {
         val url = creds.apiUrl("get_live_streams")
         assertTrue(

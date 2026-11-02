@@ -378,7 +378,9 @@ class ScenariosTest {
 
     /** Serwer Xtream: poprawne dane logowania (`jan` / `dobre-haslo`) dają konto i kanały, inne `auth=0`. */
     private fun serveXtream() {
-        val ok = """{"user_info":{"auth":1,"status":"Active","exp_date":"1893456000","max_connections":"2"}}"""
+        val ok =
+            """{"user_info":{"auth":1,"status":"Active","exp_date":"1893456000",""" +
+                """"active_cons":"1","max_connections":"2"}}"""
         server.serveRequest("/player_api.php") { req ->
             val good = req.requestUrl?.queryParameter("password") == "dobre-haslo"
             if (good) ok else """{"user_info":{"auth":0}}"""
@@ -1264,6 +1266,17 @@ class ScenariosTest {
         click("Zapisz")
         waitFor { runBlocking { metadataKeys.userEntered().tmdb } == "klucz-tmdb-123" }
         waitForText("Zapisano", substring = true)
+    }
+
+    /** Scenariusz (prośba z raportu): ekran list pokazuje, ile połączeń jest w użyciu i do kiedy ważne jest konto. */
+    @Test
+    fun listaXtreamPokazujePolaczeniaIWaznoscKonta() {
+        serveXtream() // panel: 1 z 2 połączeń w użyciu, konto do 2030-01-01
+        addXtreamViaUi("dobre-haslo")
+        waitForText("Kanały: 2", substring = true)
+        settingsPage("Dostawcy")
+        waitForText("Połączenia: 1 z 2", substring = true)
+        waitForText("ważne do 01.01.2030", substring = true)
     }
 
     /** Scenariusz: w odtwarzaczu na żywo OK otwiera listę kanałów grupy; wybór drugiego przełącza kanał, BACK wraca. */

@@ -15,6 +15,8 @@ data class XtreamAccount(
     val active: Boolean,
     val expiresEpochSec: Long?,
     val maxConnections: Int?,
+    val activeConnections: Int? = null,
+    val trial: Boolean = false,
 )
 
 /**
@@ -32,6 +34,8 @@ object XtreamParser {
             active = user.str("status").equals("Active", ignoreCase = true),
             expiresEpochSec = user.str("exp_date")?.toLongOrNull(),
             maxConnections = user.str("max_connections")?.toIntOrNull(),
+            activeConnections = user.str("active_cons")?.toIntOrNull(),
+            trial = user.str("is_trial") == "1",
         )
     }
 

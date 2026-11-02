@@ -191,7 +191,10 @@ class VodBrowseScreenTest {
         settle()
         compose.onNodeWithText("Wszystkie").assertExists()
         key(Key.DirectionCenter) // OK trafia w kategorię, więc fokus jest w panelu
-        assertEquals(listOf<VodBrowseEvent>(VodBrowseEvent.SelectCategory(null)), events)
+        assertEquals(
+            listOf<VodBrowseEvent>(VodBrowseEvent.SelectCategory(null)),
+            events.filterNot { it is VodBrowseEvent.Visible }, // Visible: dociąganie ocen dla widocznych kart
+        )
     }
 
     @Test
@@ -205,7 +208,10 @@ class VodBrowseScreenTest {
         settle()
         compose.onNodeWithText("Wszystkie").assertExists()
         key(Key.DirectionCenter)
-        assertEquals(listOf<VodBrowseEvent>(VodBrowseEvent.SelectCategory(null)), events)
+        assertEquals(
+            listOf<VodBrowseEvent>(VodBrowseEvent.SelectCategory(null)),
+            events.filterNot { it is VodBrowseEvent.Visible }, // Visible: dociąganie ocen dla widocznych kart
+        )
     }
 
     private fun settle() {

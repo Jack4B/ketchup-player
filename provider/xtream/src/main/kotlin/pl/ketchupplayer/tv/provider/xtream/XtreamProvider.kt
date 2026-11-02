@@ -1,5 +1,6 @@
 package pl.ketchupplayer.tv.provider.xtream
 
+import pl.ketchupplayer.tv.core.model.AccountInfo
 import pl.ketchupplayer.tv.core.model.Channel
 import pl.ketchupplayer.tv.core.model.Episode
 import pl.ketchupplayer.tv.core.model.ProviderId
@@ -27,6 +28,13 @@ class XtreamProvider(
 
     override suspend fun loadChannels(): Result<List<Channel>> =
         authenticate().fold(onSuccess = { fetchLive() }, onFailure = { Result.failure(it) })
+
+    override suspend fun accountInfo(): Result<AccountInfo> {
+        val body = fetch(credentials.apiUrl()).getOrElse { return Result.failure(it) }
+        val a =
+            XtreamParser.account(body) ?: return Result.failure(ProviderError.BadResponse("Nieprawidłowa odpowiedź"))
+        return Result.success(AccountInfo(a.active, a.expiresEpochSec, a.activeConnections, a.maxConnections, a.trial))
+    }
 
     private suspend fun authenticate(): Result<Unit> {
         val body = fetch(credentials.apiUrl()).getOrElse { return Result.failure(it) }

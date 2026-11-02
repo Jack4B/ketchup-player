@@ -55,4 +55,11 @@
         <item quantity="many">odświeżono %1$d dni temu</item>
         <item quantity="other">odświeżono %1$d dnia temu</item>
     </plurals>
+    <string name="providers_account_connections">Połączenia: %1$d z %2$d</string>
+    <string name="providers_account_in_use">Połączenia w użyciu: %1$d</string>
+    <string name="providers_account_limit">Limit połączeń: %1$d</string>
+    <string name="providers_account_full">wszystkie zajęte</string>
+    <string name="providers_account_expires">ważne do %1$s</string>
+    <string name="providers_account_expired">wygasło %1$s</string>
+    <string name="providers_account_trial">konto próbne</string>
 </resources>

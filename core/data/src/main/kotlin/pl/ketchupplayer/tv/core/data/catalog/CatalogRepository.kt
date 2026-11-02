@@ -72,6 +72,10 @@ interface CatalogRepository {
         userAgentId: String,
     ): String
 
+    /** Stan konta u dostawcy (połączenia, ważność); porażka, gdy dostawca nie podaje takich danych albo brak sieci. */
+    suspend fun accountInfo(id: ProviderId): Result<pl.ketchupplayer.tv.core.model.AccountInfo> =
+        Result.failure(UnsupportedOperationException())
+
     /** Pobiera listę ponownie; przy błędzie zostawia dotychczasowe kanały i zapisuje komunikat błędu. */
     suspend fun refresh(id: ProviderId): Result<Int>
 

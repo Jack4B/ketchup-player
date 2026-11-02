@@ -114,6 +114,13 @@ class RoomCatalogRepository
             )
         }
 
+        override suspend fun accountInfo(id: ProviderId): Result<pl.ketchupplayer.tv.core.model.AccountInfo> {
+            val entity = providerDao.get(id.value) ?: return Result.failure(IllegalStateException("Nie ma dostawcy"))
+            val provider =
+                factory.create(entity) ?: return Result.failure(IllegalStateException("Brak danych dostawcy"))
+            return provider.accountInfo()
+        }
+
         override suspend fun epgUrl(id: ProviderId): String? = secrets.epg(id)
 
         /** Wybrany w kreatorze User-Agent obowiązuje już od pierwszego pobrania listy. */

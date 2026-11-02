@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -27,6 +28,18 @@ class ProvidersViewModel
             headers.customs.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
         private val local = MutableStateFlow(ProvidersUiState())
+        private val accounts = MutableStateFlow<Map<String, pl.ketchupplayer.tv.core.model.AccountInfo>>(emptyMap())
+
+        init {
+            // Konta Xtream: połączenia i ważność po każdej zmianie listy dostawców (dodanie, odświeżenie).
+            viewModelScope.launch {
+                catalog.providers.collectLatest { list ->
+                    list.filter { it.type == pl.ketchupplayer.tv.core.model.ProviderType.XTREAM }.forEach { p ->
+                        catalog.accountInfo(p.id).onSuccess { info -> accounts.update { it + (p.id.value to info) } }
+                    }
+                }
+            }
+        }
 
         val state: StateFlow<ProvidersUiState> =
             combine(
@@ -34,8 +47,10 @@ class ProvidersViewModel
                 local,
                 catalog.importStatus,
                 customs,
-            ) { providers, l, st, c -> l.copy(providers = providers, status = st, customAgents = c) }
-                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), ProvidersUiState())
+                accounts,
+            ) { providers, l, st, c, acc ->
+                l.copy(providers = providers, status = st, customAgents = c, accounts = acc)
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), ProvidersUiState())
 
         private var failedId: ProviderId? = null
 

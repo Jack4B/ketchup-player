@@ -1,5 +1,6 @@
 package pl.ketchupplayer.tv.provider.api
 
+import pl.ketchupplayer.tv.core.model.AccountInfo
 import pl.ketchupplayer.tv.core.model.Channel
 import pl.ketchupplayer.tv.core.model.Episode
 import pl.ketchupplayer.tv.core.model.ProviderId
@@ -59,4 +60,8 @@ interface IptvProvider {
     /** Opis, obsada, ocena i grafika w tle dla pozycji; dostawcy bez takich danych zwracają błąd. */
     suspend fun loadVodInfo(item: VodItem): Result<VodInfo> =
         Result.failure(ProviderError.BadResponse("Brak opisu u dostawcy"))
+
+    /** Stan konta (połączenia, ważność); dostawcy bez takich danych zwracają błąd (patrz [Capability.ACCOUNT_INFO]). */
+    suspend fun accountInfo(): Result<AccountInfo> =
+        Result.failure(ProviderError.BadResponse("Brak informacji o koncie"))
 }

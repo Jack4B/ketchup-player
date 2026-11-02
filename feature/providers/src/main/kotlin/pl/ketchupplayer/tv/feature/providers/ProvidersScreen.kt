@@ -87,7 +87,9 @@ private fun ProviderList(
             onClick = { onEvent(ProvidersEvent.Toggle(p.id)) },
             modifier = if (i == 0) Modifier.requestFocusWhenPlaced() else Modifier,
         )
-        HealthLine(SourceHealthRules.of(p, remember { System.currentTimeMillis() }))
+        val now = remember { System.currentTimeMillis() }
+        HealthLine(SourceHealthRules.of(p, now))
+        state.accounts[p.id.value]?.let { AccountLine(it, now) }
         if (state.expandedId == p.id) {
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
