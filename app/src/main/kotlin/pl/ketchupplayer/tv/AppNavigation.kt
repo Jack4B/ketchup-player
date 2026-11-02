@@ -150,7 +150,11 @@ private fun MainFlow(
                 } else {
                     Modifier
                 },
-            ) { SectionContent(base, push, openPlayer, previewActive = !settingsOpen) }
+            ) {
+            CompositionLocalProvider(pl.ketchupplayer.tv.core.designsystem.LocalFocusBlocked provides settingsOpen) {
+                SectionContent(base, push, openPlayer, previewActive = !settingsOpen)
+            }
+        }
             AnimatedVisibility(
                 visible = settingsOpen,
                 enter = slideInHorizontally(tween(SETTINGS_PANEL_MS)) { it } + fadeIn(tween(SETTINGS_PANEL_MS)),

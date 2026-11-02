@@ -19,10 +19,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+
+/**
+ * true = elementy [FocusItem] w tym poddrzewie nie przyjmują fokusu. Sekcja pod panelem Ustawień jest tylko tłem:
+ * bez tego PRAWO z kategorii wskakiwało na plakat ukryty pod panelem (błąd z emulatora, biegi #243-#246).
+ */
+val LocalFocusBlocked = androidx.compose.runtime.staticCompositionLocalOf { false }
 
 /** Czas animacji fokusu (konspekt §4.1: ≤ 150 ms). */
 const val FOCUS_ANIMATION_MS = Motion.FOCUS_MS
@@ -52,6 +59,7 @@ fun FocusItem(
     content: @Composable (focused: Boolean) -> Unit,
 ) {
     val c = KetchupTheme.colors
+    val blocked = LocalFocusBlocked.current
     var focused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(if (focused) focusScale else 1f, tween(FOCUS_ANIMATION_MS), label = "focusScale")
     val shape = RoundedCornerShape(cornerRadius ?: c.cornerRadius)
@@ -71,6 +79,9 @@ fun FocusItem(
                 .background(fill, shape)
                 .then(if (focused || outlined) Modifier.border(if (focused) 3.dp else 1.dp, ring, shape) else Modifier)
                 .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
+                // Dwa cele fokusu (clickable i focusable) dziedziczą canFocus tylko do najbliższego celu, więc blokadę
+                // z [LocalFocusBlocked] nakładamy przed każdym z nich.
+                .focusProperties { if (blocked) canFocus = false }
                 .combinedClickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
@@ -78,6 +89,7 @@ fun FocusItem(
                     onClick = onClick,
                 )
                 // focusable() po clickable: clickable sam jest fokusowalny tylko w trybie klawiatury, a nie dotyku.
+                .focusProperties { if (blocked) canFocus = false }
                 .focusable(),
     ) {
         content(focused)
