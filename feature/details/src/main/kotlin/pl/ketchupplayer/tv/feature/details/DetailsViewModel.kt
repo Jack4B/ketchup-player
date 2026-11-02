@@ -27,12 +27,14 @@ class DetailsViewModel
     @Inject
     constructor(
         private val repo: VodRepository,
+        private val keys: pl.ketchupplayer.tv.core.data.metadata.MetadataKeys,
     ) : ViewModel() {
         private val itemId = MutableStateFlow<String?>(null)
         private val season = MutableStateFlow<Int?>(null)
         private val episodesStatus = MutableStateFlow(EpisodesStatus.IDLE)
         private val similar = MutableStateFlow<List<VodItem>>(emptyList())
         private val sources = MutableStateFlow(1)
+        private val keysMissing = MutableStateFlow(false)
 
         private enum class EpisodesStatus { IDLE, LOADING, FAILED }
 
@@ -41,6 +43,7 @@ class DetailsViewModel
             itemId.value = id
             season.value = null
             viewModelScope.launch { sources.value = repo.sourceCount(id) }
+            viewModelScope.launch { keysMissing.value = !keys.current().any }
             viewModelScope.launch {
                 repo.refreshInfo(id) // opis, obsada i grafika od dostawcy; wynik wpada do bazy
                 repo.ensureMeta(id) // potem oceny i opis z TMDB/OMDb (tylko puste pola); po sobie, bez wyścigu zapisów
@@ -73,6 +76,7 @@ class DetailsViewModel
                         similar,
                     ) { entry, episodes, selected, status, sim -> build(entry, episodes, selected, status, sim) }
                         .combine(sources) { st, n -> st.copy(sources = n) }
+                        .combine(keysMissing) { st, missing -> st.copy(metadataKeysMissing = missing) }
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_MS), DetailsUiState())
 
         fun onEvent(event: DetailsEvent) {

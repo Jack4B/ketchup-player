@@ -1257,6 +1257,18 @@ class ScenariosTest {
         waitForText("Opis z TMDB po polsku.")
     }
 
+    /** Scenariusz (makieta v5): bez kluczy TMDB/OMDb ekran szczegółów podpowiada, gdzie je wpisać. */
+    @Test
+    fun szczegolyBezKluczyPodpowiadajaGdzieWpisacKlucze() {
+        serveXtreamVod()
+        addXtreamViaUi("dobre-haslo")
+        waitForText("Kanały: 2", substring = true)
+        nav("Filmy")
+        waitForText("Pitbull")
+        click("Pitbull")
+        waitForText("Oceny i opisy", substring = true)
+    }
+
     /** Scenariusz: klucze API wpisane w Ustawieniach → Oceny i opisy są zapisane (w SecretStore, nie w repo). */
     @Test
     fun kluczeMetadanychWpisaneWUstawieniachSaZapisane() {

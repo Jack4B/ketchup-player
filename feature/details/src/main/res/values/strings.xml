@@ -18,6 +18,7 @@
     <string name="details_episodes_error">Nie udało się pobrać odcinków</string>
     <string name="details_retry">Spróbuj ponownie</string>
     <string name="details_no_plot">Brak opisu.</string>
+    <string name="details_no_plot_keys">Brak opisu. Dodaj klucze TMDB lub OMDb w Ustawieniach › Oceny i opisy.</string>
     <string name="details_cast">OBSADA</string>
     <string name="details_rating_imdb">IMDb %1$s</string>
     <string name="details_rating_tmdb">TMDB %1$s</string>

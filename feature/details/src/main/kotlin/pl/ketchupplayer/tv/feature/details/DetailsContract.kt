@@ -26,6 +26,8 @@ data class DetailsUiState(
     val target: PlayTarget? = null,
     /** W ilu listach jest ten tytuł (pigułka „Źródła: N”, gdy więcej niż jedna). */
     val sources: Int = 1,
+    /** Brak kluczy TMDB/OMDb: opis i oceny nie mają skąd się wziąć, więc ekran podpowiada, gdzie je wpisać. */
+    val metadataKeysMissing: Boolean = false,
 ) {
     val isSeries: Boolean get() = entry?.item?.kind == pl.ketchupplayer.tv.core.model.VodKind.SERIES
 }

@@ -143,7 +143,10 @@ private fun DetailsBody(
                 }
                 (item.genre ?: item.category)?.let { Text(it, fontSize = 15.sp, color = c.textSecondary) }
                 Text(
-                    item.plot?.takeIf { it.isNotBlank() } ?: stringResource(R.string.details_no_plot),
+                    item.plot?.takeIf { it.isNotBlank() }
+                        ?: stringResource(
+                            if (state.metadataKeysMissing) R.string.details_no_plot_keys else R.string.details_no_plot,
+                        ),
                     fontSize = 15.sp,
                     color = c.textPrimary,
                     maxLines = 6,
