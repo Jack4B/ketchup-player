@@ -83,6 +83,8 @@ fun GuideRoute(
     onOpenChannel: (String) -> Unit,
     onOpenProviders: () -> Unit,
     onBack: () -> Unit,
+    /** false: sekcja jest tylko tłem (np. pod panelem Ustawień), więc podgląd wideo ma być zatrzymany. */
+    previewActive: Boolean = true,
     viewModel: GuideViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -91,6 +93,7 @@ fun GuideRoute(
     val preview by viewModel.preview.collectAsStateWithLifecycle()
     // Wyjście z Na żywo (też do pełnego ekranu) zwalnia odtwarzacz podglądu: jeden dekoder naraz.
     androidx.compose.runtime.DisposableEffect(Unit) { onDispose { viewModel.releasePreview() } }
+    androidx.compose.runtime.LaunchedEffect(previewActive) { if (!previewActive) viewModel.releasePreview() }
     GuideScreen(
         state,
         viewModel::programmes,

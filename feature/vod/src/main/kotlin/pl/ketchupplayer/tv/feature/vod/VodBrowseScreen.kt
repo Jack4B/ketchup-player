@@ -339,7 +339,14 @@ private fun Grid(
         StateView(StateKind.EMPTY, stringResource(R.string.vod_no_results, state.query))
         return
     }
+    // Zmiana sortowania, kategorii albo szukanej frazy zaczyna siatkę od góry (inaczej Lazy zostaje przy tym samym
+    // kluczu i wygląda, jakby nic się nie zmieniło).
+    val gridState =
+        androidx.compose.foundation.lazy.grid
+            .rememberLazyGridState()
+    androidx.compose.runtime.LaunchedEffect(state.sort, state.category, state.query) { gridState.scrollToItem(0) }
     LazyVerticalGrid(
+        state = gridState,
         columns = GridCells.Fixed(columns),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),

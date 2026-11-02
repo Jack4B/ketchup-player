@@ -120,10 +120,8 @@ class VodBrowseViewModel
                     }
                 val sorted =
                     when (sort) {
-                        VodSort.NEWEST ->
-                            filtered.sortedWith(
-                                compareByDescending<VodEntry> { it.item.addedMs ?: 0L }.thenBy { it.item.title },
-                            )
+                        // Stabilnie: przy braku dat zostaje kolejność dostawcy (inna niż A–Z).
+                        VodSort.NEWEST -> filtered.sortedByDescending { it.item.addedMs ?: 0L }
                         // Klucz liczony raz na pozycję: porównywanie przez normTitle (regex w każdym porównaniu) trwało
                         // sekundy na 50 tys. pozycji i zawieszało aplikację na boxie.
                         VodSort.AZ ->
@@ -132,8 +130,14 @@ class VodBrowseViewModel
                                     it.item.title.lowercase() to it
                                 }.sortedBy { it.first }
                                 .map { it.second }
-                        VodSort.RATING -> filtered.sortedByDescending { it.item.rating ?: 0.0 }
-                        VodSort.YEAR -> filtered.sortedByDescending { it.item.year ?: 0 }
+                        VodSort.RATING ->
+                            filtered.sortedWith(
+                                compareByDescending<VodEntry> { it.item.rating ?: 0.0 }.thenBy { it.item.title },
+                            )
+                        VodSort.YEAR ->
+                            filtered.sortedWith(
+                                compareByDescending<VodEntry> { it.item.year ?: 0 }.thenBy { it.item.title },
+                            )
                     }
                 return VodBrowseUiState(mode, false, sorted, categories, all.size, category, query, sort)
             }

@@ -34,7 +34,11 @@ object FakePlayers {
     /** Wybory użytkownika w OSD odtwarzacza (`audio:<id>`, `text:<id>`, `speed:<x>`, `audioDelay:<ms>`). */
     val osdCalls: MutableList<String> = java.util.Collections.synchronizedList(mutableListOf())
 
+    /** Kontrolery utworzone i jeszcze niezwolnione: po wyjściu z odtwarzacza ma ich nie być (nic nie gra w tle). */
+    val live: MutableSet<FakePlayerController> = java.util.Collections.synchronizedSet(mutableSetOf())
+
     fun reset() {
+        live.clear()
         behaviour = { PlaybackStatus.READY }
         played.clear()
         osdCalls.clear()
@@ -43,6 +47,10 @@ object FakePlayers {
 
 class FakePlayerController : PlayerController {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
+    init {
+        FakePlayers.live += this
+    }
 
     private val _state =
         MutableStateFlow(
@@ -105,7 +113,10 @@ class FakePlayerController : PlayerController {
 
     override fun stop() = Unit
 
-    override fun release() = scope.cancel()
+    override fun release() {
+        FakePlayers.live -= this
+        scope.cancel()
+    }
 
     private companion object {
         const val RESULT_DELAY_MS = 50L

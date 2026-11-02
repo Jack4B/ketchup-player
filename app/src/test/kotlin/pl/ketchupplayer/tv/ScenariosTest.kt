@@ -4,6 +4,7 @@ import android.os.Looper
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.filter
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
@@ -25,6 +26,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.printToString
 import androidx.compose.ui.test.requestFocus
+import androidx.compose.ui.test.swipeUp
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -72,6 +74,7 @@ class ScenariosTest {
         const val BIG_WAIT_MS = 60_000L
         const val POLL_MS = 25L
         const val CLOCK_STEP_MS = 500L
+        const val GRID_ROW = 10_000f
     }
 
     @get:Rule(order = 0)
@@ -890,6 +893,11 @@ class ScenariosTest {
         nav("Na żywo")
         waitForText("TVN 24")
         waitFor(BIG_WAIT_MS) { FakePlayers.played.any { "/prev/" in it } }
+        assertEquals(1, FakePlayers.live.size)
+
+        // Panel Ustawień nad Na żywo zatrzymuje podgląd (sekcja pod spodem jest tylko tłem), tak samo jak inna sekcja.
+        nav("Ustawienia")
+        waitFor { FakePlayers.live.isEmpty() }
     }
 
     private fun pressKeys(keys: List<Key>) =
@@ -1079,6 +1087,79 @@ class ScenariosTest {
         waitFor { left("Pitbull") < left("Seksmisja") }
         chip("Najnowsze")
         waitFor { left("Pitbull") < left("Seksmisja") }
+    }
+
+    /** Błąd z boxu/telefonu: BACK z kanału i z filmu zostawiał odtwarzacz w tle (dźwięk grał dalej). */
+    @Test
+    fun backZKanaluIFilmuZwalniaOdtwarzacz() {
+        val host = server.baseUrl()
+        server.serve("/o.m3u") {
+            "#EXTM3U\n#EXTINF:-1 group-title=\"Info\",Alfa Info\n$host/live/u/p/1.ts\n" +
+                "#EXTINF:-1 group-title=\"Dramat\",PL - Pitbull (2005)\n$host/movie/u/p/10.mkv\n"
+        }
+        addProviderViaUi("Lista", server.url("/o.m3u"))
+        waitForText("Kanały: 1", substring = true)
+
+        nav("Na żywo")
+        click("Alfa Info")
+        waitFor { FakePlayers.played.isNotEmpty() }
+        back()
+        nav("Filmy")
+        waitFor { FakePlayers.live.isEmpty() } // kanał nie gra w tle, a podgląd Na żywo jest zwolniony
+
+        click("Pitbull")
+        click("▶ Oglądaj")
+        waitFor { FakePlayers.played.size == 2 }
+        back()
+        waitForText("▶ Oglądaj") // szczegóły filmu
+        waitFor { FakePlayers.live.isEmpty() }
+
+        // Ponowne wejście w ten sam kanał musi znów zacząć odtwarzanie (nowy odtwarzacz, a nie zwolniony stary).
+        nav("Na żywo")
+        click("Alfa Info")
+        waitFor { FakePlayers.played.size == 3 }
+        assertEquals(1, FakePlayers.live.size)
+    }
+
+    /**
+     * Błąd z telefonu: sortowanie w Filmach „nic nie robiło”. Katalog bez dat, ocen i lat (typowa lista M3U) dawał
+     * Najnowsze = A–Z, a siatka po zmianie kolejności zostawała przewinięta w to samo miejsce. Dotyk, nie semantyka.
+     */
+    @Test
+    fun sortowanieFilmowDotykiemDzialaNaKataloguBezMetadanych() {
+        val host = server.baseUrl()
+        server.serve("/dlugi.m3u") {
+            // Kolejność dostawcy: od końca (nowe na początku), bez dat, ocen i lat.
+            (30 downTo 1).joinToString("\n", "#EXTM3U\n") { i ->
+                val n = "Film %02d".format(i)
+                "#EXTINF:-1 group-title=\"Dramat\",$n\n$host/movie/u/p/$i.mkv"
+            }
+        }
+        addProviderViaUi("Dlugi katalog", server.url("/dlugi.m3u"))
+        waitForText("Kanały: 0", substring = true)
+        nav("Filmy")
+        waitForText("Film 30")
+
+        // Pozycja w siatce: najpierw wiersz (top), potem kolumna (left).
+        fun top(title: String): Float {
+            val b = compose.onAllNodesWithText(title)[0].fetchSemanticsNode().boundsInRoot
+            return b.top * GRID_ROW + b.left
+        }
+
+        // Najnowsze = kolejność dostawcy (Film 30 pierwszy); przewijamy siatkę w dół, jak użytkownik.
+        assertTrue(top("Film 30") < top("Film 29"))
+        compose.onAllNodesWithText("Film 30")[0].performTouchInput { swipeUp() }
+        compose.waitForIdle()
+
+        clickable("A–Z").performTouchInput { click() }
+        compose.waitForIdle()
+        waitForText("Film 01") // po zmianie sortowania siatka wraca na początek: pierwszy jest Film 01
+        assertTrue("Film 01 widoczny u góry", top("Film 01") >= 0f && top("Film 01") < top("Film 02"))
+
+        clickable("Najnowsze").performTouchInput { click() }
+        compose.waitForIdle()
+        waitForText("Film 30")
+        assertTrue("Film 30 znów pierwszy", top("Film 30") >= 0f && top("Film 30") < top("Film 29"))
     }
 
     /** Scenariusz: w odtwarzaczu na żywo OK otwiera listę kanałów grupy; wybór drugiego przełącza kanał, BACK wraca. */

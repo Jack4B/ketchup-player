@@ -168,7 +168,8 @@ data class ChannelEpgKey(
 @Suppress("TooManyFunctions") // DAO katalogu VOD: jedna funkcja = jedno zapytanie
 @Dao
 interface VodDao {
-    @Query("SELECT * FROM vod_items WHERE kind = :kind ORDER BY title")
+    // Kolejność dostawcy (wstawienia): bez dat dodania „Najnowsze” to jedyna wskazówka, co jest nowe.
+    @Query("SELECT * FROM vod_items WHERE kind = :kind ORDER BY rowid")
     fun observeByKind(kind: String): Flow<List<VodItemEntity>>
 
     @Query(

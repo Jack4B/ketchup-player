@@ -87,12 +87,12 @@ private fun MainFlow(
 
     val vodTarget = Routes.vodPlayerTarget(top)
     if (vodTarget != null) {
-        VodPlayerRoute(vodTarget.first, vodTarget.second, onBack = pop)
+        RouteScope(top) { VodPlayerRoute(vodTarget.first, vodTarget.second, onBack = pop) }
         return
     }
     val playerChannel = Routes.playerChannel(top)
     if (playerChannel != null) {
-        PlayerRoute(playerChannel, onBack = pop)
+        RouteScope(top) { PlayerRoute(playerChannel, onBack = pop) }
         return
     }
 
@@ -147,7 +147,7 @@ private fun MainFlow(
             } else {
                 Modifier
             },
-        ) { SectionContent(base, push, openPlayer) }
+        ) { SectionContent(base, push, openPlayer, previewActive = !settingsOpen) }
         AnimatedVisibility(
             visible = settingsOpen,
             enter = slideInHorizontally(tween(SETTINGS_PANEL_MS)) { it } + fadeIn(tween(SETTINGS_PANEL_MS)),
@@ -207,11 +207,13 @@ private fun SectionContent(
     route: String,
     push: (String) -> Unit,
     openPlayer: (String) -> Unit,
+    previewActive: Boolean,
 ) {
     val toRail = pl.ketchupplayer.tv.core.designsystem.LocalFocusRail.current
     when (route) {
         // „Na żywo” to widok EPG z grupami, podglądem audycji, Radarem i zainteresowaniami (dawny osobny Przewodnik).
-        Section.LIVE.route -> GuideRoute(openPlayer, { push(SettingsPage.PROVIDERS.route) }, toRail)
+        Section.LIVE.route ->
+            GuideRoute(openPlayer, { push(SettingsPage.PROVIDERS.route) }, toRail, previewActive = previewActive)
         Section.MOVIES.route ->
             VodBrowseRoute(VodMode.MOVIES, { push(Routes.details(it)) }, { push(SettingsPage.PROVIDERS.route) })
         Section.SERIES.route ->
