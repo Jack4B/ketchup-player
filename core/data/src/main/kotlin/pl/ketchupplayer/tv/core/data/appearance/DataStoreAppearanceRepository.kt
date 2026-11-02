@@ -25,6 +25,7 @@ class DataStoreAppearanceRepository
                     theme = themeFromStored(prefs[THEME]),
                     accent = decode(prefs[ACCENT]),
                     glassBlur = prefs[BLUR] ?: false,
+                    glassBlurDecided = prefs[BLUR_DECIDED] ?: false,
                     customHue = prefs[HUE] ?: Palettes.DEFAULT_HUE,
                 )
             }
@@ -38,7 +39,10 @@ class DataStoreAppearanceRepository
         }
 
         override suspend fun setGlassBlur(enabled: Boolean) {
-            store.edit { it[BLUR] = enabled }
+            store.edit {
+                it[BLUR] = enabled
+                it[BLUR_DECIDED] = true
+            }
         }
 
         override suspend fun setAccent(accent: AccentChoice?) {
@@ -67,6 +71,9 @@ class DataStoreAppearanceRepository
                     .intPreferencesKey("appearance_custom_hue")
             val THEME = stringPreferencesKey("appearance_theme")
             val ACCENT = stringPreferencesKey("appearance_accent")
+            val BLUR_DECIDED =
+                androidx.datastore.preferences.core
+                    .booleanPreferencesKey("appearance_glass_blur_decided")
             val BLUR =
                 androidx.datastore.preferences.core
                     .booleanPreferencesKey("appearance_glass_blur")

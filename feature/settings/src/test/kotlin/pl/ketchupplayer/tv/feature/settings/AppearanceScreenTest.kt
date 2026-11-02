@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.requestFocus
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -127,5 +128,26 @@ class AppearanceScreenTest {
         compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         assertEquals(listOf<AppearanceEvent>(AppearanceEvent.CloseCustom), events)
         assertEquals(0, backs)
+    }
+
+    /** „Dobierz automatycznie”: po pomiarze przychodzi zdarzenie z werdyktem (zapisuje wybór w ustawieniach). */
+    @Test
+    fun dobierzAutomatycznieZwracaWerdykt() {
+        val events = mutableListOf<AppearanceEvent>()
+        compose.setContent {
+            KetchupTheme(device = DeviceClass.TV) {
+                AppearanceScreen(AppearanceUiState(), {
+                    events +=
+                        it
+                }, {})
+            }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithText("Dobierz automatycznie", substring = true).performScrollTo().performClick()
+        compose.waitForIdle()
+        compose.mainClock.advanceTimeBy(4_000)
+        compose.waitForIdle()
+        assertEquals(1, events.count { it is AppearanceEvent.SetGlassBlur })
+        compose.onNodeWithText("Wynik:", substring = true).assertExists()
     }
 }

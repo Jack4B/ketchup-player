@@ -32,6 +32,11 @@ sealed interface AppearanceEvent {
 
     data object ToggleGlassBlur : AppearanceEvent
 
+    /** Wynik pomiaru płynności (przycisk „Dobierz automatycznie”): ustawia rozmycie i oznacza je jako ustalone. */
+    data class SetGlassBlur(
+        val enabled: Boolean,
+    ) : AppearanceEvent
+
     data class SelectTheme(
         val theme: ThemeId,
     ) : AppearanceEvent

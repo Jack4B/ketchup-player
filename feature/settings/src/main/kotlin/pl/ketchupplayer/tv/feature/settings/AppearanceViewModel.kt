@@ -35,6 +35,7 @@ class AppearanceViewModel
                     editor.value = null
                     viewModelScope.launch { repository.setAccent(AccentChoice.Preset(event.id)) }
                 }
+                is AppearanceEvent.SetGlassBlur -> viewModelScope.launch { repository.setGlassBlur(event.enabled) }
                 is AppearanceEvent.CustomHue -> viewModelScope.launch { repository.setCustomHue(event.hue) }
                 AppearanceEvent.ToggleGlassBlur ->
                     viewModelScope.launch { repository.setGlassBlur(!state.value.glassBlur) }

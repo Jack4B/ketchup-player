@@ -11,6 +11,8 @@ data class Appearance(
     val accent: AccentChoice? = null,
     /** Rozmycie grafiki w tle (Android 12+); domyślnie wyłączone, bo na słabych boxach kosztuje klatki. */
     val glassBlur: Boolean = false,
+    /** Czy rozmycie już ustalono (pomiarem płynności albo ręcznie); do tego czasu aplikacja sama je dobierze. */
+    val glassBlurDecided: Boolean = false,
     /** Odcień tła motywu „Własny” (0–360). */
     val customHue: Int = Palettes.DEFAULT_HUE,
 ) {

@@ -19,6 +19,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -116,6 +117,7 @@ fun AppearanceScreen(
                 onClick = { onEvent(AppearanceEvent.ToggleGlassBlur) },
                 trailing = { androidx.tv.material3.Switch(checked = state.glassBlur, onCheckedChange = null) },
             )
+            GlassAutoItem(onEvent)
         }
     }
 }
@@ -292,3 +294,29 @@ private fun accentName(a: AccentId) =
         AccentId.BLEKIT -> R.string.accent_blekit
         AccentId.FIOLET -> R.string.accent_fiolet
     }
+
+/** „Dobierz automatycznie”: mierzy płynność z rozmyciem na tym urządzeniu i ustawia przełącznik za użytkownika. */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun GlassAutoItem(onEvent: (AppearanceEvent) -> Unit) {
+    var probing by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var verdict by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Boolean?>(null) }
+    SettingsListItem(
+        title = stringResource(R.string.appearance_blur_auto),
+        subtitle =
+            when {
+                probing -> stringResource(R.string.appearance_blur_auto_running)
+                verdict == true -> stringResource(R.string.appearance_blur_auto_on)
+                verdict == false -> stringResource(R.string.appearance_blur_auto_off)
+                else -> stringResource(R.string.appearance_blur_auto_hint)
+            },
+        onClick = { if (!probing) probing = true },
+    )
+    if (probing) {
+        pl.ketchupplayer.tv.core.designsystem.GlassProbe({ enabled ->
+            probing = false
+            verdict = enabled
+            onEvent(AppearanceEvent.SetGlassBlur(enabled))
+        })
+    }
+}

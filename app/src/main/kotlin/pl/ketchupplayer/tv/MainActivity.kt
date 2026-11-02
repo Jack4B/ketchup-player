@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -50,6 +51,7 @@ class MainActivity : ComponentActivity() {
             KetchupTheme(appearance.theme, appearance.effectiveAccent, customHue = appearance.customHue) {
                 CompositionLocalProvider(LocalGlassBlur provides appearance.glassBlur) {
                     AppNavigation(onExit = { finish() })
+                    AutoGlassProbe(appearance.glassBlurDecided, viewModel::applyGlassVerdict)
                 }
             }
         }

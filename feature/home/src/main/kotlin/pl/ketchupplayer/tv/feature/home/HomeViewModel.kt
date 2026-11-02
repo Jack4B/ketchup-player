@@ -57,10 +57,14 @@ class HomeViewModel
             }
 
         init {
-            // Czas trwania filmów dociągamy po pokazaniu ekranu, po kilkadziesiąt naraz (z przerwą, w tle).
+            // Czas trwania filmów dociągamy w tle, po kilkadziesiąt naraz. Katalog VOD dochodzi dopiero po imporcie
+            // listy, więc pętla powtarza próbę (przy braku pracy to tylko puste zapytanie do bazy).
             viewModelScope.launch {
                 delay(ENRICH_DELAY_MS)
-                runCatching { vod.enrichDurations(ENRICH_LIMIT) }
+                while (true) {
+                    runCatching { vod.enrichDurations(ENRICH_LIMIT) }
+                    delay(ENRICH_EVERY_MS)
+                }
             }
         }
 
@@ -109,6 +113,7 @@ class HomeViewModel
             const val TIMED_LIMIT = 300
             const val ENRICH_LIMIT = 40
             const val ENRICH_DELAY_MS = 4_000L
+            const val ENRICH_EVERY_MS = 15_000L
             const val LIVE_LIMIT = 12
             const val TICK_MS = 60_000L
             const val STOP_TIMEOUT_MS = 5_000L

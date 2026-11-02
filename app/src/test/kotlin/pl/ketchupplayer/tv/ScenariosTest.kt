@@ -135,6 +135,7 @@ class ScenariosTest {
             epgSources.setEnabled(BuiltInEpgSources.OVH_ID, false)
             epgSources.setEnabled(BuiltInEpgSources.TELEMAN_ID, false)
             appearance.setTheme(ThemeId.MORSKI)
+            appearance.setGlassBlur(false) // rozmycie „ustalone”: automatyczny pomiar ma własny scenariusz
             failoverSettings.setEnabled(true)
             failoverSettings.setSensitivity(FailoverSensitivity.STANDARD)
             failoverSettings.setTvDelaySeconds(BkFailoverPolicy.DEFAULT_TV_DELAY_SECONDS)
