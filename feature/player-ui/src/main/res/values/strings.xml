@@ -45,4 +45,5 @@
     <string name="player_info_none">Brak opisu w katalogu dostawcy.</string>
     <string name="player_info_cast">Obsada: %1$s</string>
     <string name="player_info_title">O FILMIE</string>
+    <string name="player_channels">Kanały</string>
 </resources>

@@ -94,7 +94,19 @@ fun PlayerRoute(
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val notice by viewModel.notice.collectAsStateWithLifecycle()
     val clock by viewModel.clockEnabled.collectAsStateWithLifecycle()
-    PlayerScreen(ui, viewModel.controller, viewModel::retry, onBack, notice, showClock = clock)
+    val zap by viewModel.zapChannels.collectAsStateWithLifecycle()
+    val currentId by viewModel.currentChannelId.collectAsStateWithLifecycle()
+    PlayerScreen(
+        ui,
+        viewModel.controller,
+        viewModel::retry,
+        onBack,
+        notice,
+        showClock = clock,
+        zapChannels = zap,
+        currentChannelId = currentId,
+        onZap = viewModel::zap,
+    )
 }
 
 /** Odtwarzacz pełnoekranowy. Dowolny klawisz pokazuje nakładkę z nazwą kanału na [OSD_MS]; BACK wychodzi. */
@@ -110,6 +122,9 @@ fun PlayerScreen(
     vodTitle: String? = null,
     showClock: Boolean = true,
     vodInfo: VodInfoUi? = null,
+    zapChannels: List<pl.ketchupplayer.tv.core.model.Channel> = emptyList(),
+    currentChannelId: String? = null,
+    onZap: (String) -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
     // Po wyjściu z aplikacji (HOME, inna aplikacja, radio) dźwięk nie może grać w tle: pauza przy ON_STOP,
@@ -154,6 +169,7 @@ fun PlayerScreen(
     var subtitleSize by rememberSaveable { mutableStateOf(SubtitleSize.NORMAL) }
     var sleepMinutes by rememberSaveable { mutableStateOf(0) }
     var sleepAtMs by remember { mutableLongStateOf(0L) }
+    var listOpen by remember { mutableStateOf(false) }
     val rootFocus = remember { FocusRequester() }
     val chipFocus = remember { PlayerPanel.entries.associateWith { FocusRequester() } }
     LaunchedEffect(osdTick) {
@@ -170,6 +186,10 @@ fun PlayerScreen(
             controller.pause()
             onBack()
         }
+    }
+    BackHandler(enabled = listOpen) {
+        listOpen = false
+        runCatching { rootFocus.requestFocus() }
     }
     BackHandler(enabled = chipsOpen && panel == null) {
         chipsOpen = false
@@ -200,7 +220,12 @@ fun PlayerScreen(
                 val down = event.type == KeyEventType.KeyDown
                 when {
                     failed || !down -> false
-                    panel != null -> false
+                    panel != null || listOpen -> false
+                    vodTitle == null && zapChannels.size > 1 && isOk(event.key) -> true.also { listOpen = true }
+                    vodTitle == null && (event.key == Key.ChannelUp || event.key == Key.PageUp) ->
+                        true.also { neighbour(zapChannels, currentChannelId, 1)?.let { onZap(it.id) } }
+                    vodTitle == null && (event.key == Key.ChannelDown || event.key == Key.PageDown) ->
+                        true.also { neighbour(zapChannels, currentChannelId, -1)?.let { onZap(it.id) } }
                     chipsOpen ->
                         (event.key == Key.DirectionUp).also {
                             if (it) {
@@ -246,6 +271,18 @@ fun PlayerScreen(
             VodOsd(vodTitle, vodInfo, playback, Modifier.align(Alignment.BottomCenter))
         } else if (osdVisible && name.isNotEmpty()) {
             Osd(name, Modifier.align(Alignment.TopStart))
+        }
+        if (listOpen) {
+            ChannelZapList(
+                zapChannels,
+                currentChannelId,
+                { ch ->
+                    listOpen = false
+                    runCatching { rootFocus.requestFocus() }
+                    if (ch.id != currentChannelId) onZap(ch.id)
+                },
+                Modifier.align(Alignment.CenterStart).padding(start = 24.dp, top = 24.dp, bottom = 24.dp),
+            )
         }
         if (chipsOpen) {
             PlayerChips(
@@ -606,3 +643,5 @@ private const val CLOCK_REFRESH_MS = 10_000L
 private const val CLOCK_SP = 28
 private const val CLOCK_SHADOW = 4f
 private const val CLOCK_SCRIM_ALPHA = 0.35f
+
+private fun isOk(key: Key): Boolean = key == Key.DirectionCenter || key == Key.Enter || key == Key.NumPadEnter

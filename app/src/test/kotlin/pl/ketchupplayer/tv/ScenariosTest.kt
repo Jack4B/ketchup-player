@@ -1072,4 +1072,28 @@ class ScenariosTest {
         chip("Najnowsze")
         waitFor { left("Pitbull") < left("Seksmisja") }
     }
+
+    /** Scenariusz: w odtwarzaczu na żywo OK otwiera listę kanałów grupy; wybór drugiego przełącza kanał, BACK wraca. */
+    @Test
+    fun zOdtwarzaczaNaZywoMoznaPrzelaczycKanalZListy() {
+        val host = "http://127.0.0.1:${server.port}"
+        server.serve("/z.m3u") {
+            "#EXTM3U\n#EXTINF:-1 tvg-chno=\"1\" group-title=\"Info\",Alfa Info\n$host/alfa.m3u8\n" +
+                "#EXTINF:-1 tvg-chno=\"2\" group-title=\"Info\",Beta Info\n$host/beta.m3u8\n"
+        }
+        runBlocking { catalog.addM3u("Zapping", server.url("/z.m3u")) }
+
+        nav("Na żywo")
+        click("Alfa Info")
+        waitFor { FakePlayers.played.isNotEmpty() }
+        assertEquals("$host/alfa.m3u8", FakePlayers.played.last())
+
+        pressKeys(listOf(Key.ShiftLeft, Key.DirectionCenter)) // lista kanałów, fokus na bieżącym (Alfa)
+        waitForText("Beta Info")
+        pressKeys(listOf(Key.DirectionDown, Key.DirectionCenter)) // wybór Beta
+        waitFor { FakePlayers.played.last() == "$host/beta.m3u8" }
+
+        back() // wyjście z odtwarzacza do listy kanałów
+        waitForText("Przewodnik")
+    }
 }

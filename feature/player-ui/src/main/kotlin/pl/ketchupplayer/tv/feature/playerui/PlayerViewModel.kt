@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import pl.ketchupplayer.tv.core.data.catalog.CatalogRepository
 import pl.ketchupplayer.tv.core.data.playback.FailoverSettingsRepository
 import pl.ketchupplayer.tv.core.data.vod.VodRepository
+import pl.ketchupplayer.tv.core.model.Channel
 import pl.ketchupplayer.tv.core.policy.FailoverSettings
 import pl.ketchupplayer.tv.player.engine.PlayerController
 import pl.ketchupplayer.tv.player.engine.PlayerControllerFactory
@@ -101,6 +102,7 @@ class PlayerViewModel
         ) {
             if (!force && channelId == currentId) return
             currentId = channelId
+            _currentChannelId.value = channelId
             vodId = null
             vodJob?.cancel()
             _vodTitle.value = null
@@ -112,6 +114,7 @@ class PlayerViewModel
                     return@launch
                 }
                 channelName = channel.name
+                _zapChannels.value = zapList(channel, catalog.liveChannels().first())
                 catalog.markWatched(channelId)
                 _ui.value = PlayerUiState.Resolving(channel.name)
                 val chain = catalog.equivalents(channelId).ifEmpty { listOf(channel) }
@@ -131,6 +134,18 @@ class PlayerViewModel
                 )
             }
         }
+
+        private val _zapChannels = MutableStateFlow<List<Channel>>(emptyList())
+
+        /** Kanały z tej samej grupy co bieżący (lista pod OK w odtwarzaczu, CH+/CH−); puste dla filmów. */
+        val zapChannels: StateFlow<List<Channel>> = _zapChannels.asStateFlow()
+
+        /** Id odtwarzanego kanału na żywo; null dla filmów. */
+        val currentChannelId: StateFlow<String?> get() = _currentChannelId.asStateFlow()
+        private val _currentChannelId = MutableStateFlow<String?>(null)
+
+        /** Przełącza na inny kanał z listy bez wychodzenia z odtwarzacza. */
+        fun zap(channelId: String) = start(channelId)
 
         private val _vodInfo = MutableStateFlow<VodInfoUi?>(null)
 
@@ -153,6 +168,8 @@ class PlayerViewModel
             if (!force && vodId == itemId) return
             vodId = itemId
             currentId = null
+            _currentChannelId.value = null
+            _zapChannels.value = emptyList()
             vodJob?.cancel()
             vodJob =
                 viewModelScope.launch {
@@ -229,3 +246,27 @@ class PlayerViewModel
             const val RESUME_LIMIT = 0.9
         }
     }
+
+private const val ZAP_LIMIT = 500
+
+/** Kanały z grupy bieżącego (bez grupy: cała lista), z bieżącym zawsze na liście; limit chroni przed 5 tys. wierszy. */
+internal fun zapList(
+    current: Channel,
+    all: List<Channel>,
+): List<Channel> {
+    val same = all.filter { it.group == current.group }.ifEmpty { all }
+    val limited = if (same.size > ZAP_LIMIT) same.take(ZAP_LIMIT) else same
+    return if (limited.any { it.id == current.id }) limited else listOf(current) + limited.take(ZAP_LIMIT - 1)
+}
+
+/** Następny (+1) lub poprzedni (−1) kanał względem bieżącego, z zawinięciem na końcach; null, gdy nie ma dokąd. */
+internal fun neighbour(
+    list: List<Channel>,
+    currentId: String?,
+    step: Int,
+): Channel? {
+    if (list.size < 2) return null
+    val i = list.indexOfFirst { it.id == currentId }
+    if (i < 0) return list.first()
+    return list[Math.floorMod(i + step, list.size)]
+}

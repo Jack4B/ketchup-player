@@ -99,6 +99,9 @@ class PlayerScreenTest {
         vodTitle: String? = null,
         showClock: Boolean = true,
         vodInfo: VodInfoUi? = null,
+        zap: List<pl.ketchupplayer.tv.core.model.Channel> = emptyList(),
+        currentId: String? = null,
+        onZap: (String) -> Unit = {},
     ) {
         compose.setContent {
             KetchupTheme(device = DeviceClass.TV) {
@@ -110,10 +113,64 @@ class PlayerScreenTest {
                     vodTitle = vodTitle,
                     showClock = showClock,
                     vodInfo = vodInfo,
+                    zapChannels = zap,
+                    currentChannelId = currentId,
+                    onZap = onZap,
                 )
             }
         }
         compose.waitForIdle()
+    }
+
+    private val zapList =
+        listOf("JEDEN HD", "INFO24", "SPORT+").mapIndexed { i, n ->
+            pl.ketchupplayer.tv.core.model.Channel(
+                "p:${i + 1}",
+                pl.ketchupplayer.tv.core.model
+                    .ProviderId("p"),
+                n,
+                "http://h.invalid/$i",
+                i + 1,
+                group = "Info",
+            )
+        }
+
+    /** OK w odtwarzaczu na żywo otwiera listę kanałów z grupy; DÓŁ + OK przełącza na następny kanał. */
+    @Test
+    fun okOtwieraListeKanalowADolOkPrzelacza() {
+        val zapped = mutableListOf<String>()
+        show(PlayerUiState.Playing("JEDEN HD"), zap = zapList, currentId = "p:1", onZap = { zapped += it })
+        key(Key.ShiftLeft) // pierwszy klawisz po starcie tylko przełącza tryb wejścia
+        key(Key.DirectionCenter)
+        compose.onAllNodesWithText("INFO24", substring = true)[0].assertExists()
+        key(Key.DirectionDown) // fokus startuje na bieżącym kanale (JEDEN HD)
+        key(Key.DirectionCenter)
+        assertEquals(listOf("p:2"), zapped)
+    }
+
+    /** BACK przy otwartej liście zamyka tylko listę (nie wychodzi z odtwarzacza). */
+    @Test
+    fun backZamykaListeKanalowABezListyWychodzi() {
+        var backs = 0
+        show(PlayerUiState.Playing("JEDEN HD"), onBack = { backs++ }, zap = zapList, currentId = "p:1")
+        key(Key.ShiftLeft)
+        key(Key.DirectionCenter)
+        compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        compose.waitForIdle()
+        assertEquals(0, backs)
+        compose.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
+        assertEquals(1, backs)
+    }
+
+    /** Klawisze CH+ i CH− przełączają kanały od razu, z zawinięciem listy. */
+    @Test
+    fun klawiszeKanalowPrzelaczajaBezListy() {
+        val zapped = mutableListOf<String>()
+        show(PlayerUiState.Playing("JEDEN HD"), zap = zapList, currentId = "p:1", onZap = { zapped += it })
+        key(Key.ShiftLeft)
+        key(Key.ChannelUp)
+        key(Key.ChannelDown)
+        assertEquals(listOf("p:2", "p:3"), zapped)
     }
 
     private fun key(k: Key) {
