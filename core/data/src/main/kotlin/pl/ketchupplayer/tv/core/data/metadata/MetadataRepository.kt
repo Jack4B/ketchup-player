@@ -82,8 +82,11 @@ class MetadataRepository
             now: Long,
         ): Boolean {
             val noRatings =
-                m.tmdbRating == null && m.imdbRating == null && m.rtPercent == null &&
-                    m.metacritic == null && m.traktRating == null
+                m.tmdbRating == null &&
+                    m.imdbRating == null &&
+                    m.rtPercent == null &&
+                    m.metacritic == null &&
+                    m.traktRating == null
             if (m.found && noRatings && apiKeys.any) return false
             return m.found || now - m.fetchedMs < RETRY_AFTER_MS
         }

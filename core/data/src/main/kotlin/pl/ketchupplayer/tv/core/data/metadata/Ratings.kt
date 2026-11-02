@@ -23,7 +23,10 @@ data class Ratings(
         }
 
     val isEmpty: Boolean get() =
-        tmdb == null && imdb == null && rtPercent == null && metacritic == null &&
+        tmdb == null &&
+            imdb == null &&
+            rtPercent == null &&
+            metacritic == null &&
             trakt == null
 
     companion object {
