@@ -6,6 +6,8 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
@@ -41,6 +43,11 @@ internal class FakeController(
     private val trackFlow = MutableStateFlow(trackInfo)
     override val tracks: StateFlow<TrackInfo> = trackFlow
     val calls = mutableListOf<String>()
+    val seeks = mutableListOf<Long>()
+
+    override fun seekTo(positionMs: Long) {
+        seeks += positionMs
+    }
 
     override fun selectAudio(id: String) {
         calls += "audio:$id"
@@ -410,14 +417,91 @@ class PlayerScreenTest {
         assertEquals(1, c.resumes)
     }
 
-    /** Dłuższe trzymanie klawisza przewijania przyspiesza: 10 s, potem 30, 60 i 90 s na krok. */
+    private fun vodController() =
+        FakeController(
+            PlayerState(
+                status = PlaybackStatus.READY,
+                isPlaying = true,
+                positionMs = 1_800_000,
+                durationMs = 7_200_000,
+            ),
+        )
+
+    /** Krótkie naciśnięcie PRAWO: dymek pokazuje +0:10, a jeden seek o 10 s następuje po krótkiej zwłoce. */
     @Test
-    fun krokPrzewijaniaRosnieZDlugoscia_trzymania() {
-        assertEquals(10_000L, seekStepMs(0))
-        assertEquals(10_000L, seekStepMs(5))
-        assertEquals(30_000L, seekStepMs(6))
-        assertEquals(60_000L, seekStepMs(14))
-        assertEquals(90_000L, seekStepMs(28))
-        assertEquals(90_000L, seekStepMs(200))
+    fun dotkniecieWPrawoPrzewijaOJedenKrokPoZwloce() {
+        val c = vodController()
+        show(PlayerUiState.Playing("Film"), c, vodTitle = "Film")
+        key(Key.ShiftLeft)
+        compose.onRoot().performKeyInput { pressKey(Key.DirectionRight) }
+        compose.mainClock.advanceTimeBy(100)
+        compose.onNodeWithText("+0:10", substring = true).assertExists()
+        assertEquals(emptyList<Long>(), c.seeks) // jeszcze zbieramy kolejne naciśnięcia
+        compose.mainClock.advanceTimeBy(600)
+        compose.waitForIdle()
+        assertEquals(listOf(1_810_000L), c.seeks)
+    }
+
+    /** Trzy szybkie naciśnięcia to jeden seek o 30 s (nie trzy). */
+    @Test
+    fun szybkieNaciskaniaSumujaSieWJedenSeek() {
+        val c = vodController()
+        show(PlayerUiState.Playing("Film"), c, vodTitle = "Film")
+        key(Key.ShiftLeft)
+        repeat(3) {
+            compose.onRoot().performKeyInput { pressKey(Key.DirectionRight) }
+            compose.mainClock.advanceTimeBy(100)
+        }
+        compose.mainClock.advanceTimeBy(700)
+        compose.waitForIdle()
+        assertEquals(listOf(1_830_000L), c.seeks)
+    }
+
+    /** Przytrzymanie LEWO dłużej niż krok 10 s: cel jest dalej niż po dotknięciu, a seek jest jeden, po puszczeniu. */
+    @Test
+    fun przytrzymanieLewoPrzewijaDalejNizDotkniecieISeekJestJeden() {
+        val c = vodController()
+        show(PlayerUiState.Playing("Film"), c, vodTitle = "Film")
+        key(Key.ShiftLeft)
+        compose.onRoot().performKeyInput { keyDown(Key.DirectionLeft) }
+        compose.mainClock.advanceTimeBy(1_000)
+        assertEquals(emptyList<Long>(), c.seeks) // w trakcie trzymania nie ma seeków
+        compose.onRoot().performKeyInput { keyUp(Key.DirectionLeft) }
+        compose.mainClock.advanceTimeBy(700)
+        compose.waitForIdle()
+        assertEquals(1, c.seeks.size)
+        assertTrue("cel ${c.seeks.single()}", c.seeks.single() < 1_800_000L - 12_000L)
+    }
+
+    @Test
+    fun screenshotPrzewijania() {
+        show(PlayerUiState.Playing("Film"), vodController(), vodTitle = "Czas zemsty")
+        key(Key.ShiftLeft)
+        compose.onRoot().performKeyInput { keyDown(Key.DirectionRight) }
+        compose.mainClock.advanceTimeBy(900)
+        compose.onRoot().captureRoboImage("src/test/screenshots/player_vod_scrub.png")
+    }
+
+    /** Klawisze Przewiń wstecz/naprzód z pilota działają jak strzałki. */
+    @Test
+    fun klawiszeMultimedialneSaPrzewijaniem() {
+        val c = vodController()
+        show(PlayerUiState.Playing("Film"), c, vodTitle = "Film")
+        key(Key.ShiftLeft)
+        compose.onRoot().performKeyInput { pressKey(Key.MediaRewind) }
+        compose.mainClock.advanceTimeBy(800)
+        compose.waitForIdle()
+        assertEquals(listOf(1_790_000L), c.seeks)
+    }
+
+    /** OK wstrzymuje, a OSD pokazuje ikonę wznowienia (dostępną etykietą). */
+    @Test
+    fun okWstrzymujeAOsdPokazujeAkcje() {
+        val c = vodController()
+        show(PlayerUiState.Playing("Film"), c, vodTitle = "Film")
+        key(Key.ShiftLeft)
+        compose.onNodeWithContentDescription("Wstrzymaj").assertExists()
+        key(Key.DirectionCenter)
+        assertEquals(1, c.pauses)
     }
 }

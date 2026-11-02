@@ -7,14 +7,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -29,7 +25,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -56,7 +51,6 @@ import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.designsystem.requestFocusWhenPlaced
 import pl.ketchupplayer.tv.player.engine.PlaybackStatus
 import pl.ketchupplayer.tv.player.engine.PlayerController
-import pl.ketchupplayer.tv.player.engine.PlayerState
 
 @Composable
 fun VodPlayerRoute(
@@ -170,6 +164,37 @@ fun PlayerScreen(
     var sleepMinutes by rememberSaveable { mutableStateOf(0) }
     var sleepAtMs by remember { mutableLongStateOf(0L) }
     var listOpen by remember { mutableStateOf(false) }
+    val scrubber = remember { Scrubber() }
+    var scrubUi by remember { mutableStateOf<ScrubUi?>(null) }
+    var scrubActive by remember { mutableStateOf(false) }
+    var flash by remember { mutableStateOf<Boolean?>(null) }
+    LaunchedEffect(scrubActive) {
+        // Przewijanie: pętla co kilkadziesiąt ms przesuwa cel; seek jest jeden, po puszczeniu klawisza.
+        if (!scrubActive) return@LaunchedEffect
+        while (true) {
+            delay(Scrubber.TICK_MS)
+            scrubber.tick(Scrubber.TICK_MS)
+            scrubUi = ScrubUi(scrubber.targetMs, scrubber.deltaMs)
+            scrubber.takeCommit()?.let { target ->
+                controller.seekTo(target)
+                scrubUi = null
+                scrubActive = false
+                return@LaunchedEffect
+            }
+        }
+    }
+    // Chwilowa duża ikona stanu (jak w Netflix/YouTube) po zmianie odtwarzanie/pauza.
+    var wasPlaying by remember { mutableStateOf(playback.isPlaying) }
+    LaunchedEffect(playback.isPlaying) {
+        if (playback.isPlaying != wasPlaying) {
+            wasPlaying = playback.isPlaying
+            if (vodTitle != null) {
+                flash = playback.isPlaying
+                delay(FLASH_MS)
+                flash = null
+            }
+        }
+    }
     val rootFocus = remember { FocusRequester() }
     val chipFocus = remember { PlayerPanel.entries.associateWith { FocusRequester() } }
     LaunchedEffect(osdTick) {
@@ -218,7 +243,24 @@ fun PlayerScreen(
             .onPreviewKeyEvent { event ->
                 osdTick++
                 val down = event.type == KeyEventType.KeyDown
+                val dir = seekDirection(event.key)
                 when {
+                    vodTitle != null && dir != 0 && !failed && panel == null && !chipsOpen && !listOpen -> {
+                        when (event.type) {
+                            KeyEventType.KeyDown -> {
+                                if (event.nativeKeyEvent.repeatCount > 0) {
+                                    scrubber.keepAlive()
+                                } else {
+                                    scrubber.press(dir, playback.positionMs, playback.durationMs ?: 0L)
+                                }
+                                scrubActive = true
+                                scrubUi = ScrubUi(scrubber.targetMs, scrubber.deltaMs)
+                            }
+                            KeyEventType.KeyUp -> scrubber.release()
+                            else -> Unit
+                        }
+                        true
+                    }
                     failed || !down -> false
                     panel != null || listOpen -> false
                     vodTitle == null && zapChannels.size > 1 && isOk(event.key) -> true.also { listOpen = true }
@@ -237,7 +279,7 @@ fun PlayerScreen(
                     vodTitle != null && (event.key == Key.DirectionUp || event.key == Key.Info) ->
                         true.also { infoOpen = !infoOpen }
                     infoOpen && event.key == Key.Back -> true.also { infoOpen = false }
-                    else -> vodTitle != null && handleVodKey(event.key, controller, event.nativeKeyEvent.repeatCount)
+                    else -> vodTitle != null && handleVodKey(event.key, controller)
                 }
             }.focusRequester(rootFocus)
             .focusable(),
@@ -268,10 +310,11 @@ fun PlayerScreen(
             VodInfoCard(vodInfo, Modifier.align(Alignment.BottomStart).padding(start = 32.dp, bottom = INFO_BOTTOM))
         }
         if (osdVisible && vodTitle != null) {
-            VodOsd(vodTitle, vodInfo, playback, Modifier.align(Alignment.BottomCenter))
+            VodOsd(vodTitle, vodInfo, playback, scrubUi, Modifier.align(Alignment.BottomCenter))
         } else if (osdVisible && name.isNotEmpty()) {
             Osd(name, Modifier.align(Alignment.TopStart))
         }
+        flash?.let { PlayPauseBadge(it, FLASH_SIZE, Modifier.align(Alignment.Center)) }
         if (listOpen) {
             ChannelZapList(
                 zapChannels,
@@ -341,36 +384,17 @@ fun PlayerScreen(
     }
 }
 
-/**
- * Krok przewijania zależny od tego, jak długo klawisz jest trzymany (liczba powtórzeń): pojedyncze naciśnięcie
- * i początek trzymania 10 s, potem 30 s, 60 s i 90 s, żeby dojść do połowy filmu w kilka sekund.
- */
-internal fun seekStepMs(repeatCount: Int): Long =
-    when {
-        repeatCount < SEEK_FAST_AFTER -> SEEK_MS
-        repeatCount < SEEK_FASTER_AFTER -> SEEK_MS * 3
-        repeatCount < SEEK_FASTEST_AFTER -> SEEK_MS * 6
-        else -> SEEK_MS * 9
-    }
-
-private const val SEEK_FAST_AFTER = 6
-private const val SEEK_FASTER_AFTER = 14
-private const val SEEK_FASTEST_AFTER = 28
-
-/** LEWO/PRAWO przewijają (przy trzymaniu coraz szybciej), OK i Play/Pauza wstrzymują; true = klawisz obsłużony. */
+/** OK i klawisze Play/Pauza sterują odtwarzaniem; przewijanie (LEWO/PRAWO) obsługuje [Scrubber]. true = obsłużony. */
 private fun handleVodKey(
     key: Key,
     controller: PlayerController,
-    repeatCount: Int,
 ): Boolean {
-    val seek = seekStepMs(repeatCount)
     val st = controller.state.value
-    val duration = st.durationMs ?: Long.MAX_VALUE
     return when (key) {
-        Key.DirectionLeft -> controller.seekTo((st.positionMs - seek).coerceAtLeast(0)).let { true }
-        Key.DirectionRight -> controller.seekTo((st.positionMs + seek).coerceAtMost(duration)).let { true }
         Key.DirectionCenter, Key.Enter, Key.MediaPlayPause ->
             (if (st.isPlaying) controller.pause() else controller.resume()).let { true }
+        Key.MediaPlay -> controller.resume().let { true }
+        Key.MediaPause -> controller.pause().let { true }
         else -> false
     }
 }
@@ -381,85 +405,6 @@ private fun channelName(ui: PlayerUiState): String =
         is PlayerUiState.Playing -> ui.channelName
         is PlayerUiState.Failed -> ui.channelName
     }
-
-@OptIn(ExperimentalTvMaterial3Api::class)
-@Composable
-private fun VodOsd(
-    title: String,
-    info: VodInfoUi?,
-    state: PlayerState,
-    modifier: Modifier,
-) {
-    val c = KetchupTheme.colors
-    val duration = state.durationMs ?: 0L
-    val progress = if (duration > 0) (state.positionMs.toFloat() / duration).coerceIn(0f, 1f) else 0f
-    // Dolny pas: gradient od przezroczystości do ciemności zamiast płaskiego prostokąta; tytuł, wiersz meta, pasek z
-    // „gałką”, czasy i podpowiedzi klawiszy w pigułkach.
-    Column(
-        modifier
-            .fillMaxWidth()
-            .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = OSD_SCRIM))))
-            .padding(horizontal = 32.dp)
-            .padding(top = 48.dp, bottom = 22.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Text(title, fontSize = 30.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1)
-        if (!info?.meta.isNullOrBlank()) Text(info?.meta.orEmpty(), fontSize = 17.sp, color = c.textSecondary)
-        Box(Modifier.fillMaxWidth().height(THUMB)) {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(BAR)
-                    .align(Alignment.CenterStart)
-                    .background(Color.White.copy(alpha = BAR_TRACK), RoundedCornerShape(BAR)),
-            )
-            Box(
-                Modifier
-                    .fillMaxWidth(progress)
-                    .height(BAR)
-                    .align(Alignment.CenterStart)
-                    .background(c.accent, RoundedCornerShape(BAR)),
-            )
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Spacer(Modifier.weight(progress.coerceAtLeast(MIN_WEIGHT)))
-                Box(Modifier.size(THUMB).background(Color.White, CircleShape))
-                Spacer(Modifier.weight((1f - progress).coerceAtLeast(MIN_WEIGHT)))
-            }
-        }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(
-                (if (state.isPlaying) "" else stringResource(R.string.player_paused) + " · ") + clock(state.positionMs),
-                fontSize = 18.sp,
-                color = Color.White,
-            )
-            Text(
-                stringResource(R.string.player_remaining, clock((duration - state.positionMs).coerceAtLeast(0))),
-                fontSize = 18.sp,
-                color = Color.White,
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            listOf(
-                R.string.player_hint_seek,
-                R.string.player_hint_pause,
-                R.string.player_hint_info,
-                R.string.player_hint_opts,
-            ).forEach { hint ->
-                Text(
-                    stringResource(hint),
-                    fontSize = 14.sp,
-                    color = Color.White,
-                    modifier =
-                        Modifier
-                            .background(
-                                Color.White.copy(alpha = PILL),
-                                RoundedCornerShape(PILL_R),
-                            ).padding(horizontal = 12.dp, vertical = 6.dp),
-                )
-            }
-        }
-    }
-}
 
 /** Karta „Co to za film”: tytuł, wiersz meta, opis (do 6 linii), obsada i źródło opisu, na szklanym tle. */
 @OptIn(ExperimentalTvMaterial3Api::class)
@@ -504,19 +449,12 @@ private fun VodInfoCard(
 }
 
 private val INFO_WIDTH = 560.dp
-private val INFO_BOTTOM = 190.dp
-private val THUMB = 18.dp
-private val BAR = 6.dp
+private val INFO_BOTTOM = 260.dp
 private const val INFO_AUTOHIDE_MS = 7_000L
 private const val INFO_PLOT_LINES = 6
 private const val INFO_SCRIM = 0.72f
-private const val OSD_SCRIM = 0.88f
-private const val BAR_TRACK = 0.28f
-private const val PILL = 0.16f
-private val PILL_R = 14.dp
-private const val MIN_WEIGHT = 0.0001f
 
-private fun clock(ms: Long): String {
+internal fun clock(ms: Long): String {
     val total = ms / MS_PER_SECOND
     val h = total / SECONDS_PER_HOUR
     val m = total % SECONDS_PER_HOUR / SECONDS_PER_MINUTE
@@ -594,10 +532,9 @@ private const val OSD_MS = 4_000L
 private const val MS_PER_MINUTE = 60_000L
 private val SUBTITLE_LIFT = 130.dp
 private val SUBTITLE_BOTTOM = 40.dp
-private val CHIPS_ABOVE_VOD = 118.dp
+private val CHIPS_ABOVE_VOD = 170.dp
 private val CHIPS_BOTTOM = 24.dp
 private const val POLL_MS = 500L
-private const val SEEK_MS = 10_000L
 private const val MS_PER_SECOND = 1000L
 private const val SECONDS_PER_MINUTE = 60L
 private const val SECONDS_PER_HOUR = 3600L
@@ -645,3 +582,14 @@ private const val CLOCK_SHADOW = 4f
 private const val CLOCK_SCRIM_ALPHA = 0.35f
 
 private fun isOk(key: Key): Boolean = key == Key.DirectionCenter || key == Key.Enter || key == Key.NumPadEnter
+
+private const val FLASH_MS = 700L
+private val FLASH_SIZE = 96.dp
+
+/** −1 dla LEWO/Przewiń wstecz, +1 dla PRAWO/Przewiń naprzód, 0 dla pozostałych klawiszy. */
+private fun seekDirection(key: Key): Int =
+    when (key) {
+        Key.DirectionLeft, Key.MediaRewind -> -1
+        Key.DirectionRight, Key.MediaFastForward -> 1
+        else -> 0
+    }
