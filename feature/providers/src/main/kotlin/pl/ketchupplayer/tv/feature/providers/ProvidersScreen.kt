@@ -1,14 +1,21 @@
 package pl.ketchupplayer.tv.feature.providers
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -80,6 +87,7 @@ private fun ProviderList(
             onClick = { onEvent(ProvidersEvent.Toggle(p.id)) },
             modifier = if (i == 0) Modifier.requestFocusWhenPlaced() else Modifier,
         )
+        HealthLine(SourceHealthRules.of(p, remember { System.currentTimeMillis() }))
         if (state.expandedId == p.id) {
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -219,3 +227,44 @@ internal fun AddForm(
 }
 
 internal val ERROR_COLOR = Color(0xFFFF6B6B)
+
+private val HEALTH_WARN = Color(0xFFD4A95C)
+private const val HOURS_PER_DAY = 24L
+
+/** „Zdrowie źródeł”: kropka w kolorze stanu, nazwa stanu i wiek ostatniego odświeżenia (nieinteraktywna). */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun HealthLine(h: SourceHealth) {
+    val c = KetchupTheme.colors
+    val color =
+        when (h.level) {
+            HealthLevel.OK -> c.accent
+            HealthLevel.STALE, HealthLevel.EMPTY -> HEALTH_WARN
+            HealthLevel.ERROR -> ERROR_COLOR
+        }
+    val label =
+        stringResource(
+            when (h.level) {
+                HealthLevel.OK -> R.string.providers_health_ok
+                HealthLevel.STALE -> R.string.providers_health_stale
+                HealthLevel.ERROR -> R.string.providers_health_error
+                HealthLevel.EMPTY -> R.string.providers_health_empty
+            },
+        )
+    val age =
+        h.ageHours?.let {
+            when {
+                it < 1 -> stringResource(R.string.providers_age_now)
+                it < HOURS_PER_DAY * 2 -> stringResource(R.string.providers_age_hours, it)
+                else -> stringResource(R.string.providers_age_days, it / HOURS_PER_DAY)
+            }
+        }
+    Row(
+        Modifier.padding(start = 20.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Box(Modifier.size(10.dp).background(color, CircleShape))
+        Text(listOfNotNull(label, age).joinToString(" · "), fontSize = 15.sp, color = c.textSecondary)
+    }
+}

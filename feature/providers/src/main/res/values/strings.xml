@@ -43,4 +43,11 @@
     <string name="providers_user_agent">User-Agent: %1$s (wybierz z listy)</string>
     <string name="providers_ua_pick">Wybierz User-Agent</string>
     <string name="providers_ua_auto_hint">Domyślny: OTT Navigator</string>
+    <string name="providers_health_ok">Sprawna</string>
+    <string name="providers_health_stale">Nieaktualna, odśwież</string>
+    <string name="providers_health_error">Błąd pobierania, napraw lub odśwież</string>
+    <string name="providers_health_empty">Pusta lista</string>
+    <string name="providers_age_now">odświeżono przed chwilą</string>
+    <string name="providers_age_hours">odświeżono %1$d h temu</string>
+    <string name="providers_age_days">odświeżono %1$d dni temu</string>
 </resources>

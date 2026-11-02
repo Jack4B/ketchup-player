@@ -1008,4 +1008,24 @@ class ScenariosTest {
         click("60 min")
         waitFor { compose.onAllNodesWithText("Nic nie pasuje", substring = true).fetchSemanticsNodes().isEmpty() }
     }
+
+    /** Scenariusz: „Zdrowie źródeł”: działająca lista jest „Sprawna”, lista z błędem serwera ma stan i opis. */
+    @Test
+    fun zdrowieZrodelPokazujeStanKazdejListy() {
+        val host = "http://127.0.0.1:${server.port}"
+        server.serve("/ok.m3u") {
+            "#EXTM3U\n#EXTINF:-1 tvg-id=\"A.pl\" group-title=\"Info\",Kanal A\n$host/a.m3u8\n"
+        }
+        server.serve("/zla.m3u") { ProviderServer.NOT_FOUND }
+        runBlocking {
+            catalog.addM3u("Dobra", server.url("/ok.m3u"))
+            catalog.addM3u("Zepsuta", server.url("/zla.m3u"))
+        }
+
+        settingsPage("Dostawcy")
+        waitForText("Sprawna", substring = true)
+        waitForText("Błąd pobierania", substring = true)
+        assertTrue(compose.onAllNodesWithText("Dobra").fetchSemanticsNodes().isNotEmpty())
+        assertTrue(compose.onAllNodesWithText("Zepsuta").fetchSemanticsNodes().isNotEmpty())
+    }
 }
