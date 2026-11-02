@@ -1,6 +1,5 @@
 package pl.ketchupplayer.tv
 
-import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,10 +23,15 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -97,6 +101,7 @@ fun SettingsScreen(
     val c = KetchupTheme.colors
     val toRail = LocalFocusRail.current
     var inCategories by remember { mutableStateOf(true) }
+    val focusManager = LocalFocusManager.current
     ScreenScaffold(scrollable = false) {
         ScreenTitle(stringResource(R.string.nav_settings))
         Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -129,19 +134,23 @@ fun SettingsScreen(
                     }
                 }
             }
-            // Grupa fokusu: LEWO z lewej krawędzi opcji wraca na zaznaczoną kategorię (nie tylko BACK).
+            // LEWO z lewej krawędzi opcji wraca na zaznaczoną kategorię (nie tylko BACK). Bez focusGroup/onExit:
+            // grupa zerowała fokus po PRAWO (emulator, bieg #243). Ruch w lewo robi domyślne wyszukiwanie fokusu,
+            // a gdy ląduje na kategorii (albo nigdzie), wracamy na zaznaczoną kategorię sprzed ruchu.
             Column(
                 Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .focusProperties {
-                        onExit = {
-                            if (requestedFocusDirection == FocusDirection.Left) {
-                                cancelFocusChange()
-                                runCatching { requesters[selected].requestFocus() }
-                            }
+                    .onKeyEvent { e ->
+                        if (e.type != KeyEventType.KeyDown || e.key != Key.DirectionLeft) return@onKeyEvent false
+                        val before = selected
+                        val moved = focusManager.moveFocus(FocusDirection.Left)
+                        if (!moved || inCategories) {
+                            selected = before
+                            runCatching { requesters[before].requestFocus() }
                         }
-                    }.focusGroup(),
+                        true
+                    },
             ) {
                 val toCategories: () -> Unit = { runCatching { requesters[selected].requestFocus() } }
                 // BACK: z opcji do listy kategorii, z listy kategorii na szynę (do innych sekcji).
