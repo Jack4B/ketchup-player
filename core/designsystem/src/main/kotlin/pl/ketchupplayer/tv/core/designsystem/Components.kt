@@ -505,7 +505,10 @@ fun TabChip(
     }
 }
 
-/** Pigułka filtra/sortowania (makieta v3): wybrana jest jasna z ciemnym tekstem, pozostałe przyciemnione. */
+/**
+ * Pigułka filtra/sortowania (makieta v5): wybrana wypełniona akcentem z ciemnym tekstem. [segment] = pigułka leży w
+ * kapsule przełącznika ([SegmentedControl]), więc niewybrane są przezroczyste.
+ */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun PillChip(
@@ -513,28 +516,51 @@ fun PillChip(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    segment: Boolean = false,
 ) {
     val c = KetchupTheme.colors
+    val idle = if (segment) Color.Transparent else c.surface2
     FocusItem(
         onClick,
-        modifier.height(34.dp),
+        modifier.height(36.dp),
         selected = selected,
-        container = if (selected) c.textPrimary else c.surface2,
-        focusedContainer = if (selected) c.textPrimary else c.surface3,
+        container = if (selected) c.accent else idle,
+        focusedContainer = if (selected) c.accent else c.surface3,
         outlined = false,
         focusScale = 1.04f,
-        cornerRadius = 17.dp,
+        cornerRadius = 18.dp,
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text,
-            fontSize = 14.sp,
+            fontSize = 15.sp,
             fontWeight = FontWeight.Medium,
-            color = if (selected) c.background else c.textPrimary,
-            modifier = Modifier.padding(horizontal = 16.dp),
+            color = if (selected) c.onAccent else c.textPrimary,
+            modifier = Modifier.padding(horizontal = 18.dp),
         )
     }
 }
+
+/** Kapsuła przełącznika (sortowanie, zakładki): półprzezroczyste tło panelu i zaokrąglenie „pigułka”. */
+@Composable
+fun SegmentedControl(
+    modifier: Modifier = Modifier,
+    content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
+) {
+    val c = KetchupTheme.colors
+    androidx.compose.foundation.layout.Row(
+        modifier
+            .background(c.surface2.copy(alpha = SEGMENT_ALPHA), RoundedCornerShape(SEGMENT_RADIUS))
+            .border(1.dp, c.outline, RoundedCornerShape(SEGMENT_RADIUS))
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        content = content,
+    )
+}
+
+private const val SEGMENT_ALPHA = 0.7f
+private val SEGMENT_RADIUS = 24.dp
 
 /** Pigułka z krótką informacją (rok, czas, ocena); ocena w kolorze akcentu. */
 @OptIn(ExperimentalTvMaterial3Api::class)

@@ -58,6 +58,7 @@ import pl.ketchupplayer.tv.core.designsystem.PosterCard
 import pl.ketchupplayer.tv.core.designsystem.PosterImage
 import pl.ketchupplayer.tv.core.designsystem.ScreenScaffold
 import pl.ketchupplayer.tv.core.designsystem.SearchField
+import pl.ketchupplayer.tv.core.designsystem.SegmentedControl
 import pl.ketchupplayer.tv.core.designsystem.ShellHeader
 import pl.ketchupplayer.tv.core.designsystem.StateKind
 import pl.ketchupplayer.tv.core.designsystem.StateView
@@ -301,8 +302,15 @@ private fun Toolbar(
             VodSort.YEAR to R.string.vod_sort_year,
         )
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        sorts.forEach { (sort, label) ->
-            PillChip(stringResource(label), state.sort == sort, { onEvent(VodBrowseEvent.Sort(sort)) })
+        SegmentedControl {
+            sorts.forEach { (sort, label) ->
+                PillChip(
+                    stringResource(label),
+                    state.sort == sort,
+                    { onEvent(VodBrowseEvent.Sort(sort)) },
+                    segment = true,
+                )
+            }
         }
         Spacer(Modifier.weight(1f))
         // Licznik jak w poprzedniej aplikacji: „12 / 340” (pozycja zaznaczonej karty i liczba wyników).
