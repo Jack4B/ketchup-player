@@ -59,6 +59,14 @@ jobs:
         run: ./gradlew lintDebug
       - name: Build debug
         run: ./gradlew :app:assembleDebug
+      - name: Podpis debug jest stały (instalacja jako aktualizacja)
+        run: |
+          # Bez stałego klucza każdy bieg CI losuje nowy, a APK z różnych biegów nie aktualizują się (UPDATE_INCOMPATIBLE).
+          apksigner="$(ls "${ANDROID_HOME}"/build-tools/*/apksigner | sort -V | tail -1)"
+          got="$("${apksigner}" verify --print-certs app/build/outputs/apk/debug/app-debug.apk | sed -n 's/.*SHA-256 digest: //p' | head -1)"
+          want="8415ad8f75cd1795a99aa1389ef92cb2c26933be25263680c9430d52458bc221"
+          echo "podpis: ${got}"
+          [ "${got}" = "${want}" ] || { echo "::error::APK debug podpisany innym kluczem niż app/ketchup-debug.keystore"; exit 1; }
       - name: Build release (R8)
         run: ./gradlew :app:assembleRelease
       - uses: actions/upload-artifact@v4

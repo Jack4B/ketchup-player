@@ -13,6 +13,17 @@ android {
         versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 1
         versionName = (project.findProperty("versionName") as String?) ?: "0.1.0"
     }
+    // Stały klucz debug w repozytorium (hasło `android`, jak domyślny klucz Androida): to NIE jest sekret ani klucz wydania.
+    // Bez niego każdy bieg CI generuje inny losowy klucz i kolejne APK z CI nie instalują się jako aktualizacja
+    // poprzedniego (INSTALL_FAILED_UPDATE_INCOMPATIBLE). Wydanie 1.0 jest podpisane kluczem z sekretów (poniżej).
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("ketchup-debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
     // Podpis wydania: dane z zmiennych środowiskowych (sekrety CI), nigdy z repozytorium. Bez nich release jest niepodpisany.
     val keystorePath = System.getenv("KETCHUP_KEYSTORE_FILE")
     if (keystorePath != null) {
@@ -27,6 +38,7 @@ android {
     }
     buildTypes {
         debug {
+            signingConfig = signingConfigs.getByName("debug")
             applicationIdSuffix = ".debug"
             manifestPlaceholders["leanbackRequired"] = "false"
         }

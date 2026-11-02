@@ -1,5 +1,6 @@
 *.jks
 *.keystore
+!app/ketchup-debug.keystore
 keystore.properties
 local.properties
 .gradle/

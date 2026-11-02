@@ -36,3 +36,12 @@ Gałąź: `git push origin dev:rcbuild/0.9.6-rc1` albo tag `rc-0.9.6-rc1` (dzia�
 - Bramka: workflow odmawia budowy, jeśli CI (z emulatorem) nie jest zielony na dokładnie tym commicie.
 - Bez sekretów podpisu powstaje APK debug (instalowalny na boxie); z sekretami z kroku 2: APK wydania z R8.
 - Wynik: GitHub pre-release `v0.9.6-rc1` z APK i `ketchup_tvbox_test.sh`. Test na boxie: `docs/TVBOX-TESTY.md`.
+
+## Podpis APK debug i rc (ważne przy aktualizacji na boxie)
+- APK debug/rc jest podpisany **stałym kluczem z repo** `app/ketchup-debug.keystore` (hasło `android`, jak domyślny klucz Androida). To nie jest
+  sekret ani klucz wydania; służy tylko do instalacji testowych (pakiet `pl.ketchupplayer.tv.debug`). CI sprawdza odcisk SHA-256.
+- Dzięki temu kolejne rc z GitHub Actions aktualizują się nawzajem. Pierwsza instalacja po zmianie klucza wymaga odinstalowania starej:
+  `adb uninstall pl.ketchupplayer.tv.debug` (rc0.9.6-rc1 i wcześniejsze miały inny, losowy klucz).
+- Jeśli `INSTALL_FAILED_UPDATE_INCOMPATIBLE` zostaje mimo odinstalowania, sprawdź ślad pakietu: `adb shell pm list packages -u | grep ketchup`
+  i usuń go `adb shell pm uninstall --user 0 pl.ketchupplayer.tv.debug` oraz dla innych użytkowników (`adb shell pm list users`).
+- Wydanie 1.0 (`pl.ketchupplayer.tv`) jest podpisane kluczem z sekretów GitHub (kroki wyżej).
