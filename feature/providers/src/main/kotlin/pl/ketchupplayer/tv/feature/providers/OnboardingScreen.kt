@@ -103,7 +103,7 @@ private fun Onboarding(
             ) {
                 Text(
                     stringResource(R.string.onb_step_of, step),
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = c.textSecondary,
                 )

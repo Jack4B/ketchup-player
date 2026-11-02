@@ -111,7 +111,8 @@ private fun GroupRow(
     ) {
         Row(
             Modifier.padding(horizontal = 12.dp, vertical = 9.dp).fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            // Odstęp 12 dp: długa nazwa (2 linie) nie skleja się z licznikiem po prawej.
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
@@ -122,7 +123,7 @@ private fun GroupRow(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            Text(count.toString(), fontSize = 13.sp, color = c.textSecondary)
+            Text(count.toString(), fontSize = 14.sp, color = c.textSecondary)
         }
     }
 }

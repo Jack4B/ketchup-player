@@ -277,7 +277,7 @@ private fun EpisodeCard(
             }
             Text(
                 "${e.number}. ${e.title}",
-                fontSize = 13.sp,
+                fontSize = 14.sp,
                 color = c.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -285,7 +285,7 @@ private fun EpisodeCard(
             e.durationMin?.let {
                 Text(
                     stringResource(R.string.details_minutes, it),
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     color = c.textSecondary,
                 )
             }

@@ -176,7 +176,7 @@ private fun VodHero(
                 stringResource(
                     if (state.featuredResumes) R.string.home_continue_kicker else R.string.home_featured_kicker,
                 ),
-                fontSize = 13.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = c.textSecondary,
                 letterSpacing = 2.sp,
@@ -272,7 +272,7 @@ private fun Hero(
             if (featured != null) {
                 Text(
                     stringResource(R.string.home_recent_kicker),
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = c.textSecondary,
                 )
@@ -313,7 +313,7 @@ private fun Hero(
             } else {
                 Text(
                     stringResource(R.string.home_welcome_kicker),
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = c.textSecondary,
                 )
@@ -393,7 +393,7 @@ private fun ChannelCard(
             )
             Text(
                 item.now?.title ?: stringResource(R.string.home_live_badge),
-                fontSize = 13.sp,
+                fontSize = 14.sp,
                 color = c.textSecondary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

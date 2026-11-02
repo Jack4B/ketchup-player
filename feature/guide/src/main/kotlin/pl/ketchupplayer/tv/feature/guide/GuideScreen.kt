@@ -271,7 +271,7 @@ private fun Grid(
         ) {
             Text(
                 SimpleDateFormat("EEE d.MM", Locale.getDefault()).format(Date(state.windowStartMs)),
-                fontSize = 13.sp,
+                fontSize = 14.sp,
                 color = KetchupTheme.colors.textSecondary,
             )
             // Licznik jak w starej aplikacji: pozycja zaznaczonego kanału i liczba kanałów na liście.
@@ -279,7 +279,7 @@ private fun Grid(
             if (state.channels.isNotEmpty()) {
                 Text(
                     "${index.coerceAtLeast(0) + 1} / ${state.channels.size}",
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     color = KetchupTheme.colors.textSecondary,
                 )
             }
@@ -378,7 +378,7 @@ private fun Preview(
                     p.startMs > nowMs -> stringResource(R.string.guide_later, focused.channel.displayName.uppercase())
                     else -> focused.channel.displayName.uppercase()
                 }
-            Text(kicker, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = c.textSecondary)
+            Text(kicker, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = c.textSecondary)
             Text(
                 p?.title ?: focused?.channel?.displayName.orEmpty(),
                 fontSize = 22.sp,
@@ -659,7 +659,7 @@ private fun RadarRow(
                 )
                 Text(
                     listOfNotNull(item.channel.displayName, p.category).joinToString(" · "),
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     color = c.textSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,

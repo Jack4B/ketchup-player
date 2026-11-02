@@ -450,7 +450,7 @@ private fun VodInfoCard(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        info.source?.let { Text(it, fontSize = 13.sp, color = c.textSecondary) }
+        info.source?.let { Text(it, fontSize = 14.sp, color = c.textSecondary) }
     }
 }
 

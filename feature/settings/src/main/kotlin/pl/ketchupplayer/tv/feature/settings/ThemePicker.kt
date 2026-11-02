@@ -84,7 +84,7 @@ private fun ThemeCard(
             )
             if (selected) {
                 Box(Modifier.size(20.dp).background(c.accent, CircleShape), contentAlignment = Alignment.Center) {
-                    Text("✓", fontSize = 13.sp, color = c.onAccent)
+                    Text("✓", fontSize = 14.sp, color = c.onAccent)
                 }
             }
         }

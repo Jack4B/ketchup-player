@@ -1331,6 +1331,65 @@ class ScenariosTest {
         waitForText("Lista: połączenia 1 z 2")
     }
 
+    /**
+     * Audyt układu (raport 2.11: „czy nikt się nie chowa, czy jest wyśrodkowane, czy czcionki dobrze dobrane”):
+     * przechodzi przez główne ekrany jako telewizor i mierzy wyjście poza ekran, minimalną czcionkę, rozmiar celów
+     * fokusu i nakładanie tekstów. Test ma przejść z pustą listą problemów.
+     */
+    @Test
+    fun ukladGlownychEkranowSpelniaZasadyDesignu() {
+        serveXtreamVod()
+        serveMetadata()
+        // Długa nazwa grupy jak w prawdziwych listach: dwie linie i licznik obok.
+        server.serve("/player_api.php?get_live_categories") {
+            """[{"category_id":"1","category_name":"PL| DOKUMENTALNE I REPORTAŻE PODRÓŻNICZE"}]"""
+        }
+        addXtreamViaUi("dobre-haslo")
+        waitForText("Kanały: 2", substring = true)
+        val issues = mutableListOf<LayoutAudit.Issue>()
+
+        fun audit(screen: String) {
+            compose.mainClock.advanceTimeBy(700) // koniec animacji
+            compose.waitForIdle()
+            issues += LayoutAudit.run(screen, compose)
+        }
+        nav("Home")
+        waitForText("Mam czas na", substring = true)
+        audit("Home")
+        nav("Na żywo")
+        waitForText("TVN24 HD")
+        audit("Na żywo")
+        nav("Filmy")
+        waitForText("Pitbull")
+        audit("Filmy")
+        nav("Seriale")
+        waitForText("Rodzina Kowalskich")
+        audit("Seriale")
+        click("Pitbull".takeIf { false } ?: "Rodzina Kowalskich")
+        waitForText("SERIAL")
+        audit("Szczegóły serialu")
+        back()
+        nav("Filmy")
+        click("Pitbull")
+        waitForText("FILM")
+        audit("Szczegóły filmu")
+        listOf(
+            "Dostawcy",
+            "Grupy i kategorie",
+            "Odtwarzanie",
+            "Oceny i opisy",
+            "Telewizja",
+            "Sieć i VPN",
+            "Wygląd",
+            "O aplikacji",
+        ).forEach { page ->
+            settingsPage(page)
+            audit("Ustawienia › $page")
+        }
+        issues.forEach { println("UKLAD_ISSUE $it") }
+        assertTrue("Problemy układu (${issues.size}):\n" + issues.joinToString("\n"), issues.isEmpty())
+    }
+
     /** Scenariusz: katalog Xtream bez długości w liście; Home dociąga je z get_vod_info, a „2 h” podpowiada filmy. */
     @Test
     fun mamCzasNaPodpowiadaFilmyZKatalogu() {

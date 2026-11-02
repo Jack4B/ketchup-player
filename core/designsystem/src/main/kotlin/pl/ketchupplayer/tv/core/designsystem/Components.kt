@@ -119,7 +119,7 @@ fun PosterCard(
                         if (subtitle !=
                             null
                         ) {
-                            Text(subtitle, fontSize = 13.sp, color = Color(OVERLAY_SUBTITLE), maxLines = 1)
+                            Text(subtitle, fontSize = 14.sp, color = Color(OVERLAY_SUBTITLE), maxLines = 1)
                         }
                     }
                 }
@@ -139,8 +139,8 @@ fun PosterCard(
                 }
             }
             if (!overlay) {
-                Text(title, fontSize = 13.sp, color = c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (subtitle != null) Text(subtitle, fontSize = 13.sp, color = c.textSecondary, maxLines = 1)
+                Text(title, fontSize = 14.sp, color = c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (subtitle != null) Text(subtitle, fontSize = 14.sp, color = c.textSecondary, maxLines = 1)
             }
         }
     }
@@ -159,7 +159,7 @@ fun ChannelLogo(
     name: String,
     logoUrl: String?,
     modifier: Modifier = Modifier,
-    labelSize: androidx.compose.ui.unit.TextUnit = 13.sp,
+    labelSize: androidx.compose.ui.unit.TextUnit = 14.sp,
     /** Duże kafle (podgląd, Home): bez logo pokazują pełną nazwę zamiast skrótu. */
     fullName: Boolean = false,
 ) {
