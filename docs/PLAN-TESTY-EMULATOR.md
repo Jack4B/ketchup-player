@@ -3,10 +3,10 @@
 Decyzja użytkownika (2.11.2026): testować zawsze na GitHubie, na emulatorze, klikaniem (dotyk i D-pad), a nie tylko statycznie.
 Przed każdą wersją dla użytkownika uruchamiamy inne testy na emulatorze niż te, które już przeszły.
 
-## 1. Zasada wydania (obowiązuje od rc0.9.6)
+## 1. Zasada wydania (obowiązuje od rc0.9.6, wdrożona: workflow `rc.yml`)
 
 APK trafia do użytkownika dopiero, gdy **dla tego samego SHA** zielone są wszystkie joby CI, w tym `emulator`.
-Kolejność: commit → push → CI (spotless, detekt, lint, testy, Roborazzi, build debug/release, **emulator**, gitleaks) →
+Wydanie rc: `git push origin dev:rcbuild/<wersja>` (workflow `Release candidate` sam sprawdza bramkę i buduje APK; pomija commity bota ze zrzutami). Kolejność: commit → push → CI (spotless, detekt, lint, testy, Roborazzi, build debug/release, **emulator**, gitleaks) →
 dopiero potem `SendUserFile`. W wiadomości z APK podaję numer biegu CI i wynik emulatora; brak biegu = brak wysyłki.
 
 Dlaczego: rc0.9.5 wyszło z lokalnymi testami, ale bez CI. CI reagowało tylko na `main` i `faza-*`, a gałąź robocza sesji to

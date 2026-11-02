@@ -25,7 +25,7 @@ Cel: wszystko, co użytkownik codziennie robi, działa na boxie bez błędów.
 - [~] 1.5 Na żywo: żywy podgląd wideo ZROBIONY (wyciszony, po 0,9 s, zwalniany przy wyjściu, przełącznik w Odtwarzaniu; nieprzetestowany na boxie). Lista kanałów w odtwarzaczu (OK) i CH+/CH− ZROBIONE; długie OK = ulubione jest w liście Na żywo
 - [x] 1.6 Jedna skala animacji: `Motion` w designsystemie (fokus 120, szyna 160, panele 220, fade 150), użyta w szynie, FocusItem, Filmach, Na żywo
 - [ ] 1.7 (wymaga emulatora/strumienia, NIE ZROBIONE) Odtwarzacz: test na strumieniu wielościeżkowym (emulator HLS z ffmpeg) + poprawki audio/napisy
-- [ ] 1.11 Testy emulatora jako bramka wydania + silnik odtwarzania: plan w `docs/PLAN-TESTY-EMULATOR.md` (E1-E10, P1-P6). Zrobione: CI na `main-*`, emulator: BACK z odtwarzacza i sortowanie dotykiem
+- [ ] 1.11 Testy emulatora jako bramka wydania + silnik odtwarzania: plan w `docs/PLAN-TESTY-EMULATOR.md` (E1-E10, P1-P6). Zrobione: CI na `dev`/`main-*`, emulator: BACK z odtwarzacza i sortowanie dotykiem (potwierdzone na emulatorze CI #216), workflow `rc.yml` z bramką (rc0.9.6-rc1 wydany z GitHub Actions). Następne: E1/E2/E5 i P1
 - [ ] 1.8 (wymaga pomiaru na boxie po 0.8) Wydajność: pomiar płynności na boxie (zacięcia VOD, otwarcie odtwarzacza), poprawki największych; import w tle po pokazaniu kanałów (VOD dopisywane po)
 - [x] 1.9 Polityki §10.2: decyzja per klasa w `docs/adr/policies-rewrite.md`. Wdrożone: bufor odtwarzania (`LiveBufferPolicy`, ustawienie, E2E) i reguły wznowienia (`ResumeRules`). Reszta: mamy, zostawione do danych z boxa albo poza zakresem 1.0
 - [ ] 1.10 Radar: przypomnienia o audycjach (PRZESUNIĘTE NA 1.1: wymaga powiadomień/harmonogramu, nie blokuje 1.0)
@@ -44,7 +44,7 @@ Cel: podpisany APK, dokumentacja, brak znanych blokerów.
   Stalker, profile z PIN-em, efekt szkła z Haze (jeśli pomiar pozwoli), telefon (2.0).
 
 ## Dziennik zgłoszeń z boxa (do testów regresji)
-Zrobione: lista 404 (nagłówki), wyjście z Ustawień pilotem, EPG nie dociąga, dźwięk w tle po wyjściu, biała karta w zrzutach, dubel w OSD.
+Zrobione: lista 404 (nagłówki), wyjście z Ustawień pilotem, EPG nie dociąga, dźwięk w tle po wyjściu, biała karta w zrzutach, dubel w OSD, odtwarzacz w tle po BACK (rc0.9.4; wewnętrzny zakres ViewModelu), sortowanie Filmów bez efektu na telefonie (rc0.9.4). Do potwierdzenia na urządzeniu w raporcie z rc0.9.6-rc1.
 Otwarte: przeskoki fokusu pilota (czeka na dane z testu pilota).
 
 ## Uwagi procesowe
