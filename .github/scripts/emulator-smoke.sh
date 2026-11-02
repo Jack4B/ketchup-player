@@ -298,8 +298,9 @@ case "$FOCUS_CAT" in
   *) echo "=== Ustawienia: nie udało się ustawić fokusu na kategorii 'Wygląd' klawiszami (fokus: '$FOCUS_CAT') ===" >&2
      FAIL_PROVIDER=1 ;;
 esac
-# PRAWO z kategorii ląduje na najbliższej opcji (karta motywu albo chip akcentu), więc przyjmujemy każdą opcję panelu.
-if ! echo "$FOCUS_IN" | grep -qE "Morski|Czerń|Grafit|Własny|Turkus|Biel|Bursztyn|Żółty|Błękit|Fiolet"; then
+# PRAWO z kategorii ma wejść w opcje panelu: fokus niepusty i nie na liście kategorii (która opcja, zależy od układu).
+CATEGORY_LABELS="Listy i dostawcy|Grupy i kategorie|Odtwarzanie|Oceny i opisy|Telewizja|Sieć i VPN|O aplikacji"
+if [ -z "$FOCUS_IN" ] || echo "$FOCUS_IN" | grep -qE "$CATEGORY_LABELS"; then
   echo "=== Wygląd: PRAWO z kategorii nie weszło w opcje (fokus: '$FOCUS_IN') ===" >&2
   # Diagnostyka #2: czy drugi klawisz PRAWO i klawisz DÓŁ cokolwiek zaznaczają (pierwszy klawisz mógł zniknąć w trybie wejścia).
   key KEYCODE_DPAD_RIGHT
