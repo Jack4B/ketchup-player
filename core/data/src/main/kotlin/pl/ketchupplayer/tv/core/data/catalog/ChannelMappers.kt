@@ -1,5 +1,6 @@
 package pl.ketchupplayer.tv.core.data.catalog
 
+import pl.ketchupplayer.tv.core.data.logos.LogoIndex
 import pl.ketchupplayer.tv.core.database.ChannelEntity
 import pl.ketchupplayer.tv.core.model.Channel
 import pl.ketchupplayer.tv.core.model.ContentType
@@ -16,7 +17,8 @@ internal fun ChannelEntity.toModel() =
         streamUrl,
         number,
         epgId,
-        logo,
+        // Lista dostawcy bez logo: uzupełniamy z wbudowanej bazy iptv-org (tvg-id, potem nazwa).
+        logo?.takeIf { it.isNotBlank() } ?: LogoIndex.current.find(name, epgId),
         groupName,
         ContentType.valueOf(type),
         userAgent,

@@ -9,6 +9,7 @@ import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
 import dagger.hilt.android.HiltAndroidApp
+import pl.ketchupplayer.tv.core.data.logos.LogoIndex
 import pl.ketchupplayer.tv.core.network.NetworkClients
 import timber.log.Timber
 
@@ -19,6 +20,11 @@ class KetchupApp :
     override fun onCreate() {
         super.onCreate()
         Timber.plant(RedactingTree())
+        // Wbudowana baza logo stacji (iptv-org, ok. 25 KB); błąd odczytu nie może zatrzymać aplikacji.
+        runCatching {
+            val tsv = assets.open("logos/iptv-org.tsv").bufferedReader().use { it.readText() }
+            LogoIndex.install(LogoIndex.parse(tsv))
+        }.onFailure { Timber.w(it, "Brak wbudowanej bazy logo") }
     }
 
     /**
