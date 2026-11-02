@@ -18,9 +18,9 @@
     <string name="appearance_title">Wygląd</string>
     <string name="appearance_theme">Motyw</string>
     <string name="appearance_accent">Kolor akcentu</string>
-    <string name="appearance_theme_granat">Granat</string>
+    <string name="appearance_theme_morski">Morski</string>
     <string name="appearance_theme_czern">Czerń</string>
-    <string name="appearance_theme_bordo">Bordo</string>
+    <string name="appearance_theme_grafit">Grafit</string>
     <string name="accent_turkus">Turkus</string>
     <string name="accent_biel">Biel</string>
     <string name="accent_bursztyn">Bursztyn</string>

@@ -77,7 +77,7 @@ object KetchupTheme {
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun KetchupTheme(
-    theme: ThemeId = ThemeId.GRANAT,
+    theme: ThemeId = ThemeId.MORSKI,
     accent: AccentChoice = AccentChoice.Preset(theme.defaultAccent),
     device: DeviceClass = rememberDeviceClass(),
     content: @Composable () -> Unit,

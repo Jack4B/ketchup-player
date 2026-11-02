@@ -21,7 +21,7 @@ class DataStoreAppearanceRepository
         override val appearance: Flow<Appearance> =
             store.data.map { prefs ->
                 Appearance(
-                    theme = ThemeId.entries.firstOrNull { it.name == prefs[THEME] } ?: ThemeId.GRANAT,
+                    theme = themeFromStored(prefs[THEME]),
                     accent = decode(prefs[ACCENT]),
                     glassBlur = prefs[BLUR] ?: false,
                 )
@@ -61,4 +61,12 @@ class DataStoreAppearanceRepository
                 androidx.datastore.preferences.core
                     .booleanPreferencesKey("appearance_glass_blur")
         }
+    }
+
+/** Stare nazwy motywów z wersji 0.x (Granat, Bordo) trafiają na ich następców; nieznane na domyślny Morski. */
+internal fun themeFromStored(name: String?): ThemeId =
+    when (name) {
+        "GRANAT" -> ThemeId.MORSKI
+        "BORDO" -> ThemeId.GRAFIT
+        else -> ThemeId.entries.firstOrNull { it.name == name } ?: ThemeId.MORSKI
     }

@@ -204,7 +204,7 @@ check_section "Ustawienia" K1 "Listy i dostawcy" 16_ustawienia
 
 # ---------- ustawienia: wygląd, odtwarzanie ----------
 tap "Wygląd" && { sleep 1.5; shot 17_wyglad >/dev/null
-  for th in "Czerń" "Bordo" "Granat"; do { tap "$th" || { key 20; sleep 1; tap "$th"; }; } && { sleep 1; shot "18_motyw_$th" >/dev/null; }; done
+  for th in "Czerń" "Grafit" "Morski"; do { tap "$th" || { key 20; sleep 1; tap "$th"; }; } && { sleep 1; shot "18_motyw_$th" >/dev/null; }; done
   record G1 "Zmiana motywu (zrzuty 18_motyw_*)" PASS "oceń wizualnie"; }
 tap "Odtwarzanie" && { sleep 1.5; shot 19_odtwarzanie >/dev/null; record E4 "Ustawienia odtwarzania widoczne" PASS; }
 

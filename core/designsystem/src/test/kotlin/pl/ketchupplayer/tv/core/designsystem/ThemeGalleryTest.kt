@@ -28,14 +28,14 @@ class ThemeGalleryTest {
     }
 
     @Test
-    fun granat() = shot(ThemeId.GRANAT, name = "theme_granat")
+    fun granat() = shot(ThemeId.MORSKI, name = "theme_granat")
 
     @Test
     fun czern() = shot(ThemeId.CZERN, name = "theme_czern")
 
     @Test
-    fun bordo() = shot(ThemeId.BORDO, name = "theme_bordo")
+    fun bordo() = shot(ThemeId.GRAFIT, name = "theme_bordo")
 
     @Test
-    fun granatZFioletowymAkcentem() = shot(ThemeId.GRANAT, AccentId.FIOLET, "theme_granat_fiolet")
+    fun granatZFioletowymAkcentem() = shot(ThemeId.MORSKI, AccentId.FIOLET, "theme_granat_fiolet")
 }

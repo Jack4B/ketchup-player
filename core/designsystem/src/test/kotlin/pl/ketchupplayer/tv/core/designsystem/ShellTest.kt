@@ -42,7 +42,7 @@ class ShellTest {
         )
 
     private fun show(
-        theme: ThemeId = ThemeId.GRANAT,
+        theme: ThemeId = ThemeId.MORSKI,
         selected: String = "live",
         onSelect: (String) -> Unit = {},
         onRailBack: () -> Unit = {},
@@ -68,8 +68,8 @@ class ShellTest {
     private fun keyboardMode() = key(Key.ShiftLeft)
 
     @Test
-    fun screenshotGranat() {
-        show(ThemeId.GRANAT)
+    fun screenshotMorski() {
+        show(ThemeId.MORSKI)
         compose.onRoot().captureRoboImage("src/test/screenshots/shell_granat.png")
     }
 
@@ -80,8 +80,8 @@ class ShellTest {
     }
 
     @Test
-    fun screenshotBordo() {
-        show(ThemeId.BORDO)
+    fun screenshotGrafit() {
+        show(ThemeId.GRAFIT)
         compose.onRoot().captureRoboImage("src/test/screenshots/shell_bordo.png")
     }
 

@@ -271,9 +271,9 @@ private const val HUE_MAX = 360f
 
 private fun themeName(t: ThemeId) =
     when (t) {
-        ThemeId.GRANAT -> R.string.appearance_theme_granat
+        ThemeId.MORSKI -> R.string.appearance_theme_morski
         ThemeId.CZERN -> R.string.appearance_theme_czern
-        ThemeId.BORDO -> R.string.appearance_theme_bordo
+        ThemeId.GRAFIT -> R.string.appearance_theme_grafit
     }
 
 private fun accentName(a: AccentId) =

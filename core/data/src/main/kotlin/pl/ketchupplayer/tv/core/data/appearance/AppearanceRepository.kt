@@ -5,7 +5,7 @@ import pl.ketchupplayer.tv.core.designsystem.AccentChoice
 import pl.ketchupplayer.tv.core.designsystem.ThemeId
 
 data class Appearance(
-    val theme: ThemeId = ThemeId.GRANAT,
+    val theme: ThemeId = ThemeId.MORSKI,
     /** null = domyślny akcent motywu (zmiana motywu podpowiada jego akcent, o ile użytkownik nie wybrał własnego). */
     val accent: AccentChoice? = null,
     /** Rozmycie grafiki w tle (Android 12+); domyślnie wyłączone, bo na słabych boxach kosztuje klatki. */

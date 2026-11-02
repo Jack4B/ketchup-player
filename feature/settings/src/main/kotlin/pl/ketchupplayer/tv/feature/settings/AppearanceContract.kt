@@ -17,7 +17,7 @@ data class CustomEditor(
 )
 
 data class AppearanceUiState(
-    val theme: ThemeId = ThemeId.GRANAT,
+    val theme: ThemeId = ThemeId.MORSKI,
     val accent: AccentChoice = AccentChoice.Preset(AccentId.TURKUS),
     val editor: CustomEditor? = null,
     val glassBlur: Boolean = false,

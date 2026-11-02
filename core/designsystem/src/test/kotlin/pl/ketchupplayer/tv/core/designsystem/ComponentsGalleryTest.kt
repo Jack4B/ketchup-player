@@ -29,14 +29,14 @@ class ComponentsGalleryTest {
     private fun key(k: Key) = compose.onRoot().performKeyInput { pressKey(k) }
 
     @Test
-    fun galeriaGranat() {
-        compose.setContent { KetchupTheme(ThemeId.GRANAT) { ComponentsGallery() } }
+    fun galeriaMorski() {
+        compose.setContent { KetchupTheme(ThemeId.MORSKI) { ComponentsGallery() } }
         compose.onRoot().captureRoboImage("src/test/screenshots/components_granat.png")
     }
 
     @Test
-    fun galeriaBordoZFokusem() {
-        compose.setContent { KetchupTheme(ThemeId.BORDO) { ComponentsGallery() } }
+    fun galeriaGrafitZFokusem() {
+        compose.setContent { KetchupTheme(ThemeId.GRAFIT) { ComponentsGallery() } }
         compose.waitForIdle()
         compose.onRoot().captureRoboImage("src/test/screenshots/components_bordo_focus.png")
     }

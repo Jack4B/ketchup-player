@@ -45,10 +45,10 @@ class AppearanceScreenTest {
     @Test
     fun screenshotEdytoraWlasnegoKoloru() {
         val editor = CustomEditor("#8844CC", 270f, 0.55f, 0.5f, warnings = setOf(AccentWarning.LOOKS_LIKE_ERROR_RED))
-        val state = AppearanceUiState(ThemeId.BORDO, AccentChoice.Custom(0xFF8844CCL), editor)
+        val state = AppearanceUiState(ThemeId.GRAFIT, AccentChoice.Custom(0xFF8844CCL), editor)
         compose.setContent {
             KetchupTheme(
-                ThemeId.BORDO,
+                ThemeId.GRAFIT,
                 state.accent,
                 DeviceClass.TV,
             ) { AppearanceScreen(state, {}, {}) }
@@ -56,7 +56,7 @@ class AppearanceScreenTest {
         compose.onRoot().captureRoboImage("src/test/screenshots/appearance_custom.png")
     }
 
-    /** D-pad: fokus na pierwszej karcie motywu (Granat), PRAWO na Czerń, OK wybiera. */
+    /** D-pad: fokus na pierwszej karcie motywu (Morski), PRAWO na Czerń, OK wybiera. */
     @Test
     fun dpadWybierzMotyw() {
         val events = mutableListOf<AppearanceEvent>()

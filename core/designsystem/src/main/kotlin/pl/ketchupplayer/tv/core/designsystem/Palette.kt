@@ -1,19 +1,19 @@
 package pl.ketchupplayer.tv.core.designsystem
 
-/** Motywy z makiet v3 (docs/mockups/NOTATKI-v3.md §2). Akcent jest wybierany osobno ([AccentId]). */
+/** Motywy v5 (makieta „Ketchup Player v4 makiety”): stonowane, jak TiviMate. Akcent wybierany osobno ([AccentId]). */
 enum class ThemeId(
     val defaultAccent: AccentId,
 ) {
-    GRANAT(AccentId.TURKUS),
+    MORSKI(AccentId.TURKUS),
     CZERN(AccentId.BIEL),
-    BORDO(AccentId.BURSZTYN),
+    GRAFIT(AccentId.TURKUS),
 }
 
 /** Kolor akcentu (NOTATKI-v3 §3). Bez zieleni (zarezerwowana dla nowych odcinków) i bez czerwieni (błędy). */
 enum class AccentId(
     val argb: Long,
 ) {
-    TURKUS(0xFF33B5C4),
+    TURKUS(0xFF35C2B4),
     BIEL(0xFFEDEDED),
     BURSZTYN(0xFFE3A857),
     ZOLTY(0xFFE8C547),
@@ -47,18 +47,18 @@ object Palettes {
 
     fun tokens(theme: ThemeId): PaletteTokens =
         when (theme) {
-            ThemeId.GRANAT ->
+            ThemeId.MORSKI ->
                 PaletteTokens(
-                    background = 0xFF0A1A2F,
-                    surface2 = 0xFF163152,
-                    surface3 = 0xFF21466F,
-                    textPrimary = 0xFFEAF2FA,
-                    textSecondary = 0xFFA6BCD6,
-                    outline = 0xFF24446B,
-                    scrim = 0xFF061224,
-                    channelTile = 0xFFE8EEF6,
-                    channelTileText = 0xFF0A1A2F,
-                    cornerRadiusDp = 18,
+                    background = 0xFF0B1112,
+                    surface2 = 0xFF162023,
+                    surface3 = 0xFF1E2B2F,
+                    textPrimary = 0xFFE8EFF0,
+                    textSecondary = 0xFFA3B6BA,
+                    outline = 0xFF2B3B40,
+                    scrim = 0xFF060B0C,
+                    channelTile = 0xFFE6EEEF,
+                    channelTileText = 0xFF0B1112,
+                    cornerRadiusDp = 20,
                 )
             ThemeId.CZERN ->
                 PaletteTokens(
@@ -73,18 +73,18 @@ object Palettes {
                     channelTileText = 0xFFF2F2F2,
                     cornerRadiusDp = 6,
                 )
-            ThemeId.BORDO ->
+            ThemeId.GRAFIT ->
                 PaletteTokens(
-                    background = 0xFF2A1417,
-                    surface2 = 0xFF552E33,
-                    surface3 = 0xFF6A3A41,
-                    textPrimary = 0xFFF6ECE6,
-                    textSecondary = 0xFFDDC6BE,
-                    outline = 0xFF45232A,
-                    scrim = 0xFF1A0A0C,
-                    channelTile = 0xFFF1E3D3,
-                    channelTileText = 0xFF3A1C20,
-                    cornerRadiusDp = 26,
+                    background = 0xFF121315,
+                    surface2 = 0xFF1A1C1F,
+                    surface3 = 0xFF24272B,
+                    textPrimary = 0xFFECEEF0,
+                    textSecondary = 0xFFA9AFB6,
+                    outline = 0xFF33373D,
+                    scrim = 0xFF0A0B0C,
+                    channelTile = 0xFFE9ECEF,
+                    channelTileText = 0xFF121315,
+                    cornerRadiusDp = 18,
                 )
         }
 }

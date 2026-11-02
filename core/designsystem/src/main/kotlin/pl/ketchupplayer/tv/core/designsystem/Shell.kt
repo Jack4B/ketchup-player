@@ -81,44 +81,46 @@ data class RailEntry(
     val badge: Boolean = false,
 )
 
-/** Tło aplikacji per motyw (makiety v3): Granat z gradientem, Czerń płaska, Bordo z winietą. */
+/** Tło aplikacji per motyw (v5): Morski z turkusową poświatą, Grafit i Czerń płaskie, bez kolorowych gradientów. */
 @Composable
 fun ThemedBackground(
     modifier: Modifier = Modifier,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val c = KetchupTheme.colors
-    val brush =
+    val glow =
         when (c.theme) {
-            ThemeId.GRANAT ->
-                Brush.linearGradient(
-                    listOf(Color(GRANAT_TOP), Color(GRANAT_BOTTOM)),
-                    start = Offset(0f, 0f),
-                    end = Offset(GRADIENT_DX, GRADIENT_DY),
-                )
-            ThemeId.CZERN -> Brush.linearGradient(listOf(Color.Black, Color.Black))
-            ThemeId.BORDO -> Brush.radialGradient(listOf(Color(BORDO_CENTER), Color(BORDO_EDGE)), radius = BORDO_RADIUS)
+            ThemeId.MORSKI -> Color(MORSKI_GLOW)
+            ThemeId.GRAFIT -> Color(GRAFIT_GLOW)
+            ThemeId.CZERN -> Color.Transparent
         }
-    Box(modifier.fillMaxSize().background(c.background).background(brush), content = content)
+    val base = Brush.linearGradient(listOf(c.surface2, c.background), Offset(0f, 0f), Offset(GRADIENT_DX, GRADIENT_DY))
+    val ambient = Brush.radialGradient(listOf(glow, Color.Transparent), Offset(GLOW_X, GLOW_Y), GLOW_RADIUS)
+    Box(modifier.fillMaxSize().background(c.background).then(backgroundFor(c.theme, base, ambient)), content = content)
 }
 
-private const val GRANAT_TOP = 0xFF0F2A4A
-private const val GRANAT_BOTTOM = 0xFF07121F
+private fun backgroundFor(
+    theme: ThemeId,
+    base: Brush,
+    ambient: Brush,
+): Modifier = if (theme == ThemeId.CZERN) Modifier else Modifier.background(base).background(ambient)
+
+private const val MORSKI_GLOW = 0x4D2FB3A6
+private const val GRAFIT_GLOW = 0x264A5560
 private const val GRADIENT_DX = 900f
 private const val GRADIENT_DY = 1900f
-private const val BORDO_CENTER = 0xFF5A2A2E
-private const val BORDO_EDGE = 0xFF24100F
-private const val BORDO_RADIUS = 1800f
+private const val GLOW_X = 1500f
+private const val GLOW_Y = 100f
+private const val GLOW_RADIUS = 1100f
 
-/** Panel treści wg motywu: Granat półprzezroczysty, Czerń tylko z obrysem, Bordo pełny i mocno zaokrąglony. */
+/** Panel treści wg motywu: Morski i Grafit półprzezroczyste (szkło), Czerń tylko z obrysem. */
 @Composable
 fun Modifier.panel(): Modifier {
     val c = KetchupTheme.colors
     val shape = RoundedCornerShape(c.cornerRadius)
     return when (c.theme) {
-        ThemeId.GRANAT -> this.background(c.surface2.copy(alpha = GRANAT_PANEL_ALPHA), shape)
+        ThemeId.MORSKI, ThemeId.GRAFIT -> this.background(c.surface2.copy(alpha = GLASS_PANEL_ALPHA), shape)
         ThemeId.CZERN -> this.border(1.dp, c.outline, shape)
-        ThemeId.BORDO -> this.background(c.surface2, shape)
     }
 }
 
@@ -157,7 +159,7 @@ private const val GLASS_PANEL_TOP = 0.62f
 private const val GLASS_PANEL_BOTTOM = 0.42f
 private const val GLASS_PANEL_EDGE = 0.10f
 
-private const val GRANAT_PANEL_ALPHA = 0.72f
+private const val GLASS_PANEL_ALPHA = 0.72f
 
 private val RAIL_COLLAPSED = 58.dp
 private val RAIL_EXPANDED = 210.dp
@@ -338,7 +340,7 @@ private fun NavRail(
     }
 }
 
-private val RAIL_GLASS_RADIUS = 28.dp
+private val RAIL_GLASS_RADIUS = 29.dp
 private const val GLASS_TOP = 0.62f
 private const val GLASS_BOTTOM = 0.42f
 private const val GLASS_TOP_OPEN = 0.82f

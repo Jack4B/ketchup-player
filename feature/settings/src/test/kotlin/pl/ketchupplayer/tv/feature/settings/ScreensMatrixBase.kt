@@ -42,7 +42,7 @@ abstract class ScreensMatrixBase(
         )
 
     private fun show(
-        theme: ThemeId = ThemeId.GRANAT,
+        theme: ThemeId = ThemeId.MORSKI,
         accent: AccentChoice = AccentChoice.Preset(theme.defaultAccent),
         content: @androidx.compose.runtime.Composable () -> Unit,
     ) {
@@ -64,8 +64,8 @@ abstract class ScreensMatrixBase(
     @Test
     fun wygladBordoZEdytorem() {
         val editor = CustomEditor("#8844CC", 270f, 0.55f, 0.5f)
-        val state = AppearanceUiState(ThemeId.BORDO, AccentChoice.Custom(0xFF8844CCL), editor)
-        show(ThemeId.BORDO, state.accent) { AppearanceScreen(state, {}, {}) }
+        val state = AppearanceUiState(ThemeId.GRAFIT, AccentChoice.Custom(0xFF8844CCL), editor)
+        show(ThemeId.GRAFIT, state.accent) { AppearanceScreen(state, {}, {}) }
         shot("appearance_custom")
     }
 

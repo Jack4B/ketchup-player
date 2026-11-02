@@ -132,7 +132,7 @@ class ScenariosTest {
             onboarding.setDone(true) // kreator ma własny scenariusz; reszta zaczyna od ekranu głównego
             epgSources.setEnabled(BuiltInEpgSources.OVH_ID, false)
             epgSources.setEnabled(BuiltInEpgSources.TELEMAN_ID, false)
-            appearance.setTheme(ThemeId.GRANAT)
+            appearance.setTheme(ThemeId.MORSKI)
             failoverSettings.setEnabled(true)
             failoverSettings.setSensitivity(FailoverSensitivity.STANDARD)
             failoverSettings.setTvDelaySeconds(BkFailoverPolicy.DEFAULT_TV_DELAY_SECONDS)
@@ -210,6 +210,14 @@ class ScenariosTest {
 
     private fun click(text: String) {
         waitForText(text)
+        // Ten sam tekst bywa najpierw w panelu podglądu (bez akcji); czekamy, aż pojawi się też klikalny element.
+        waitFor {
+            compose
+                .onAllNodesWithText(text)
+                .filter(hasClickAction())
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
         clickable(text).performScrollTo().performClick()
     }
 
@@ -970,15 +978,15 @@ class ScenariosTest {
         waitFor { compose.onAllNodesWithText("BBC World").fetchSemanticsNodes().isEmpty() }
     }
 
-    /** Scenariusz: użytkownik wybiera motyw Bordo; po restarcie aktywności motyw jest zapamiętany. */
+    /** Scenariusz: użytkownik wybiera motyw Grafit; po restarcie aktywności motyw jest zapamiętany. */
     @Test
     fun wybranyMotywPrzezywaRestart() {
         settingsPage("Wygląd")
-        click("Bordo")
-        waitFor { runBlocking { appearance.appearance.first().theme == ThemeId.BORDO } }
+        click("Grafit")
+        waitFor { runBlocking { appearance.appearance.first().theme == ThemeId.GRAFIT } }
         compose.activityRule.scenario.recreate()
         compose.waitForIdle()
-        assertEquals(ThemeId.BORDO, runBlocking { appearance.appearance.first().theme })
+        assertEquals(ThemeId.GRAFIT, runBlocking { appearance.appearance.first().theme })
         waitForText("Motyw") // ekran Wygląd po restarcie dalej widoczny
     }
 }

@@ -27,7 +27,7 @@ class CustomAccentTest {
 
     @Test
     fun `gotowy akcent nie jest zmieniany`() {
-        val f = AccentFit.fit(ThemeId.GRANAT, AccentId.TURKUS.argb)
+        val f = AccentFit.fit(ThemeId.MORSKI, AccentId.TURKUS.argb)
         assertFalse(f.adjusted)
         assertEquals(AccentId.TURKUS.argb, f.argb)
     }
@@ -63,11 +63,11 @@ class CustomAccentTest {
     @Test
     fun `ostrzezenia dla zieleni i czerwieni`() {
         assertTrue(
-            AccentFit.fit(ThemeId.GRANAT, 0xFF3DBE4BL).warnings.contains(AccentWarning.LOOKS_LIKE_NEW_EPISODE_GREEN),
+            AccentFit.fit(ThemeId.MORSKI, 0xFF3DBE4BL).warnings.contains(AccentWarning.LOOKS_LIKE_NEW_EPISODE_GREEN),
         )
-        assertTrue(AccentFit.fit(ThemeId.GRANAT, 0xFFFF4040L).warnings.contains(AccentWarning.LOOKS_LIKE_ERROR_RED))
-        assertTrue(AccentFit.fit(ThemeId.GRANAT, AccentId.TURKUS.argb).warnings.isEmpty())
-        assertTrue(AccentFit.fit(ThemeId.GRANAT, 0xFFEDEDEDL).warnings.isEmpty())
+        assertTrue(AccentFit.fit(ThemeId.MORSKI, 0xFFFF4040L).warnings.contains(AccentWarning.LOOKS_LIKE_ERROR_RED))
+        assertTrue(AccentFit.fit(ThemeId.MORSKI, AccentId.TURKUS.argb).warnings.isEmpty())
+        assertTrue(AccentFit.fit(ThemeId.MORSKI, 0xFFEDEDEDL).warnings.isEmpty())
     }
 
     @Test

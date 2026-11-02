@@ -6,20 +6,18 @@ import org.junit.Test
 
 /** Tabele kontrastu z docs/mockups/NOTATKI-v3.md §4: wszystkie pary muszą przejść WCAG AA. */
 class PaletteContrastTest {
-    private fun Double.near(expected: Double) = assertEquals(expected, this, 0.02)
-
+    /** Progi zamiast dokładnych liczb: paleta v5 ma zachować czytelność, a nie konkretne wartości z notatek v3. */
     @Test
-    fun `wartosci zgodne z tabelami z notatek`() {
-        val g = Palettes.tokens(ThemeId.GRANAT)
-        Contrast.ratio(g.textPrimary, g.background).near(15.46)
-        Contrast.ratio(g.textSecondary, g.surface3).near(4.97)
-        Contrast.ratio(AccentId.TURKUS.argb, g.background).near(7.11)
-        Contrast.ratio(AccentId.TURKUS.argb, g.surface3).near(3.94)
+    fun `kluczowe kontrasty palety v5 nie spadaja ponizej progow`() {
+        val m = Palettes.tokens(ThemeId.MORSKI)
+        assertTrue(Contrast.ratio(m.textPrimary, m.background) >= 14.0)
+        assertTrue(Contrast.ratio(AccentId.TURKUS.argb, m.background) >= 7.0)
+        assertTrue(Contrast.ratio(AccentId.TURKUS.argb, m.surface3) >= 4.5)
         val c = Palettes.tokens(ThemeId.CZERN)
-        Contrast.ratio(c.textPrimary, c.background).near(18.76)
-        val b = Palettes.tokens(ThemeId.BORDO)
-        Contrast.ratio(b.textPrimary, b.background).near(14.91)
-        Contrast.ratio(AccentId.BLEKIT.argb, b.surface3).near(3.64)
+        assertTrue(Contrast.ratio(c.textPrimary, c.background) >= 18.0)
+        val g = Palettes.tokens(ThemeId.GRAFIT)
+        assertTrue(Contrast.ratio(g.textPrimary, g.background) >= 14.0)
+        assertTrue(Contrast.ratio(AccentId.TURKUS.argb, g.surface3) >= 4.5)
     }
 
     @Test
@@ -58,8 +56,8 @@ class PaletteContrastTest {
 
     @Test
     fun `domyslne akcenty motywow`() {
-        assertEquals(AccentId.TURKUS, ThemeId.GRANAT.defaultAccent)
+        assertEquals(AccentId.TURKUS, ThemeId.MORSKI.defaultAccent)
         assertEquals(AccentId.BIEL, ThemeId.CZERN.defaultAccent)
-        assertEquals(AccentId.BURSZTYN, ThemeId.BORDO.defaultAccent)
+        assertEquals(AccentId.TURKUS, ThemeId.GRAFIT.defaultAccent)
     }
 }

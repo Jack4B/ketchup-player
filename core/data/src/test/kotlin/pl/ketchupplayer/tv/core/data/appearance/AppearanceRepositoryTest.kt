@@ -23,10 +23,10 @@ class AppearanceRepositoryTest {
         )
 
     @Test
-    fun `domyslnie Granat z akcentem Turkus`() =
+    fun `domyslnie Morski z akcentem Turkus`() =
         runTest {
             val a = repo().appearance.first()
-            assertEquals(ThemeId.GRANAT, a.theme)
+            assertEquals(ThemeId.MORSKI, a.theme)
             assertNull(a.accent)
             assertEquals(AccentChoice.Preset(AccentId.TURKUS), a.effectiveAccent)
         }
@@ -35,8 +35,8 @@ class AppearanceRepositoryTest {
     fun `zmiana motywu bez wlasnego akcentu zmienia akcent domyslny`() =
         runTest {
             val r = repo()
-            r.setTheme(ThemeId.BORDO)
-            assertEquals(AccentChoice.Preset(AccentId.BURSZTYN), r.appearance.first().effectiveAccent)
+            r.setTheme(ThemeId.CZERN)
+            assertEquals(AccentChoice.Preset(AccentId.BIEL), r.appearance.first().effectiveAccent)
         }
 
     @Test
@@ -59,4 +59,16 @@ class AppearanceRepositoryTest {
             r.setAccent(null)
             assertNull(r.appearance.first().accent)
         }
+}
+
+class ThemeMigrationTest {
+    /** Użytkownik z wersji 0.x ma zapisane stare nazwy motywów: po aktualizacji dostaje ich następców, bez crasha. */
+    @org.junit.Test
+    fun `stare nazwy motywow trafiaja na nastepcow`() {
+        org.junit.Assert.assertEquals(pl.ketchupplayer.tv.core.designsystem.ThemeId.MORSKI, themeFromStored("GRANAT"))
+        org.junit.Assert.assertEquals(pl.ketchupplayer.tv.core.designsystem.ThemeId.GRAFIT, themeFromStored("BORDO"))
+        org.junit.Assert.assertEquals(pl.ketchupplayer.tv.core.designsystem.ThemeId.CZERN, themeFromStored("CZERN"))
+        org.junit.Assert.assertEquals(pl.ketchupplayer.tv.core.designsystem.ThemeId.MORSKI, themeFromStored(null))
+        org.junit.Assert.assertEquals(pl.ketchupplayer.tv.core.designsystem.ThemeId.MORSKI, themeFromStored("???"))
+    }
 }
