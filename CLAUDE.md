@@ -9,3 +9,5 @@
 - Zero sekretów w repo. Teksty w strings.xml (PL domyślnie).
 - Debrid/scrapery/URL resolver: poza zakresem.
 - Testy realnych scenariuszy (E2E) są obowiązkowe: każda funkcja ma scenariusz użytkownika na realistycznych danych (pełny graf Hilt, prawdziwy Room, serwer HTTP, UI sterowany D-pad/dotykiem), a nie tylko test jednostkowy. Nowy błąd = najpierw test, który go odtwarza. Fixture'y: tylko publiczne listy (iptv-org) i dane syntetyczne o kształcie prawdziwych; dane z kont użytkownika nigdy w repo.
+- Bramka wydania (docs/PLAN-TESTY-EMULATOR.md): APK do użytkownika dopiero po zielonym CI **na tym samym SHA**, w tym job `emulator` (klikanie: dotyk i D-pad, prawdziwy ExoPlayer). Lokalne testy to za mało. Podaj numer biegu CI w wiadomości z APK. Każdy błąd z urządzenia dostaje też scenariusz w `.github/scripts/emulator-smoke.sh`.
+- Silnik: Media3 ExoPlayer rozbudowujemy wokół (fabryka rendererów, TS, dekodery), nie piszemy własnego; drugi silnik tylko przez `PlayerController` i ADR.

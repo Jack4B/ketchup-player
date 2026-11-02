@@ -1,7 +1,7 @@
 name: CI
 on:
   push:
-    branches: [main, 'faza-*']
+    branches: [main, 'faza-*', 'main-*']
   pull_request:
 
 concurrency:
@@ -28,18 +28,18 @@ jobs:
         run: ./gradlew spotlessCheck detekt
       - name: Testy jednostkowe
         run: ./gradlew testDebugUnitTest :core:model:test :core:policy:test :epg:radar:test :provider:api:test
-      - name: Roborazzi (gałęzie faza-* nagrywają baseline, main i inne gałęzie weryfikują)
+      - name: Roborazzi (gałęzie faza-* i main-* nagrywają baseline, main i inne gałęzie weryfikują)
         run: |
           # W biegu PR GITHUB_REF_NAME to „<nr>/merge”, więc nazwę gałęzi bierzemy z GITHUB_HEAD_REF. Baseline'y gałęzi
           # faza-* zapisuje bieg push (commit bota PO zmianie UI); bieg PR porównywałby je ze starymi i zawsze padał.
           branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
-          if [[ "${branch}" == faza-* ]]; then
+          if [[ "${branch}" == faza-* || "${branch}" == main-* ]]; then
             ./gradlew recordRoborazziDebug
           else
             ./gradlew verifyRoborazziDebug
           fi
       - name: Commit baseline Roborazzi (tylko gdy dopiero co nagrany)
-        if: github.event_name == 'push' && startsWith(github.ref_name, 'faza-')
+        if: github.event_name == 'push' && (startsWith(github.ref_name, 'faza-') || startsWith(github.ref_name, 'main-'))
         run: |
           git add -A -- '*/src/test/screenshots/*.png'
           if ! git diff --cached --quiet; then
@@ -101,7 +101,7 @@ jobs:
           name: emulator-screenshots
           path: docs/qa/emulator
       - name: Commit zrzutów z emulatora
-        if: always() && github.event_name == 'push' && startsWith(github.ref_name, 'faza-')
+        if: always() && github.event_name == 'push' && (startsWith(github.ref_name, 'faza-') || startsWith(github.ref_name, 'main-'))
         run: |
           git add -A -- docs/qa/emulator
           if ! git diff --cached --quiet; then

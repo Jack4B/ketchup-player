@@ -148,6 +148,79 @@ if ! grep -q "hls/missing" "$OUT/http-server.log"; then
   echo "=== Serwer nie dostał żądania do zepsutej listy A (kanał nie był próbowany) ===" >&2
   FAIL_PROVIDER=1
 fi
+
+# --- Regresja: po BACK z odtwarzacza nic nie może grać w tle (błąd z telefonu/boxa, rc0.9.4) ---
+# Wykrywanie przez AudioPlaybackConfiguration (dumpsys audio) procesu aplikacji. Kontrola pozytywna PRZED BACK: gdy
+# format dumpsys się zmieni i nic nie widać, test ma się wywrócić, a nie przechodzić „na ślepo”.
+APP_UID=$(adb shell pm list packages -U "$PKG" | sed -n 's/.*uid:\([0-9]*\).*/\1/p' | head -1 | tr -d '\r')
+started_players() {
+  adb shell dumpsys audio > "$OUT/dumpsys_audio_$1.txt" 2>&1 || true
+  grep "AudioPlaybackConfiguration" "$OUT/dumpsys_audio_$1.txt" | grep -c "u/pid:$APP_UID/.*state:started" || true
+}
+BEFORE=$(started_players przed_back)
+if [ "${BEFORE:-0}" -lt 1 ]; then
+  echo "=== Kontrola: podczas odtwarzania dumpsys audio nie pokazuje działającego odtwarzacza aplikacji (uid $APP_UID); test BACK nieważny ===" >&2
+  FAIL_PROVIDER=1
+fi
+key KEYCODE_BACK
+sleep 3
+AFTER=$(started_players po_back)
+shot 14_po_back_z_odtwarzacza
+if [ "${AFTER:-0}" -ne 0 ]; then
+  echo "=== Po BACK z odtwarzacza nadal gra odtwarzacz aplikacji ($AFTER) ===" >&2
+  grep "AudioPlaybackConfiguration" "$OUT/dumpsys_audio_po_back.txt" >&2 || true
+  FAIL_PROVIDER=1
+fi
+
+# --- Regresja: sortowanie Filmów dotykiem na długim katalogu bez metadanych (błąd z telefonu, rc0.9.4) ---
+(for i in $(seq 60 -1 1); do
+  [ "$i" = 60 ] && printf '#EXTM3U\n'
+  printf '#EXTINF:-1 group-title="Dramat",Film %02d\nhttp://127.0.0.1:8099/movie/u/p/%d.mkv\n' "$i" "$i"
+done) > "$SRV/filmy.m3u"
+tap "Ustawienia" || FAIL_PROVIDER=1
+tap "Listy i dostawcy" || true
+tap "Dodaj dostawcę" || FAIL_PROVIDER=1
+type_checked "ListaFilmy"
+key KEYCODE_ENTER
+type_checked "http://127.0.0.1:8099/filmy.m3u"
+key KEYCODE_ENTER
+sleep 8
+tap "Filmy" || FAIL_PROVIDER=1
+sleep 4
+# Pierwszy widoczny film (wiersz, potem kolumna) z drzewa UI.
+first_film() {
+  adb shell uiautomator dump /sdcard/ui_vod.xml >/dev/null
+  adb pull /sdcard/ui_vod.xml "$OUT/ui_vod_$1.xml" >/dev/null
+  python3 - "$OUT/ui_vod_$1.xml" <<'PY'
+import re, sys
+s = open(sys.argv[1], encoding="utf-8").read()
+items = []
+for m in re.finditer(r"<node [^>]*>", s):
+    n = m.group(0)
+    t = re.search(r'(?:text|content-desc)="(?:[A-Z], )?(Film \d\d)"', n)
+    b = re.search(r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', n)
+    if t and b:
+        items.append((int(b.group(2)), int(b.group(1)), t.group(1)))
+items.sort()
+print(items[0][2] if items else "")
+PY
+}
+shot 15_filmy_domyslnie
+F0=$(first_film domyslnie)
+if [ "$F0" != "Film 60" ]; then
+  echo "=== Filmy: domyślnie (Najnowsze) pierwszy powinien być Film 60 (kolejność dostawcy), jest '$F0' ===" >&2
+  FAIL_PROVIDER=1
+fi
+adb shell input swipe 960 800 960 200 300   # przewinięcie siatki w dół, jak palcem
+sleep 1.5
+tap "A–Z" || FAIL_PROVIDER=1
+sleep 2
+shot 16_filmy_az
+F1=$(first_film az)
+if [ "$F1" != "Film 01" ]; then
+  echo "=== Filmy: po A–Z (dotyk, siatka przewinięta) pierwszy powinien być Film 01, jest '$F1' ===" >&2
+  FAIL_PROVIDER=1
+fi
 if adb logcat -d | grep -qE "FATAL EXCEPTION|ANR in $PKG"; then
   echo "=== Crash lub ANR wykryty. Bufor crash: ===" >&2
   adb logcat -d -b crash | head -120 >&2

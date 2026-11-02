@@ -25,6 +25,7 @@ Cel: wszystko, co użytkownik codziennie robi, działa na boxie bez błędów.
 - [~] 1.5 Na żywo: żywy podgląd wideo ZROBIONY (wyciszony, po 0,9 s, zwalniany przy wyjściu, przełącznik w Odtwarzaniu; nieprzetestowany na boxie). Lista kanałów w odtwarzaczu (OK) i CH+/CH− ZROBIONE; długie OK = ulubione jest w liście Na żywo
 - [x] 1.6 Jedna skala animacji: `Motion` w designsystemie (fokus 120, szyna 160, panele 220, fade 150), użyta w szynie, FocusItem, Filmach, Na żywo
 - [ ] 1.7 (wymaga emulatora/strumienia, NIE ZROBIONE) Odtwarzacz: test na strumieniu wielościeżkowym (emulator HLS z ffmpeg) + poprawki audio/napisy
+- [ ] 1.11 Testy emulatora jako bramka wydania + silnik odtwarzania: plan w `docs/PLAN-TESTY-EMULATOR.md` (E1-E10, P1-P6). Zrobione: CI na `main-*`, emulator: BACK z odtwarzacza i sortowanie dotykiem
 - [ ] 1.8 (wymaga pomiaru na boxie po 0.8) Wydajność: pomiar płynności na boxie (zacięcia VOD, otwarcie odtwarzacza), poprawki największych; import w tle po pokazaniu kanałów (VOD dopisywane po)
 - [x] 1.9 Polityki §10.2: decyzja per klasa w `docs/adr/policies-rewrite.md`. Wdrożone: bufor odtwarzania (`LiveBufferPolicy`, ustawienie, E2E) i reguły wznowienia (`ResumeRules`). Reszta: mamy, zostawione do danych z boxa albo poza zakresem 1.0
 - [ ] 1.10 Radar: przypomnienia o audycjach (PRZESUNIĘTE NA 1.1: wymaga powiadomień/harmonogramu, nie blokuje 1.0)
