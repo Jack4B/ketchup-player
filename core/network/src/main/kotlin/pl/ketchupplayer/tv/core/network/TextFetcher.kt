@@ -24,6 +24,12 @@ sealed class NetworkException(
 fun interface TextFetcher {
     suspend fun fetch(url: String): Result<String>
 
+    /** Jak [fetch], z dodatkowymi nagłówkami (np. `trakt-api-key`). Domyślnie nagłówki są pomijane. */
+    suspend fun fetchWithHeaders(
+        url: String,
+        headers: Map<String, String>,
+    ): Result<String> = fetch(url)
+
     /**
      * Czyta odpowiedź linia po linii bez trzymania całości w pamięci (duże listy M3U).
      * [block] dostaje leniwą sekwencję, ważną tylko w jego trakcie.

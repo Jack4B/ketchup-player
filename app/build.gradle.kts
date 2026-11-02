@@ -15,6 +15,8 @@ android {
         // Klucze API metadanych z sekretów CI (zmienne środowiskowe), puste lokalnie; nigdy w repozytorium.
         buildConfigField("String", "TMDB_KEY", "\"${System.getenv("KETCHUP_TMDB_KEY").orEmpty()}\"")
         buildConfigField("String", "OMDB_KEY", "\"${System.getenv("KETCHUP_OMDB_KEY").orEmpty()}\"")
+        buildConfigField("String", "TRAKT_ID", "\"${System.getenv("KETCHUP_TRAKT_ID").orEmpty()}\"")
+        buildConfigField("String", "MDBLIST_KEY", "\"${System.getenv("KETCHUP_MDBLIST_KEY").orEmpty()}\"")
     }
     // Stały klucz debug w repozytorium (hasło `android`, jak domyślny klucz Androida): to NIE jest sekret ani klucz wydania.
     // Bez niego każdy bieg CI generuje inny losowy klucz i kolejne APK z CI nie instalują się jako aktualizacja

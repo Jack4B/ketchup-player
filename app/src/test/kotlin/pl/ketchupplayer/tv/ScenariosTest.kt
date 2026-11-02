@@ -133,6 +133,8 @@ class ScenariosTest {
         metadataEndpoints.tmdb = server.url("/tmdb").trimEnd('/')
         metadataEndpoints.omdb = server.url("/omdb").trimEnd('/')
         metadataEndpoints.wikipedia = server.url("/wiki").trimEnd('/')
+        metadataEndpoints.trakt = server.url("/trakt").trimEnd('/')
+        metadataEndpoints.mdblist = server.url("/mdblist").trimEnd('/')
         blockImageNetwork()
         blockImageNetwork()
         FakePlayers.reset()
@@ -1317,6 +1319,42 @@ class ScenariosTest {
         click("Pitbull")
         waitForText("polski film sensacyjny", substring = true)
         assertTrue(compose.onAllNodesWithText("Dodaj klucze", substring = true).fetchSemanticsNodes().isEmpty())
+    }
+
+    /**
+     * Prośba użytkownika („klucze do wszystkich serwisów”): z samym kluczem MDBList i Client ID Traktu szczegóły
+     * pokazują IMDb, Rotten Tomatoes, Metacritic i Trakt oraz polski opis z Traktu.
+     */
+    @Test
+    fun kluczeMdblistITraktDajaOcenyIMetacriticWSzczegolach() {
+        serveXtreamVod()
+        server.serve(
+            "/trakt/search/movie",
+        ) { """[{"type":"movie","movie":{"ids":{"slug":"pitbull","imdb":"tt0397777"}}}]""" }
+        server.serve("/trakt/movies/pitbull/translations/pl") {
+            """[{"language":"pl","overview":"Opis z Traktu po polsku."}]"""
+        }
+        server.serve("/trakt/movies/pitbull") { """{"rating":7.9,"overview":"English","ids":{"imdb":"tt0397777"}}""" }
+        server.serve("/mdblist/imdb/movie/tt0397777") {
+            """{"ratings":[{"source":"imdb","value":7.6},{"source":"tomatoes","value":83},""" +
+                """{"source":"metacritic","value":71}]}"""
+        }
+        runBlocking {
+            metadataKeys.save(
+                pl.ketchupplayer.tv.core.data.metadata
+                    .ApiKeys(trakt = "client-id", mdblist = "klucz-m"),
+            )
+        }
+        addXtreamViaUi("dobre-haslo")
+        waitForText("Kanały: 2", substring = true)
+        nav("Filmy")
+        waitForText("Pitbull")
+        click("Pitbull")
+        waitForText("IMDb 7,6")
+        waitForText("RT 83%")
+        waitForText("Metacritic 71")
+        waitForText("Trakt 7,9")
+        waitForText("Opis z Traktu po polsku.")
     }
 
     /** Scenariusz: klucze API wpisane w Ustawieniach → Oceny i opisy są zapisane (w SecretStore, nie w repo). */

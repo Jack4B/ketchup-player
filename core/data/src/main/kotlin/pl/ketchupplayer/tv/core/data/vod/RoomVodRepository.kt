@@ -62,7 +62,7 @@ class RoomVodRepository
                 rows.filter { it.found }.associate {
                     it.itemId to
                         pl.ketchupplayer.tv.core.data.metadata
-                            .Ratings(it.tmdbRating, it.imdbRating, it.rtPercent)
+                            .Ratings(it.tmdbRating, it.imdbRating, it.rtPercent, it.metacritic, it.traktRating)
                 }
             }
 
@@ -154,6 +154,8 @@ class RoomVodRepository
                                 it.tmdbRating,
                                 it.imdbRating,
                                 it.rtPercent,
+                                it.metacritic,
+                                it.traktRating,
                             )
                         }
                 VodEntry(

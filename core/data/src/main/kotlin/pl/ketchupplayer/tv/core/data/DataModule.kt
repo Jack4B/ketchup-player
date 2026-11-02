@@ -129,12 +129,23 @@ abstract class DataModule {
             endpoints: pl.ketchupplayer.tv.core.data.metadata.MetadataEndpoints,
         ): pl.ketchupplayer.tv.core.data.metadata.MetadataService =
             pl.ketchupplayer.tv.core.data.metadata.MetadataService(
-                pl.ketchupplayer.tv.core.data.metadata
-                    .TmdbSource(fetcher, endpoints),
-                pl.ketchupplayer.tv.core.data.metadata
-                    .OmdbSource(fetcher, endpoints),
-                pl.ketchupplayer.tv.core.data.metadata
-                    .WikipediaSource(fetcher, endpoints),
+                pl.ketchupplayer.tv.core.data.metadata.MetadataSources(
+                    tmdb =
+                        pl.ketchupplayer.tv.core.data.metadata
+                            .TmdbSource(fetcher, endpoints),
+                    omdb =
+                        pl.ketchupplayer.tv.core.data.metadata
+                            .OmdbSource(fetcher, endpoints),
+                    trakt =
+                        pl.ketchupplayer.tv.core.data.metadata
+                            .TraktSource(fetcher, endpoints),
+                    mdblist =
+                        pl.ketchupplayer.tv.core.data.metadata
+                            .MdbListSource(fetcher, endpoints),
+                    wikipedia =
+                        pl.ketchupplayer.tv.core.data.metadata
+                            .WikipediaSource(fetcher, endpoints),
+                ),
             )
     }
 }

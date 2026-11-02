@@ -5,6 +5,9 @@ data class Ratings(
     val tmdb: Double? = null,
     val imdb: Double? = null,
     val rtPercent: Int? = null,
+    /** Metacritic (0-100) i Trakt (0-10): z OMDb, MDBList i Traktu. */
+    val metacritic: Int? = null,
+    val trakt: Double? = null,
 ) {
     /** Ocena do plakietki na karcie: IMDb, a bez niej TMDB. */
     val best: Double? get() = imdb ?: tmdb
@@ -19,7 +22,9 @@ data class Ratings(
             null
         }
 
-    val isEmpty: Boolean get() = tmdb == null && imdb == null && rtPercent == null
+    val isEmpty: Boolean get() =
+        tmdb == null && imdb == null && rtPercent == null && metacritic == null &&
+            trakt == null
 
     companion object {
         val NONE = Ratings()

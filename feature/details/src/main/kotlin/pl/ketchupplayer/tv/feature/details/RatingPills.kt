@@ -19,6 +19,8 @@ internal fun RatingPills(
     r.imdb?.let { InfoPill(stringResource(R.string.details_rating_imdb, score(it)), true) }
     r.tmdb?.let { InfoPill(stringResource(R.string.details_rating_tmdb, score(it)), r.imdb == null) }
     r.rtPercent?.let { InfoPill(stringResource(R.string.details_rating_rt, it)) }
+    r.metacritic?.let { InfoPill(stringResource(R.string.details_rating_metacritic, it)) }
+    r.trakt?.let { InfoPill(stringResource(R.string.details_rating_trakt, score(it))) }
     if (r.isEmpty) providerRating?.takeIf { it > 0.0 }?.let { InfoPill("★ " + score(it), true) }
 }
 

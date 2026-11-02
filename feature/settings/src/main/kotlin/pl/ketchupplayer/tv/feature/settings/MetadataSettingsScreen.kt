@@ -17,6 +17,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
+import pl.ketchupplayer.tv.core.data.metadata.ApiKeys
 import pl.ketchupplayer.tv.core.designsystem.KetchupButton
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.designsystem.ScreenScaffold
@@ -32,46 +33,61 @@ fun MetadataSettingsRoute(
     MetadataSettingsScreen(state, viewModel::save, onBack)
 }
 
-/** Oceny (IMDb, TMDB, Rotten Tomatoes) i polskie opisy: własne, darmowe klucze API w polach poniżej. */
+/**
+ * Oceny (IMDb, Rotten Tomatoes, Metacritic, Trakt, TMDB) i polskie opisy: własne, darmowe klucze API. IMDb i Rotten
+ * Tomatoes nie mają własnych publicznych API, więc ich oceny idą przez OMDb i MDBList.
+ */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun MetadataSettingsScreen(
     state: MetadataUiState,
-    onSave: (tmdb: String, omdb: String) -> Unit,
+    onSave: (ApiKeys) -> Unit,
     onBack: () -> Unit,
 ) {
     BackHandler(onBack = onBack)
     val c = KetchupTheme.colors
-    var tmdb by remember { mutableStateOf("") }
-    var omdb by remember { mutableStateOf("") }
+    var draft by remember { mutableStateOf(ApiKeys()) }
     // Pola wypełniają się po wczytaniu zapisanych kluczy (ViewModel ładuje je asynchronicznie).
-    LaunchedEffect(state.tmdb, state.omdb) {
-        tmdb = state.tmdb
-        omdb = state.omdb
-    }
+    LaunchedEffect(state.keys) { draft = state.keys }
     ScreenScaffold {
         ScreenTitle(stringResource(R.string.metadata_title))
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.metadata_intro), fontSize = 18.sp, color = c.textPrimary)
-            TextInputField(stringResource(R.string.metadata_tmdb_field), tmdb, { tmdb = it }, Modifier)
-            Text(stringResource(R.string.metadata_tmdb_hint), fontSize = 15.sp, color = c.textSecondary)
-            TextInputField(
-                stringResource(R.string.metadata_omdb_field),
-                omdb,
-                { omdb = it },
-                Modifier,
-                onDone = { onSave(tmdb, omdb) },
-            )
-            Text(stringResource(R.string.metadata_omdb_hint), fontSize = 15.sp, color = c.textSecondary)
-            KetchupButton(stringResource(R.string.metadata_save), { onSave(tmdb, omdb) }, primary = true)
+            KeyField(R.string.metadata_tmdb_field, R.string.metadata_tmdb_hint, draft.tmdb) {
+                draft =
+                    draft.copy(tmdb = it)
+            }
+            KeyField(R.string.metadata_omdb_field, R.string.metadata_omdb_hint, draft.omdb) {
+                draft =
+                    draft.copy(omdb = it)
+            }
+            KeyField(R.string.metadata_mdblist_field, R.string.metadata_mdblist_hint, draft.mdblist) {
+                draft = draft.copy(mdblist = it)
+            }
+            KeyField(R.string.metadata_trakt_field, R.string.metadata_trakt_hint, draft.trakt) {
+                draft = draft.copy(trakt = it)
+            }
+            KetchupButton(stringResource(R.string.metadata_save), { onSave(draft) }, primary = true)
             val status =
                 when {
                     state.saved -> R.string.metadata_status_saved
                     state.builtIn -> R.string.metadata_status_builtin
-                    state.tmdb.isBlank() && state.omdb.isBlank() -> R.string.metadata_status_none
+                    !state.keys.any -> R.string.metadata_status_none
                     else -> R.string.metadata_status_set
                 }
             Text(stringResource(status), fontSize = 16.sp, color = c.textSecondary)
         }
     }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun KeyField(
+    label: Int,
+    hint: Int,
+    value: String,
+    onChange: (String) -> Unit,
+) {
+    Text(stringResource(hint), fontSize = 15.sp, color = KetchupTheme.colors.textSecondary)
+    TextInputField(stringResource(label), value, onChange, Modifier)
 }

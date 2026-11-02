@@ -40,9 +40,19 @@ class OkHttpTextFetcher(
             meter,
         )
 
-    override suspend fun fetch(url: String): Result<String> =
+    override suspend fun fetch(url: String): Result<String> = fetchWithHeaders(url, emptyMap())
+
+    override suspend fun fetchWithHeaders(
+        url: String,
+        headers: Map<String, String>,
+    ): Result<String> =
         try {
-            val request = Request.Builder().url(url).build()
+            val request =
+                Request
+                    .Builder()
+                    .url(url)
+                    .apply { headers.forEach { (k, v) -> header(k, v) } }
+                    .build()
             client.newCall(request).await().use { response ->
                 if (!response.isSuccessful) return Result.failure(response.toHttpFailure())
                 Result.success(readLimited(response))

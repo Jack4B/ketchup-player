@@ -12,5 +12,8 @@ import pl.ketchupplayer.tv.core.data.metadata.DefaultApiKeys
 @InstallIn(SingletonComponent::class)
 object MetadataDefaultsModule {
     @Provides
-    fun defaultKeys(): DefaultApiKeys = DefaultApiKeys { ApiKeys(BuildConfig.TMDB_KEY, BuildConfig.OMDB_KEY) }
+    fun defaultKeys(): DefaultApiKeys =
+        DefaultApiKeys {
+            ApiKeys(BuildConfig.TMDB_KEY, BuildConfig.OMDB_KEY, BuildConfig.TRAKT_ID, BuildConfig.MDBLIST_KEY)
+        }
 }

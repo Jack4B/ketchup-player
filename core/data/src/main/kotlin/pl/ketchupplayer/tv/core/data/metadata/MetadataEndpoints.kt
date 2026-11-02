@@ -12,5 +12,9 @@ class MetadataEndpoints
 
         @Volatile var omdb: String = "https://www.omdbapi.com"
 
+        @Volatile var trakt: String = "https://api.trakt.tv"
+
+        @Volatile var mdblist: String = "https://api.mdblist.com"
+
         @Volatile var wikipedia: String = "https://pl.wikipedia.org"
     }

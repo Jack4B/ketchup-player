@@ -155,4 +155,6 @@ data class VodMetaEntity(
     val rtPercent: Int?,
     val fetchedMs: Long,
     val found: Boolean,
+    val metacritic: Int? = null,
+    val traktRating: Double? = null,
 )

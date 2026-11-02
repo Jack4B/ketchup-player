@@ -23,5 +23,7 @@
     <string name="details_rating_imdb">IMDb %1$s</string>
     <string name="details_rating_tmdb">TMDB %1$s</string>
     <string name="details_rating_rt">RT %1$d%%</string>
+    <string name="details_rating_metacritic">Metacritic %1$d</string>
+    <string name="details_rating_trakt">Trakt %1$s</string>
     <string name="details_sources">Źródła: %1$d</string>
 </resources>

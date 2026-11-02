@@ -14,6 +14,8 @@ internal object MetadataJson {
     private val json = Json { ignoreUnknownKeys = true }
 
     fun parse(text: String): JsonObject? = runCatching { json.parseToJsonElement(text) as? JsonObject }.getOrNull()
+
+    fun parseArray(text: String): JsonArray? = runCatching { json.parseToJsonElement(text) as? JsonArray }.getOrNull()
 }
 
 internal fun JsonElement?.obj(): JsonObject? = this as? JsonObject

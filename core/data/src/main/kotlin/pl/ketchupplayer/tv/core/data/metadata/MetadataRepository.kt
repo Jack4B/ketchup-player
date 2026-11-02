@@ -66,7 +66,7 @@ class MetadataRepository
                 return false
             }
             val r = result.ratings
-            dao.upsertMeta(VodMetaEntity(itemId, r.tmdb, r.imdb, r.rtPercent, now, found = true))
+            dao.upsertMeta(VodMetaEntity(itemId, r.tmdb, r.imdb, r.rtPercent, now, found = true, r.metacritic, r.trakt))
             val merged = MetadataMerge.fill(item, result)
             if (merged != item) dao.insertAll(listOf(merged.toEntity()))
             return true
@@ -81,7 +81,9 @@ class MetadataRepository
             apiKeys: ApiKeys,
             now: Long,
         ): Boolean {
-            val noRatings = m.tmdbRating == null && m.imdbRating == null && m.rtPercent == null
+            val noRatings =
+                m.tmdbRating == null && m.imdbRating == null && m.rtPercent == null &&
+                    m.metacritic == null && m.traktRating == null
             if (m.found && noRatings && apiKeys.any) return false
             return m.found || now - m.fetchedMs < RETRY_AFTER_MS
         }

@@ -13,8 +13,7 @@ import javax.inject.Inject
 
 /** Klucze wpisane przez użytkownika oraz informacja, czy aplikacja ma klucze wbudowane (z kompilacji). */
 data class MetadataUiState(
-    val tmdb: String = "",
-    val omdb: String = "",
+    val keys: ApiKeys = ApiKeys(),
     val builtIn: Boolean = false,
     val saved: Boolean = false,
 )
@@ -31,17 +30,16 @@ class MetadataSettingsViewModel
         init {
             viewModelScope.launch {
                 val user = keys.userEntered()
-                _state.value = MetadataUiState(user.tmdb, user.omdb, builtIn = keys.current().any && !user.any)
+                _state.value = MetadataUiState(user, builtIn = keys.current().any && !user.any)
             }
         }
 
-        fun save(
-            tmdb: String,
-            omdb: String,
-        ) {
+        fun save(newKeys: ApiKeys) {
             viewModelScope.launch {
-                keys.save(ApiKeys(tmdb, omdb))
-                _state.value = _state.value.copy(tmdb = tmdb.trim(), omdb = omdb.trim(), saved = true)
+                keys.save(newKeys)
+                _state.value = _state.value.copy(keys = newKeys.trimmed(), saved = true)
             }
         }
     }
+
+private fun ApiKeys.trimmed() = ApiKeys(tmdb.trim(), omdb.trim(), trakt.trim(), mdblist.trim())

@@ -8,6 +8,7 @@ data class OmdbMeta(
     val imdbRating: Double?,
     val rtPercent: Int?,
     val plot: String?,
+    val metacritic: Int? = null,
 )
 
 /** Pyta OMDb (https://www.omdbapi.com) po id IMDb (z TMDB) albo po tytule i roku. */
@@ -41,6 +42,14 @@ class OmdbSource(
                 ?.str("Value")
                 ?.trimEnd('%')
                 ?.toIntOrNull()
-        return OmdbMeta(body.str("imdbRating")?.toDoubleOrNull(), rt, body.str("Plot"))
+        val meta =
+            body["Ratings"]
+                .arr()
+                ?.mapNotNull { it.obj() }
+                ?.firstOrNull { it.str("Source") == "Metacritic" }
+                ?.str("Value")
+                ?.substringBefore('/')
+                ?.toIntOrNull()
+        return OmdbMeta(body.str("imdbRating")?.toDoubleOrNull(), rt, body.str("Plot"), meta)
     }
 }
