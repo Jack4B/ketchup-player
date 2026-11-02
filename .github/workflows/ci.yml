@@ -28,9 +28,12 @@ jobs:
         run: ./gradlew spotlessCheck detekt
       - name: Testy jednostkowe
         run: ./gradlew testDebugUnitTest :core:model:test :core:policy:test :epg:radar:test :provider:api:test
-      - name: Roborazzi (faza-* nagrywa baseline, PR i main weryfikują)
+      - name: Roborazzi (gałęzie faza-* nagrywają baseline, main i inne gałęzie weryfikują)
         run: |
-          if [[ "${GITHUB_REF_NAME}" == faza-* ]]; then
+          # W biegu PR GITHUB_REF_NAME to „<nr>/merge”, więc nazwę gałęzi bierzemy z GITHUB_HEAD_REF. Baseline'y gałęzi
+          # faza-* zapisuje bieg push (commit bota PO zmianie UI); bieg PR porównywałby je ze starymi i zawsze padał.
+          branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          if [[ "${branch}" == faza-* ]]; then
             ./gradlew recordRoborazziDebug
           else
             ./gradlew verifyRoborazziDebug
