@@ -1303,6 +1303,34 @@ class ScenariosTest {
         waitForText("Przewodnik")
     }
 
+    /**
+     * Scenariusz (prośba z raportu): w odtwarzaczu na żywo panel Info pokazuje diagnostykę: bufor, łącze, przerwy,
+     * ocenę stabilności i połączenia listy (1 z 2 z panelu Xtream).
+     */
+    @Test
+    fun panelInfoWOdtwarzaczuPokazujeDiagnostykeIPolaczeniaListy() {
+        serveXtream()
+        addXtreamViaUi("dobre-haslo")
+        waitForText("Kanały: 2", substring = true)
+        nav("Na żywo")
+        click("TVN24 HD")
+        waitFor { FakePlayers.played.isNotEmpty() }
+
+        fun press(keys: List<Key>) =
+            keys.forEach { k ->
+                compose.onRoot().performKeyInput { pressKey(k) }
+                compose.waitForIdle()
+            }
+        press(listOf(Key.ShiftLeft))
+        press(listOf(Key.DirectionDown)) // pasek opcji
+        waitForText("Synchronizacja")
+        press(List(6) { Key.DirectionRight } + Key.DirectionCenter) // z „Audio” do „Info”
+        waitForText("DIAGNOSTYKA")
+        waitForText("Bufor:", substring = true)
+        waitForText("Stabilność: 100%", substring = true)
+        waitForText("Lista: połączenia 1 z 2")
+    }
+
     /** Scenariusz: katalog Xtream bez długości w liście; Home dociąga je z get_vod_info, a „2 h” podpowiada filmy. */
     @Test
     fun mamCzasNaPodpowiadaFilmyZKatalogu() {

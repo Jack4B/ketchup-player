@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -25,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
 import pl.ketchupplayer.tv.core.designsystem.FocusItem
@@ -123,10 +125,19 @@ fun PlayerPanelView(
     controller: PlayerController,
     state: PanelState,
     modifier: Modifier = Modifier,
+    account: pl.ketchupplayer.tv.core.model.AccountInfo? = null,
 ) {
     val c = KetchupTheme.colors
     val firstFocus = remember(panel) { FocusRequester() }
     LaunchedEffect(panel) { firstFocus.requestWhenReady() }
+    // Diagnostyka żyje: statystyki odświeżamy co sekundę, dopóki panel Info jest otwarty.
+    LaunchedEffect(panel) {
+        while (panel == PlayerPanel.INFO) {
+            controller.poll()
+            kotlinx.coroutines.delay(DIAG_POLL_MS)
+        }
+    }
+    val stats by controller.stats.collectAsStateWithLifecycle()
     Column(
         modifier
             .width(PANEL_WIDTH)
@@ -143,7 +154,7 @@ fun PlayerPanelView(
             PlayerPanel.PICTURE -> PictureList(state, firstFocus)
             PlayerPanel.SPEED -> SpeedList(tracks, controller, firstFocus)
             PlayerPanel.SLEEP -> SleepList(state, firstFocus)
-            PlayerPanel.INFO -> InfoList(tracks, firstFocus)
+            PlayerPanel.INFO -> InfoList(tracks, stats, account, firstFocus)
         }
     }
 }
@@ -388,6 +399,8 @@ private fun SleepList(
 @Composable
 private fun InfoList(
     tracks: TrackInfo,
+    stats: pl.ketchupplayer.tv.player.engine.PlaybackStats,
+    account: pl.ketchupplayer.tv.core.model.AccountInfo?,
     first: FocusRequester,
 ) {
     val c = KetchupTheme.colors
@@ -412,11 +425,13 @@ private fun InfoList(
                     color = c.textPrimary,
                 )
             }
+            DiagnosticsSection(stats, account)
         }
     }
 }
 
 private val PANEL_WIDTH = 380.dp
+private const val DIAG_POLL_MS = 1000L
 
 /** Napisy rysowane przez nas (kolor, rozmiar, tło): tekst z kontrolera po uwzględnieniu opóźnienia. */
 @OptIn(ExperimentalTvMaterial3Api::class)

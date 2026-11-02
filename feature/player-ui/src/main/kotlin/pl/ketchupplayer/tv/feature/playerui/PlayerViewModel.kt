@@ -67,6 +67,10 @@ class PlayerViewModel
         val controller: PlayerController = factory.create()
         private val _ui = MutableStateFlow<PlayerUiState>(PlayerUiState.Resolving(""))
         val ui: StateFlow<PlayerUiState> = _ui.asStateFlow()
+        private val _account = MutableStateFlow<pl.ketchupplayer.tv.core.model.AccountInfo?>(null)
+
+        /** Konto listy bieżącego kanału (połączenia w użyciu); null dla list bez takich danych i dla filmów. */
+        val account: StateFlow<pl.ketchupplayer.tv.core.model.AccountInfo?> = _account.asStateFlow()
         private val _notice = MutableStateFlow<String?>(null)
 
         /** Krótka informacja o przełączeniu źródła („Lista 2 · nazwa”); znika po [NOTICE_MS]. */
@@ -115,6 +119,7 @@ class PlayerViewModel
                     return@launch
                 }
                 channelName = channel.name
+                launch { _account.value = catalog.accountInfo(channel.providerId).getOrNull() }
                 _zapChannels.value = zapList(channel, catalog.liveChannels().first())
                 catalog.markWatched(channelId)
                 _ui.value = PlayerUiState.Resolving(channel.name)

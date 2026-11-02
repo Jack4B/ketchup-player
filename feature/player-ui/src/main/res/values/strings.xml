@@ -49,4 +49,16 @@
     <string name="player_ends_at">koniec ok. %1$s</string>
     <string name="player_a11y_pause">Wstrzymaj</string>
     <string name="player_a11y_play">Odtwarzaj</string>
+    <string name="player_diag_title">DIAGNOSTYKA</string>
+    <string name="player_diag_buffer">Bufor: %1$s s</string>
+    <string name="player_diag_bandwidth">Łącze: %1$s Mb/s</string>
+    <string name="player_diag_bandwidth_unknown">Łącze: mierzę…</string>
+    <string name="player_diag_stalls_none">Przerwy w odtwarzaniu: brak</string>
+    <string name="player_diag_stalls">Przerwy w odtwarzaniu: %1$d (łącznie %2$s s)</string>
+    <string name="player_diag_dropped">Zgubione klatki: %1$d</string>
+    <string name="player_diag_stability">Stabilność: %1$d%% (%2$s)</string>
+    <string name="player_diag_level_stable">stabilnie</string>
+    <string name="player_diag_level_fair">średnio</string>
+    <string name="player_diag_level_unstable">niestabilnie</string>
+    <string name="player_diag_connections">Lista: połączenia %1$d z %2$d</string>
 </resources>

@@ -38,6 +38,9 @@ class ExoPlayerController(
     override val player: Player get() = exo
     private val _tracks = MutableStateFlow(TrackInfo())
     override val tracks: StateFlow<TrackInfo> = _tracks.asStateFlow()
+    private val collector = PlaybackStatsCollector { android.os.SystemClock.elapsedRealtime() }
+    private val _stats = MutableStateFlow(PlaybackStats())
+    override val stats: StateFlow<PlaybackStats> = _stats.asStateFlow()
     private val _subtitle = MutableStateFlow("")
     override val subtitle: StateFlow<String> = _subtitle.asStateFlow()
     private val main = Handler(Looper.getMainLooper())
@@ -45,6 +48,7 @@ class ExoPlayerController(
     private var audioDelayMs = 0
 
     init {
+        exo.addAnalyticsListener(StatsAnalyticsListener(collector))
         exo.addListener(
             object : Player.Listener {
                 override fun onPlaybackStateChanged(playbackState: Int) = publish()
@@ -65,6 +69,7 @@ class ExoPlayerController(
     }
 
     override fun play(spec: StreamSpec) {
+        collector.reset()
         val factory = OkHttpDataSource.Factory(client).apply { spec.userAgent?.let(::setUserAgent) }
         val sources = DefaultMediaSourceFactory(factory).setLoadErrorHandlingPolicy(FailFastLoadErrorHandlingPolicy())
         exo.setMediaSource(sources.createMediaSource(MediaItem.fromUri(spec.url)))
@@ -86,7 +91,10 @@ class ExoPlayerController(
         publish()
     }
 
-    override fun poll() = publish()
+    override fun poll() {
+        publish()
+        _stats.value = collector.snapshot(exo.bufferedPosition - exo.currentPosition)
+    }
 
     override fun stop() {
         exo.stop()

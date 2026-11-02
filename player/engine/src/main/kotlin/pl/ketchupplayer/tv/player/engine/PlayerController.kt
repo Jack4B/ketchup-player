@@ -39,6 +39,9 @@ interface PlayerController {
     /** Ścieżki audio/napisów, tempo, przesunięcia, informacje o strumieniu (OSD). Domyślnie puste. */
     val tracks: StateFlow<TrackInfo> get() = NO_TRACKS
 
+    /** Diagnostyka bieżącej sesji (bufor, łącze, przerwy); odświeżana przez [poll]. Domyślnie pusta. */
+    val stats: StateFlow<PlaybackStats> get() = NO_STATS_FLOW
+
     /** Tekst napisów do pokazania teraz (już z uwzględnieniem opóźnienia napisów); pusty = nic. */
     val subtitle: StateFlow<String> get() = NO_SUBTITLE
 

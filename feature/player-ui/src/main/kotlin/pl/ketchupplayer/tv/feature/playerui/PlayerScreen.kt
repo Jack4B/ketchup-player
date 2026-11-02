@@ -90,6 +90,7 @@ fun PlayerRoute(
     val clock by viewModel.clockEnabled.collectAsStateWithLifecycle()
     val zap by viewModel.zapChannels.collectAsStateWithLifecycle()
     val currentId by viewModel.currentChannelId.collectAsStateWithLifecycle()
+    val account by viewModel.account.collectAsStateWithLifecycle()
     PlayerScreen(
         ui,
         viewModel.controller,
@@ -100,6 +101,7 @@ fun PlayerRoute(
         zapChannels = zap,
         currentChannelId = currentId,
         onZap = viewModel::zap,
+        account = account,
     )
 }
 
@@ -119,6 +121,7 @@ fun PlayerScreen(
     zapChannels: List<pl.ketchupplayer.tv.core.model.Channel> = emptyList(),
     currentChannelId: String? = null,
     onZap: (String) -> Unit = {},
+    account: pl.ketchupplayer.tv.core.model.AccountInfo? = null,
 ) {
     BackHandler(onBack = onBack)
     // Po wyjściu z aplikacji (HOME, inna aplikacja, radio) dźwięk nie może grać w tle: pauza przy ON_STOP,
@@ -263,7 +266,9 @@ fun PlayerScreen(
                     }
                     failed || !down -> false
                     panel != null || listOpen -> false
-                    vodTitle == null && zapChannels.size > 1 && isOk(event.key) -> true.also { listOpen = true }
+                    // OK otwiera listę kanałów tylko, gdy pasek opcji jest zamknięty (inaczej OK ma działać na chipie)
+                    vodTitle == null && zapChannels.size > 1 && !chipsOpen && isOk(event.key) ->
+                        true.also { listOpen = true }
                     vodTitle == null && (event.key == Key.ChannelUp || event.key == Key.PageUp) ->
                         true.also { neighbour(zapChannels, currentChannelId, 1)?.let { onZap(it.id) } }
                     vodTitle == null && (event.key == Key.ChannelDown || event.key == Key.PageDown) ->
@@ -360,6 +365,7 @@ fun PlayerScreen(
                     },
                 ),
                 Modifier.align(Alignment.CenterEnd),
+                account,
             )
         }
         if (notice != null) {
