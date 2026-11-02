@@ -48,3 +48,14 @@ adb connect 192.168.1.170:5555
 Skrypt zapyta o adres listy M3U (nie jest zapisywany). Wyniki: `Download/KetchupPlayerTest/<data>/`. Ctrl+C przerywa, logi i tak się zapiszą.
 Tylko instalacja bez testu: `adb -s 192.168.1.170:5555 install -r -d --user 0 ~/storage/downloads/player/<apk>`.
 Log po awarii: `adb -s 192.168.1.170:5555 logcat -d | grep -iE "ketchup|FATAL|AndroidRuntime|OutOfMemory|lmkd|am_kill" | tail -300 > ~/storage/downloads/player/log.txt`
+
+## Test pilota (P1): jak czytać wynik
+Skrypt prosi o 5 krótkich naciśnięć strzałki w dół NA PILOCIE (nie z telefonu). Analizator porównuje zdarzenia sprzętu
+(`getevent`) z tym, co zobaczyła aplikacja (tag `KeyGuard`, tylko build debug), i wypisuje jedno z:
+- PASS: liczba naciśnięć zgodna albo duplikaty sprzętowe odfiltrowane przez filtr aplikacji;
+- WARN „filtr nie łapie”: ustaw Ustawienia → Odtwarzanie → Czułość pilota na podaną wartość;
+- WARN „zdarzenia czekały w kolejce”: skoki po puszczeniu klawisza to zacięcia głównego wątku, nie pilot;
+- FAIL „brak zdarzeń”: nie naciśnięto strzałki albo pilot zgłasza inny kod klawisza (wtedy prześlij `logs/getevent.txt`).
+Analizator jest wbudowany w `ketchup_tvbox_test.sh` (kopiować wystarczy ten jeden plik); test na próbkach:
+`bash tools/tvbox/test_analyze_keys.sh`.
+

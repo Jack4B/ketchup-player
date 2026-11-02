@@ -17,6 +17,9 @@ logo kanałów (Coil); Filmy z chowanymi kategoriami i 6 kolumnami; Home z karta
 Cel: wszystko, co użytkownik codziennie robi, działa na boxie bez błędów.
 - [ ] 1.1 Weryfikacja 0.7.2 na boxie: lista się wczytuje (wybór UA), EPG, pauza w tle, przewijanie, logo (użytkownik, raport zip)
 - [ ] 1.2 Przeskakiwanie fokusu pilota: analiza `keyguard.txt`/`getevent.txt` z testu pilota, poprawka u źródła, zdjęcie obejścia
+  - Przyczyna pustego `keyguard.txt` (rc0.8.1): log klawiszy szedł przez `Timber.d`, a `RedactingTree` przepuszcza INFO i wyżej. Naprawione
+    (`KeyLog`, `Log.i`, debug). Skrypt boxa ma analizator `analyze_keys.sh` (sprzęt vs aplikacja, duplikaty, opóźnienia).
+    Filtr aplikacji domyślnie 250 ms. Przyczynę skoków da się ustalić dopiero na danych z rc0.9.3+.
 - [ ] 1.3 Pełny przegląd BACK/LEWO/PRAWO na każdym ekranie + test na ekran. Zrobione: Home, Na żywo, Ustawienia (scenariusz), Filmy/Seriale (test siatki), Odtwarzacz. Szczegóły ZROBIONE (DetailsScreenTest). Do zrobienia: Szukaj, Moja lista (są scenariusze E2E, brak testów D-pad modułów)
 - [x] 1.4 Ustawienia jako panel wsuwany z prawej (250 ms), nakładka na treść (22:xx 1.11, commit w gałęzi faza-d)
 - [~] 1.5 Na żywo: żywy podgląd wideo ZROBIONY (wyciszony, po 0,9 s, zwalniany przy wyjściu, przełącznik w Odtwarzaniu; nieprzetestowany na boxie). Lista kanałów w odtwarzaczu (OK) i CH+/CH− ZROBIONE; długie OK = ulubione jest w liście Na żywo

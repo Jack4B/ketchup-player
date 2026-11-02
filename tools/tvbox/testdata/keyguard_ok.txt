@@ -1,0 +1,5 @@
+11-02 08:00:01.000 I/KeyGuard( 100): KG t=1000 key=20 rep=0 age=2 gap=-1 dev=3 src=501 drop=0
+11-02 08:00:02.000 I/KeyGuard( 100): KG t=2100 key=20 rep=0 age=1 gap=1100 dev=3 src=501 drop=0
+11-02 08:00:03.000 I/KeyGuard( 100): KG t=3200 key=20 rep=0 age=3 gap=1100 dev=3 src=501 drop=0
+11-02 08:00:04.000 I/KeyGuard( 100): KG t=4300 key=20 rep=0 age=2 gap=1100 dev=3 src=501 drop=0
+11-02 08:00:05.000 I/KeyGuard( 100): KG t=5400 key=20 rep=0 age=2 gap=1100 dev=3 src=501 drop=0
