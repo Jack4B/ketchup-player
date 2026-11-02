@@ -32,7 +32,8 @@ jobs:
           if [ -z "$V" ]; then V="${GITHUB_REF_NAME#v}"; fi
           IFS=. read -r MAJ MIN PAT <<< "$V"
           echo "name=$V" >> "$GITHUB_OUTPUT"
-          echo "code=$((MAJ * 10000 + MIN * 100 + PAT))" >> "$GITHUB_OUTPUT"
+          # Finał ma kod wyższy niż każdy rc tej samej wersji (rc: baza*100+nr, finał: baza*100+99), więc aktualizacja z rc działa.
+          echo "code=$(( (MAJ * 10000 + MIN * 100 + PAT) * 100 + 99 ))" >> "$GITHUB_OUTPUT"
       - name: Klucz podpisu (z sekretu)
         env:
           KEYSTORE_B64: ${{ secrets.KETCHUP_KEYSTORE_BASE64 }}

@@ -19,7 +19,7 @@ Zapisz hasła i **zrób kopię pliku `ketchup-release.jks` w bezpiecznym miejscu
 ## 3. Wydaj
 - Tag: `git tag v1.0.0 && git push origin v1.0.0`, albo Actions → Release → Run workflow z wersją `1.0.0`.
 - Wynik: podpisany `KetchupPlayer-1.0.0.apk` w artefaktach i w GitHub Release.
-- `versionCode` liczony jest z wersji: `1.0.0` → `10000`, `1.2.3` → `10203` (zawsze rośnie).
+- `versionCode` liczony jest z wersji: `1.0.0` → `1000099`, `1.2.3` → `1020399`; kandydat `1.0.0-rc2` → `1000002` (finał zawsze wyższy od rc).
 
 ## 4. Przed wydaniem (lista kontrolna)
 1. CI zielony na gałęzi wydania (build, detekt, testy, Roborazzi, lint, emulator).
@@ -30,3 +30,9 @@ Zapisz hasła i **zrób kopię pliku `ketchup-release.jks` w bezpiecznym miejscu
 ## Uwagi
 - Debug (`pl.ketchupplayer.tv.debug`) i wydanie (`pl.ketchupplayer.tv`) mają różne pakiety, więc mogą stać obok siebie.
 - Zmiana klucza podpisu = nowa aplikacja dla systemu (trzeba odinstalować starą).
+
+## Kandydat na wydanie (rc)
+Actions → **Release candidate** → Run workflow na gałęzi `dev`, wersja np. `0.9.6-rc1`.
+- Bramka: workflow odmawia budowy, jeśli CI (z emulatorem) nie jest zielony na dokładnie tym commicie.
+- Bez sekretów podpisu powstaje APK debug (instalowalny na boxie); z sekretami z kroku 2: APK wydania z R8.
+- Wynik: GitHub pre-release `v0.9.6-rc1` z APK i `ketchup_tvbox_test.sh`. Test na boxie: `docs/TVBOX-TESTY.md`.

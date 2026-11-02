@@ -1,0 +1,95 @@
+name: Release candidate
+
+# Kandydat na wydanie (rc): ręcznie z gałęzi dev (Actions -> Release candidate -> Run workflow, wersja np. 0.9.6-rc1).
+# Bramka: dla tego samego SHA workflow CI (w tym emulator) musi być zakończony sukcesem, inaczej nic się nie buduje.
+# Podpis: gdy są sekrety z docs/RELEASE.md, APK jest podpisany kluczem wydania (R8); bez nich budujemy debug
+# (instalowalny na boxie kluczem debug, inny pakiet niż wydanie). Wynik: GitHub pre-release z APK i skryptem testowym.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Wersja kandydata, np. 0.9.6-rc1"
+        required: true
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  rc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bramka - CI zielony na tym SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha="$(git rev-parse HEAD)"
+          result="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${sha}&status=completed&per_page=20" \
+            --jq '[.workflow_runs[] | select(.event == "push")] | sort_by(.created_at) | last | .conclusion // "brak"')"
+          echo "CI dla ${sha}: ${result}"
+          if [ "${result}" != "success" ]; then
+            echo "::error::CI na ${sha} nie jest zielony (${result}). Wydanie rc dopiero po zielonym CI i emulatorze."
+            exit 1
+          fi
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Wersja
+        id: ver
+        run: |
+          V="${{ github.event.inputs.version }}"
+          base="${V%%-*}"
+          IFS=. read -r MAJ MIN PAT <<< "${base}"
+          rc="${V##*rc}"; [ "${rc}" = "${V}" ] && rc=0
+          echo "name=${V}" >> "$GITHUB_OUTPUT"
+          echo "code=$(( (MAJ * 10000 + MIN * 100 + PAT) * 100 + rc ))" >> "$GITHUB_OUTPUT"
+          echo "short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Klucz podpisu (jeśli jest w sekretach)
+        id: sign
+        env:
+          KEYSTORE_B64: ${{ secrets.KETCHUP_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "${KEYSTORE_B64}" ]; then
+            echo "${KEYSTORE_B64}" | base64 -d > "${RUNNER_TEMP}/ketchup.jks"
+            echo "KETCHUP_KEYSTORE_FILE=${RUNNER_TEMP}/ketchup.jks" >> "$GITHUB_ENV"
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Build APK
+        env:
+          KETCHUP_KEYSTORE_PASSWORD: ${{ secrets.KETCHUP_KEYSTORE_PASSWORD }}
+          KETCHUP_KEY_ALIAS: ${{ secrets.KETCHUP_KEY_ALIAS }}
+          KETCHUP_KEY_PASSWORD: ${{ secrets.KETCHUP_KEY_PASSWORD }}
+        run: |
+          args="-PversionName=${{ steps.ver.outputs.name }} -PversionCode=${{ steps.ver.outputs.code }}"
+          if [ "${{ steps.sign.outputs.signed }}" = "true" ]; then
+            ./gradlew :app:assembleRelease ${args}
+            cp app/build/outputs/apk/release/app-release.apk "KetchupPlayer-${{ steps.ver.outputs.name }}-${{ steps.ver.outputs.short }}.apk"
+          else
+            ./gradlew :app:assembleDebug ${args}
+            cp app/build/outputs/apk/debug/app-debug.apk "KetchupPlayer-${{ steps.ver.outputs.name }}-${{ steps.ver.outputs.short }}.apk"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KetchupPlayer-${{ steps.ver.outputs.name }}
+          path: |
+            KetchupPlayer-${{ steps.ver.outputs.name }}-${{ steps.ver.outputs.short }}.apk
+            tools/tvbox/ketchup_tvbox_test.sh
+      - name: GitHub pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.name }}
+          name: Ketchup Player ${{ steps.ver.outputs.name }} (kandydat)
+          prerelease: true
+          target_commitish: ${{ github.sha }}
+          body: |
+            Kandydat na wydanie z gałęzi `${{ github.ref_name }}`, commit ${{ steps.ver.outputs.short }}.
+            CI (w tym emulator) zielony na tym commicie. Podpis: ${{ steps.sign.outputs.signed == 'true' && 'klucz wydania' || 'debug (brak sekretów)' }}.
+            Test na boxie: `tools/tvbox/ketchup_tvbox_test.sh` (komendy w docs/TVBOX-TESTY.md).
+          files: |
+            KetchupPlayer-${{ steps.ver.outputs.name }}-${{ steps.ver.outputs.short }}.apk
+            tools/tvbox/ketchup_tvbox_test.sh
