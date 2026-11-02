@@ -1,6 +1,7 @@
 package pl.ketchupplayer.tv.feature.home
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import pl.ketchupplayer.tv.core.data.vod.VodEntry
@@ -75,5 +76,54 @@ class TimeBudgetTest {
     fun `limit obcina liste`() {
         val many = (1..20).map { vod("f$it", 0, it.toLong() + 1) }
         assertEquals(8, TimeBudget.pick(120, many, emptyList(), now).finish.size)
+    }
+
+    private fun film(
+        id: String,
+        durationMin: Int?,
+        rating: Double,
+    ) = VodEntry(
+        VodItem(
+            id = id,
+            providerId = ProviderId("p"),
+            kind = VodKind.MOVIE,
+            title = id,
+            ref = "r",
+            rating = rating,
+            durationMin = durationMin,
+        ),
+    )
+
+    /** Film z katalogu mieści się w czasie i wypełnia co najmniej 60%; lepsze oceny pierwsze. */
+    @Test
+    fun `film z katalogu wypelnia podany czas`() {
+        val catalog =
+            listOf(
+                film("za-krotki", 40, 9.5),
+                film("pasuje-slabszy", 85, 6.0),
+                film("pasuje-lepszy", 100, 8.0),
+                film("za-dlugi", 130, 9.9),
+                film("bez-dlugosci", null, 9.9),
+                film("nieznany", 0, 9.9),
+            )
+        val r = TimeBudget.pick(120, emptyList(), emptyList(), now, catalog)
+        assertEquals(listOf("pasuje-lepszy", "pasuje-slabszy"), r.catalog.map { it.entry.item.id })
+        assertEquals(100, r.catalog.first().durationMin)
+        assertFalse(r.isEmpty)
+    }
+
+    /** Film już zaczęty jest w „do dokończenia”, więc nie powtarza się w propozycjach z katalogu. */
+    @Test
+    fun `zaczety film nie dubluje sie w katalogu`() {
+        val started = vod("a", 10, 100)
+        val r =
+            TimeBudget.pick(
+                120,
+                listOf(started),
+                emptyList(),
+                now,
+                listOf(film("a", 100, 9.0), film("b", 100, 8.0)),
+            )
+        assertEquals(listOf("b"), r.catalog.map { it.entry.item.id })
     }
 }

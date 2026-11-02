@@ -460,8 +460,8 @@ private fun TimeBudgetSection(
     var minutes by rememberSaveable { mutableStateOf<Int?>(null) }
     val picked = minutes
     val result =
-        remember(picked, state.continueVod, state.liveNow, state.nowMs) {
-            picked?.let { TimeBudget.pick(it, state.continueVod, state.liveNow, state.nowMs) }
+        remember(picked, state.continueVod, state.liveNow, state.nowMs, state.timed) {
+            picked?.let { TimeBudget.pick(it, state.continueVod, state.liveNow, state.nowMs, state.timed) }
         }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -516,6 +516,17 @@ private fun TimeResults(
                 imageUrl = s.entry.item.backdrop ?: s.entry.item.poster,
                 progress = s.entry.progress.takeIf { it > 0f },
                 subtitle = stringResource(R.string.home_time_left, s.remainingMin),
+                overlay = true,
+                aspect = LANDSCAPE_ASPECT,
+                cardWidth = LANDSCAPE_WIDTH,
+            )
+        }
+        items(result.catalog, key = { "c" + it.entry.item.id }) { s ->
+            PosterCard(
+                s.entry.item.title,
+                { onOpenDetails(s.entry.item.id) },
+                imageUrl = s.entry.item.backdrop ?: s.entry.item.poster,
+                subtitle = stringResource(R.string.home_time_runtime, s.durationMin),
                 overlay = true,
                 aspect = LANDSCAPE_ASPECT,
                 cardWidth = LANDSCAPE_WIDTH,

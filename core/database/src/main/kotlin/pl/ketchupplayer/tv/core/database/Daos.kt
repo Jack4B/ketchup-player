@@ -194,6 +194,17 @@ interface VodDao {
     @Query("SELECT * FROM vod_items WHERE kind = :kind")
     suspend fun byKind(kind: String): List<VodItemEntity>
 
+    /** Filmy bez sprawdzonego czasu trwania (NULL; 0 = sprawdzono, brak u dostawcy), najlepiej oceniane. */
+    @Query("SELECT * FROM vod_items WHERE kind = 'MOVIE' AND durationMin IS NULL ORDER BY rating DESC LIMIT :limit")
+    suspend fun withoutDuration(limit: Int): List<VodItemEntity>
+
+    /** Filmy ze znanym czasem trwania, najlepiej oceniane (do „Mam czas na…”). */
+    @Query(
+        "SELECT * FROM vod_items WHERE kind = 'MOVIE' AND durationMin > 0 " +
+            "ORDER BY rating DESC LIMIT :limit",
+    )
+    fun observeTimed(limit: Int): Flow<List<VodItemEntity>>
+
     @Query("SELECT COUNT(*) FROM vod_items WHERE providerId = :providerId")
     suspend fun count(providerId: String): Int
 

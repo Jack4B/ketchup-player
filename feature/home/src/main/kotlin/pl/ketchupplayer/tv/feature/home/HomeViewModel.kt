@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import pl.ketchupplayer.tv.core.common.Clock
 import pl.ketchupplayer.tv.core.data.catalog.CatalogRepository
 import pl.ketchupplayer.tv.core.data.epg.EpgRepository
@@ -27,7 +28,7 @@ class HomeViewModel
     constructor(
         catalog: CatalogRepository,
         epg: EpgRepository,
-        vod: VodRepository,
+        private val vod: VodRepository,
         private val clock: Clock,
     ) : ViewModel() {
         private val ticker: Flow<Long> =
@@ -44,9 +45,24 @@ class HomeViewModel
                 vod.myList(),
                 vod.entries(VodKind.MOVIE),
                 vod.entries(VodKind.SERIES),
-            ) { cont, mine, movies, series ->
-                VodRows(cont, mine.take(RECENT_LIMIT), movies, series.filter { it.hasNewEpisodes }.take(RECENT_LIMIT))
+                vod.timedMovies(TIMED_LIMIT),
+            ) { cont, mine, movies, series, timed ->
+                VodRows(
+                    cont,
+                    mine.take(RECENT_LIMIT),
+                    movies,
+                    series.filter { it.hasNewEpisodes }.take(RECENT_LIMIT),
+                    timed,
+                )
             }
+
+        init {
+            // Czas trwania filmów dociągamy po pokazaniu ekranu, po kilkadziesiąt naraz (z przerwą, w tle).
+            viewModelScope.launch {
+                delay(ENRICH_DELAY_MS)
+                runCatching { vod.enrichDurations(ENRICH_LIMIT) }
+            }
+        }
 
         val state: StateFlow<HomeUiState> =
             combine(
@@ -76,6 +92,7 @@ class HomeViewModel
                     continueVod = cont,
                     myList = mine,
                     newEpisodes = fresh,
+                    timed = vodPart.timed,
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), HomeUiState())
 
@@ -84,10 +101,14 @@ class HomeViewModel
             val mine: List<pl.ketchupplayer.tv.core.data.vod.VodEntry>,
             val movies: List<pl.ketchupplayer.tv.core.data.vod.VodEntry>,
             val fresh: List<pl.ketchupplayer.tv.core.data.vod.VodEntry>,
+            val timed: List<pl.ketchupplayer.tv.core.data.vod.VodEntry>,
         )
 
         private companion object {
             const val RECENT_LIMIT = 8
+            const val TIMED_LIMIT = 300
+            const val ENRICH_LIMIT = 40
+            const val ENRICH_DELAY_MS = 4_000L
             const val LIVE_LIMIT = 12
             const val TICK_MS = 60_000L
             const val STOP_TIMEOUT_MS = 5_000L

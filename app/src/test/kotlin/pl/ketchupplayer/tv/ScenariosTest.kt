@@ -1103,4 +1103,20 @@ class ScenariosTest {
         back() // wyjście z odtwarzacza do listy kanałów
         waitForText("Przewodnik")
     }
+
+    /** Scenariusz: katalog Xtream bez długości w liście; Home dociąga je z get_vod_info, a „2 h” podpowiada filmy. */
+    @Test
+    fun mamCzasNaPodpowiadaFilmyZKatalogu() {
+        serveXtreamVod()
+        server.serve("/player_api.php?get_vod_info") { """{"info":{"duration_secs":"6300","plot":"Opis"}}""" }
+        addXtreamViaUi("dobre-haslo")
+        waitForText("Kanały: 2", substring = true)
+
+        nav("Home")
+        waitForText("Mam czas na…")
+        click("2 h")
+        // Długości dochodzą w tle po kilku sekundach: wtedy karta pokazuje czas i dopasowanie.
+        waitForText("105 min", substring = true, timeoutMs = BIG_WAIT_MS)
+        assertTrue(compose.onAllNodesWithText("Nic nie pasuje", substring = true).fetchSemanticsNodes().isEmpty())
+    }
 }

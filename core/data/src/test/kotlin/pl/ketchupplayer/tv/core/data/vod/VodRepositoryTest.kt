@@ -325,4 +325,30 @@ class VodRepositoryTest {
             assertEquals(100, updated.durationMin)
             assertEquals(8.1, updated.rating!!, 0.001) // ocena z listy ma pierwszeństwo przed oceną z info
         }
+
+    /** Lista Xtream nie podaje czasu trwania: uzupełnianie z get_vod_info robi z niego dane do „Mam czas na…”. */
+    @Test
+    fun `uzupelnianie dlugosci filmow z get_vod_info`() =
+        runTest {
+            val repo = vodRepo()
+            assertEquals(emptyList<String>(), repo.timedMovies(10).first().map { it.item.title })
+            val done = repo.enrichDurations(10)
+            assertEquals(2, done) // oba filmy dostają 100 min z duration_secs 6000
+            val timed = repo.timedMovies(10).first()
+            assertEquals(setOf("Pitbull", "Seksmisja"), timed.map { it.item.title }.toSet())
+            assertEquals(100, timed.first().item.durationMin)
+            // drugie wywołanie nie pyta ponownie o te same filmy
+            assertEquals(0, repo.enrichDurations(10))
+        }
+
+    /** Dostawca bez czasu trwania: film dostaje znacznik „sprawdzono” i nie wraca do kolejki ani do propozycji. */
+    @Test
+    fun `film bez dlugosci u dostawcy nie jest odpytywany w kolko`() =
+        runTest {
+            api = api + ("action=get_vod_info" to """{"info":{"plot":"Opis"}}""")
+            val repo = vodRepo()
+            assertEquals(0, repo.enrichDurations(10))
+            assertEquals(emptyList<String>(), repo.timedMovies(10).first().map { it.item.title })
+            assertEquals(0, repo.enrichDurations(10)) // już sprawdzone
+        }
 }

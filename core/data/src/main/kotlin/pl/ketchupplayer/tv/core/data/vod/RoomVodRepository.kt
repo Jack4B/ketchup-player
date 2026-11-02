@@ -46,6 +46,32 @@ class RoomVodRepository
             provider.loadVodInfo(item).onSuccess { info -> dao.insertAll(listOf(item.withInfo(info).toEntity())) }
         }
 
+        override suspend fun enrichDurations(limit: Int): Int {
+            var done = 0
+            var failures = 0
+            for (entity in dao.withoutDuration(limit)) {
+                val item = entity.toModel()
+                val provider = providerDao.get(item.providerId.value)?.let { factory.create(it) } ?: continue
+                val result = provider.loadVodInfo(item)
+                val info = result.getOrNull()
+                when {
+                    info != null -> {
+                        failures = 0
+                        // 0 = sprawdzono i dostawca nie podaje: nie pytamy o ten film w kółko.
+                        val withDuration = item.withInfo(info).let { it.copy(durationMin = it.durationMin ?: 0) }
+                        dao.insertAll(listOf(withDuration.toEntity()))
+                        if ((withDuration.durationMin ?: 0) > 0) done++
+                    }
+                    ++failures >= MAX_FAILURES -> return done
+                }
+                kotlinx.coroutines.delay(ENRICH_PAUSE_MS)
+            }
+            return done
+        }
+
+        override fun timedMovies(limit: Int): Flow<List<VodEntry>> =
+            dao.observeTimed(limit).map { list -> list.map { VodEntry(it.toModel()) } }
+
         override suspend fun sourceCount(itemId: String): Int {
             val item = dao.get(itemId) ?: return 1
             return dao.sourceCount(item.kind, item.normTitle, item.year).coerceAtLeast(1)
@@ -231,6 +257,9 @@ internal fun VodItem.withInfo(info: pl.ketchupplayer.tv.core.model.VodInfo): Vod
         genre = genre ?: info.genre,
         backdrop = info.backdrop ?: backdrop,
         rating = rating ?: info.rating,
-        durationMin = durationMin ?: info.durationMin,
+        durationMin = durationMin?.takeIf { it > 0 } ?: info.durationMin,
         year = year ?: info.year,
     )
+
+private const val ENRICH_PAUSE_MS = 150L
+private const val MAX_FAILURES = 3

@@ -56,6 +56,15 @@ interface VodRepository {
     /** Dociąga od dostawcy opis, obsadę, ocenę i grafikę w tle (jeśli ich jeszcze nie mamy); błąd nie psuje ekranu. */
     suspend fun refreshInfo(itemId: String)
 
+    /**
+     * Uzupełnia czas trwania najlepiej ocenianych filmów, którym go brakuje (lista Xtream go nie podaje, dopiero
+     * `get_vod_info`). Zapytania idą z przerwą, a seria błędów przerywa; zwraca liczbę uzupełnionych. Domyślnie nic.
+     */
+    suspend fun enrichDurations(limit: Int): Int = 0
+
+    /** Filmy ze znanym czasem trwania, najlepiej oceniane. Domyślnie puste. */
+    fun timedMovies(limit: Int): Flow<List<VodEntry>> = kotlinx.coroutines.flow.flowOf(emptyList())
+
     /** Użytkownik otworzył serial: nowe odcinki uznajemy za zobaczone. */
     suspend fun markSeen(seriesId: String)
 

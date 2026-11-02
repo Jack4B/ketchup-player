@@ -25,4 +25,6 @@ data class HomeUiState(
     val myList: List<VodEntry> = emptyList(),
     /** Seriale z nowymi odcinkami od ostatniej wizyty w szczegółach (zielona kropka). */
     val newEpisodes: List<VodEntry> = emptyList(),
+    /** Najlepiej oceniane filmy ze znanym czasem trwania (źródło dla „Mam czas na…”). */
+    val timed: List<VodEntry> = emptyList(),
 )

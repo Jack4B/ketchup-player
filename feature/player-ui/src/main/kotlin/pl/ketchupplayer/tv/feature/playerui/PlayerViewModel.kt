@@ -208,8 +208,12 @@ class PlayerViewModel
             val i = item
             val rating = i.rating?.let { "★ " + String.format(java.util.Locale.forLanguageTag("pl"), "%.1f", it) }
             val meta =
-                listOfNotNull(i.year?.toString(), i.genre ?: i.category, i.durationMin?.let { "$it min" }, rating)
-                    .joinToString(" · ")
+                listOfNotNull(
+                    i.year?.toString(),
+                    i.genre ?: i.category,
+                    i.durationMin?.takeIf { it > 0 }?.let { "$it min" },
+                    rating,
+                ).joinToString(" · ")
             return VodInfoUi(i.title, meta, i.plot, i.cast, i.plot?.let { "Opis z katalogu dostawcy" })
         }
 

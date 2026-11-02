@@ -137,7 +137,7 @@ private fun DetailsBody(
                     if (state.isSeries && state.seasons.isNotEmpty()) {
                         InfoPill(stringResource(R.string.details_seasons_count, state.seasons.size))
                     }
-                    item.durationMin?.let { InfoPill(stringResource(R.string.details_minutes, it)) }
+                    item.durationMin?.takeIf { it > 0 }?.let { InfoPill(stringResource(R.string.details_minutes, it)) }
                     if (state.sources > 1) InfoPill(stringResource(R.string.details_sources, state.sources), true)
                     item.rating?.let {
                         InfoPill(
