@@ -132,6 +132,7 @@ class ScenariosTest {
         // Hermetyczność: metadane (TMDB/OMDb) idą na serwer testowy, nigdy do internetu.
         metadataEndpoints.tmdb = server.url("/tmdb").trimEnd('/')
         metadataEndpoints.omdb = server.url("/omdb").trimEnd('/')
+        metadataEndpoints.wikipedia = server.url("/wiki").trimEnd('/')
         blockImageNetwork()
         blockImageNetwork()
         FakePlayers.reset()
@@ -1295,6 +1296,27 @@ class ScenariosTest {
         waitForText("Pitbull")
         click("Pitbull")
         waitForText("Oceny i opisy", substring = true)
+    }
+
+    /**
+     * Prośba użytkownika („opisy bez kluczy API”): bez żadnych kluczy szczegóły filmu pokazują opis z Wikipedii, a
+     * podpowiedź o kluczach znika, bo opis jest.
+     */
+    @Test
+    fun szczegolyBezKluczyPokazujaOpisZWikipedii() {
+        serveXtreamVod()
+        server.serve("/wiki/w/api.php") { """{"query":{"search":[{"title":"Pitbull (film 2005)"}]}}""" }
+        server.serve("/wiki/api/rest_v1/page/summary/Pitbull_(film_2005)") {
+            """{"type":"standard","description":"polski film z 2005 roku",""" +
+                """"extract":"Pitbull to polski film sensacyjny z 2005 roku."}"""
+        }
+        addXtreamViaUi("dobre-haslo")
+        waitForText("Kanały: 2", substring = true)
+        nav("Filmy")
+        waitForText("Pitbull")
+        click("Pitbull")
+        waitForText("polski film sensacyjny", substring = true)
+        assertTrue(compose.onAllNodesWithText("Dodaj klucze", substring = true).fetchSemanticsNodes().isEmpty())
     }
 
     /** Scenariusz: klucze API wpisane w Ustawieniach → Oceny i opisy są zapisane (w SecretStore, nie w repo). */

@@ -48,16 +48,21 @@ class MetadataRepository
         }
 
         /** Pobiera i zapisuje metadane, jeśli ich jeszcze nie ma; true, gdy pozycja ma dane z zewnętrznych źródeł. */
-        suspend fun ensure(itemId: String): Boolean {
+        suspend fun ensure(
+            itemId: String,
+            keyless: Boolean = false,
+        ): Boolean {
             val now = clock.nowMs()
             val existing = dao.meta(itemId)
-            if (existing != null && (existing.found || now - existing.fetchedMs < RETRY_AFTER_MS)) return existing.found
             val apiKeys = keys.current()
-            if (!apiKeys.any) return false // bez kluczy nic nie zapisujemy: po wpisaniu klucza zadziała od razu
+            if (existing != null && alreadyDone(existing, apiKeys, now)) return existing.found
+            // Karta bez kluczy: nic nie zapisujemy, po wpisaniu klucza zadziała od razu.
+            if (!apiKeys.any && !keyless) return false
             val item = dao.get(itemId)?.toModel() ?: return false
-            val result = fetchSafely(item, apiKeys)
+            val result = fetchSafely(item, apiKeys, keyless)
             if (result == null) {
-                dao.upsertMeta(VodMetaEntity(itemId, null, null, null, now, found = false))
+                // Pudło bez kluczy (tylko Wikipedia) nie blokuje późniejszego pobrania po wpisaniu kluczy.
+                if (apiKeys.any) dao.upsertMeta(VodMetaEntity(itemId, null, null, null, now, found = false))
                 return false
             }
             val r = result.ratings
@@ -67,12 +72,27 @@ class MetadataRepository
             return true
         }
 
+        /**
+         * Pozycja jest załatwiona, gdy znaleziono dane albo pudło jest świeże. Wyjątek: sam opis (z Wikipedii)
+         * uzupełniamy ocenami, gdy użytkownik wpisze klucze.
+         */
+        private fun alreadyDone(
+            m: VodMetaEntity,
+            apiKeys: ApiKeys,
+            now: Long,
+        ): Boolean {
+            val noRatings = m.tmdbRating == null && m.imdbRating == null && m.rtPercent == null
+            if (m.found && noRatings && apiKeys.any) return false
+            return m.found || now - m.fetchedMs < RETRY_AFTER_MS
+        }
+
         /** Błąd sieci lub parsowania to „brak danych” (wynik zapisujemy z krótkim oknem ponowienia), nie awaria. */
         private suspend fun fetchSafely(
             item: VodItem,
             apiKeys: ApiKeys,
+            keyless: Boolean,
         ): MetaResult? =
-            runCatching { service.fetch(item, apiKeys) }
+            runCatching { service.fetch(item, apiKeys, keyless) }
                 .onFailure { if (it is CancellationException) throw it }
                 .getOrNull()
 

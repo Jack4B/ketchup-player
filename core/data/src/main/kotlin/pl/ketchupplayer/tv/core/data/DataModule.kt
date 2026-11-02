@@ -133,6 +133,8 @@ abstract class DataModule {
                     .TmdbSource(fetcher, endpoints),
                 pl.ketchupplayer.tv.core.data.metadata
                     .OmdbSource(fetcher, endpoints),
+                pl.ketchupplayer.tv.core.data.metadata
+                    .WikipediaSource(fetcher, endpoints),
             )
     }
 }
