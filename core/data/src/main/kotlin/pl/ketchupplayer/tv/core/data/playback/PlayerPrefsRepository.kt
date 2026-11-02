@@ -29,6 +29,11 @@ interface PlayerPrefsRepository {
     val livePreview: Flow<Boolean>
 
     suspend fun setLivePreview(enabled: Boolean)
+
+    /** Profil bufora odtwarzania (klucz [pl.ketchupplayer.tv.core.policy.BufferProfile]); domyślnie „standard”. */
+    val liveBuffer: Flow<String>
+
+    suspend fun setLiveBuffer(key: String)
 }
 
 class DataStorePlayerPrefsRepository
@@ -54,6 +59,12 @@ class DataStorePlayerPrefsRepository
             store.edit { it[AUTO_REFRESH] = enabled }
         }
 
+        override val liveBuffer: Flow<String> = store.data.map { it[LIVE_BUFFER] ?: DEFAULT_BUFFER }
+
+        override suspend fun setLiveBuffer(key: String) {
+            store.edit { it[LIVE_BUFFER] = key }
+        }
+
         override val livePreview: Flow<Boolean> = store.data.map { it[LIVE_PREVIEW] ?: true }
 
         override suspend fun setLivePreview(enabled: Boolean) {
@@ -61,6 +72,10 @@ class DataStorePlayerPrefsRepository
         }
 
         private companion object {
+            const val DEFAULT_BUFFER = "standard"
+            val LIVE_BUFFER =
+                androidx.datastore.preferences.core
+                    .stringPreferencesKey("player_live_buffer")
             val LIVE_PREVIEW =
                 androidx.datastore.preferences.core
                     .booleanPreferencesKey("live_preview")

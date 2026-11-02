@@ -47,6 +47,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:policy"))
     implementation(project(":core:common"))
     implementation(project(":core:security"))
     implementation(project(":core:designsystem"))

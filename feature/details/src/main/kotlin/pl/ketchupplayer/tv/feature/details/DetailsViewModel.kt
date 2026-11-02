@@ -18,6 +18,7 @@ import pl.ketchupplayer.tv.core.data.vod.VodEntry
 import pl.ketchupplayer.tv.core.data.vod.VodRepository
 import pl.ketchupplayer.tv.core.model.VodItem
 import pl.ketchupplayer.tv.core.model.VodKind
+import pl.ketchupplayer.tv.core.policy.ResumeRules
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -93,7 +94,7 @@ class DetailsViewModel
             if (entry == null) return DetailsUiState(loading = false)
             if (entry.item.kind == VodKind.MOVIE) {
                 val target =
-                    PlayTarget(entry.item.id, null, entry.positionMs.takeIf { it > 0 && entry.progress < DONE } ?: 0)
+                    PlayTarget(entry.item.id, null, ResumeRules.resumePosition(entry.positionMs, entry.durationMs))
                 return DetailsUiState(false, entry, similar = similar, target = target)
             }
             val seasons = episodes.map { it.episode.season }.distinct().sorted()
@@ -113,7 +114,7 @@ class DetailsViewModel
                         PlayTarget(
                             it.episode.id,
                             "S${it.episode.season} E${it.episode.number}",
-                            if (it.progress in MIN_PROGRESS..DONE) it.positionMs else 0,
+                            ResumeRules.resumePosition(it.positionMs, it.durationMs, it.watched),
                         )
                     },
             )
@@ -121,7 +122,7 @@ class DetailsViewModel
 
         /** Rozpoczęty niedokończony odcinek; w przeciwnym razie pierwszy po ostatnim obejrzanym; w końcu pierwszy. */
         private fun resumeEpisode(episodes: List<EpisodeEntry>): EpisodeEntry? {
-            episodes.firstOrNull { it.progress in MIN_PROGRESS..DONE && !it.watched }?.let { return it }
+            episodes.firstOrNull { ResumeRules.inProgress(it.positionMs, it.durationMs, it.watched) }?.let { return it }
             val lastWatched = episodes.indexOfLast { it.watched }
             return episodes.getOrNull(lastWatched + 1) ?: episodes.firstOrNull()
         }
@@ -129,7 +130,5 @@ class DetailsViewModel
         private companion object {
             const val STOP_MS = 5_000L
             const val SIMILAR_LIMIT = 12
-            const val DONE = 0.9f
-            const val MIN_PROGRESS = 0.01f
         }
     }

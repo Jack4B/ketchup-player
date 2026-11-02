@@ -204,8 +204,13 @@ class VodRepositoryTest {
             val resume = repo.continueWatching(5).first().single()
             assertEquals(pitbull.id, resume.item.id)
             assertEquals(0.33f, resume.progress, 0.01f)
-            // Ukończony film znika z „Kontynuuj”.
+            // Niemal skończony (94%) jeszcze jest w „Kontynuuj”; od 95% (reguła ze starej aplikacji) znika.
             repo.saveProgress(pitbull.id, 85 * 60_000L, 90 * 60_000L)
+            assertEquals(1, repo.continueWatching(5).first().size)
+            repo.saveProgress(pitbull.id, 86 * 60_000L, 90 * 60_000L)
+            assertTrue(repo.continueWatching(5).first().isEmpty())
+            // Przypadkowe kilka sekund (poniżej 30 s) nie tworzy wpisu w „Kontynuuj”.
+            repo.saveProgress(pitbull.id, 10_000L, 90 * 60_000L)
             assertTrue(repo.continueWatching(5).first().isEmpty())
             assertFalse(repo.myList().first().isEmpty())
         }

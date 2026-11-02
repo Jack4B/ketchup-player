@@ -1,5 +1,7 @@
 # Inwentarz portu logiki (KONSPEKT §10)
 
+> Aktualizacja 2026-11-02: decyzje per klasa dla §10.2 (przepisanie zachowań zamiast portu 1:1) w [`docs/adr/policies-rewrite.md`](adr/policies-rewrite.md). Tabela poniżej to stan wyjściowy.
+
 Decyzja o sposobie portu: [`docs/adr/legacy-policy-port.md`](adr/legacy-policy-port.md).
 Legenda statusu: ✅ ze spec + testy · 🟡 częściowo (spec opisuje tylko część) · ⏳ czeka na fixture'y/opis · ➖ nie portować.
 

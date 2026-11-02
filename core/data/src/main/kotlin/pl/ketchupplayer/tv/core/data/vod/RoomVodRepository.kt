@@ -15,6 +15,7 @@ import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.StreamSpec
 import pl.ketchupplayer.tv.core.model.VodItem
 import pl.ketchupplayer.tv.core.model.VodKind
+import pl.ketchupplayer.tv.core.policy.ResumeRules
 import javax.inject.Inject
 
 class RoomVodRepository
@@ -96,7 +97,7 @@ class RoomVodRepository
             combine(dao.observeByKind(VodKind.MOVIE.name), dao.observeState()) { movies, states ->
                 val started =
                     states
-                        .filter { it.positionMs > 0 && it.durationMs > 0 && it.positionMs < it.durationMs * DONE }
+                        .filter { it.durationMs > 0 && ResumeRules.inProgress(it.positionMs, it.durationMs) }
                         .sortedByDescending { it.updatedMs ?: 0L }
                 val byId = movies.associateBy { it.id }
                 started
@@ -200,7 +201,6 @@ class RoomVodRepository
 
         private companion object {
             const val M3U_SERIES_REF = "m3u:series"
-            const val DONE = 0.9
         }
     }
 

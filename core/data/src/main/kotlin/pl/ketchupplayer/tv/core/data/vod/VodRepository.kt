@@ -24,11 +24,9 @@ data class EpisodeEntry(
     val durationMs: Long = 0,
 ) {
     val progress: Float get() = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
-    val watched: Boolean get() = durationMs > 0 && positionMs >= durationMs * WATCHED_RATIO
-
-    private companion object {
-        const val WATCHED_RATIO = 0.9f
-    }
+    val watched: Boolean get() =
+        pl.ketchupplayer.tv.core.policy.ResumeRules
+            .completed(positionMs, durationMs)
 }
 
 /** Co potrzebne odtwarzaczowi: tytuł do OSD i zapisana pozycja. */

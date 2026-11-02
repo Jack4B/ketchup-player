@@ -16,6 +16,7 @@ import pl.ketchupplayer.tv.core.data.playback.FailoverSettingsRepository
 import pl.ketchupplayer.tv.core.data.vod.VodRepository
 import pl.ketchupplayer.tv.core.model.Channel
 import pl.ketchupplayer.tv.core.policy.FailoverSettings
+import pl.ketchupplayer.tv.core.policy.ResumeRules
 import pl.ketchupplayer.tv.player.engine.PlayerController
 import pl.ketchupplayer.tv.player.engine.PlayerControllerFactory
 import pl.ketchupplayer.tv.player.failover.FailoverCoordinator
@@ -220,7 +221,7 @@ class PlayerViewModel
         private fun resumePosition(
             positionMs: Long,
             durationMs: Long,
-        ) = if (durationMs > 0 && positionMs < durationMs * RESUME_LIMIT) positionMs else 0L
+        ) = ResumeRules.resumePosition(positionMs, durationMs)
 
         private suspend fun saveProgress() {
             val id = vodId ?: return
@@ -247,7 +248,6 @@ class PlayerViewModel
         private companion object {
             const val NOTICE_MS = 4_000L
             const val PROGRESS_MS = 5_000L
-            const val RESUME_LIMIT = 0.9
         }
     }
 

@@ -25,9 +25,14 @@ import pl.ketchupplayer.tv.core.model.StreamSpec
 class ExoPlayerController(
     context: Context,
     private val client: OkHttpClient,
+    buffer: BufferConfig? = null,
 ) : PlayerController {
     private val renderers = DelayableRenderersFactory(context.applicationContext)
-    private val exo: ExoPlayer = ExoPlayer.Builder(context.applicationContext, renderers).build()
+    private val exo: ExoPlayer =
+        ExoPlayer
+            .Builder(context.applicationContext, renderers)
+            .apply { buffer?.let { setLoadControl(loadControl(it)) } }
+            .build()
     private val _state = MutableStateFlow(PlayerState())
     override val state: StateFlow<PlayerState> = _state.asStateFlow()
     override val player: Player get() = exo
@@ -221,3 +226,11 @@ class ExoPlayerController(
 
 private const val MICROS_PER_MILLI = 1000L
 private const val BITS_PER_KBIT = 1000
+
+/** `DefaultLoadControl` z podanymi czasami bufora (profil wybrany w Ustawieniach → Odtwarzanie). */
+@androidx.annotation.OptIn(UnstableApi::class)
+private fun loadControl(b: BufferConfig) =
+    androidx.media3.exoplayer.DefaultLoadControl
+        .Builder()
+        .setBufferDurationsMs(b.minMs, b.maxMs, b.playbackMs, b.rebufferMs)
+        .build()

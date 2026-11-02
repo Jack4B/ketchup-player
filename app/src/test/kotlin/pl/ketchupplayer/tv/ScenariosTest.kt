@@ -1120,4 +1120,17 @@ class ScenariosTest {
         waitForText("105 min", substring = true, timeoutMs = BIG_WAIT_MS)
         assertTrue(compose.onAllNodesWithText("Nic nie pasuje", substring = true).fetchSemanticsNodes().isEmpty())
     }
+
+    /** Scenariusz: w Ustawieniach → Odtwarzanie użytkownik wybiera profil bufora; wybór jest zapisany. */
+    @Test
+    fun wyborProfiluBuforaJestZapisany() {
+        val key =
+            androidx.datastore.preferences.core
+                .stringPreferencesKey("player_live_buffer")
+        settingsPage("Odtwarzanie")
+        click("Bufor odtwarzania")
+        waitForText("Stabilny (50 s)")
+        click("Stabilny (50 s)")
+        waitFor { runBlocking { dataStore.data.first()[key] } == "stable" }
+    }
 }

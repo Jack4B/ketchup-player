@@ -18,9 +18,10 @@ class ExoPlayerControllerFactory
     @Inject
     constructor(
         @ApplicationContext private val context: Context,
+        private val buffer: BufferConfigSource,
     ) : PlayerControllerFactory {
         override fun create(): PlayerController =
-            ExoPlayerController(context, NetworkClients.stream(NetworkClients.PLAYER_USER_AGENT))
+            ExoPlayerController(context, NetworkClients.stream(NetworkClients.PLAYER_USER_AGENT), buffer.current())
     }
 
 @Module

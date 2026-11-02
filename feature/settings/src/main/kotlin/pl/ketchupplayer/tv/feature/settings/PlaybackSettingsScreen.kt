@@ -33,6 +33,7 @@ fun PlaybackSettingsRoute(
     val clock by viewModel.clockEnabled.collectAsStateWithLifecycle()
     val debounce by viewModel.remoteDebounceMs.collectAsStateWithLifecycle()
     val preview by viewModel.livePreview.collectAsStateWithLifecycle()
+    val buffer by viewModel.liveBuffer.collectAsStateWithLifecycle()
     PlaybackSettingsScreen(
         state,
         viewModel::onEvent,
@@ -43,6 +44,8 @@ fun PlaybackSettingsRoute(
         viewModel::setRemoteDebounce,
         preview,
         viewModel::toggleLivePreview,
+        buffer,
+        viewModel::setLiveBuffer,
     )
 }
 
@@ -59,6 +62,8 @@ fun PlaybackSettingsScreen(
     onSetDebounce: (Int) -> Unit = {},
     livePreview: Boolean = true,
     onToggleLivePreview: () -> Unit = {},
+    liveBuffer: String = "standard",
+    onSetLiveBuffer: (String) -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
     val c = KetchupTheme.colors
@@ -82,6 +87,16 @@ fun PlaybackSettingsScreen(
                         },
                         settings.tvDelaySeconds.toString(),
                     ) { onEvent(PlaybackSettingsEvent.SetDelay(it.toInt())) }
+                PlaybackPicker.BUFFER ->
+                    PickerSpec(
+                        stringResource(R.string.playback_buffer),
+                        pl.ketchupplayer.tv.core.policy.BufferProfile.entries.map {
+                            Choice(it.key, stringResource(bufferName(it)), stringResource(bufferHint(it)))
+                        },
+                        pl.ketchupplayer.tv.core.policy.BufferProfile
+                            .fromKey(liveBuffer)
+                            .key,
+                    ) { onSetLiveBuffer(it) }
                 PlaybackPicker.REMOTE ->
                     PickerSpec(
                         stringResource(R.string.playback_remote),
@@ -144,6 +159,22 @@ fun PlaybackSettingsScreen(
             },
         )
         SettingsListItem(
+            title = stringResource(R.string.playback_buffer),
+            subtitle = stringResource(R.string.playback_buffer_hint),
+            onClick = { picker = PlaybackPicker.BUFFER },
+            trailing = {
+                Text(
+                    stringResource(
+                        bufferName(
+                            pl.ketchupplayer.tv.core.policy.BufferProfile
+                                .fromKey(liveBuffer),
+                        ),
+                    ),
+                    color = c.textPrimary,
+                )
+            },
+        )
+        SettingsListItem(
             title = stringResource(R.string.playback_remote),
             subtitle = stringResource(R.string.playback_remote_hint),
             onClick = { picker = PlaybackPicker.REMOTE },
@@ -157,7 +188,23 @@ fun PlaybackSettingsScreen(
     }
 }
 
-private enum class PlaybackPicker { SENSITIVITY, DELAY, REMOTE }
+private enum class PlaybackPicker { SENSITIVITY, DELAY, REMOTE, BUFFER }
+
+private fun bufferName(p: pl.ketchupplayer.tv.core.policy.BufferProfile): Int =
+    when (p) {
+        pl.ketchupplayer.tv.core.policy.BufferProfile.FAST -> R.string.playback_buffer_fast
+        pl.ketchupplayer.tv.core.policy.BufferProfile.STANDARD -> R.string.playback_buffer_standard
+        pl.ketchupplayer.tv.core.policy.BufferProfile.STABLE -> R.string.playback_buffer_stable
+        pl.ketchupplayer.tv.core.policy.BufferProfile.VERY_LARGE -> R.string.playback_buffer_very_large
+    }
+
+private fun bufferHint(p: pl.ketchupplayer.tv.core.policy.BufferProfile): Int =
+    when (p) {
+        pl.ketchupplayer.tv.core.policy.BufferProfile.FAST -> R.string.playback_buffer_fast_hint
+        pl.ketchupplayer.tv.core.policy.BufferProfile.STANDARD -> R.string.playback_buffer_standard_hint
+        pl.ketchupplayer.tv.core.policy.BufferProfile.STABLE -> R.string.playback_buffer_stable_hint
+        pl.ketchupplayer.tv.core.policy.BufferProfile.VERY_LARGE -> R.string.playback_buffer_very_large_hint
+    }
 
 private data class PickerSpec(
     val title: String,

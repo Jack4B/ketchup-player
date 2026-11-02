@@ -30,6 +30,14 @@ class PlaybackSettingsViewModel
             viewModelScope.launch { prefs.setRemoteDebounceMs(ms) }
         }
 
+        val liveBuffer: StateFlow<String> =
+            prefs.liveBuffer.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), "standard")
+
+        /** Profil bufora (15/30/50/90 s); działa od następnego odtwarzania. */
+        fun setLiveBuffer(key: String) {
+            viewModelScope.launch { prefs.setLiveBuffer(key) }
+        }
+
         val livePreview: StateFlow<Boolean> =
             prefs.livePreview.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), true)
 

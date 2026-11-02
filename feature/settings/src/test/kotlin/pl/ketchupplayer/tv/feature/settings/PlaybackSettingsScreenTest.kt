@@ -8,7 +8,9 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.pressKey
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Assert.assertEquals
@@ -116,5 +118,27 @@ class PlaybackSettingsScreenTest {
         key(Key.DirectionDown)
         key(Key.DirectionCenter)
         assertEquals(1, toggles)
+    }
+
+    /** Bufor odtwarzania: lista z 4 profilami (aktualny z ptaszkiem), wybór przekazuje klucz profilu. */
+    @Test
+    fun wyborBuforaPrzekazujeKluczProfilu() {
+        val picked = mutableListOf<String>()
+        compose.setContent {
+            KetchupTheme(device = DeviceClass.TV) {
+                PlaybackSettingsScreen(FailoverSettings(), {}, {}, liveBuffer = "standard", onSetLiveBuffer = {
+                    picked +=
+                        it
+                })
+            }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithText("Bufor odtwarzania").performScrollTo().performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Szybki (15 s)").assertExists()
+        compose.onNodeWithText("Bardzo duży (90 s)").assertExists()
+        compose.onNodeWithText("Stabilny (50 s)").performClick()
+        compose.waitForIdle()
+        assertEquals(listOf("stable"), picked)
     }
 }
