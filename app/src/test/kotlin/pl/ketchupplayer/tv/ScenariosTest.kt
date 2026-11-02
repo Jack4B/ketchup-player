@@ -70,7 +70,6 @@ class ScenariosTest {
     private companion object {
         const val WAIT_MS = 30_000L
         const val BIG_WAIT_MS = 60_000L
-        const val ROW_GRACE_MS = 8_000L
         const val POLL_MS = 25L
         const val CLOCK_STEP_MS = 500L
     }
@@ -817,18 +816,6 @@ class ScenariosTest {
 
         nav("Na żywo")
         waitForText("Fakty wieczorne", timeoutMs = BIG_WAIT_MS)
-        // Wiersz listy czasem dociąga tytuł dopiero po ponownym wejściu (KNOWN-EDGE-CASES): wchodzimy raz jeszcze.
-        val rowReady = {
-            compose
-                .onAllNodesWithText("Fakty wieczorne")
-                .filter(hasClickAction())
-                .fetchSemanticsNodes()
-                .isNotEmpty()
-        }
-        if (runCatching { waitFor(ROW_GRACE_MS) { rowReady() } }.isFailure) {
-            nav("Home")
-            nav("Na żywo")
-        }
         click("Fakty wieczorne")
         waitFor(BIG_WAIT_MS) { FakePlayers.played.isNotEmpty() }
         assertEquals(listOf("$host/tvn24.m3u8"), FakePlayers.played.toList())

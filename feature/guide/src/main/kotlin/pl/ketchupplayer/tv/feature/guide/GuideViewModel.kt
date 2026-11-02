@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import pl.ketchupplayer.tv.core.common.Clock
@@ -113,10 +114,19 @@ class GuideViewModel
                     // Ukryte grupy (Ustawienia → Grupy) znikają z listy kanałów i z panelu grup.
                     Triple(c.filter { it.group !in hidden }, g.filter { it !in hidden }, sel)
                 },
-                combine(catalog.favoriteIds(), catalog.recentChannels(RECENT_LIMIT), epgRevision) { f, r, rev ->
-                    Triple(f, r, rev)
+                combine(
+                    catalog.favoriteIds(),
+                    catalog.recentChannels(RECENT_LIMIT),
+                    epgRevision,
+                    onAirNow(epg, clock),
+                ) { f, r, rev, air ->
+                    Aux(f, r, rev, air)
                 },
-            ) { (channels, groups, sel), (favorites, recent, revision) ->
+            ) { (channels, groups, sel), aux ->
+                val favorites = aux.favorites
+                val recent = aux.recent
+                val revision = aux.revision
+                val onAir = aux.onAir
                 val showFavorites = sel is GuideGroup.Favorites && favorites.isNotEmpty()
                 val showRecent = sel is GuideGroup.Recent && recent.isNotEmpty()
                 val group = (sel as? GuideGroup.Named)?.name?.takeIf { it in groups }
@@ -142,6 +152,7 @@ class GuideViewModel
                     groupCounts = channels.groupingBy { it.group.orEmpty() }.eachCount(),
                     totalCount = channels.size,
                     recentCount = recent.size,
+                    onAir = onAir,
                 )
             }.stateIn(
                 viewModelScope,
@@ -236,3 +247,29 @@ private val polishGroup = Regex("^(PL|POLSKA|POLAND)([^A-Za-z]|$)", RegexOption.
 /** Grupy polskie (`PL| ...`, `Polska`) na początku, reszta alfabetycznie; sortowanie jest stabilne. */
 internal fun orderGroups(groups: List<String>): List<String> =
     groups.sortedWith(compareBy({ !polishGroup.containsMatchIn(it) }, { it.lowercase() }))
+
+private data class Aux(
+    val favorites: Set<String>,
+    val recent: List<pl.ketchupplayer.tv.core.model.Channel>,
+    val revision: Int,
+    val onAir: Map<String, pl.ketchupplayer.tv.core.model.EpgProgramme>,
+)
+
+private const val ON_AIR_TICK_MS = 60_000L
+
+/**
+ * „Co leci teraz” dla wszystkich kanałów, z bazy: odświeża się po imporcie EPG (Room) i co minutę (zmiana audycji).
+ * Dzięki temu wiersze listy nie ładują audycji pojedynczo (to bywało gubione po imporcie).
+ */
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+private fun onAirNow(
+    epg: pl.ketchupplayer.tv.core.data.epg.EpgRepository,
+    clock: pl.ketchupplayer.tv.core.common.Clock,
+): kotlinx.coroutines.flow.Flow<Map<String, pl.ketchupplayer.tv.core.model.EpgProgramme>> =
+    kotlinx.coroutines.flow
+        .flow {
+            while (true) {
+                emit(clock.nowMs())
+                kotlinx.coroutines.delay(ON_AIR_TICK_MS)
+            }
+        }.flatMapLatest { epg.onAir(it) }

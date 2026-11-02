@@ -25,6 +25,8 @@ data class GuideUiState(
     val groupCounts: Map<String, Int> = emptyMap(),
     val totalCount: Int = 0,
     val recentCount: Int = 0,
+    /** Audycje trwające teraz: id kanału -> audycja; odświeżane z bazy (też po imporcie EPG). */
+    val onAir: Map<String, pl.ketchupplayer.tv.core.model.EpgProgramme> = emptyMap(),
 )
 
 /** Żywy podgląd: odtwarzacz (null = brak) i kanał, który w nim gra. */

@@ -97,7 +97,6 @@ internal fun ChannelsTab(
                     ch,
                     ch.id in state.favorites,
                     state,
-                    loadProgrammes,
                     first,
                     Modifier
                         .then(if (first) Modifier.focusRequester(rows) else Modifier)
@@ -138,17 +137,13 @@ private fun ChannelRow(
     channel: Channel,
     favorite: Boolean,
     state: GuideUiState,
-    loadProgrammes: suspend (String) -> List<EpgProgramme>,
     initialFocus: Boolean,
     modifier: Modifier,
     onLongClick: () -> Unit,
     onClick: () -> Unit,
 ) {
     val c = KetchupTheme.colors
-    val programmes by produceState<List<EpgProgramme>?>(null, channel.id, state.epgRevision) {
-        value = loadProgrammes(channel.id)
-    }
-    val now = programmes?.firstOrNull { it.isOnAt(state.nowMs) }
+    val now = state.onAir[channel.id]
     FocusItem(
         onClick,
         modifier
@@ -235,7 +230,7 @@ private fun PreviewPane(
     val programmes by produceState<List<EpgProgramme>?>(null, channel?.id, state.epgRevision) {
         value = channel?.let { loadProgrammes(it.id) }
     }
-    val now = programmes?.firstOrNull { it.isOnAt(state.nowMs) }
+    val now = channel?.let { state.onAir[it.id] } ?: programmes?.firstOrNull { it.isOnAt(state.nowMs) }
     val upcoming = programmes.orEmpty().filter { it.startMs >= (now?.endMs ?: state.nowMs) }.take(UPCOMING)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Box(
