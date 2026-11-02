@@ -151,6 +151,17 @@ tap() { # etykieta (dokładna, potem content-desc, potem prefiks)
   inp tap $(((x1+x2)/2)) $(((y1+y2)/2))
   sleep 1.2
 }
+tap_first() { # xmin xmax hmin: pierwszy klikalny element w kolumnie (px), od góry; omija nagłówek i szynę
+  ui_dump || return 1
+  local b x1 y1 x2 y2
+  b=$(sed 's/<node/\n<node/g' "$OUT/ui/last.xml" | grep 'clickable="true"' |
+    sed -n 's/.*bounds="\[\([0-9]*\),\([0-9]*\)\]\[\([0-9]*\),\([0-9]*\)\]".*/\1 \2 \3 \4/p' |
+    awk -v lo="$1" -v hi="$2" -v h="$3" '$1>=lo && $3<=hi && $2>=130 && ($4-$2)>=h {print; exit}')
+  [ -z "$b" ] && { log "tap_first: brak elementu w kolumnie $1-$2"; return 1; }
+  read -r x1 y1 x2 y2 <<< "$b"
+  inp tap $(((x1+x2)/2)) $(((y1+y2)/2))
+  sleep 1.2
+}
 alive() { [ -n "$(sh_ pidof "$PKG")" ]; }
 crashes() { sh_ "logcat -d -b crash" | grep -E "FATAL EXCEPTION|$PKG" | head -5; }
 playing() { sh_ "dumpsys audio" | grep -E "AudioPlaybackConfiguration" | grep "pack:$PKG" | grep -q "state:started"; }
@@ -252,7 +263,8 @@ tap "Odtwarzanie" && { sleep 1.5; shot 19_odtwarzanie >/dev/null; record E4 "Ust
 
 # ---------- Na żywo: odtwarzanie ----------
 goto "Na żywo"; sleep 2
-key 22; key 23; sleep 12                                # PRAWO do kanałów, OK = odtwórz pierwszy
+tap "Kanały" >/dev/null 2>&1                            # zakładka Kanały (domyślna), potem pierwszy kanał z listy
+tap_first 600 1400 90 && sleep 12
 sa=$(shot 20_odtwarzacz_a); sleep 3; sb=$(shot 20_odtwarzacz_b)
 ui_dump; save_ui 20_odtwarzacz
 if has_text "Nie udało się odtworzyć"; then record D3 "Odtwarzanie kanału na żywo" FAIL "panel błędu"
@@ -271,7 +283,7 @@ shot 21_ulubione >/dev/null
 goto "Filmy"; sleep 2; ui_dump
 if has_text "Brak filmów"; then record J3 "Filmy z listy" WARN "lista bez filmów (użyj M3U/Xtream z VOD)"
 else
-  key 23; sleep 5; ui_dump; shot 22_szczegoly >/dev/null; save_ui 22_szczegoly
+  tap_first 800 1900 200; sleep 5; ui_dump; shot 22_szczegoly >/dev/null; save_ui 22_szczegoly
   if has_text "Oglądaj" || has_text "Wznów"; then record J3 "Szczegóły filmu" PASS; else record J3 "Szczegóły filmu" FAIL "brak przycisku Oglądaj/Wznów (sprawdź 22_szczegoly)"; fi
   tap "▶ Oglądaj" || tap "▶ Wznów"; sleep 15; shot 23_vod >/dev/null
   playing && record J5 "Odtwarzanie filmu" PASS || record J5 "Odtwarzanie filmu" WARN "brak aktywnego audio"
