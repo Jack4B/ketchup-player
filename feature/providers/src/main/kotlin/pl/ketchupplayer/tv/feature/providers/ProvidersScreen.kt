@@ -256,7 +256,11 @@ private fun HealthLine(h: SourceHealth) {
             when {
                 it < 1 -> stringResource(R.string.providers_age_now)
                 it < HOURS_PER_DAY * 2 -> stringResource(R.string.providers_age_hours, it)
-                else -> stringResource(R.string.providers_age_days, it / HOURS_PER_DAY)
+                else -> {
+                    val days = (it / HOURS_PER_DAY).toInt()
+                    androidx.compose.ui.res
+                        .pluralStringResource(R.plurals.providers_age_days, days, days)
+                }
             }
         }
     Row(

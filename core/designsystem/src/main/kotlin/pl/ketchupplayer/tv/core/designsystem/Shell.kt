@@ -97,14 +97,14 @@ fun ThemedBackground(
         }
     val base = Brush.linearGradient(listOf(c.surface2, c.background), Offset(0f, 0f), Offset(GRADIENT_DX, GRADIENT_DY))
     val ambient = Brush.radialGradient(listOf(glow, Color.Transparent), Offset(GLOW_X, GLOW_Y), GLOW_RADIUS)
-    Box(modifier.fillMaxSize().background(c.background).then(backgroundFor(c.theme, base, ambient)), content = content)
+    Box(modifier.fillMaxSize().background(c.background).themeBackground(c.theme, base, ambient), content = content)
 }
 
-private fun backgroundFor(
+private fun Modifier.themeBackground(
     theme: ThemeId,
     base: Brush,
     ambient: Brush,
-): Modifier = if (theme == ThemeId.CZERN) Modifier else Modifier.background(base).background(ambient)
+): Modifier = if (theme == ThemeId.CZERN) this else this.background(base).background(ambient)
 
 private const val MORSKI_GLOW = 0x4D2FB3A6
 private const val GRAFIT_GLOW = 0x264A5560
