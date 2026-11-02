@@ -233,13 +233,17 @@ interface VodDao {
         episodes.chunked(INSERT_CHUNK).forEach { insertEpisodes(it) }
     }
 
-    /** Po imporcie: seriale, których jeszcze nie znamy, dostają stan wyjściowy (nowe odcinki liczymy od teraz). */
+    /**
+     * Po imporcie: seriale, których jeszcze nie znamy, dostają stan wyjściowy (nowe odcinki liczymy od teraz).
+     * Wyjątek: serial zmieniony nie dawniej niż [sinceMs] zostaje „niewidziany” (NULL), więc jest nowy do otwarcia.
+     */
     @Query(
         "INSERT OR IGNORE INTO vod_seen(itemId, seenAddedMs, seenEpisodes) " +
-            "SELECT id, addedMs, (SELECT COUNT(*) FROM vod_episodes e WHERE e.seriesId = vod_items.id) " +
+            "SELECT id, CASE WHEN addedMs >= :sinceMs THEN NULL ELSE addedMs END, " +
+            "(SELECT COUNT(*) FROM vod_episodes e WHERE e.seriesId = vod_items.id) " +
             "FROM vod_items WHERE kind = 'SERIES'",
     )
-    suspend fun baselineSeen()
+    suspend fun baselineSeen(sinceMs: Long)
 
     /** Otwarcie serialu: bieżący stan staje się „widzianym”, kropka znika. */
     @Query(
@@ -251,10 +255,11 @@ interface VodDao {
 
     @Query(
         "SELECT i.id FROM vod_items i JOIN vod_seen s ON s.itemId = i.id WHERE i.kind = 'SERIES' AND (" +
+            "(i.addedMs IS NOT NULL AND s.seenAddedMs IS NULL AND i.addedMs >= :sinceMs) OR " +
             "(i.addedMs IS NOT NULL AND s.seenAddedMs IS NOT NULL AND i.addedMs > s.seenAddedMs) OR " +
             "(s.seenEpisodes > 0 AND (SELECT COUNT(*) FROM vod_episodes e WHERE e.seriesId = i.id) > s.seenEpisodes))",
     )
-    fun observeNewSeriesIds(): Flow<List<String>>
+    fun observeNewSeriesIds(sinceMs: Long): Flow<List<String>>
 
     @Query("SELECT * FROM vod_episodes WHERE seriesId = :seriesId ORDER BY season, number")
     fun observeEpisodes(seriesId: String): Flow<List<EpisodeEntity>>

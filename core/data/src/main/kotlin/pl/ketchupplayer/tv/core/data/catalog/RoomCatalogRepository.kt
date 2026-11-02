@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.withLock
 import pl.ketchupplayer.tv.core.common.Clock
+import pl.ketchupplayer.tv.core.data.vod.NEW_EPISODES_WINDOW_MS
 import pl.ketchupplayer.tv.core.database.ChannelDao
 import pl.ketchupplayer.tv.core.database.ChannelFlagDao
 import pl.ketchupplayer.tv.core.database.ChannelFlagEntity
@@ -204,7 +205,7 @@ class RoomCatalogRepository
                         vod.items.map { it.toVodEntity() },
                         vod.episodes.map { it.toEpisodeEntity() },
                     )
-                    vodDao.baselineSeen()
+                    vodDao.baselineSeen(clock.nowMs() - NEW_EPISODES_WINDOW_MS)
                 }
                 null
             } catch (e: kotlinx.coroutines.CancellationException) {

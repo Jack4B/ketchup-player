@@ -117,22 +117,13 @@ class M3uVodCollector(
     }
 }
 
-/** Czyszczenie tytułów z przedrostków języka i roku (wspólne dla list z paneli Xtream). */
+/** Czyszczenie tytułów (wspólne `VodTitle` z core:model): przedrostki platformy/języka, znaczniki jakości, rok. */
 internal object VodTitles {
-    private val yearRegex = Regex("""\((19|20)\d{2}\)""")
-    private val tagRegex = Regex("""^(?:[A-Za-z]{2,3}\s*[-|:]\s*)""")
-
     fun clean(raw: String): String =
-        raw
-            .replace(tagRegex, "")
-            .replace(yearRegex, "")
-            .trim()
-            .ifEmpty { raw }
+        pl.ketchupplayer.tv.core.model.VodTitle
+            .clean(raw)
 
     fun year(raw: String): Int? =
-        yearRegex
-            .find(raw)
-            ?.value
-            ?.trim('(', ')')
-            ?.toIntOrNull()
+        pl.ketchupplayer.tv.core.model.VodTitle
+            .year(raw)
 }

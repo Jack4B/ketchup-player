@@ -37,6 +37,12 @@ class VodRepositoryTest {
     private lateinit var db: KetchupDatabase
     private var now = 1_000L
 
+    private companion object {
+        const val LAST_MODIFIED_MS = 1_700_000_000_000L // last_modified serialu z listy testowej
+        const val ONE_DAY_MS = 86_400_000L
+        const val LONG_AFTER_LAST_MODIFIED_MS = LAST_MODIFIED_MS + 30 * ONE_DAY_MS
+    }
+
     private var api =
         mapOf(
             "&password=tajne" to """{"user_info":{"auth":1,"status":"Active"}}""",
@@ -288,6 +294,7 @@ class VodRepositoryTest {
     @Test
     fun `nowy odcinek po odswiezeniu zapala kropke a otwarcie serialu ja zdejmuje`() =
         runTest {
+            now = LONG_AFTER_LAST_MODIFIED_MS // serial z listy jest starszy niż okno „nowości”
             val repo = vodRepo()
             assertFalse(repo.anyNewEpisodes().first()) // pierwszy import to stan wyjściowy, nic nie jest „nowe”
             api = api + ("action=get_series" to api.getValue("action=get_series").replace("1700000000", "1700500000"))
@@ -300,6 +307,35 @@ class VodRepositoryTest {
             val series = repo.entries(VodKind.SERIES).first().single()
             assertTrue(series.hasNewEpisodes)
             repo.markSeen(series.item.id)
+            assertFalse(repo.anyNewEpisodes().first())
+            assertFalse(
+                repo
+                    .entries(VodKind.SERIES)
+                    .first()
+                    .single()
+                    .hasNewEpisodes,
+            )
+        }
+
+    /** Raport 2.11 („brak kropek”): serial zmieniony w ostatnim tygodniu jest nowy zaraz po imporcie, do otwarcia. */
+    @Test
+    fun `serial zmieniony w ostatnim tygodniu jest nowy zaraz po imporcie do otwarcia`() =
+        runTest {
+            now = LAST_MODIFIED_MS + ONE_DAY_MS
+            val repo = vodRepo()
+            assertTrue(repo.anyNewEpisodes().first())
+            val series = repo.entries(VodKind.SERIES).first().single()
+            assertTrue(series.hasNewEpisodes)
+            repo.markSeen(series.item.id)
+            assertFalse(repo.anyNewEpisodes().first())
+        }
+
+    /** Serial starszy niż okno „nowości” nie dostaje kropki po samym imporcie. */
+    @Test
+    fun `serial starszy niz okno nowosci nie ma kropki po imporcie`() =
+        runTest {
+            now = LAST_MODIFIED_MS + 30 * ONE_DAY_MS
+            val repo = vodRepo()
             assertFalse(repo.anyNewEpisodes().first())
             assertFalse(
                 repo

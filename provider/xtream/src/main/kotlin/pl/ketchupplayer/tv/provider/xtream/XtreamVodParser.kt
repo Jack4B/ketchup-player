@@ -178,23 +178,13 @@ object XtreamVodParser {
         return if (dot > 0) Triple(parts[1], parts[2].substring(0, dot), parts[2].substring(dot + 1)) else null
     }
 
-    private val yearRegex = Regex("\\((19|20)\\d{2}\\)")
-    private val tagRegex = Regex("^(?:[A-Za-z]{2,3}\\s*[-|:]\\s*)")
-
-    /** `PL - Pitbull (2005)` -> `Pitbull`: bez przedrostka języka i roku w nawiasie. */
     private fun cleanTitle(raw: String): String =
-        raw
-            .replace(tagRegex, "")
-            .replace(yearRegex, "")
-            .trim()
-            .ifEmpty { raw }
+        pl.ketchupplayer.tv.core.model.VodTitle
+            .clean(raw)
 
     private fun yearIn(raw: String): Int? =
-        yearRegex
-            .find(raw)
-            ?.value
-            ?.trim('(', ')')
-            ?.toIntOrNull()
+        pl.ketchupplayer.tv.core.model.VodTitle
+            .year(raw)
 
     const val DEFAULT_VOD_EXT = "mp4"
     private const val YEAR_LEN = 4
