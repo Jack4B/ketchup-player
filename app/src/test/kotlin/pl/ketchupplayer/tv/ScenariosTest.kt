@@ -946,7 +946,11 @@ class ScenariosTest {
     fun wygladPokazujeWszystkieMotywyWPanelu() {
         settingsPage("Wygląd")
         waitForText("Własny", substring = true)
-        val rootRight = compose.onRoot().fetchSemanticsNode().boundsInRoot.right
+        val rootRight =
+            compose
+                .onRoot()
+                .fetchSemanticsNode()
+                .boundsInRoot.right
         listOf("Morski", "Grafit", "Czerń", "Własny").forEach { name ->
             waitForText(name, substring = true)
             val b = themeCard(name).fetchSemanticsNode().boundsInRoot
@@ -955,7 +959,7 @@ class ScenariosTest {
         }
     }
 
-    /** Karta motywu po nazwie (wybrana ma dopisek „✓”, więc szukamy częściowo; „Własny…” to osobny przycisk akcentu). */
+    /** Karta motywu po nazwie (wybrana ma dopisek „✓”: szukamy częściowo; „Własny…” to osobny przycisk). */
     private fun themeCard(name: String) =
         compose
             .onAllNodesWithText(name, substring = true)
