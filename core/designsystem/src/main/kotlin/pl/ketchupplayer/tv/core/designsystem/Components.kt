@@ -43,18 +43,41 @@ fun NewEpisodeBadge(
     if (count == null) {
         Box(modifier.size(14.dp).background(c.newEpisode, CircleShape))
     } else {
+        // Makieta v5: ciemna pigułka z zieloną kropką i podpisem (informacja nie tylko kolorem).
         Row(
             modifier =
                 modifier
-                    .background(
-                        c.newEpisode,
-                        RoundedCornerShape(50),
-                    ).padding(horizontal = 10.dp, vertical = 4.dp),
+                    .background(Color(BADGE_SCRIM), RoundedCornerShape(50))
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Text(label ?: count.toString(), fontSize = 16.sp, color = c.onAccent)
+            Box(Modifier.size(10.dp).background(c.newEpisode, CircleShape))
+            Text(label ?: count.toString(), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
         }
     }
+}
+
+private const val BADGE_SCRIM = 0xB8000000
+
+/** Pigułka oceny na rogu plakatu: źródło i wartość („IMDb 7,8”), czytelna na każdym obrazie. */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun RatingBadge(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text,
+        fontSize = 14.sp,
+        fontWeight = FontWeight.Bold,
+        color = Color.White,
+        maxLines = 1,
+        modifier =
+            modifier
+                .background(Color(BADGE_SCRIM), RoundedCornerShape(50))
+                .padding(horizontal = 10.dp, vertical = 4.dp),
+    )
 }
 
 /** Plakat (2:3) z tytułem, podtytułem, paskiem postępu i plakietką nowych odcinków; obraz ładuje Coil. */
@@ -77,6 +100,8 @@ fun PosterCard(
     /** Proporcje obrazu: 2:3 plakat albo 16:9 karta pozioma z grafiką w tle. */
     aspect: Float = POSTER_ASPECT,
     cardWidth: androidx.compose.ui.unit.Dp = POSTER_WIDTH,
+    /** Ocena z podpisem źródła na prawym górnym rogu (np. „IMDb 7,8”); null = brak oceny. */
+    ratingBadge: String? = null,
     poster: @Composable BoxScope.() -> Unit = {},
 ) {
     val c = KetchupTheme.colors
@@ -135,8 +160,9 @@ fun PosterCard(
                     }
                 }
                 if (newEpisodes != null) {
-                    NewEpisodeBadge(Modifier.align(Alignment.TopEnd).padding(8.dp), newEpisodes, newEpisodeLabel)
+                    NewEpisodeBadge(Modifier.align(Alignment.TopStart).padding(8.dp), newEpisodes, newEpisodeLabel)
                 }
+                if (ratingBadge != null) RatingBadge(ratingBadge, Modifier.align(Alignment.TopEnd).padding(8.dp))
             }
             if (!overlay) {
                 Text(title, fontSize = 14.sp, color = c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)

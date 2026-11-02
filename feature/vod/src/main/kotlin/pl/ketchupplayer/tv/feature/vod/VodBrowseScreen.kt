@@ -64,7 +64,6 @@ import pl.ketchupplayer.tv.core.designsystem.StateKind
 import pl.ketchupplayer.tv.core.designsystem.StateView
 import pl.ketchupplayer.tv.core.designsystem.glassBlur
 import pl.ketchupplayer.tv.core.designsystem.glassPanel
-import java.util.Locale
 
 @Composable
 fun VodBrowseRoute(
@@ -372,7 +371,8 @@ private fun Grid(
                         },
                 overlay = true,
                 imageUrl = e.item.poster,
-                subtitle = subtitle(e),
+                subtitle = e.item.year?.toString(),
+                ratingBadge = e.ratingLabel(stringResource(R.string.vod_rating_provider)),
                 progress = e.progress.takeIf { it > 0f },
                 newEpisodes = if (e.hasNewEpisodes) 1 else null,
                 newEpisodeLabel = if (e.hasNewEpisodes) stringResource(R.string.vod_new_episodes) else null,
@@ -380,10 +380,4 @@ private fun Grid(
             )
         }
     }
-}
-
-private fun subtitle(e: VodEntry): String? {
-    val year = e.item.year?.toString()
-    val rating = e.displayRating?.let { String.format(Locale.forLanguageTag("pl"), "%.1f", it) }
-    return listOfNotNull(year, rating?.let { "★ $it" }).joinToString(" · ").ifEmpty { null }
 }

@@ -9,6 +9,16 @@ data class Ratings(
     /** Ocena do plakietki na karcie: IMDb, a bez niej TMDB. */
     val best: Double? get() = imdb ?: tmdb
 
+    /** Źródło oceny z [best]: do podpisu na plakietce. */
+    val bestSource: String? get() =
+        if (imdb != null) {
+            "IMDb"
+        } else if (tmdb != null) {
+            "TMDB"
+        } else {
+            null
+        }
+
     val isEmpty: Boolean get() = tmdb == null && imdb == null && rtPercent == null
 
     companion object {

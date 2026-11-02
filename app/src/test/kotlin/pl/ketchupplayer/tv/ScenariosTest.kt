@@ -1248,8 +1248,8 @@ class ScenariosTest {
         waitForText("Kanały: 2", substring = true)
         nav("Filmy")
         waitForText("Pitbull")
-        waitForText("★ 8,7", substring = true) // ocena IMDb dociągnięta dla widocznej karty
-        assertTrue(compose.onAllNodesWithText("★ 7,4", substring = true).fetchSemanticsNodes().isEmpty())
+        waitForText("IMDb 8,7") // plakietka z podpisem źródła, dociągnięta dla widocznej karty
+        assertTrue(compose.onAllNodesWithText("Lista 7,4", substring = true).fetchSemanticsNodes().isEmpty())
         click("Pitbull")
         waitForText("IMDb 8,7")
         waitForText("TMDB 8,2")

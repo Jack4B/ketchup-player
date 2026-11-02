@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="home_rating_provider">Lista</string>
     <string name="home_title">Home</string>
     <string name="home_recent_kicker">OSTATNIO OGLĄDANE</string>
     <string name="home_welcome_kicker">WITAJ</string>

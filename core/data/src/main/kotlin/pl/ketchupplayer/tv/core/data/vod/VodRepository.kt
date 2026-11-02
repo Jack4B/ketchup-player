@@ -21,6 +21,16 @@ data class VodEntry(
     /** Ocena do pokazania: z zewnętrznych źródeł (IMDb, TMDB), a bez niej ta od dostawcy listy. */
     val displayRating: Double? get() = ratings.best ?: item.rating?.takeIf { it > 0.0 }
 
+    /** Podpis źródła oceny: IMDb/TMDB z metadanych, a dla oceny od dostawcy listy null (UI pisze „Lista”). */
+    val displayRatingSource: String? get() = if (ratings.best != null) ratings.bestSource else null
+
+    /** „IMDb 7,8” / „TMDB 7,1” / „<providerLabel> 7,0”: ocena z podpisem źródła; null, gdy nie ma żadnej. */
+    fun ratingLabel(providerLabel: String): String? {
+        val value =
+            displayRating?.let { String.format(java.util.Locale.forLanguageTag("pl"), "%.1f", it) } ?: return null
+        return "${displayRatingSource ?: providerLabel} $value"
+    }
+
     val progress: Float get() = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
 }
 

@@ -233,6 +233,7 @@ private fun PosterRow(
                     cardWidth = if (landscape) LANDSCAPE_WIDTH else POSTER_CARD_WIDTH,
                     newEpisodes = if (newLabel != null) 1 else null,
                     newEpisodeLabel = newLabel,
+                    ratingBadge = if (landscape) null else e.ratingLabel(stringResource(R.string.home_rating_provider)),
                 )
             }
         }
