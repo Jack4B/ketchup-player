@@ -43,6 +43,7 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
 import pl.ketchupplayer.tv.core.designsystem.ChannelLogo
 import pl.ketchupplayer.tv.core.designsystem.FocusItem
+import pl.ketchupplayer.tv.core.designsystem.InfoPill
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.designsystem.requestFocusWhenPlaced
 import pl.ketchupplayer.tv.core.model.Channel
@@ -87,30 +88,30 @@ internal fun ChannelsTab(
         ) {
             GuideGroupsPanel(state, groupsList, selectedGroupFocus, actions.onSelectGroup, Modifier.fillMaxSize())
         }
-        LazyColumn(
-            Modifier.weight(LIST_WEIGHT).fillMaxHeight(),
-            verticalArrangement = Arrangement.spacedBy(ROW_SPACING),
-        ) {
-            items(state.channels, key = { it.id }) { ch ->
-                val first = ch.id == state.channels.first().id
-                ChannelRow(
-                    ch,
-                    ch.id in state.favorites,
-                    state,
-                    first,
-                    Modifier
-                        .then(if (first) Modifier.focusRequester(rows) else Modifier)
-                        .onFocusChanged {
-                            if (it.hasFocus) {
-                                focusedId = ch.id
-                                actions.onPreviewChannel(ch.id)
-                            }
-                        }.onPreviewKeyEvent { e ->
-                            val left = e.key == Key.DirectionLeft && e.type == KeyEventType.KeyDown
-                            left.also { hit -> if (hit) runCatching { selectedGroupFocus.requestFocus() } }
-                        },
-                    onLongClick = { actions.onToggleFavorite(ch.id) },
-                ) { actions.onOpenChannel(ch.id) }
+        Column(Modifier.weight(LIST_WEIGHT).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(ROW_SPACING)) {
+            ListHeader(state)
+            LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(ROW_SPACING)) {
+                items(state.channels, key = { it.id }) { ch ->
+                    val first = ch.id == state.channels.first().id
+                    ChannelRow(
+                        ch,
+                        ch.id in state.favorites,
+                        state,
+                        first,
+                        Modifier
+                            .then(if (first) Modifier.focusRequester(rows) else Modifier)
+                            .onFocusChanged {
+                                if (it.hasFocus) {
+                                    focusedId = ch.id
+                                    actions.onPreviewChannel(ch.id)
+                                }
+                            }.onPreviewKeyEvent { e ->
+                                val left = e.key == Key.DirectionLeft && e.type == KeyEventType.KeyDown
+                                left.also { hit -> if (hit) runCatching { selectedGroupFocus.requestFocus() } }
+                            },
+                        onLongClick = { actions.onToggleFavorite(ch.id) },
+                    ) { actions.onOpenChannel(ch.id) }
+                }
             }
         }
         PreviewPane(current, state, loadProgrammes, preview, Modifier.weight(PREVIEW_WEIGHT).fillMaxHeight())
@@ -172,7 +173,7 @@ private fun ChannelRow(
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                     (if (favorite) "★ " else "") + channel.displayName,
-                    fontSize = 17.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = c.textPrimary,
                     maxLines = 1,
@@ -181,23 +182,30 @@ private fun ChannelRow(
                 if (now != null) {
                     Text(
                         now.title,
-                        fontSize = 14.sp,
+                        fontSize = 15.sp,
                         color = c.textSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    ProgressBar(now.progressAt(state.nowMs), Modifier.fillMaxWidth())
                 }
             }
-            if (now != null) ProgressBar(now.progressAt(state.nowMs), Modifier.width(PROGRESS_WIDTH))
+            if (now != null) {
+                Text(
+                    "${clock(now.startMs)}–${clock(now.endMs)}",
+                    fontSize = 14.sp,
+                    color = c.textSecondary,
+                    maxLines = 1,
+                )
+            }
         }
     }
 }
 
-private val ROW_HEIGHT = 60.dp
+private val ROW_HEIGHT = 68.dp
 private val NUMBER_WIDTH = 30.dp
 private val LOGO_WIDTH = 52.dp
 private val LOGO_HEIGHT = 36.dp
-private val PROGRESS_WIDTH = 44.dp
 
 @Composable
 private fun ProgressBar(
@@ -259,6 +267,9 @@ private fun PreviewPane(
                     preview.status == PlaybackStatus.BUFFERING -> stringResource(R.string.guide_preview_loading)
                     else -> null
                 }
+            if (preview.player != null && preview.channelId == channel?.id && preview.status == PlaybackStatus.READY) {
+                Box(Modifier.align(Alignment.TopStart).padding(10.dp)) { InfoPill(stringResource(R.string.guide_live)) }
+            }
             note?.let {
                 Text(
                     it,
@@ -306,3 +317,30 @@ private fun PreviewPane(
 private const val PREVIEW_RATIO = 16f / 9f
 private const val UPCOMING = 3
 private val UPCOMING_TIME = 48.dp
+
+/** Nagłówek listy (makieta v5): nazwa grupy i „N z M kanałów”, żeby było widać, ile z całej listy pokazuje filtr. */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun ListHeader(state: GuideUiState) {
+    val c = KetchupTheme.colors
+    val title =
+        when {
+            state.favoritesSelected -> stringResource(R.string.guide_group_favorites)
+            state.recentSelected -> stringResource(R.string.guide_group_recent)
+            else -> state.selectedGroup ?: stringResource(R.string.guide_group_all)
+        }
+    val fmt = remember { java.text.NumberFormat.getIntegerInstance() }
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = c.textPrimary, maxLines = 1)
+        Text(
+            stringResource(R.string.guide_count, fmt.format(state.channels.size), fmt.format(state.totalCount)),
+            fontSize = 14.sp,
+            color = c.textSecondary,
+            maxLines = 1,
+        )
+    }
+}

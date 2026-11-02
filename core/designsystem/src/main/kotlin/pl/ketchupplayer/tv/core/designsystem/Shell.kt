@@ -444,8 +444,8 @@ fun ShellHeader(
     }
 }
 
-private val HEADER_HEIGHT = 56.dp
-private val TITLE_SIZE = 32.sp
+private val HEADER_HEIGHT = 44.dp
+private val TITLE_SIZE = 24.sp
 
 /** Zegar HH:mm w nagłówku; odświeża się co kilka sekund. */
 @OptIn(ExperimentalTvMaterial3Api::class)
@@ -458,7 +458,7 @@ fun ClockText(modifier: Modifier = Modifier) {
             delay(CLOCK_TICK_MS)
         }
     }
-    Text(text, fontSize = 24.sp, fontWeight = FontWeight.Medium, color = c.textSecondary, modifier = modifier)
+    Text(text, fontSize = 20.sp, fontWeight = FontWeight.Medium, color = c.textPrimary, modifier = modifier)
 }
 
 private const val CLOCK_TICK_MS = 5_000L

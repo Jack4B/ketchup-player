@@ -1279,6 +1279,21 @@ class ScenariosTest {
         waitForText("ważne do 01.01.2030", substring = true)
     }
 
+    /** Scenariusz (makieta v5): lista kanałów podpisuje grupę i pokazuje „N z M kanałów”. */
+    @Test
+    fun naZywoPodpisujeGrupeIPokazujeLicznikKanalow() {
+        val host = "http://127.0.0.1:${server.port}"
+        server.serve("/l.m3u") {
+            "#EXTM3U\n#EXTINF:-1 tvg-chno=\"1\" group-title=\"Info\",Alfa Info\n$host/a.m3u8\n" +
+                "#EXTINF:-1 tvg-chno=\"2\" group-title=\"Sport\",Beta Sport\n$host/b.m3u8\n"
+        }
+        runBlocking { catalog.addM3u("Lista", server.url("/l.m3u")) }
+        nav("Na żywo")
+        waitForText("2 z 2 kanałów")
+        click("Sport")
+        waitForText("1 z 2 kanałów")
+    }
+
     /** Scenariusz (makieta v5): nagłówek każdego ekranu pokazuje aktywną listę i jej połączenia („1 z 2”). */
     @Test
     fun naglowekPokazujePigulkeListyZPolaczeniami() {
