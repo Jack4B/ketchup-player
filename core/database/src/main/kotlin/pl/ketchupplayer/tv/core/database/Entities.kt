@@ -145,3 +145,14 @@ data class VodSeenEntity(
     val seenAddedMs: Long?,
     val seenEpisodes: Int,
 )
+
+/** Oceny z zewnętrznych źródeł (TMDB, IMDb, RT). [found] = false: sprawdzono, nie znaleziono (nie pytamy w kółko). */
+@Entity(tableName = "vod_meta")
+data class VodMetaEntity(
+    @PrimaryKey val itemId: String,
+    val tmdbRating: Double?,
+    val imdbRating: Double?,
+    val rtPercent: Int?,
+    val fetchedMs: Long,
+    val found: Boolean,
+)

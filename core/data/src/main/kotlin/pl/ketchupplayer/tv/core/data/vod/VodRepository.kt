@@ -14,7 +14,13 @@ data class VodEntry(
     val durationMs: Long = 0,
     /** Serial z odcinkiem dodanym od ostatniego otwarcia (zielona kropka). */
     val hasNewEpisodes: Boolean = false,
+    /** Oceny z zewnętrznych źródeł (TMDB/IMDb/RT); puste, dopóki nie zostaną pobrane. */
+    val ratings: pl.ketchupplayer.tv.core.data.metadata.Ratings =
+        pl.ketchupplayer.tv.core.data.metadata.Ratings.NONE,
 ) {
+    /** Ocena do pokazania: z zewnętrznych źródeł (IMDb, TMDB), a bez niej ta od dostawcy listy. */
+    val displayRating: Double? get() = ratings.best ?: item.rating?.takeIf { it > 0.0 }
+
     val progress: Float get() = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
 }
 
@@ -38,6 +44,12 @@ data class VodPlayback(
 
 /** Katalog filmów i seriali (offline-first, jak [pl.ketchupplayer.tv.core.data.catalog.CatalogRepository]). */
 interface VodRepository {
+    /** Kolejkuje pobranie ocen i opisu dla pozycji (np. karty widocznej na ekranie); domyślnie nic. */
+    fun requestMeta(itemId: String) {}
+
+    /** Pobiera oceny i opis zaraz (szczegóły); true, gdy są dane z zewnętrznych źródeł. */
+    suspend fun ensureMeta(itemId: String): Boolean = false
+
     fun entries(kind: VodKind): Flow<List<VodEntry>>
 
     /** Pozycje z „Mojej listy” (filmy i seriale). */

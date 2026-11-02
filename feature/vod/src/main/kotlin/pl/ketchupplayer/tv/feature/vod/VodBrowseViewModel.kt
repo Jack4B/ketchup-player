@@ -80,6 +80,7 @@ class VodBrowseViewModel
                 is VodBrowseEvent.SelectCategory -> category.value = event.category
                 is VodBrowseEvent.Search -> query.value = event.query
                 is VodBrowseEvent.Sort -> sort.value = event.sort
+                is VodBrowseEvent.Visible -> repo.requestMeta(event.itemId)
             }
         }
 

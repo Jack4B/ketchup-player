@@ -19,5 +19,8 @@
     <string name="details_retry">Spróbuj ponownie</string>
     <string name="details_no_plot">Brak opisu.</string>
     <string name="details_cast">OBSADA</string>
+    <string name="details_rating_imdb">IMDb %1$s</string>
+    <string name="details_rating_tmdb">TMDB %1$s</string>
+    <string name="details_rating_rt">RT %1$d%%</string>
     <string name="details_sources">Źródła: %1$d</string>
 </resources>

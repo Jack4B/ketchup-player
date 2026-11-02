@@ -172,6 +172,7 @@ fun VodBrowseScreen(
                                 if (categoriesOpen) COLUMNS else COLUMNS_WIDE,
                                 reveal,
                                 gridFirst,
+                                { onEvent(VodBrowseEvent.Visible(it)) },
                             ) { index, entry ->
                                 categoriesOpen = false
                                 focusedIndex = index
@@ -333,6 +334,7 @@ private fun Grid(
     columns: Int,
     onLeftEdge: () -> Unit,
     firstFocus: FocusRequester,
+    onVisible: (String) -> Unit,
     onFocus: (Int, VodEntry) -> Unit,
 ) {
     if (state.entries.isEmpty()) {
@@ -352,6 +354,8 @@ private fun Grid(
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         itemsIndexed(state.entries, key = { _, e -> e.item.id }) { index, e ->
+            // Karta jest na ekranie (Lazy komponuje tylko widoczne): dociągamy jej oceny, jeśli jeszcze ich nie ma.
+            if (e.ratings.isEmpty) androidx.compose.runtime.LaunchedEffect(e.item.id) { onVisible(e.item.id) }
             PosterCard(
                 title = e.item.title,
                 onClick = { onOpen(e.item.id) },
@@ -380,6 +384,6 @@ private fun Grid(
 
 private fun subtitle(e: VodEntry): String? {
     val year = e.item.year?.toString()
-    val rating = e.item.rating?.let { String.format(Locale.forLanguageTag("pl"), "%.1f", it) }
+    val rating = e.displayRating?.let { String.format(Locale.forLanguageTag("pl"), "%.1f", it) }
     return listOfNotNull(year, rating?.let { "★ $it" }).joinToString(" · ").ifEmpty { null }
 }

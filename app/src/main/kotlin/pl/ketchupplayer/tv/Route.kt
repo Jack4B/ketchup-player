@@ -28,6 +28,7 @@ enum class SettingsPage(
     NETWORK("settings/network"),
     PLAYBACK("settings/playback"),
     APPEARANCE("settings/look"),
+    METADATA("settings/meta"),
 }
 
 object Routes {

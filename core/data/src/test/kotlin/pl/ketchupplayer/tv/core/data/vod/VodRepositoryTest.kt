@@ -25,6 +25,14 @@ import pl.ketchupplayer.tv.core.data.catalog.ImportStatus
 import pl.ketchupplayer.tv.core.data.catalog.ProviderFactory
 import pl.ketchupplayer.tv.core.data.catalog.ProviderSecrets
 import pl.ketchupplayer.tv.core.data.catalog.RoomCatalogRepository
+import pl.ketchupplayer.tv.core.data.metadata.ApiKeys
+import pl.ketchupplayer.tv.core.data.metadata.DefaultApiKeys
+import pl.ketchupplayer.tv.core.data.metadata.MetadataEndpoints
+import pl.ketchupplayer.tv.core.data.metadata.MetadataKeys
+import pl.ketchupplayer.tv.core.data.metadata.MetadataRepository
+import pl.ketchupplayer.tv.core.data.metadata.MetadataService
+import pl.ketchupplayer.tv.core.data.metadata.OmdbSource
+import pl.ketchupplayer.tv.core.data.metadata.TmdbSource
 import pl.ketchupplayer.tv.core.database.KetchupDatabase
 import pl.ketchupplayer.tv.core.model.VodKind
 import pl.ketchupplayer.tv.core.network.TextFetcher
@@ -102,8 +110,19 @@ class VodRepositoryTest {
     private lateinit var catalog: RoomCatalogRepository
     private var providerId = ""
 
+    private val store = InMemorySecretStore()
+    private val endpoints = MetadataEndpoints()
+
+    private fun metadataRepository() =
+        MetadataRepository(
+            db.vod(),
+            MetadataKeys(store, DefaultApiKeys { ApiKeys() }),
+            MetadataService(TmdbSource(fetcher, endpoints), OmdbSource(fetcher, endpoints)),
+            Clock { now },
+        )
+
     private suspend fun vodRepo(): VodRepository {
-        val secrets = ProviderSecrets(InMemorySecretStore())
+        val secrets = ProviderSecrets(store)
         val factory = ProviderFactory(secrets, fetcher)
         catalog =
             RoomCatalogRepository(
@@ -118,7 +137,7 @@ class VodRepositoryTest {
         val added = catalog.addXtream("Konto", "http://x.example.invalid:8080", "jan", "tajne")
         check(added is AddProviderResult.Added)
         providerId = added.id.value
-        return RoomVodRepository(db.vod(), db.providers(), factory, Clock { now })
+        return RoomVodRepository(db.vod(), db.providers(), factory, Clock { now }, metadataRepository())
     }
 
     @Test

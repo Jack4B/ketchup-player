@@ -91,6 +91,10 @@ class ScenariosTest {
 
     @Inject lateinit var epgSources: EpgSourcesRepository
 
+    @Inject lateinit var metadataKeys: pl.ketchupplayer.tv.core.data.metadata.MetadataKeys
+
+    @Inject lateinit var metadataEndpoints: pl.ketchupplayer.tv.core.data.metadata.MetadataEndpoints
+
     @Inject lateinit var appearance: AppearanceRepository
 
     @Inject lateinit var dataStore: DataStore<Preferences>
@@ -123,6 +127,9 @@ class ScenariosTest {
     @Before
     fun setUp() {
         hilt.inject()
+        // Hermetyczność: metadane (TMDB/OMDb) idą na serwer testowy, nigdy do internetu.
+        metadataEndpoints.tmdb = server.url("/tmdb").trimEnd('/')
+        metadataEndpoints.omdb = server.url("/omdb").trimEnd('/')
         blockImageNetwork()
         blockImageNetwork()
         FakePlayers.reset()
@@ -1207,6 +1214,56 @@ class ScenariosTest {
         compose.waitForIdle()
         waitForText("Film 30")
         assertTrue("Film 30 znów pierwszy", top("Film 30") >= 0f && top("Film 30") < top("Film 29"))
+    }
+
+    /** Serwer metadanych: TMDB (wyszukiwanie + szczegóły z id IMDb) i OMDb (IMDb, Rotten Tomatoes). */
+    private fun serveMetadata() {
+        server.serve("/tmdb/search/movie") { """{"results":[{"id":603}]}""" }
+        server.serve("/tmdb/movie/603") {
+            """{"vote_average":8.2,"overview":"Opis z TMDB po polsku.","runtime":110,"genres":[{"name":"Dramat"}],""" +
+                """"external_ids":{"imdb_id":"tt0133093"},"credits":{"cast":[{"name":"Jan Kowalski"}]}}"""
+        }
+        server.serve("/omdb/") {
+            """{"Response":"True","imdbRating":"8.7","Ratings":[{"Source":"Rotten Tomatoes","Value":"83%"}]}"""
+        }
+    }
+
+    /**
+     * Scenariusz (raport 2.11: „w filmach nie ma ocen ani opisów”): z kluczami API karty widoczne na ekranie dostają
+     * ocenę IMDb z OMDb (zamiast oceny dostawcy), a szczegóły pokazują IMDb, TMDB, Rotten Tomatoes i polski opis.
+     */
+    @Test
+    fun ocenyZeZrodelZewnetrznychPojawiajaSieNaKartachISzczegolach() {
+        serveXtreamVod() // ocena dostawcy: Pitbull 7,4
+        serveMetadata()
+        runBlocking {
+            metadataKeys.save(
+                pl.ketchupplayer.tv.core.data.metadata
+                    .ApiKeys("klucz-t", "klucz-o"),
+            )
+        }
+        addXtreamViaUi("dobre-haslo")
+        waitForText("Kanały: 2", substring = true)
+        nav("Filmy")
+        waitForText("Pitbull")
+        waitForText("★ 8,7", substring = true) // ocena IMDb dociągnięta dla widocznej karty
+        assertTrue(compose.onAllNodesWithText("★ 7,4", substring = true).fetchSemanticsNodes().isEmpty())
+        click("Pitbull")
+        waitForText("IMDb 8,7")
+        waitForText("TMDB 8,2")
+        waitForText("RT 83%")
+        waitForText("Opis z TMDB po polsku.")
+    }
+
+    /** Scenariusz: klucze API wpisane w Ustawieniach → Oceny i opisy są zapisane (w SecretStore, nie w repo). */
+    @Test
+    fun kluczeMetadanychWpisaneWUstawieniachSaZapisane() {
+        settingsPage("Oceny i opisy")
+        waitForText("Brak kluczy", substring = true)
+        compose.onAllNodes(hasSetTextAction())[0].performTextInput("klucz-tmdb-123")
+        click("Zapisz")
+        waitFor { runBlocking { metadataKeys.userEntered().tmdb } == "klucz-tmdb-123" }
+        waitForText("Zapisano", substring = true)
     }
 
     /** Scenariusz: w odtwarzaczu na żywo OK otwiera listę kanałów grupy; wybór drugiego przełącza kanał, BACK wraca. */

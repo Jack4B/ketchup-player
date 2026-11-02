@@ -106,4 +106,15 @@
     <string name="network_pick_title">User-Agent: %1$s</string>
     <string name="playback_preview">Żywy podgląd w Na żywo</string>
     <string name="playback_preview_hint">Wyciszony obraz zaznaczonego kanału obok opisu audycji. Wyłącz na słabym urządzeniu.</string>
+    <string name="metadata_title">Oceny i opisy</string>
+    <string name="metadata_intro">Oceny (IMDb, TMDB, Rotten Tomatoes) i opisy po polsku pobieramy z TMDB i OMDb dla filmów i seriali z Twoich list. Wpisz własne, darmowe klucze API.</string>
+    <string name="metadata_tmdb_field">Klucz TMDB (opisy, obsada, ocena TMDB)</string>
+    <string name="metadata_tmdb_hint">Darmowy klucz: themoviedb.org → Ustawienia → API.</string>
+    <string name="metadata_omdb_field">Klucz OMDb (ocena IMDb i Rotten Tomatoes)</string>
+    <string name="metadata_omdb_hint">Darmowy klucz: omdbapi.com/apikey.aspx (do 1000 zapytań dziennie).</string>
+    <string name="metadata_save">Zapisz</string>
+    <string name="metadata_status_saved">Zapisano. Oceny pojawią się przy przewijaniu filmów.</string>
+    <string name="metadata_status_builtin">Używane są klucze wbudowane w aplikację.</string>
+    <string name="metadata_status_none">Brak kluczy: oceny i opisy z zewnętrznych źródeł są wyłączone.</string>
+    <string name="metadata_status_set">Klucze ustawione.</string>
 </resources>

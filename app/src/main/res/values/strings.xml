@@ -13,6 +13,7 @@
     <string name="settings_cat_providers">Listy i dostawcy</string>
     <string name="settings_cat_groups">Grupy i kategorie</string>
     <string name="settings_cat_playback">Odtwarzanie</string>
+    <string name="settings_cat_metadata">Oceny i opisy</string>
     <string name="settings_cat_tv">Telewizja</string>
     <string name="settings_cat_vod">Filmy i seriale</string>
     <string name="settings_cat_recording">Nagrywanie</string>

@@ -12,6 +12,9 @@ android {
         // Wersję podaje wydanie (workflow release: -PversionName=1.0.0 -PversionCode=100); lokalnie wersja deweloperska.
         versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 1
         versionName = (project.findProperty("versionName") as String?) ?: "0.1.0"
+        // Klucze API metadanych z sekretów CI (zmienne środowiskowe), puste lokalnie; nigdy w repozytorium.
+        buildConfigField("String", "TMDB_KEY", "\"${System.getenv("KETCHUP_TMDB_KEY").orEmpty()}\"")
+        buildConfigField("String", "OMDB_KEY", "\"${System.getenv("KETCHUP_OMDB_KEY").orEmpty()}\"")
     }
     // Stały klucz debug w repozytorium (hasło `android`, jak domyślny klucz Androida): to NIE jest sekret ani klucz wydania.
     // Bez niego każdy bieg CI generuje inny losowy klucz i kolejne APK z CI nie instalują się jako aktualizacja

@@ -35,4 +35,9 @@ sealed interface VodBrowseEvent {
     data class Sort(
         val sort: VodSort,
     ) : VodBrowseEvent
+
+    /** Karta weszła na ekran: dociągamy jej oceny z zewnętrznych źródeł (kolejka po kilka naraz). */
+    data class Visible(
+        val itemId: String,
+    ) : VodBrowseEvent
 }

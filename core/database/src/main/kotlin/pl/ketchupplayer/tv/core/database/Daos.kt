@@ -261,6 +261,21 @@ interface VodDao {
     )
     fun observeNewSeriesIds(sinceMs: Long): Flow<List<String>>
 
+    @Query("SELECT * FROM vod_meta")
+    fun observeMeta(): Flow<List<VodMetaEntity>>
+
+    @Query("SELECT * FROM vod_meta WHERE itemId = :id")
+    suspend fun meta(id: String): VodMetaEntity?
+
+    @Query("SELECT * FROM vod_meta WHERE itemId = :id")
+    fun observeMetaOf(id: String): Flow<VodMetaEntity?>
+
+    @Query("SELECT * FROM vod_items WHERE id = :id")
+    fun observeItem(id: String): Flow<VodItemEntity?>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertMeta(meta: VodMetaEntity)
+
     @Query("SELECT * FROM vod_episodes WHERE seriesId = :seriesId ORDER BY season, number")
     fun observeEpisodes(seriesId: String): Flow<List<EpisodeEntity>>
 

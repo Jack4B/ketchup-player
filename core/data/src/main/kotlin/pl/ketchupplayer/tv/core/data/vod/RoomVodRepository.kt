@@ -2,6 +2,9 @@ package pl.ketchupplayer.tv.core.data.vod
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import pl.ketchupplayer.tv.core.common.Clock
 import pl.ketchupplayer.tv.core.data.catalog.ProviderFactory
@@ -25,14 +28,41 @@ class RoomVodRepository
         private val providerDao: ProviderDao,
         private val factory: ProviderFactory,
         private val clock: Clock,
+        private val metadata: pl.ketchupplayer.tv.core.data.metadata.MetadataRepository,
     ) : VodRepository {
         private fun entries(items: Flow<List<VodItemEntity>>): Flow<List<VodEntry>> =
-            combine(items, dao.observeState(), dao.observeNewSeriesIds(newSince())) { list, states, fresh ->
+            combine(
+                items,
+                dao.observeState(),
+                dao.observeNewSeriesIds(newSince()),
+                ratings(),
+            ) { list, states, fresh, rated ->
                 val byId = states.associateBy { it.itemId }
                 val newIds = fresh.toHashSet()
                 list.map { e ->
                     val s = byId[e.id]
-                    VodEntry(e.toModel(), s?.myList == true, s?.positionMs ?: 0, s?.durationMs ?: 0, e.id in newIds)
+                    VodEntry(
+                        e.toModel(),
+                        s?.myList == true,
+                        s?.positionMs ?: 0,
+                        s?.durationMs ?: 0,
+                        e.id in newIds,
+                        rated[e.id] ?: pl.ketchupplayer.tv.core.data.metadata.Ratings.NONE,
+                    )
+                }
+            }
+
+        /** Oceny po id; zmiany spływają partiami (debounce), bo przy przewijaniu dochodzą co chwilę. */
+        @OptIn(kotlinx.coroutines.FlowPreview::class)
+        private fun ratings(): Flow<Map<String, pl.ketchupplayer.tv.core.data.metadata.Ratings>> =
+            flow {
+                var first = true // pierwszy stan bez zwłoki, kolejne zmiany scalane
+                emitAll(dao.observeMeta().debounce { if (first) 0L.also { first = false } else RATINGS_DEBOUNCE_MS })
+            }.map { rows ->
+                rows.filter { it.found }.associate {
+                    it.itemId to
+                        pl.ketchupplayer.tv.core.data.metadata
+                            .Ratings(it.tmdbRating, it.imdbRating, it.rtPercent)
                 }
             }
 
@@ -41,6 +71,10 @@ class RoomVodRepository
         private fun newSince() = clock.nowMs() - NEW_EPISODES_WINDOW_MS
 
         override suspend fun markSeen(seriesId: String) = dao.markSeen(seriesId)
+
+        override fun requestMeta(itemId: String) = metadata.request(itemId)
+
+        override suspend fun ensureMeta(itemId: String): Boolean = metadata.ensure(itemId)
 
         override suspend fun refreshInfo(itemId: String) {
             val item = dao.get(itemId)?.toModel() ?: return
@@ -109,10 +143,26 @@ class RoomVodRepository
             }
 
         override fun entry(id: String): Flow<VodEntry?> =
-            dao.observeState().map {
-                val e = dao.get(id) ?: return@map null
+            combine(dao.observeItem(id), dao.observeState(), dao.observeMetaOf(id)) { e, _, meta ->
+                if (e == null) return@combine null
                 val s = dao.state(id)
-                VodEntry(e.toModel(), s?.myList == true, s?.positionMs ?: 0, s?.durationMs ?: 0)
+                val ratings =
+                    meta
+                        ?.takeIf { it.found }
+                        ?.let {
+                            pl.ketchupplayer.tv.core.data.metadata.Ratings(
+                                it.tmdbRating,
+                                it.imdbRating,
+                                it.rtPercent,
+                            )
+                        }
+                VodEntry(
+                    e.toModel(),
+                    s?.myList == true,
+                    s?.positionMs ?: 0,
+                    s?.durationMs ?: 0,
+                    ratings = ratings ?: pl.ketchupplayer.tv.core.data.metadata.Ratings.NONE,
+                )
             }
 
         override fun episodes(seriesId: String): Flow<List<EpisodeEntry>> =
@@ -264,4 +314,5 @@ internal fun VodItem.withInfo(info: pl.ketchupplayer.tv.core.model.VodInfo): Vod
     )
 
 private const val ENRICH_PAUSE_MS = 150L
+private const val RATINGS_DEBOUNCE_MS = 800L
 private const val MAX_FAILURES = 3

@@ -44,6 +44,7 @@ import pl.ketchupplayer.tv.feature.providers.ProvidersRoute
 import pl.ketchupplayer.tv.feature.settings.AppearanceRoute
 import pl.ketchupplayer.tv.feature.settings.EpgSourcesRoute
 import pl.ketchupplayer.tv.feature.settings.GroupsSettingsRoute
+import pl.ketchupplayer.tv.feature.settings.MetadataSettingsRoute
 import pl.ketchupplayer.tv.feature.settings.NetworkSettingsRoute
 import pl.ketchupplayer.tv.feature.settings.PlaybackSettingsRoute
 
@@ -55,6 +56,7 @@ enum class SettingsCategory(
     PROVIDERS(R.string.settings_cat_providers, SettingsPage.PROVIDERS),
     GROUPS(R.string.settings_cat_groups, SettingsPage.GROUPS),
     PLAYBACK(R.string.settings_cat_playback, SettingsPage.PLAYBACK),
+    METADATA(R.string.settings_cat_metadata, SettingsPage.METADATA),
     TV(R.string.settings_cat_tv, SettingsPage.EPG_SOURCES),
     VOD(R.string.settings_cat_vod),
     RECORDING(R.string.settings_cat_recording),
@@ -172,6 +174,7 @@ private fun CategoryContent(
         SettingsCategory.GROUPS -> GroupsSettingsRoute(onBack = onBack)
         SettingsCategory.NETWORK -> NetworkSettingsRoute(onBack = onBack)
         SettingsCategory.PLAYBACK -> PlaybackSettingsRoute(onBack = onBack)
+        SettingsCategory.METADATA -> MetadataSettingsRoute(onBack = onBack)
         SettingsCategory.TV -> EpgSourcesRoute(onBack = onBack)
         SettingsCategory.APPEARANCE -> AppearanceRoute(onBack = onBack)
         SettingsCategory.ABOUT -> About()

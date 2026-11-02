@@ -139,12 +139,7 @@ private fun DetailsBody(
                     }
                     item.durationMin?.takeIf { it > 0 }?.let { InfoPill(stringResource(R.string.details_minutes, it)) }
                     if (state.sources > 1) InfoPill(stringResource(R.string.details_sources, state.sources), true)
-                    item.rating?.let {
-                        InfoPill(
-                            "★ " + String.format(java.util.Locale.forLanguageTag("pl"), "%.1f", it),
-                            true,
-                        )
-                    }
+                    RatingPills(state.entry?.ratings, item.rating)
                 }
                 (item.genre ?: item.category)?.let { Text(it, fontSize = 15.sp, color = c.textSecondary) }
                 Text(

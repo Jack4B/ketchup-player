@@ -41,7 +41,10 @@ class DetailsViewModel
             itemId.value = id
             season.value = null
             viewModelScope.launch { sources.value = repo.sourceCount(id) }
-            viewModelScope.launch { repo.refreshInfo(id) } // opis, obsada i grafika od dostawcy; wynik wpada do bazy
+            viewModelScope.launch {
+                repo.refreshInfo(id) // opis, obsada i grafika od dostawcy; wynik wpada do bazy
+                repo.ensureMeta(id) // potem oceny i opis z TMDB/OMDb (tylko puste pola); po sobie, bez wyścigu zapisów
+            }
             viewModelScope.launch {
                 similar.value = repo.similar(id, SIMILAR_LIMIT)
                 loadEpisodesIfSeries(id)

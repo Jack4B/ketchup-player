@@ -121,5 +121,18 @@ abstract class DataModule {
 
         @Provides
         fun clock(): Clock = Clock.System
+
+        @Provides
+        @Singleton
+        fun metadataService(
+            fetcher: TextFetcher,
+            endpoints: pl.ketchupplayer.tv.core.data.metadata.MetadataEndpoints,
+        ): pl.ketchupplayer.tv.core.data.metadata.MetadataService =
+            pl.ketchupplayer.tv.core.data.metadata.MetadataService(
+                pl.ketchupplayer.tv.core.data.metadata
+                    .TmdbSource(fetcher, endpoints),
+                pl.ketchupplayer.tv.core.data.metadata
+                    .OmdbSource(fetcher, endpoints),
+            )
     }
 }
