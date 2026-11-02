@@ -38,6 +38,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import pl.ketchupplayer.tv.core.designsystem.AppShell
 import pl.ketchupplayer.tv.core.designsystem.KetchupLogoApp
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
+import pl.ketchupplayer.tv.core.designsystem.LocalFocusBlocked
+import pl.ketchupplayer.tv.core.designsystem.LocalListBadge
 import pl.ketchupplayer.tv.core.designsystem.glassPanel
 import pl.ketchupplayer.tv.feature.details.DetailsRoute
 import pl.ketchupplayer.tv.feature.guide.GuideRoute
@@ -120,7 +122,7 @@ private fun MainFlow(
     }
     val base = if (settingsOpen) stack.lastOrNull { !Routes.isSettings(it) } ?: Routes.HOME else top
     val listBadge = rememberListBadge()
-    CompositionLocalProvider(pl.ketchupplayer.tv.core.designsystem.LocalListBadge provides listBadge) {
+    CompositionLocalProvider(LocalListBadge provides listBadge) {
         AppShell(
             entries = entries,
             selectedId = Routes.railSection(top)?.route,
@@ -151,10 +153,10 @@ private fun MainFlow(
                     Modifier
                 },
             ) {
-            CompositionLocalProvider(pl.ketchupplayer.tv.core.designsystem.LocalFocusBlocked provides settingsOpen) {
-                SectionContent(base, push, openPlayer, previewActive = !settingsOpen)
+                CompositionLocalProvider(LocalFocusBlocked provides settingsOpen) {
+                    SectionContent(base, push, openPlayer, previewActive = !settingsOpen)
+                }
             }
-        }
             AnimatedVisibility(
                 visible = settingsOpen,
                 enter = slideInHorizontally(tween(SETTINGS_PANEL_MS)) { it } + fadeIn(tween(SETTINGS_PANEL_MS)),
