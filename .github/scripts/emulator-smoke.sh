@@ -200,7 +200,8 @@ for m in re.finditer(r"<node [^>]*>", s):
     t = re.search(r'(?:text|content-desc)="(?:[A-Z], )?(Film \d\d)"', n)
     b = re.search(r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', n)
     if t and b:
-        items.append((int(b.group(2)), int(b.group(1)), t.group(1)))
+        # Wiersze w pasmach po 50 px: karta z fokusem jest powiększona i jej tytuł leży o kilka px niżej.
+        items.append((int(b.group(2)) // 50, int(b.group(1)), t.group(1)))
 items.sort()
 print(items[0][2] if items else "")
 PY
