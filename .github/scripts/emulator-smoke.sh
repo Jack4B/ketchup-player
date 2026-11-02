@@ -300,6 +300,12 @@ case "$FOCUS_CAT" in
 esac
 if ! echo "$FOCUS_IN" | grep -qE "Morski|Czerń|Grafit|Własny"; then
   echo "=== Wygląd: PRAWO z kategorii nie weszło w opcje (fokus: '$FOCUS_IN') ===" >&2
+  # Diagnostyka #2: czy drugi klawisz PRAWO i klawisz DÓŁ cokolwiek zaznaczają (pierwszy klawisz mógł zniknąć w trybie wejścia).
+  key KEYCODE_DPAD_RIGHT
+  D_R2=$(focused_text po_prawo2)
+  key KEYCODE_DPAD_DOWN
+  D_DN=$(focused_text po_dol)
+  echo "diag: po 2. PRAWO='$D_R2' po DOLE='$D_DN'" | tee -a "$OUT/diag.txt" >&2
   # Diagnostyka: elementy fokusowalne i zaznaczone z drzewa UI po PRAWO (klasa, ramka, tekst).
   python3 - "$OUT/ui_focus_opcje.xml" >&2 <<'PY'
 import re, sys
