@@ -2,8 +2,8 @@ package pl.ketchupplayer.tv.core.designsystem
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Density
 
 /**
@@ -41,7 +41,9 @@ fun ProvideUiScale(
     content: @Composable () -> Unit,
 ) {
     val density = LocalDensity.current
-    val factor = resolveUiScale(scale, LocalConfiguration.current.screenWidthDp)
+    // Szerokość okna w dp (przed skalą); lint odradza Configuration.screenWidthDp, bo zależy od wersji SDK i insetów.
+    val widthDp = (LocalWindowInfo.current.containerSize.width / density.density).toInt()
+    val factor = resolveUiScale(scale, widthDp)
     CompositionLocalProvider(
         LocalDensity provides Density(density.density * factor, density.fontScale),
         content = content,
