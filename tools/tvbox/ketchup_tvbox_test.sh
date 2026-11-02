@@ -283,7 +283,8 @@ shot 21_ulubione >/dev/null
 goto "Filmy"; sleep 2; ui_dump
 if has_text "Brak filmów"; then record J3 "Filmy z listy" WARN "lista bez filmów (użyj M3U/Xtream z VOD)"
 else
-  tap_first 800 1900 200; sleep 5; ui_dump; shot 22_szczegoly >/dev/null; save_ui 22_szczegoly
+  tap_first 800 1900 200; sleep 5; shot 22_szczegoly >/dev/null; ui_dump; save_ui 22_szczegoly
+  has_text "Oglądaj" || has_text "Wznów" || { sleep 2; ui_dump; save_ui 22_szczegoly; } # zrzut i drzewo UI z tej samej chwili
   if has_text "Oglądaj" || has_text "Wznów"; then record J3 "Szczegóły filmu" PASS; else record J3 "Szczegóły filmu" FAIL "brak przycisku Oglądaj/Wznów (sprawdź 22_szczegoly)"; fi
   tap "▶ Oglądaj" || tap "▶ Wznów"; sleep 15; shot 23_vod >/dev/null
   playing && record J5 "Odtwarzanie filmu" PASS || record J5 "Odtwarzanie filmu" WARN "brak aktywnego audio"

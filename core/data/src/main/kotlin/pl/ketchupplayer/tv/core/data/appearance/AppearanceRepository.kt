@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import pl.ketchupplayer.tv.core.designsystem.AccentChoice
 import pl.ketchupplayer.tv.core.designsystem.Palettes
 import pl.ketchupplayer.tv.core.designsystem.ThemeId
+import pl.ketchupplayer.tv.core.designsystem.UiScale
 
 data class Appearance(
     val theme: ThemeId = ThemeId.MORSKI,
@@ -15,6 +16,8 @@ data class Appearance(
     val glassBlurDecided: Boolean = false,
     /** Odcień tła motywu „Własny” (0–360). */
     val customHue: Int = Palettes.DEFAULT_HUE,
+    /** Rozmiar interfejsu (skala gęstości); domyślnie dobierany do ekranu. */
+    val uiScale: UiScale = UiScale.AUTO,
 ) {
     val effectiveAccent: AccentChoice get() = accent ?: AccentChoice.Preset(theme.defaultAccent)
 }
@@ -29,4 +32,6 @@ interface AppearanceRepository {
     suspend fun setGlassBlur(enabled: Boolean)
 
     suspend fun setCustomHue(hue: Int)
+
+    suspend fun setUiScale(scale: UiScale)
 }

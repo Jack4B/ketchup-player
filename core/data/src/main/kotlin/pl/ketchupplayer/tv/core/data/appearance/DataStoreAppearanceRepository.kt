@@ -11,6 +11,7 @@ import pl.ketchupplayer.tv.core.designsystem.AccentId
 import pl.ketchupplayer.tv.core.designsystem.HexColor
 import pl.ketchupplayer.tv.core.designsystem.Palettes
 import pl.ketchupplayer.tv.core.designsystem.ThemeId
+import pl.ketchupplayer.tv.core.designsystem.UiScale
 import javax.inject.Inject
 
 /** Motyw i akcent w DataStore. Akcent: `preset:NAZWA` albo `custom:#RRGGBB`; brak/nieznany = domyślny motywu. */
@@ -27,11 +28,16 @@ class DataStoreAppearanceRepository
                     glassBlur = prefs[BLUR] ?: false,
                     glassBlurDecided = prefs[BLUR_DECIDED] ?: false,
                     customHue = prefs[HUE] ?: Palettes.DEFAULT_HUE,
+                    uiScale = UiScale.entries.firstOrNull { it.name == prefs[UI_SCALE] } ?: UiScale.AUTO,
                 )
             }
 
         override suspend fun setTheme(theme: ThemeId) {
             store.edit { it[THEME] = theme.name }
+        }
+
+        override suspend fun setUiScale(scale: UiScale) {
+            store.edit { it[UI_SCALE] = scale.name }
         }
 
         override suspend fun setCustomHue(hue: Int) {
@@ -70,6 +76,7 @@ class DataStoreAppearanceRepository
                 androidx.datastore.preferences.core
                     .intPreferencesKey("appearance_custom_hue")
             val THEME = stringPreferencesKey("appearance_theme")
+            val UI_SCALE = stringPreferencesKey("appearance_ui_scale")
             val ACCENT = stringPreferencesKey("appearance_accent")
             val BLUR_DECIDED =
                 androidx.datastore.preferences.core

@@ -4,6 +4,7 @@ import pl.ketchupplayer.tv.core.designsystem.AccentChoice
 import pl.ketchupplayer.tv.core.designsystem.AccentId
 import pl.ketchupplayer.tv.core.designsystem.AccentWarning
 import pl.ketchupplayer.tv.core.designsystem.ThemeId
+import pl.ketchupplayer.tv.core.designsystem.UiScale
 
 /** Edytor własnego koloru: HEX albo suwaki HSL (odcień 0–360, nasycenie i jasność 0–1). */
 data class CustomEditor(
@@ -22,6 +23,7 @@ data class AppearanceUiState(
     val editor: CustomEditor? = null,
     val glassBlur: Boolean = false,
     val customHue: Int = pl.ketchupplayer.tv.core.designsystem.Palettes.DEFAULT_HUE,
+    val uiScale: UiScale = UiScale.AUTO,
 )
 
 sealed interface AppearanceEvent {
@@ -31,6 +33,11 @@ sealed interface AppearanceEvent {
     ) : AppearanceEvent
 
     data object ToggleGlassBlur : AppearanceEvent
+
+    /** Rozmiar interfejsu: Auto albo stały procent. */
+    data class SetUiScale(
+        val scale: UiScale,
+    ) : AppearanceEvent
 
     /** Wynik pomiaru płynności (przycisk „Dobierz automatycznie”): ustawia rozmycie i oznacza je jako ustalone. */
     data class SetGlassBlur(

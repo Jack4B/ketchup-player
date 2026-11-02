@@ -41,11 +41,13 @@ import pl.ketchupplayer.tv.core.designsystem.Contrast
 import pl.ketchupplayer.tv.core.designsystem.FocusItem
 import pl.ketchupplayer.tv.core.designsystem.InitialFocusEffect
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
+import pl.ketchupplayer.tv.core.designsystem.PillChip
 import pl.ketchupplayer.tv.core.designsystem.ScreenScaffold
 import pl.ketchupplayer.tv.core.designsystem.ScreenTitle
 import pl.ketchupplayer.tv.core.designsystem.SettingsListItem
 import pl.ketchupplayer.tv.core.designsystem.StepSlider
 import pl.ketchupplayer.tv.core.designsystem.ThemeId
+import pl.ketchupplayer.tv.core.designsystem.UiScale
 
 @Composable
 fun AppearanceRoute(
@@ -72,6 +74,7 @@ fun AppearanceScreen(
         ScreenTitle(stringResource(R.string.appearance_title))
         Text(stringResource(R.string.appearance_theme), fontSize = 20.sp, color = c.textSecondary)
         ThemePicker(state.theme, state.customHue, { onEvent(AppearanceEvent.SelectTheme(it)) }, first)
+        UiScaleRow(state.uiScale, onEvent)
         Text(stringResource(R.string.appearance_accent), fontSize = 20.sp, color = c.textSecondary)
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -154,6 +157,30 @@ private fun CustomEditorPanel(
         }
     }
 }
+
+/** Rozmiar interfejsu: Auto i stałe procenty (raport z boxa: na starym Full HD napisy były za duże). */
+@OptIn(ExperimentalTvMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun UiScaleRow(
+    current: UiScale,
+    onEvent: (AppearanceEvent) -> Unit,
+) {
+    val c = KetchupTheme.colors
+    Text(stringResource(R.string.appearance_ui_scale), fontSize = 20.sp, color = c.textSecondary)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        UiScale.entries.forEach { s ->
+            PillChip(uiScaleLabel(s), s == current, { onEvent(AppearanceEvent.SetUiScale(s)) })
+        }
+    }
+    Text(stringResource(R.string.appearance_ui_scale_hint), fontSize = 16.sp, color = c.textSecondary)
+}
+
+@Composable
+private fun uiScaleLabel(s: UiScale): String =
+    s.factor?.let { stringResource(R.string.appearance_ui_scale_percent, (it * PERCENT).toInt()) }
+        ?: stringResource(R.string.appearance_ui_scale_auto)
+
+private const val PERCENT = 100
 
 /** Podgląd na żywo (makieta v5): przycisk w wybranym akcencie i kontrast jego tekstu (WCAG, min. 4,5:1). */
 @OptIn(ExperimentalTvMaterial3Api::class)

@@ -38,6 +38,10 @@
     <string name="custom_adjusted">Kolor rozjaśniono, żeby był czytelny na tym motywie</string>
     <string name="custom_warn_green">Zielony kojarzy się ze wskaźnikiem nowych odcinków</string>
     <string name="custom_warn_red">Czerwony kojarzy się z błędem i nagrywaniem</string>
+    <string name="appearance_ui_scale">Rozmiar interfejsu</string>
+    <string name="appearance_ui_scale_auto">Auto</string>
+    <string name="appearance_ui_scale_percent">%1$d%%</string>
+    <string name="appearance_ui_scale_hint">Zmniejsz, jeśli napisy są za duże na Twoim telewizorze. Auto dobiera rozmiar do ekranu.</string>
     <string name="custom_close">Gotowe</string>
     <string name="custom_preview_button">Przycisk główny</string>
     <string name="custom_contrast">Kontrast tekstu na akcencie: %1$s : 1 (minimum 4,5)</string>

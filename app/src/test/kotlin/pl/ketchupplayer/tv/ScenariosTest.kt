@@ -52,6 +52,7 @@ import pl.ketchupplayer.tv.core.data.catalog.AddProviderResult
 import pl.ketchupplayer.tv.core.data.catalog.CatalogRepository
 import pl.ketchupplayer.tv.core.data.epg.EpgSourcesRepository
 import pl.ketchupplayer.tv.core.designsystem.ThemeId
+import pl.ketchupplayer.tv.core.designsystem.UiScale
 import pl.ketchupplayer.tv.core.model.BuiltInEpgSources
 import pl.ketchupplayer.tv.core.policy.BkFailoverPolicy
 import pl.ketchupplayer.tv.core.policy.FailoverSensitivity
@@ -72,6 +73,7 @@ class ScenariosTest {
     private companion object {
         const val WAIT_MS = 30_000L
         const val BIG_WAIT_MS = 60_000L
+        const val SHRINK_MAX = 0.85f
         const val POLL_MS = 25L
         const val CLOCK_STEP_MS = 500L
         const val GRID_ROW = 10_000f
@@ -138,6 +140,8 @@ class ScenariosTest {
             // DataStore jest singletonem procesu: stan poprzedniego scenariusza (ustawienia, znacznik importu EPG)
             // przeciekałby do kolejnego, więc zaczynamy od czystego.
             dataStore.edit { it.clear() }
+            // Rozmiar interfejsu w scenariuszach stały (100%): audyt układu mierzy te same dp niezależnie od ekranu.
+            appearance.setUiScale(UiScale.X100)
             // Podgląd wideo ma własny scenariusz; w pozostałych odtwarzacz podglądu zakłócałby zapis „co zagrano”.
             dataStore.edit {
                 it[
@@ -966,6 +970,30 @@ class ScenariosTest {
             assertTrue("$name wystaje poza ekran (right=${b.right}, ekran=$rootRight)", b.right <= rootRight - 1f)
             assertTrue("$name ma zerową szerokość", b.width > 0f)
         }
+    }
+
+    /**
+     * Raport z boxa (stary telewizor Full HD, napisy za duże): w Wyglądzie można zmniejszyć interfejs. Po wyborze 70%
+     * ten sam napis ma być wyraźnie mniejszy, a wybór zostaje zapisany.
+     */
+    @Test
+    fun rozmiarInterfejsuMoznaZmniejszycWWygladzie() {
+        assertEquals(UiScale.X100, runBlocking { appearance.appearance.first().uiScale })
+        settingsPage("Wygląd")
+        waitForText("Rozmiar interfejsu")
+        val before =
+            compose
+                .onNodeWithText("Rozmiar interfejsu")
+                .fetchSemanticsNode()
+                .boundsInRoot.height
+        click("70%")
+        compose.waitUntil(WAIT_MS) {
+            compose
+                .onNodeWithText("Rozmiar interfejsu")
+                .fetchSemanticsNode()
+                .boundsInRoot.height < before * SHRINK_MAX
+        }
+        assertEquals(UiScale.X70, runBlocking { appearance.appearance.first().uiScale })
     }
 
     /** Karta motywu po nazwie (wybrana ma dopisek „✓”: szukamy częściowo; „Własny…” to osobny przycisk). */

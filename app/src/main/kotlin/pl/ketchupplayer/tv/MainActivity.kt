@@ -17,6 +17,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.designsystem.LocalGlassBlur
+import pl.ketchupplayer.tv.core.designsystem.ProvideUiScale
 import timber.log.Timber
 
 @AndroidEntryPoint
@@ -59,9 +60,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             val appearance by viewModel.appearance.collectAsStateWithLifecycle()
             KetchupTheme(appearance.theme, appearance.effectiveAccent, customHue = appearance.customHue) {
-                CompositionLocalProvider(LocalGlassBlur provides appearance.glassBlur) {
-                    AppNavigation(onExit = { finish() })
-                    AutoGlassProbe(appearance.glassBlurDecided, viewModel::applyGlassVerdict)
+                ProvideUiScale(appearance.uiScale) {
+                    CompositionLocalProvider(LocalGlassBlur provides appearance.glassBlur) {
+                        AppNavigation(onExit = { finish() })
+                        AutoGlassProbe(appearance.glassBlurDecided, viewModel::applyGlassVerdict)
+                    }
                 }
             }
         }

@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -437,7 +438,7 @@ fun ShellHeader(
         }
         Spacer(Modifier.weight(1f))
         LocalListBadge.current?.let {
-            ListBadgePill(it)
+            ListBadgePill(it, Modifier.widthIn(max = BADGE_MAX_WIDTH))
             Spacer(Modifier.width(24.dp))
         }
         ClockText()
@@ -445,6 +446,7 @@ fun ShellHeader(
 }
 
 private val HEADER_HEIGHT = 44.dp
+private val BADGE_MAX_WIDTH = 300.dp
 private val TITLE_SIZE = 24.sp
 
 /** Zegar HH:mm w nagłówku; odświeża się co kilka sekund. */
@@ -458,7 +460,15 @@ fun ClockText(modifier: Modifier = Modifier) {
             delay(CLOCK_TICK_MS)
         }
     }
-    Text(text, fontSize = 20.sp, fontWeight = FontWeight.Medium, color = c.textPrimary, modifier = modifier)
+    Text(
+        text,
+        fontSize = 20.sp,
+        fontWeight = FontWeight.Medium,
+        color = c.textPrimary,
+        maxLines = 1,
+        softWrap = false,
+        modifier = modifier,
+    )
 }
 
 private const val CLOCK_TICK_MS = 5_000L
