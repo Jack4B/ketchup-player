@@ -221,6 +221,70 @@ if [ "$F1" != "Film 01" ]; then
   echo "=== Filmy: po A–Z (dotyk, siatka przewinięta) pierwszy powinien być Film 01, jest '$F1' ===" >&2
   FAIL_PROVIDER=1
 fi
+
+# --- Regresja: Ustawienia > Wygląd (raport z boxa 2.11): wszystkie motywy w panelu i LEWO wraca do kategorii ---
+# focused_text: tekst (lub opis) zaznaczonego elementu z drzewa UI; ui_bounds: prawa krawędź elementu o danym tekście.
+focused_text() {
+  adb shell uiautomator dump /sdcard/ui_f.xml >/dev/null
+  adb pull /sdcard/ui_f.xml "$OUT/ui_focus_$1.xml" >/dev/null
+  python3 - "$OUT/ui_focus_$1.xml" <<'PY'
+import re, sys
+s = open(sys.argv[1], encoding="utf-8").read()
+out = []
+for m in re.finditer(r"<node [^>]*>", s):
+    n = m.group(0)
+    if 'focused="true"' not in n:
+        continue
+    t = re.search(r' text="([^"]*)"', n)
+    d = re.search(r'content-desc="([^"]*)"', n)
+    out.append((t.group(1) if t and t.group(1) else (d.group(1) if d else "")))
+print("|".join(x for x in out if x))
+PY
+}
+tap "Ustawienia" || FAIL_PROVIDER=1
+sleep 2
+tap "Wygląd" || FAIL_PROVIDER=1
+sleep 2
+shot 17_ustawienia_wyglad
+adb shell uiautomator dump /sdcard/ui_w.xml >/dev/null
+adb pull /sdcard/ui_w.xml "$OUT/ui_wyglad.xml" >/dev/null
+for theme in Morski Grafit Czerń Własny; do
+  right=$(python3 - "$OUT/ui_wyglad.xml" "$theme" <<'PY'
+import re, sys
+s = open(sys.argv[1], encoding="utf-8").read()
+best = ""
+for m in re.finditer(r"<node [^>]*>", s):
+    n = m.group(0)
+    t = re.search(r' text="([^"]*)"', n)
+    b = re.search(r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', n)
+    if t and b and t.group(1).startswith(sys.argv[2]) and "…" not in t.group(1):
+        best = b.group(3)
+print(best)
+PY
+)
+  if [ -z "$right" ] || [ "$right" -gt 1900 ]; then
+    echo "=== Wygląd: karta motywu '$theme' nie mieści się w panelu (prawa krawędź: '${right:-brak}') ===" >&2
+    FAIL_PROVIDER=1
+  fi
+done
+# Nawigacja pilotem: kategorie -> opcje (PRAWO) -> z powrotem na kategorię (LEWO).
+tap "Wygląd" || true
+key KEYCODE_DPAD_DOWN   # pierwszy klawisz po dotyku tylko przełącza tryb
+key KEYCODE_DPAD_UP
+FOCUS_CAT=$(focused_text kategoria)
+key KEYCODE_DPAD_RIGHT
+FOCUS_IN=$(focused_text opcje)
+key KEYCODE_DPAD_LEFT
+FOCUS_OUT=$(focused_text po_lewo)
+echo "fokus: kategoria='$FOCUS_CAT' opcje='$FOCUS_IN' po LEWO='$FOCUS_OUT'" | tee -a "$OUT/diag.txt"
+if ! echo "$FOCUS_IN" | grep -qE "Morski|Czerń|Grafit|Własny|Turkus|Biel|Bursztyn"; then
+  echo "=== Wygląd: PRAWO z kategorii nie weszło w opcje (fokus: '$FOCUS_IN') ===" >&2
+  FAIL_PROVIDER=1
+fi
+if ! echo "$FOCUS_OUT" | grep -q "Wygląd"; then
+  echo "=== Wygląd: LEWO z opcji nie wróciło na kategorię 'Wygląd' (fokus: '$FOCUS_OUT') ===" >&2
+  FAIL_PROVIDER=1
+fi
 if adb logcat -d | grep -qE "FATAL EXCEPTION|ANR in $PKG"; then
   echo "=== Crash lub ANR wykryty. Bufor crash: ===" >&2
   adb logcat -d -b crash | head -120 >&2

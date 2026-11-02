@@ -78,6 +78,9 @@ class ScenariosTest {
         const val SETTLED_READS = 3
     }
 
+    @get:Rule(order = -1)
+    val tvBox = TvBoxRule()
+
     @get:Rule(order = 0)
     val hilt = HiltAndroidRule(this)
 
@@ -934,6 +937,30 @@ class ScenariosTest {
         compose.waitForIdle()
         compose.onNodeWithContentDescription("Home").assertIsFocused()
     }
+
+    /**
+     * Błąd z boxa (raport 2.11): w Wyglądzie widać było tylko Morski i Czerń; Grafit i Własny wypadały poza panel
+     * (4 karty po 200 dp w wąskiej kolumnie). Każda karta motywu ma leżeć w całości na ekranie, w obrębie panelu.
+     */
+    @Test
+    fun wygladPokazujeWszystkieMotywyWPanelu() {
+        settingsPage("Wygląd")
+        waitForText("Własny", substring = true)
+        val rootRight = compose.onRoot().fetchSemanticsNode().boundsInRoot.right
+        listOf("Morski", "Grafit", "Czerń", "Własny").forEach { name ->
+            waitForText(name, substring = true)
+            val b = themeCard(name).fetchSemanticsNode().boundsInRoot
+            assertTrue("$name wystaje poza ekran (right=${b.right}, ekran=$rootRight)", b.right <= rootRight - 1f)
+            assertTrue("$name ma zerową szerokość", b.width > 0f)
+        }
+    }
+
+    /** Karta motywu po nazwie (wybrana ma dopisek „✓”, więc szukamy częściowo; „Własny…” to osobny przycisk akcentu). */
+    private fun themeCard(name: String) =
+        compose
+            .onAllNodesWithText(name, substring = true)
+            .filter(hasClickAction())
+            .filter(hasText("…", substring = true).not())[0]
 
     /** Panel Ustawień nakłada się na bieżącą sekcję: po zamknięciu wraca ta sama sekcja (tu Na żywo). */
     @Test

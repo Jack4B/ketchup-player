@@ -183,8 +183,9 @@ private fun SettingsPanel(
 
 private val SETTINGS_PANEL_PADDING = 20.dp
 
-private const val SETTINGS_PANEL_WIDTH = 0.74f
-private const val SETTINGS_PANEL_ALPHA = 0.97f
+// Panel jest w pełni nieprzezroczysty: przy 0,97 przez szkło przebijała treść sekcji pod spodem (zrzut z boxa).
+private const val SETTINGS_PANEL_WIDTH = 0.8f
+private const val SETTINGS_PANEL_ALPHA = 1f
 private const val UNDER_PANEL_ALPHA = 0.4f
 
 @Composable

@@ -21,7 +21,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.focusGroup
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -74,7 +77,7 @@ enum class SettingsCategory(
  * Ustawienia dwupoziomowe: po lewej kategorie, po prawej opcje zaznaczonej (fokusowanej) kategorii.
  * PRAWO/OK z kategorii wchodzi w opcje, BACK z opcji wraca do kategorii, z kategorii na szynę.
  */
-@OptIn(ExperimentalTvMaterial3Api::class)
+@OptIn(ExperimentalTvMaterial3Api::class, androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 fun SettingsScreen(
     initial: SettingsPage? = null,
@@ -115,16 +118,29 @@ fun SettingsScreen(
                     ) {
                         Text(
                             stringResource(cat.label),
-                            fontSize = 15.sp,
+                            fontSize = CATEGORY_FONT,
                             color = c.textPrimary,
                             maxLines = 1,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
                         )
                     }
                 }
             }
-            Column(Modifier.weight(1f).fillMaxHeight()) {
+            // Grupa fokusu: LEWO z lewej krawędzi opcji wraca na zaznaczoną kategorię (nie tylko BACK).
+            Column(
+                Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .focusProperties {
+                        onExit = {
+                            if (requestedFocusDirection == FocusDirection.Left) {
+                                cancelFocusChange()
+                                runCatching { requesters[selected].requestFocus() }
+                            }
+                        }
+                    }.focusGroup(),
+            ) {
                 val toCategories: () -> Unit = { runCatching { requesters[selected].requestFocus() } }
                 // BACK: z opcji do listy kategorii, z listy kategorii na szynę (do innych sekcji).
                 val back: () -> Unit = { if (inCategories) (onClose ?: toRail).invoke() else toCategories() }
@@ -141,7 +157,8 @@ fun SettingsScreen(
 internal fun initialCategoryIndex(initial: SettingsPage?): Int =
     if (initial == null) 0 else SettingsCategory.visible.indexOfFirst { it.page == initial }.coerceAtLeast(0)
 
-private val CATEGORIES_WIDTH = 200.dp
+private val CATEGORIES_WIDTH = 250.dp
+private val CATEGORY_FONT = 20.sp
 private const val FOCUS_RETRIES = 20
 
 @OptIn(ExperimentalTvMaterial3Api::class)
