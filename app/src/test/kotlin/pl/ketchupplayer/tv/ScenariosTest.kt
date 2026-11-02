@@ -75,6 +75,7 @@ class ScenariosTest {
         const val POLL_MS = 25L
         const val CLOCK_STEP_MS = 500L
         const val GRID_ROW = 10_000f
+        const val SETTLED_READS = 3
     }
 
     @get:Rule(order = 0)
@@ -1012,11 +1013,26 @@ class ScenariosTest {
         compose.onNodeWithTag("slider_bg_hue").requestFocus()
         pressKeys(listOf(Key.ShiftLeft, Key.DirectionRight, Key.DirectionRight))
         waitFor { runBlocking { appearance.appearance.first().customHue } != before }
-        val hue = runBlocking { appearance.appearance.first().customHue }
+        // Dwa naciśnięcia = dwa zapisy do DataStore: czekamy, aż wartość przestanie się zmieniać (inaczej wyścig:
+        // odczyt po pierwszym zapisie, a po recreate() jest już końcowa wartość).
+        val hue = settledHue()
         compose.activityRule.scenario.recreate()
         compose.waitForIdle()
         assertEquals(hue, runBlocking { appearance.appearance.first().customHue })
         assertEquals(ThemeId.WLASNY, runBlocking { appearance.appearance.first().theme })
+    }
+
+    /** Odcień tła po ustabilizowaniu: trzy kolejne odczyty (co ok. 300 ms) bez zmiany. */
+    private fun settledHue(): Int {
+        var last = -1
+        var same = 0
+        waitFor {
+            val now = runBlocking { appearance.appearance.first().customHue }
+            same = if (now == last) same + 1 else 0
+            last = now
+            same >= SETTLED_READS
+        }
+        return last
     }
 
     /** Scenariusz: „Mam czas na…” na Home: audycja kończy się za 50 min, więc mieści się w 60 min, ale nie w 30. */
