@@ -989,4 +989,23 @@ class ScenariosTest {
         assertEquals(ThemeId.GRAFIT, runBlocking { appearance.appearance.first().theme })
         waitForText("Motyw") // ekran Wygląd po restarcie dalej widoczny
     }
+
+    /** Scenariusz: „Mam czas na…” na Home: audycja kończy się za 50 min, więc mieści się w 60 min, ale nie w 30. */
+    @Test
+    fun mamCzasNaProponujeAudycjeKtoraSieMiesci() {
+        val host = "http://127.0.0.1:${server.port}"
+        server.serve("/t.m3u") {
+            "#EXTM3U url-tvg=\"$host/t.xml\"\n" +
+                "#EXTINF:-1 tvg-id=\"TVN24.pl\" group-title=\"Info\",TVN 24\n$host/tvn24.m3u8\n"
+        }
+        server.serve("/t.xml") { ListFactory.xmltvNow("TVN24.pl", "Wiadomosci Czasu", "Potem", displayName = "TVN 24") }
+        runBlocking { catalog.addM3u("Czas", server.url("/t.m3u")) }
+
+        nav("Home")
+        waitForText("Wiadomosci Czasu", timeoutMs = BIG_WAIT_MS) // EPG zaimportowane: karta „Na żywo teraz”
+        click("30 min")
+        waitForText("Nic nie pasuje", substring = true)
+        click("60 min")
+        waitFor { compose.onAllNodesWithText("Nic nie pasuje", substring = true).fetchSemanticsNodes().isEmpty() }
+    }
 }

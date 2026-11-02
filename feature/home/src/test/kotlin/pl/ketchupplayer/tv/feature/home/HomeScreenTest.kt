@@ -9,8 +9,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.unit.dp
@@ -122,13 +124,37 @@ open class HomeScreenTest {
             }
         }
         compose.waitForIdle()
-        compose.onNodeWithText("Nowe odcinki").assertExists()
         key(Key.DirectionCenter) // Wznów na hero
-        key(Key.DirectionDown) // przycisk Szczegóły/Wznów -> rząd Kontynuuj (przejście z paska przycisków)
+        key(Key.DirectionDown) // z hero na chipy „Mam czas na…”
+        key(Key.DirectionDown) // dalej do rzędu Kontynuuj
         key(Key.DirectionDown)
         key(Key.DirectionCenter)
         assertEquals(listOf("m1"), played)
         assertEquals(true, opened.size <= 1)
+    }
+
+    /** „Mam czas na…”: wybór 30 min pokazuje filmy do dokończenia z czasem, który zostaje; ponowny wybór je chowa. */
+    @Test
+    fun mamCzasNaPokazujeCoSieZmiesci() {
+        compose.setContent { KetchupTheme(device = DeviceClass.TV) { HomeScreen(state, {}, {}, {}) } }
+        compose.waitForIdle()
+        compose.onNodeWithText("30 min").performClick()
+        compose.waitForIdle()
+        compose.onAllNodesWithText("Zostało 1 min", substring = true)[0].assertExists()
+        compose.onNodeWithText("30 min").performClick()
+        compose.waitForIdle()
+        assertEquals(0, compose.onAllNodesWithText("Zostało 1 min", substring = true).fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun mamCzasNaBezDanychPodpowiadaCoZrobic() {
+        compose.setContent {
+            KetchupTheme(device = DeviceClass.TV) { HomeScreen(state.copy(continueVod = emptyList()), {}, {}, {}) }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithText("2 h").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Nic nie pasuje", substring = true).assertExists()
     }
 }
 

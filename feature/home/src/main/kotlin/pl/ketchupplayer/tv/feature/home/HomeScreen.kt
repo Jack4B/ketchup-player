@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +19,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,6 +43,7 @@ import pl.ketchupplayer.tv.core.designsystem.FocusItem
 import pl.ketchupplayer.tv.core.designsystem.InfoPill
 import pl.ketchupplayer.tv.core.designsystem.KetchupButton
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
+import pl.ketchupplayer.tv.core.designsystem.PillChip
 import pl.ketchupplayer.tv.core.designsystem.PosterCard
 import pl.ketchupplayer.tv.core.designsystem.PosterImage
 import pl.ketchupplayer.tv.core.designsystem.ScreenTitle
@@ -83,6 +89,9 @@ fun HomeScreen(
                 } else {
                     Hero(state, onOpenChannel, onOpenGuide, onOpenProviders)
                 }
+            }
+            if (state.hasProviders) {
+                item(key = "time-budget") { TimeBudgetSection(state, onOpenChannel, onOpenDetails) }
             }
             if (state.continueVod.isNotEmpty()) {
                 item(key = "continue-vod") {
@@ -431,5 +440,89 @@ private fun RowHeader(
             modifier = Modifier.padding(start = 10.dp).weight(1f),
         )
         Text(count.toString(), fontSize = 14.sp, color = c.textSecondary)
+    }
+}
+
+private val TIME_CHOICES = listOf(30, 60, 90, 120)
+
+/**
+ * „Mam czas na…”: wybór 30/60/90/120 min pokazuje, co zmieści się w tym czasie: filmy do dokończenia (długość znana
+ * z odtwarzacza) i audycje na żywo, które skończą się w tym czasie. Pusty wynik ma wyjaśnienie, nie pustą przestrzeń.
+ */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun TimeBudgetSection(
+    state: HomeUiState,
+    onOpenChannel: (String) -> Unit,
+    onOpenDetails: (String) -> Unit,
+) {
+    val c = KetchupTheme.colors
+    var minutes by rememberSaveable { mutableStateOf<Int?>(null) }
+    val picked = minutes
+    val result =
+        remember(picked, state.continueVod, state.liveNow, state.nowMs) {
+            picked?.let { TimeBudget.pick(it, state.continueVod, state.liveNow, state.nowMs) }
+        }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                stringResource(R.string.home_time_title),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = c.textPrimary,
+            )
+            Spacer(Modifier.width(6.dp))
+            TIME_CHOICES.forEach { m ->
+                PillChip(timeLabel(m), picked == m, { minutes = if (picked == m) null else m })
+            }
+        }
+        if (result != null) {
+            when {
+                result.isEmpty ->
+                    Text(
+                        stringResource(R.string.home_time_empty),
+                        fontSize = 14.sp,
+                        color = c.textSecondary,
+                    )
+                else -> TimeResults(result, state.nowMs, onOpenChannel, onOpenDetails)
+            }
+        }
+    }
+}
+
+@Composable
+private fun timeLabel(minutes: Int): String =
+    if (minutes >= MIN_PER_HOUR * 2 && minutes % MIN_PER_HOUR == 0) {
+        stringResource(R.string.home_time_hours, minutes / MIN_PER_HOUR)
+    } else {
+        stringResource(R.string.home_time_minutes, minutes)
+    }
+
+private const val MIN_PER_HOUR = 60
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun TimeResults(
+    result: TimeSuggestions,
+    nowMs: Long,
+    onOpenChannel: (String) -> Unit,
+    onOpenDetails: (String) -> Unit,
+) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(result.finish, key = { "v" + it.entry.item.id }) { s ->
+            PosterCard(
+                s.entry.item.title,
+                { onOpenDetails(s.entry.item.id) },
+                imageUrl = s.entry.item.backdrop ?: s.entry.item.poster,
+                progress = s.entry.progress.takeIf { it > 0f },
+                subtitle = stringResource(R.string.home_time_left, s.remainingMin),
+                overlay = true,
+                aspect = LANDSCAPE_ASPECT,
+                cardWidth = LANDSCAPE_WIDTH,
+            )
+        }
+        items(result.live, key = { "l" + it.item.channel.id }) { s ->
+            ChannelCard(s.item, nowMs, { onOpenChannel(s.item.channel.id) }, Modifier)
+        }
     }
 }
