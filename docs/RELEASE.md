@@ -32,7 +32,7 @@ Zapisz hasła i **zrób kopię pliku `ketchup-release.jks` w bezpiecznym miejscu
 - Zmiana klucza podpisu = nowa aplikacja dla systemu (trzeba odinstalować starą).
 
 ## Kandydat na wydanie (rc)
-Tag: `git tag rc-0.9.6-rc1 && git push origin rc-0.9.6-rc1` (działa z `dev`). Albo Actions → **Release candidate** → Run workflow, wersja np. `0.9.6-rc1` (ręczne uruchomienie działa dopiero, gdy `rc.yml` jest na `main`).
+Gałąź: `git push origin dev:rcbuild/0.9.6-rc1` albo tag `rc-0.9.6-rc1` (działa z `dev`, bez `main`). Albo Actions → **Release candidate** → Run workflow, wersja np. `0.9.6-rc1` (ręczne uruchomienie działa dopiero, gdy `rc.yml` jest na `main`).
 - Bramka: workflow odmawia budowy, jeśli CI (z emulatorem) nie jest zielony na dokładnie tym commicie.
 - Bez sekretów podpisu powstaje APK debug (instalowalny na boxie); z sekretami z kroku 2: APK wydania z R8.
 - Wynik: GitHub pre-release `v0.9.6-rc1` z APK i `ketchup_tvbox_test.sh`. Test na boxie: `docs/TVBOX-TESTY.md`.

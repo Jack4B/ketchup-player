@@ -4,10 +4,11 @@ name: Release candidate
 # Bramka: dla tego samego SHA workflow CI (w tym emulator) musi być zakończony sukcesem, inaczej nic się nie buduje.
 # Podpis: gdy są sekrety z docs/RELEASE.md, APK jest podpisany kluczem wydania (R8); bez nich budujemy debug
 # (instalowalny na boxie kluczem debug, inny pakiet niż wydanie). Wynik: GitHub pre-release z APK i skryptem testowym.
-#   - tag `rc-<wersja>` (np. `git tag rc-0.9.6-rc1 && git push origin rc-0.9.6-rc1`): działa także wtedy, gdy ten plik
-#     nie jest jeszcze na domyślnej gałęzi (ręczne uruchomienie przez Actions wymaga pliku na `main`).
+#   - wypchnięcie gałęzi `rcbuild/<wersja>` (np. `git push origin dev:rcbuild/0.9.6-rc1`) albo tagu `rc-<wersja>`: działa
+#     także wtedy, gdy ten plik nie jest jeszcze na domyślnej gałęzi (ręczne uruchomienie wymaga pliku na `main`).
 on:
   push:
+    branches: ["rcbuild/**"]
     tags: ["rc-*"]
   workflow_dispatch:
     inputs:
@@ -56,7 +57,7 @@ jobs:
         id: ver
         run: |
           V="${{ github.event.inputs.version }}"
-          if [ -z "${V}" ]; then V="${GITHUB_REF_NAME#rc-}"; fi
+          if [ -z "${V}" ]; then V="${GITHUB_REF_NAME#rcbuild/}"; V="${V#rc-}"; fi
           base="${V%%-*}"
           IFS=. read -r MAJ MIN PAT <<< "${base}"
           rc="${V##*rc}"; [ "${rc}" = "${V}" ] && rc=0
