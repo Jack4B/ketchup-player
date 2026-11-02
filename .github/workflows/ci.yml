@@ -46,7 +46,8 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git commit -m "chore: baseline Roborazzi (CI) [skip ci]"
-            git push
+            # Gałąź mogła pójść do przodu w trakcie biegu (nasz push, commit bota z emulatora): rebase i ponów.
+            git pull --rebase origin "${GITHUB_REF_NAME}" && git push || { git pull --rebase origin "${GITHUB_REF_NAME}" && git push; }
           fi
       - uses: actions/upload-artifact@v4
         if: always()
