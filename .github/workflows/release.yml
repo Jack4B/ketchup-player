@@ -5,7 +5,7 @@ name: Release
 #   KETCHUP_KEYSTORE_BASE64, KETCHUP_KEYSTORE_PASSWORD, KETCHUP_KEY_ALIAS, KETCHUP_KEY_PASSWORD
 on:
   push:
-    tags: ["v*"]
+    tags: ["v*", "!v*-rc*"]
   workflow_dispatch:
     inputs:
       version:
