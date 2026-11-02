@@ -4,4 +4,5 @@ emulator curl: ok
 index.m3u8
 index0.ts
 index1.ts
-fokus: kategoria='Wygląd' opcje='Turkus' po LEWO='Wygląd'
+fokus: kategoria='Wygląd' opcje='Auto' po LEWO='Wygląd'
+diag: po 2. PRAWO='Turkus' po DOLE='Fiolet'
