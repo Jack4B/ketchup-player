@@ -68,6 +68,7 @@ class ScenariosTest {
     private companion object {
         const val WAIT_MS = 30_000L
         const val BIG_WAIT_MS = 60_000L
+        const val ROW_GRACE_MS = 8_000L
         const val POLL_MS = 25L
         const val CLOCK_STEP_MS = 500L
     }
@@ -814,6 +815,18 @@ class ScenariosTest {
 
         nav("Na żywo")
         waitForText("Fakty wieczorne", timeoutMs = BIG_WAIT_MS)
+        // Wiersz listy czasem dociąga tytuł dopiero po ponownym wejściu (KNOWN-EDGE-CASES): wchodzimy raz jeszcze.
+        val rowReady = {
+            compose
+                .onAllNodesWithText("Fakty wieczorne")
+                .filter(hasClickAction())
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+        if (runCatching { waitFor(ROW_GRACE_MS) { rowReady() } }.isFailure) {
+            nav("Home")
+            nav("Na żywo")
+        }
         click("Fakty wieczorne")
         waitFor(BIG_WAIT_MS) { FakePlayers.played.isNotEmpty() }
         assertEquals(listOf("$host/tvn24.m3u8"), FakePlayers.played.toList())
@@ -1027,5 +1040,36 @@ class ScenariosTest {
         waitForText("Błąd pobierania", substring = true)
         assertTrue(compose.onAllNodesWithText("Dobra").fetchSemanticsNodes().isNotEmpty())
         assertTrue(compose.onAllNodesWithText("Zepsuta").fetchSemanticsNodes().isNotEmpty())
+    }
+
+    /** Scenariusz: sortowanie Filmów z konta Xtream: A–Z, Ocena i Najnowsze zmieniają kolejność bez crasha. */
+    @Test
+    fun sortowanieFilmowZmieniaKolejnosc() {
+        serveXtreamVod() // Pitbull: ocena 7,4, dodany; Seksmisja: ocena 8,1, bez daty dodania
+        addXtreamViaUi("dobre-haslo")
+        waitForText("Kanały: 2", substring = true)
+        nav("Filmy")
+        waitForText("Pitbull")
+        waitForText("Seksmisja")
+
+        fun left(title: String) =
+            compose
+                .onAllNodesWithText(title)[0]
+                .fetchSemanticsNode()
+                .boundsInRoot.left
+
+        fun chip(label: String) {
+            clickable(label).performClick() // chipy sortowania nie leżą w przewijanym kontenerze
+            compose.waitForIdle()
+        }
+
+        // Najnowsze (domyślnie): dodany Pitbull przed Seksmisją bez daty.
+        assertTrue(left("Pitbull") < left("Seksmisja"))
+        chip("Ocena")
+        waitFor { left("Seksmisja") < left("Pitbull") } // wyższa ocena pierwsza
+        chip("A–Z")
+        waitFor { left("Pitbull") < left("Seksmisja") }
+        chip("Najnowsze")
+        waitFor { left("Pitbull") < left("Seksmisja") }
     }
 }

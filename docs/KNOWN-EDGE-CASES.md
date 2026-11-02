@@ -34,3 +34,11 @@ Stan na 1.11.2026. Każdy punkt: co się dzieje, dlaczego, co robić.
 ## Poza 1.0
 Nagrywanie, VPN/NAS, migracja z BK Player Next, Stalker, profile z PIN-em, TMDB/Trakt, „Mam X minut”, „Zdrowie źródeł”,
 kanały wirtualne. Debrid, scrapery i resolver URL są poza zakresem na stałe.
+
+## Lista kanałów: tytuł audycji w wierszu (Na żywo → Kanały)
+
+Obserwowane tylko w testach Robolectric (rzadko, w pełnym przebiegu `ScenariosTest`): po imporcie EPG wiersz listy
+zostaje bez tytułu „teraz leci”, choć panel podglądu obok już go pokazuje; ponowne wejście w Na żywo to naprawia.
+Przy diagnostyce (znaczniki start/koniec ładowania) przebieg zawsze był poprawny, więc przyczyny nie ustalono.
+Scenariusz `zPrzewodnikaOkNaAudycjiOtwieraKanal` ma obejście (ponowne wejście). Jeśli zjawisko wystąpi na boxie:
+zbadać `produceState` w `ChannelRow` (GuideChannelsTab.kt) i przenieść ładowanie audycji do ViewModelu.
