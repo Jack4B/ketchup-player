@@ -1357,6 +1357,45 @@ class ScenariosTest {
         waitForText("Opis z Traktu po polsku.")
     }
 
+    /**
+     * Limit 1000 zapytań dziennie na darmowym kluczu MDBList: siatka filmów w ogóle go nie używa (przewijanie nie spala
+     * budżetu), a otwarcie szczegółów jednego filmu pyta raz i zapisuje wynik (kolejne otwarcie nie pyta ponownie).
+     */
+    @Test
+    fun mdblistJestPytanyTylkoPrzyOtwarciuSzczegolowIRazNaFilm() {
+        serveXtreamVod()
+        server.serve("/mdblist/imdb/movie/tt0397777") {
+            """{"ratings":[{"source":"imdb","value":7.6},{"source":"tomatoes","value":83}]}"""
+        }
+        server.serve("/mdblist/search/movie") { """{"search":[{"title":"Pitbull","imdbid":"tt0397777"}]}""" }
+        runBlocking {
+            metadataKeys.save(
+                pl.ketchupplayer.tv.core.data.metadata
+                    .ApiKeys(mdblist = "klucz-m"),
+            )
+        }
+        addXtreamViaUi("dobre-haslo")
+        waitForText("Kanały: 2", substring = true)
+        nav("Filmy")
+        waitForText("Pitbull")
+        compose.mainClock.advanceTimeBy(2_000)
+        assertTrue("siatka nie może pytać MDBList", server.requestedPaths.none { it.startsWith("/mdblist") })
+        click("Pitbull")
+        waitForText("IMDb 7,6")
+        val askedOnce = server.requestedPaths.count { it.startsWith("/mdblist") }
+        assertTrue("szczegóły pytają MDBList (szukanie + oceny)", askedOnce in 1..2)
+        back()
+        nav("Filmy")
+        waitForText("IMDb 7,6") // ocena z bazy widoczna już na karcie
+        click("Pitbull")
+        waitForText("RT 83%")
+        assertEquals(
+            "drugie otwarcie nie pyta ponownie",
+            askedOnce,
+            server.requestedPaths.count { it.startsWith("/mdblist") },
+        )
+    }
+
     /** Scenariusz: klucze API wpisane w Ustawieniach → Oceny i opisy są zapisane (w SecretStore, nie w repo). */
     @Test
     fun kluczeMetadanychWpisaneWUstawieniachSaZapisane() {

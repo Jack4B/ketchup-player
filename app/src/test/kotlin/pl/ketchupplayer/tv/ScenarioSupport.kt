@@ -11,6 +11,8 @@ import java.util.TimeZone
 
 /** Serwer HTTP dostawcy: ścieżka -> treść. Nieznane ścieżki dają 404 (jak prawdziwy serwer). */
 class ProviderServer {
+    /** Ścieżki wszystkich odebranych żądań (do sprawdzania, ile razy aplikacja pytała dany serwis). */
+    val requestedPaths = java.util.concurrent.CopyOnWriteArrayList<String>()
     private val routes = java.util.concurrent.ConcurrentHashMap<String, (RecordedRequest) -> String>()
     private val server =
         MockWebServer().apply {
@@ -18,6 +20,7 @@ class ProviderServer {
                 object : Dispatcher() {
                     override fun dispatch(request: RecordedRequest): MockResponse {
                         val path = request.path.orEmpty().substringBefore('?')
+                        requestedPaths += path
                         // Klucz „ścieżka?action” (API Xtream) ma pierwszeństwo przed samą ścieżką.
                         val action = request.requestUrl?.queryParameter("action")
                         val handler =

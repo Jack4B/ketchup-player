@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 7,
-    "identityHash": "d5df7699f4da4dc3619e5cc2a5184013",
+    "identityHash": "456ff6663ee3508c226778705aa4f035",
     "entities": [
       {
         "tableName": "providers",
@@ -635,7 +635,7 @@
       },
       {
         "tableName": "vod_meta",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`itemId` TEXT NOT NULL, `tmdbRating` REAL, `imdbRating` REAL, `rtPercent` INTEGER, `fetchedMs` INTEGER NOT NULL, `found` INTEGER NOT NULL, `metacritic` INTEGER, `traktRating` REAL, PRIMARY KEY(`itemId`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`itemId` TEXT NOT NULL, `tmdbRating` REAL, `imdbRating` REAL, `rtPercent` INTEGER, `fetchedMs` INTEGER NOT NULL, `found` INTEGER NOT NULL, `metacritic` INTEGER, `traktRating` REAL, `deepMs` INTEGER, PRIMARY KEY(`itemId`))",
         "fields": [
           {
             "fieldPath": "itemId",
@@ -679,6 +679,11 @@
             "fieldPath": "traktRating",
             "columnName": "traktRating",
             "affinity": "REAL"
+          },
+          {
+            "fieldPath": "deepMs",
+            "columnName": "deepMs",
+            "affinity": "INTEGER"
           }
         ],
         "primaryKey": {
@@ -691,7 +696,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd5df7699f4da4dc3619e5cc2a5184013')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '456ff6663ee3508c226778705aa4f035')"
     ]
   }
 }

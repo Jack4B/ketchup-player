@@ -74,7 +74,7 @@ class RoomVodRepository
 
         override fun requestMeta(itemId: String) = metadata.request(itemId)
 
-        override suspend fun ensureMeta(itemId: String): Boolean = metadata.ensure(itemId, keyless = true)
+        override suspend fun ensureMeta(itemId: String): Boolean = metadata.ensure(itemId, deep = true)
 
         override suspend fun refreshInfo(itemId: String) {
             val item = dao.get(itemId)?.toModel() ?: return

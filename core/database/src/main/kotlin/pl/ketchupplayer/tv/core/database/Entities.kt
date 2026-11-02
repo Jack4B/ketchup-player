@@ -157,4 +157,6 @@ data class VodMetaEntity(
     val found: Boolean,
     val metacritic: Int? = null,
     val traktRating: Double? = null,
+    /** Kiedy pobrano dane „głębokie” (ekran szczegółów: MDBList, Wikipedia); null = tylko z karty w siatce. */
+    val deepMs: Long? = null,
 )

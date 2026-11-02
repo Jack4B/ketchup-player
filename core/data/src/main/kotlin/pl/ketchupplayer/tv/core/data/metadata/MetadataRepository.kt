@@ -47,39 +47,50 @@ class MetadataRepository
             }
         }
 
-        /** Pobiera i zapisuje metadane, jeśli ich jeszcze nie ma; true, gdy pozycja ma dane z zewnętrznych źródeł. */
+        /**
+         * Pobiera i zapisuje metadane, jeśli ich jeszcze nie ma; true, gdy pozycja ma dane z zewnętrznych źródeł.
+         * [deep] = ekran szczegółów (patrz [MetadataService.fetch]): raz na film dociąga też OMDb/MDBList i opis.
+         */
         suspend fun ensure(
             itemId: String,
-            keyless: Boolean = false,
+            deep: Boolean = false,
         ): Boolean {
             val now = clock.nowMs()
             val existing = dao.meta(itemId)
             val apiKeys = keys.current()
-            if (existing != null && alreadyDone(existing, apiKeys, now)) return existing.found
+            if (existing != null && alreadyDone(existing, apiKeys, now, deep)) return existing.found
             // Karta bez kluczy: nic nie zapisujemy, po wpisaniu klucza zadziała od razu.
-            if (!apiKeys.any && !keyless) return false
+            if (!apiKeys.any && !deep) return false
             val item = dao.get(itemId)?.toModel() ?: return false
-            val result = fetchSafely(item, apiKeys, keyless)
+            val deepMs = if (deep) now else existing?.deepMs
+            val result = fetchSafely(item, apiKeys, deep)
             if (result == null) {
                 // Pudło bez kluczy (tylko Wikipedia) nie blokuje późniejszego pobrania po wpisaniu kluczy.
-                if (apiKeys.any) dao.upsertMeta(VodMetaEntity(itemId, null, null, null, now, found = false))
+                if (apiKeys.any) {
+                    dao.upsertMeta(
+                        VodMetaEntity(itemId, null, null, null, now, found = false, deepMs = deepMs),
+                    )
+                }
                 return false
             }
             val r = result.ratings
-            dao.upsertMeta(VodMetaEntity(itemId, r.tmdb, r.imdb, r.rtPercent, now, found = true, r.metacritic, r.trakt))
+            dao.upsertMeta(
+                VodMetaEntity(itemId, r.tmdb, r.imdb, r.rtPercent, now, found = true, r.metacritic, r.trakt, deepMs),
+            )
             val merged = MetadataMerge.fill(item, result)
             if (merged != item) dao.insertAll(listOf(merged.toEntity()))
             return true
         }
 
         /**
-         * Pozycja jest załatwiona, gdy znaleziono dane albo pudło jest świeże. Wyjątek: sam opis (z Wikipedii)
-         * uzupełniamy ocenami, gdy użytkownik wpisze klucze.
+         * Pozycja jest załatwiona, gdy znaleziono dane albo pudło jest świeże. Wyjątki: sam opis (z Wikipedii)
+         * uzupełniamy ocenami, gdy użytkownik wpisze klucze, a ekran szczegółów robi pobranie „głębokie” raz na film.
          */
         private fun alreadyDone(
             m: VodMetaEntity,
             apiKeys: ApiKeys,
             now: Long,
+            deep: Boolean,
         ): Boolean {
             val noRatings =
                 m.tmdbRating == null &&
@@ -88,6 +99,7 @@ class MetadataRepository
                     m.metacritic == null &&
                     m.traktRating == null
             if (m.found && noRatings && apiKeys.any) return false
+            if (deep && m.deepMs == null) return false
             return m.found || now - m.fetchedMs < RETRY_AFTER_MS
         }
 
@@ -95,9 +107,9 @@ class MetadataRepository
         private suspend fun fetchSafely(
             item: VodItem,
             apiKeys: ApiKeys,
-            keyless: Boolean,
+            deep: Boolean,
         ): MetaResult? =
-            runCatching { service.fetch(item, apiKeys, keyless) }
+            runCatching { service.fetch(item, apiKeys, deep) }
                 .onFailure { if (it is CancellationException) throw it }
                 .getOrNull()
 

@@ -125,7 +125,7 @@ class TraktAndMdbListSourceTest {
                 title = "Test",
                 ref = "1",
             )
-        val r = runBlocking { service.fetch(item, ApiKeys(mdblist = "k")) }!!
+        val r = runBlocking { service.fetch(item, ApiKeys(mdblist = "k"), deep = true) }!!
         assertEquals(8.0, r.ratings.imdb!!, 0.001)
         assertEquals(66, r.ratings.metacritic)
     }
