@@ -223,22 +223,29 @@ if [ "$F1" != "Film 01" ]; then
 fi
 
 # --- Regresja: Ustawienia > Wygląd (raport z boxa 2.11): wszystkie motywy w panelu i LEWO wraca do kategorii ---
-# focused_text: tekst (lub opis) zaznaczonego elementu z drzewa UI; ui_bounds: prawa krawędź elementu o danym tekście.
+# focused_text: teksty zaznaczonego elementu z drzewa UI. Compose daje tekst w węzłach potomnych, więc zbieramy
+# teksty wszystkich węzłów mieszczących się w ramce elementu z focused="true".
 focused_text() {
   adb shell uiautomator dump /sdcard/ui_f.xml >/dev/null
   adb pull /sdcard/ui_f.xml "$OUT/ui_focus_$1.xml" >/dev/null
   python3 - "$OUT/ui_focus_$1.xml" <<'PY'
 import re, sys
 s = open(sys.argv[1], encoding="utf-8").read()
-out = []
+nodes = []
 for m in re.finditer(r"<node [^>]*>", s):
     n = m.group(0)
-    if 'focused="true"' not in n:
-        continue
+    b = re.search(r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', n)
     t = re.search(r' text="([^"]*)"', n)
     d = re.search(r'content-desc="([^"]*)"', n)
-    out.append((t.group(1) if t and t.group(1) else (d.group(1) if d else "")))
-print("|".join(x for x in out if x))
+    nodes.append((tuple(map(int, b.groups())) if b else None, (t.group(1) if t else "") or (d.group(1) if d else ""), 'focused="true"' in n))
+out = []
+for box, label, focused in nodes:
+    if not focused or box is None:
+        continue
+    x1, y1, x2, y2 = box
+    parts = [l for bb, l, _ in nodes if l and bb and bb[0] >= x1 and bb[2] <= x2 and bb[1] >= y1 and bb[3] <= y2]
+    out.append(" ".join(parts) or label)
+print("|".join(out))
 PY
 }
 tap "Ustawienia" || FAIL_PROVIDER=1
@@ -267,17 +274,31 @@ PY
     FAIL_PROVIDER=1
   fi
 done
-# Nawigacja pilotem: kategorie -> opcje (PRAWO) -> z powrotem na kategorię (LEWO).
-tap "Wygląd" || true
-key KEYCODE_DPAD_DOWN   # pierwszy klawisz po dotyku tylko przełącza tryb
-key KEYCODE_DPAD_UP
-FOCUS_CAT=$(focused_text kategoria)
+# Nawigacja pilotem: do kategorii „Wygląd” samymi klawiszami, potem PRAWO (opcje) i LEWO (z powrotem na kategorię).
+# Panel Ustawień otwieramy od nowa (dotyk), żeby fokus startował na pierwszej kategorii.
+tap "Ustawienia" || true
+sleep 2
+key KEYCODE_DPAD_DOWN   # po dotyku pierwszy klawisz może tylko przełączyć tryb wejścia
+FOCUS_CAT=""
+for _ in $(seq 1 12); do
+  FOCUS_CAT=$(focused_text kategoria)
+  case "$FOCUS_CAT" in *Wygląd*) break ;; esac
+  key KEYCODE_DPAD_DOWN
+done
+shot 18_fokus_kategoria
 key KEYCODE_DPAD_RIGHT
 FOCUS_IN=$(focused_text opcje)
+shot 19_fokus_opcje
 key KEYCODE_DPAD_LEFT
 FOCUS_OUT=$(focused_text po_lewo)
+shot 20_fokus_po_lewo
 echo "fokus: kategoria='$FOCUS_CAT' opcje='$FOCUS_IN' po LEWO='$FOCUS_OUT'" | tee -a "$OUT/diag.txt"
-if ! echo "$FOCUS_IN" | grep -qE "Morski|Czerń|Grafit|Własny|Turkus|Biel|Bursztyn"; then
+case "$FOCUS_CAT" in
+  *Wygląd*) ;;
+  *) echo "=== Ustawienia: nie udało się ustawić fokusu na kategorii 'Wygląd' klawiszami (fokus: '$FOCUS_CAT') ===" >&2
+     FAIL_PROVIDER=1 ;;
+esac
+if ! echo "$FOCUS_IN" | grep -qE "Morski|Czerń|Grafit|Własny"; then
   echo "=== Wygląd: PRAWO z kategorii nie weszło w opcje (fokus: '$FOCUS_IN') ===" >&2
   FAIL_PROVIDER=1
 fi
