@@ -17,9 +17,9 @@ logo kanałów (Coil); Filmy z chowanymi kategoriami i 6 kolumnami; Home z karta
 Cel: wszystko, co użytkownik codziennie robi, działa na boxie bez błędów.
 - [ ] 1.1 Weryfikacja 0.7.2 na boxie: lista się wczytuje (wybór UA), EPG, pauza w tle, przewijanie, logo (użytkownik, raport zip)
 - [ ] 1.2 Przeskakiwanie fokusu pilota: analiza `keyguard.txt`/`getevent.txt` z testu pilota, poprawka u źródła, zdjęcie obejścia
-- [ ] 1.3 Pełny przegląd BACK/LEWO/PRAWO na każdym ekranie + test na ekran. Zrobione: Home, Na żywo, Ustawienia (scenariusz), Filmy/Seriale (test siatki), Odtwarzacz. Do zrobienia: Szczegóły, Szukaj, Moja lista z danymi, panel grup w Na żywo
+- [ ] 1.3 Pełny przegląd BACK/LEWO/PRAWO na każdym ekranie + test na ekran. Zrobione: Home, Na żywo, Ustawienia (scenariusz), Filmy/Seriale (test siatki), Odtwarzacz. Szczegóły ZROBIONE (DetailsScreenTest). Do zrobienia: Szukaj, Moja lista (są scenariusze E2E, brak testów D-pad modułów)
 - [x] 1.4 Ustawienia jako panel wsuwany z prawej (250 ms), nakładka na treść (22:xx 1.11, commit w gałęzi faza-d)
-- [~] 1.5 Na żywo: żywy podgląd wideo ZROBIONY (wyciszony, po 0,9 s, zwalniany przy wyjściu, przełącznik w Odtwarzaniu; nieprzetestowany na boxie). Zostaje: lista kanałów w odtwarzaczu, menu kontekstowe (długie OK)
+- [~] 1.5 Na żywo: żywy podgląd wideo ZROBIONY (wyciszony, po 0,9 s, zwalniany przy wyjściu, przełącznik w Odtwarzaniu; nieprzetestowany na boxie). Lista kanałów w odtwarzaczu (OK) i CH+/CH− ZROBIONE; długie OK = ulubione jest w liście Na żywo
 - [x] 1.6 Jedna skala animacji: `Motion` w designsystemie (fokus 120, szyna 160, panele 220, fade 150), użyta w szynie, FocusItem, Filmach, Na żywo
 - [ ] 1.7 (wymaga emulatora/strumienia, NIE ZROBIONE) Odtwarzacz: test na strumieniu wielościeżkowym (emulator HLS z ffmpeg) + poprawki audio/napisy
 - [ ] 1.8 (wymaga pomiaru na boxie po 0.8) Wydajność: pomiar płynności na boxie (zacięcia VOD, otwarcie odtwarzacza), poprawki największych; import w tle po pokazaniu kanałów (VOD dopisywane po)
@@ -51,12 +51,12 @@ Otwarte: przeskoki fokusu pilota (czeka na dane z testu pilota).
 
 Makiety: artefakt „Ketchup Player v4 makiety” (4 plansze 1920x1080: Na żywo, Home, Filmy, System).
 
-- [ ] Paleta stonowana jak TiviMate: motyw Morski (turkus #35C2B4 na ciemnym szaro-turkusowym tle, domyślny), Grafit, Czerń OLED, Własny (akcent + odcień tła + poziom szkła). Zielenie/niebieskie z v3 wycofane.
+- [x] Paleta stonowana jak TiviMate: motyw Morski (turkus #35C2B4 na ciemnym szaro-turkusowym tle, domyślny), Grafit, Czerń OLED, Własny (akcent + odcień tła + poziom szkła). Zielenie/niebieskie z v3 wycofane. (ZROBIONE: Morski domyślny, Grafit, Czerń; „Własny” z odcieniem tła jeszcze nie)
 - [ ] Szkło: panele z półprzezroczystością i rozmyciem tła (Modifier.blur, API 31+), poziomy Pełne/Lekkie/Wyłączone; domyślny poziom wybiera test płynności na boxie (słabszy SoC = Lekkie).
-- [ ] Szyna jako pływająca szklana kapsuła; aktywna pozycja: turkusowa poświata; fokus: obrys + glow.
+- [x] Szyna jako pływająca szklana kapsuła; aktywna pozycja: turkusowa poświata; fokus: obrys + glow. (ZROBIONE: kapsuła, równe ikony z jednej siatki 24)
 - [ ] Ambientowe tło: rozmyta grafika zaznaczonego filmu/kanału pod całym ekranem; akcent opcjonalnie z grafiki (Palette API).
-- [ ] Logo stacji, łańcuch: (1) tvg-logo z listy, (2) baza iptv-org (https://iptv-org.github.io/api/logos.json + channels.json, dopasowanie po tvg-id, potem nazwa/alt_names; dane CC0), (3) własne logo użytkownika, (4) zastępnik w tonie motywu. Repo tv-logo/tv-logos: licencja niejasna, tylko opcjonalnie, po sprawdzeniu LICENSE.
+- [x] Logo stacji, łańcuch: (1) tvg-logo z listy, (2) baza iptv-org (https://iptv-org.github.io/api/logos.json + channels.json, dopasowanie po tvg-id, potem nazwa/alt_names; dane CC0), (3) własne logo użytkownika, (4) zastępnik w tonie motywu. Repo tv-logo/tv-logos: licencja niejasna, tylko opcjonalnie, po sprawdzeniu LICENSE. (ZROBIONE: kroki 1 i 4 oraz wbudowany indeks iptv-org dla PL; własne logo użytkownika nie)
 - [ ] EPG: źródła z listy (url-tvg), iptv-org/epg (PL) jako opcja, własne adresy XMLTV.
-- [ ] Home wg makiety: hero z „Mam czas na…” (30 min/90 min/2 h+/Zaskocz mnie), rzędy Nowe odcinki i Na żywo teraz.
-- [ ] Filmy/Seriale: segment sortowania w pasku narzędzi, ambientowe tło z plakatu.
-- [ ] Zdrowie źródeł: stan list i EPG w Ustawieniach (sprawna/częściowo/napraw).
+- [x] Home wg makiety: hero z „Mam czas na…” (30 min/90 min/2 h+/Zaskocz mnie), rzędy Nowe odcinki i Na żywo teraz. (ZROBIONE: „Mam czas na…” 30/60/90/2 h; długość znana tylko dla filmów zaczętych i audycji EPG)
+- [x] Filmy/Seriale: segment sortowania w pasku narzędzi, ambientowe tło z plakatu. (ZROBIONE: kapsuła sortowania; ambientowe tło z plakatu nie)
+- [x] Zdrowie źródeł: stan list i EPG w Ustawieniach (sprawna/częściowo/napraw). (ZROBIONE dla list dostawców; EPG nie)
