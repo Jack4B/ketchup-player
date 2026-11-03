@@ -23,7 +23,8 @@ class OkHttpTextFetcherTest {
     @After
     fun stop() = server.shutdown()
 
-    private fun fetcher(max: Long = 1024 * 1024) = OkHttpTextFetcher(NetworkClients.stream("TestUA/1"), max)
+    private fun fetcher(max: Long = 1024 * 1024) =
+        OkHttpTextFetcher(NetworkClients.stream("TestUA/1"), max, streamMaxBytes = max)
 
     private fun url(path: String = "/list.m3u") = server.url(path).toString()
 
@@ -155,6 +156,18 @@ class OkHttpTextFetcherTest {
             assertTrue(
                 fetcher(1000).fetchLines(url("/b.gz")) { it.count() }.exceptionOrNull() is NetworkException.TooLarge,
             )
+        }
+
+    /** Raport z boxa: lista ok. 64 MB była odrzucana. Strumień listy ma własny, wysoki limit niezależny od [fetch]. */
+    @Test
+    fun `lista czytana strumieniem nie podlega limitowi tekstu w pamieci`() =
+        runTest {
+            val big = "x\n".repeat(5000) // 10 KB: ponad limit tekstu (1 KB), poniżej limitu strumienia (100 KB)
+            val f = OkHttpTextFetcher(NetworkClients.stream("TestUA/1"), maxBytes = 1000, streamMaxBytes = 100_000)
+            server.enqueue(MockResponse().setBody(big))
+            assertTrue(f.fetch(url()).exceptionOrNull() is NetworkException.TooLarge)
+            server.enqueue(MockResponse().setBody(big))
+            assertEquals(5000, f.fetchLines(url()) { it.count() }.getOrThrow())
         }
 
     @Test

@@ -13,6 +13,7 @@ import java.util.TimeZone
 class ProviderServer {
     /** Ścieżki wszystkich odebranych żądań (do sprawdzania, ile razy aplikacja pytała dany serwis). */
     val requestedPaths = java.util.concurrent.CopyOnWriteArrayList<String>()
+    private val byteRoutes = java.util.concurrent.ConcurrentHashMap<String, ByteArray>()
     private val routes = java.util.concurrent.ConcurrentHashMap<String, (RecordedRequest) -> String>()
     private val server =
         MockWebServer().apply {
@@ -21,6 +22,7 @@ class ProviderServer {
                     override fun dispatch(request: RecordedRequest): MockResponse {
                         val path = request.path.orEmpty().substringBefore('?')
                         requestedPaths += path
+                        byteRoutes[path]?.let { return MockResponse().setBody(okio.Buffer().write(it)) }
                         // Klucz „ścieżka?action” (API Xtream) ma pierwszeństwo przed samą ścieżką.
                         val action = request.requestUrl?.queryParameter("action")
                         val handler =
@@ -42,6 +44,14 @@ class ProviderServer {
         body: () -> String,
     ) {
         routes[path] = { body() }
+    }
+
+    /** Treść binarna (np. lista skompresowana gzip): oddawana bajt w bajt. */
+    fun serveBytes(
+        path: String,
+        body: ByteArray,
+    ) {
+        byteRoutes[path] = body
     }
 
     /** Jak [serve], ale odpowiedź zależy od żądania (np. dane logowania w zapytaniu Xtream). */

@@ -17,12 +17,23 @@ import java.util.zip.GZIPInputStream
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-/** Pobiera tekst przez OkHttp: anulowalne, z limitem rozmiaru i rozpakowaniem gzip (także surowego `.gz`). */
+/**
+ * Pobiera tekst przez OkHttp: anulowalne, z limitem rozmiaru i rozpakowaniem gzip (także surowego `.gz`).
+ * [maxBytes] dotyczy odpowiedzi wczytywanych w całości do pamięci ([fetch]); listy i katalogi czytane strumieniem
+ * ([fetchLines], [fetchStream]) mają osobny, bardzo wysoki limit [streamMaxBytes] (raport z boxa: lista 64 MB była
+ * odrzucana, a inne odtwarzacze wczytują ją bez problemu) i dłuższy czas oczekiwania na dane od serwera.
+ */
 class OkHttpTextFetcher(
     private val client: OkHttpClient,
     private val maxBytes: Long = DEFAULT_MAX_BYTES,
     private val meter: TransferMeter? = null,
+    private val streamMaxBytes: Long = DEFAULT_STREAM_MAX_BYTES,
 ) : TextFetcher {
+    /** Klient do list: serwer składający ogromną listę na żądanie bywa cichy dłużej niż 60 s. */
+    private val streamClient: OkHttpClient by lazy {
+        client.newBuilder().readTimeout(STREAM_READ_TIMEOUT_S, java.util.concurrent.TimeUnit.SECONDS).build()
+    }
+
     override fun withUserAgent(userAgent: String): TextFetcher =
         OkHttpTextFetcher(
             client
@@ -38,6 +49,7 @@ class OkHttpTextFetcher(
                 }.build(),
             maxBytes,
             meter,
+            streamMaxBytes,
         )
 
     override suspend fun fetch(url: String): Result<String> = fetchWithHeaders(url, emptyMap())
@@ -73,11 +85,11 @@ class OkHttpTextFetcher(
     ): Result<T> =
         withContext(Dispatchers.IO) {
             try {
-                client.newCall(Request.Builder().url(url).build()).execute().use { response ->
+                streamClient.newCall(Request.Builder().url(url).build()).execute().use { response ->
                     if (!response.isSuccessful) return@withContext Result.failure(response.toHttpFailure())
                     val body = response.body ?: return@withContext Result.success(block("".byteInputStream()))
-                    val raw = BufferedInputStream(LimitedInputStream(body.byteStream(), maxBytes, meter), BUFFER)
-                    val counted = LimitedInputStream(maybeGunzip(raw), maxBytes)
+                    val raw = BufferedInputStream(LimitedInputStream(body.byteStream(), streamMaxBytes, meter), BUFFER)
+                    val counted = LimitedInputStream(maybeGunzip(raw), streamMaxBytes)
                     counted.use { Result.success(block(it)) }
                 }
             } catch (e: CancellationException) {
@@ -97,12 +109,12 @@ class OkHttpTextFetcher(
     ): Result<T> =
         withContext(Dispatchers.IO) {
             try {
-                client.newCall(Request.Builder().url(url).build()).execute().use { response ->
+                streamClient.newCall(Request.Builder().url(url).build()).execute().use { response ->
                     if (!response.isSuccessful) return@withContext Result.failure(response.toHttpFailure())
                     val body = response.body ?: return@withContext Result.success(block(emptySequence()))
-                    val raw = BufferedInputStream(LimitedInputStream(body.byteStream(), maxBytes, meter), BUFFER)
+                    val raw = BufferedInputStream(LimitedInputStream(body.byteStream(), streamMaxBytes, meter), BUFFER)
                     // Drugi limit liczy bajty po rozpakowaniu, żeby „bomba gzip” też została ucięta.
-                    val counted = LimitedInputStream(maybeGunzip(raw), maxBytes)
+                    val counted = LimitedInputStream(maybeGunzip(raw), streamMaxBytes)
                     counted.bufferedReader(Charsets.UTF_8).use { reader ->
                         Result.success(block(reader.lineSequence()))
                     }
@@ -164,6 +176,8 @@ class OkHttpTextFetcher(
 
     private companion object {
         const val DEFAULT_MAX_BYTES = 64L * 1024 * 1024
+        const val DEFAULT_STREAM_MAX_BYTES = 2L * 1024 * 1024 * 1024
+        const val STREAM_READ_TIMEOUT_S = 180L
         const val BUFFER = 8 * 1024
         const val GZIP_MAGIC_1: Byte = 0x1f
         const val GZIP_MAGIC_2: Byte = 0x8b.toByte()

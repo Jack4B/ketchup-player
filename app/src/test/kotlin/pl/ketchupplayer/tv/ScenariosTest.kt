@@ -74,6 +74,7 @@ class ScenariosTest {
         const val WAIT_MS = 30_000L
         const val BIG_WAIT_MS = 60_000L
         const val SHRINK_MAX = 0.85f
+        const val BIG_LIST_MB = 70
         const val POLL_MS = 25L
         const val CLOCK_STEP_MS = 500L
         const val GRID_ROW = 10_000f
@@ -1394,6 +1395,37 @@ class ScenariosTest {
             askedOnce,
             server.requestedPaths.count { it.startsWith("/mdblist") },
         )
+    }
+
+    /**
+     * Raport z boxa: lista ok. 64 MB była odrzucana („zbyt duża”), choć inne odtwarzacze wczytują ją bez problemu.
+     * Tu lista po rozpakowaniu ma ponad 70 MB (po gzip kilkadziesiąt KB): ma się wczytać i pokazać ostatni kanał.
+     */
+    @Test
+    fun listaWiekszaNiz64MbJestWczytywana() {
+        val host = "http://127.0.0.1:${server.port}"
+        val packed =
+            java.io
+                .ByteArrayOutputStream()
+                .also { out ->
+                    java.util.zip.GZIPOutputStream(out).use { gz ->
+                        gz.write("#EXTM3U\n".toByteArray())
+                        val filler = ("# " + "x".repeat(1000) + "\n").toByteArray()
+                        repeat(BIG_LIST_MB * 1024) { gz.write(filler) } // ok. 1 MB co 1024 powtórzeń
+                        gz.write(
+                            "#EXTINF:-1 tvg-chno=\"1\" group-title=\"Test\",Kanal Koniec Duzej Listy\n$host/k.m3u8\n"
+                                .toByteArray(),
+                        )
+                    }
+                }.toByteArray()
+        server.serveBytes("/duza.m3u", packed)
+        val result = runBlocking { catalog.addM3u("Duza", server.url("/duza.m3u")) }
+        assertTrue(
+            "lista >64 MB ma się wczytać: $result",
+            result is pl.ketchupplayer.tv.core.data.catalog.AddProviderResult.Added,
+        )
+        nav("Na żywo")
+        waitForText("Kanal Koniec Duzej Listy")
     }
 
     /** Scenariusz: klucze API wpisane w Ustawieniach → Oceny i opisy są zapisane (w SecretStore, nie w repo). */
