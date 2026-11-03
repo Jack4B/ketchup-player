@@ -174,7 +174,8 @@ fi
 
 # --- Regresja: sortowanie Filmów dotykiem na długim katalogu bez metadanych (błąd z telefonu, rc0.9.4) ---
 (for i in $(seq 60 -1 1); do
-  [ "$i" = 60 ] && printf '#EXTM3U\n'
+  # Matrix na początku katalogu: oceny IMDb z wbudowanego indeksu (offline, bez kluczy) muszą się pojawić na karcie.
+  [ "$i" = 60 ] && printf '#EXTM3U\n#EXTINF:-1 group-title="Dramat",Matrix (1999)\nhttp://127.0.0.1:8099/movie/u/p/0.mkv\n'
   printf '#EXTINF:-1 group-title="Dramat",Film %02d\nhttp://127.0.0.1:8099/movie/u/p/%d.mkv\n' "$i" "$i"
 done) > "$SRV/filmy.m3u"
 tap "Ustawienia" || FAIL_PROVIDER=1
@@ -210,6 +211,19 @@ shot 15_filmy_domyslnie
 F0=$(first_film domyslnie)
 if [ "$F0" != "Film 60" ]; then
   echo "=== Filmy: domyślnie (Najnowsze) pierwszy powinien być Film 60 (kolejność dostawcy), jest '$F0' ===" >&2
+  FAIL_PROVIDER=1
+fi
+# Wbudowany indeks filmów (asset film_index.db): Matrix (1999) dostaje ocenę IMDb 8,7 bez klucza API i bez sieci.
+MATRIX_OK=0
+for _ in $(seq 1 12); do
+  dump ui_vod_matrix
+  if grep -qE '8[,.]7' "$OUT/ui_vod_matrix.xml"; then MATRIX_OK=1; break; fi
+  sleep 2
+done
+shot 15b_filmy_ocena_indeks
+if [ "$MATRIX_OK" != 1 ]; then
+  echo "=== Filmy: brak oceny IMDb 8,7 dla Matrix (1999) z wbudowanego indeksu (asset nie załadowany?) ===" >&2
+  adb logcat -d | grep -iE "film_index|SQLite|FilmIndex" | head -10 >&2 || true
   FAIL_PROVIDER=1
 fi
 adb shell input swipe 960 800 960 200 300   # przewinięcie siatki w dół, jak palcem

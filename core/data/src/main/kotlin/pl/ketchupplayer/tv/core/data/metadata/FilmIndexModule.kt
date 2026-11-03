@@ -37,7 +37,7 @@ private class LazyFilmIndex(
 }
 
 private fun openAsset(context: Context): FilmIndex? {
-    val target = File(context.filesDir, "film_index_${assetSize(context)}.db")
+    val target = File(context.filesDir, "film_index_${assetVersion(context)}.db")
     if (!target.exists()) {
         val tmp = File(context.filesDir, "film_index.tmp")
         context.assets.open(ASSET).use { input -> tmp.outputStream().use { input.copyTo(it) } }
@@ -48,5 +48,9 @@ private fun openAsset(context: Context): FilmIndex? {
     return SqliteFilmIndex(SQLiteDatabase.openDatabase(target.path, null, SQLiteDatabase.OPEN_READONLY))
 }
 
-/** Rozmiar assetu jako znacznik wersji kopii: nowy plik w aplikacji daje nową kopię, bez osobnego numeru wersji. */
-private fun assetSize(context: Context): Long = context.assets.openFd(ASSET).use { it.length }
+/**
+ * Znacznik wersji kopii: czas ostatniej instalacji aplikacji (nowy APK = nowa kopia assetu). Nie używamy
+ * `openFd().length`, bo skompresowany asset (a `.db` jest domyślnie kompresowany) nie daje się otworzyć jako fd.
+ */
+private fun assetVersion(context: Context): Long =
+    context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime

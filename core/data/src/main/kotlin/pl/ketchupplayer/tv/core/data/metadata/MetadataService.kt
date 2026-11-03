@@ -62,9 +62,9 @@ class MetadataService(
         val polish = t?.overview ?: tr?.overview
         // Wikipedia tylko dla ekranu szczegółów i tylko wtedy, gdy żadne źródło nie dało polskiego opisu.
         val wiki = if (deep && polish == null) wikipedia(item, series, ref) else null
-        if (listOf(t, tr, o, m, wiki).all { it == null }) return null
+        if (listOf(t, tr, o, m, wiki, ref?.imdbRating).all { it == null }) return null
         return MetaResult(
-            ratings = mergeRatings(t, tr, o, m),
+            ratings = mergeRatings(t, tr, o, m, ref?.imdbRating),
             overview = polish ?: wiki ?: tr?.overviewEn ?: m?.description ?: o?.plot,
             cast = t?.cast,
             runtimeMin = t?.runtimeMin ?: tr?.runtimeMin,
@@ -111,9 +111,11 @@ class MetadataService(
         tr: TraktMeta?,
         o: OmdbMeta?,
         m: MdbListMeta?,
+        indexImdb: Double?,
     ) = Ratings(
         tmdb = t?.rating ?: m?.tmdb,
-        imdb = o?.imdbRating ?: m?.imdb,
+        // Ocena z wbudowanego indeksu (publiczne dane IMDb) to rezerwa: świeższe odpowiedzi API mają pierwszeństwo.
+        imdb = o?.imdbRating ?: m?.imdb ?: indexImdb,
         rtPercent = o?.rtPercent ?: m?.rtPercent,
         metacritic = o?.metacritic ?: m?.metacritic,
         trakt = tr?.rating ?: m?.trakt,

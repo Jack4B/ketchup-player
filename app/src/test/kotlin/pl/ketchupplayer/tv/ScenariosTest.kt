@@ -1463,6 +1463,43 @@ class ScenariosTest {
         assertTrue("bez wyszukiwania w MDBList", server.requestedPaths.none { it.startsWith("/mdblist/search") })
     }
 
+    /**
+     * Prośba z raportu 3.11 („gwiazdki bez kluczy”): film rozpoznany we wbudowanym indeksie dostaje ocenę IMDb z
+     * publicznych danych IMDb, bez żadnego klucza API i bez żadnego zapytania do sieci.
+     */
+    @Test
+    fun ocenaIMDbZIndeksuPokazujeSieBezKluczyIBezSieci() {
+        serveXtreamVod()
+        FakeFilmIndex.entries =
+            mapOf(
+                "Pitbull" to
+                    pl.ketchupplayer.tv.core.data.metadata
+                        .FilmRef(
+                            "tt0425007",
+                            9475,
+                            2005,
+                            null,
+                            "Pitbull",
+                            "Pitbull",
+                            imdbRating = 7.4,
+                            imdbVotes = 52_000,
+                        ),
+            )
+        addXtreamViaUi("dobre-haslo")
+        waitForText("Kanały: 2", substring = true)
+        nav("Filmy")
+        waitForText("Pitbull")
+        waitForText("7,4", substring = true) // plakietka oceny na karcie
+        click("Pitbull")
+        waitForText("IMDb 7,4")
+        assertTrue(
+            "bez zapytań do serwisów ocen",
+            server.requestedPaths.none {
+                it.startsWith("/tmdb") || it.startsWith("/omdb") || it.startsWith("/mdblist") || it.startsWith("/trakt")
+            },
+        )
+    }
+
     private val invalidKeyBody = """{"Response":"False","Error":"Invalid API key!"}"""
 
     /** Scenariusz: klucze API wpisane w Ustawieniach → Oceny i opisy są zapisane (w SecretStore, nie w repo). */

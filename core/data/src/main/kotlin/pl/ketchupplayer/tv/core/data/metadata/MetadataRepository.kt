@@ -59,8 +59,6 @@ class MetadataRepository
             val existing = dao.meta(itemId)
             val apiKeys = keys.current()
             if (existing != null && alreadyDone(existing, apiKeys, now, deep)) return existing.found
-            // Karta bez kluczy: nic nie zapisujemy, po wpisaniu klucza zadziała od razu.
-            if (!apiKeys.any && !deep) return false
             val item = dao.get(itemId)?.toModel() ?: return false
             val deepMs = if (deep) now else existing?.deepMs
             val result = fetchSafely(item, apiKeys, deep)

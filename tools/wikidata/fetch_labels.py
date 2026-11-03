@@ -40,12 +40,12 @@ def main():
     chunks = [todo[i:i + 50] for i in range(0, len(todo), 50)]
     print(len(qids), "QID-ów,", len(todo), "do pobrania,", len(chunks), "partii", flush=True)
     done = 0
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as ex:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as ex:
         for res in ex.map(batch, chunks):
             if res:
                 have.update(res)
             done += 1
-            if done % 100 == 0:
+            if done % 20 == 0:
                 json.dump(have, open(path, "w", encoding="utf-8"), ensure_ascii=False)
                 print(done, "/", len(chunks), flush=True)
     json.dump(have, open(path, "w", encoding="utf-8"), ensure_ascii=False)

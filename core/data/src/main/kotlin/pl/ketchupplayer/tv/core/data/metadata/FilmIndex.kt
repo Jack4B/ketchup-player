@@ -14,6 +14,9 @@ data class FilmRef(
     val plWikiTitle: String?,
     val plTitle: String?,
     val enTitle: String?,
+    /** Ocena IMDb z publicznych danych IMDb (migawka z dnia budowy indeksu), bez żadnego klucza API. */
+    val imdbRating: Double? = null,
+    val imdbVotes: Int? = null,
 )
 
 /** Wbudowany, offline indeks filmów i seriali od 1980 roku: tytuł (PL, EN, oryginalny) + rok -> identyfikatory. */
@@ -67,7 +70,8 @@ class SqliteFilmIndex(
         val found = ArrayList<FilmRef>()
         db
             .rawQuery(
-                "SELECT f.imdb, f.tmdb, f.year, f.plwiki, f.pl, f.en FROM title t JOIN film f ON f.id = t.film " +
+                "SELECT f.imdb, f.tmdb, f.year, f.plwiki, f.pl, f.en, f.rating, f.votes " +
+                    "FROM title t JOIN film f ON f.id = t.film " +
                     "WHERE t.norm = ? AND f.kind = ? LIMIT $MAX_CANDIDATES",
                 arrayOf(norm, kind.toString()),
             ).use { c ->
@@ -80,6 +84,9 @@ class SqliteFilmIndex(
                             plWikiTitle = c.getString(3),
                             plTitle = c.getString(4),
                             enTitle = c.getString(5),
+                            // Oceny w indeksie to dziesiąte części (74 = 7,4); brak = film bez ocen w danych IMDb.
+                            imdbRating = if (c.isNull(6)) null else c.getInt(6) / TENTHS,
+                            imdbVotes = if (c.isNull(7)) null else c.getInt(7),
                         )
                 }
             }
@@ -99,5 +106,6 @@ class SqliteFilmIndex(
     private companion object {
         const val MAX_CANDIDATES = 50
         const val YEAR_TOLERANCE = 1
+        const val TENTHS = 10.0
     }
 }

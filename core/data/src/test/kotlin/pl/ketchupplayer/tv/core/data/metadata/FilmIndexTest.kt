@@ -29,7 +29,7 @@ class FilmIndexTest {
         db = SQLiteDatabase.openOrCreateDatabase(file, null)
         db.execSQL(
             "CREATE TABLE film(id INTEGER PRIMARY KEY, imdb TEXT, tmdb INTEGER, fw TEXT, year INTEGER, kind INTEGER, " +
-                "pl TEXT, en TEXT, orig TEXT, plwiki TEXT)",
+                "pl TEXT, en TEXT, orig TEXT, plwiki TEXT, rating INTEGER, votes INTEGER)",
         )
         db.execSQL("CREATE TABLE title(norm TEXT, film INTEGER)")
         film(1, "tt0425007", 9475, 2005, 0, "Pitbull", "Pitbull", "Pitbull_(film_2005)")
@@ -57,8 +57,27 @@ class FilmIndexTest {
         plwiki: String?,
     ) {
         db.execSQL(
-            "INSERT INTO film VALUES(?,?,?,?,?,?,?,?,?,?)",
-            arrayOf<Any?>(id, imdb, tmdb, null, year, kind, pl, en, null, plwiki),
+            "INSERT INTO film VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+            arrayOf<Any?>(
+                id,
+                imdb,
+                tmdb,
+                null,
+                year,
+                kind,
+                pl,
+                en,
+                null,
+                plwiki,
+                if (id ==
+                    3
+                ) {
+                    87
+                } else {
+                    null
+                },
+                if (id == 3) 2_000_000 else null,
+            ),
         )
         listOf(pl, en).map(FilmTitles::normalize).distinct().forEach {
             db.execSQL("INSERT INTO title VALUES(?,?)", arrayOf<Any?>(it, id))
@@ -139,5 +158,13 @@ class FilmIndexTest {
         assertEquals(7.6, r.ratings.imdb!!, 0.001)
         org.junit.Assert.assertFalse("bez wyszukiwania: $urls", urls.any { "/search/" in it })
         assertEquals(1, urls.count { "/imdb/movie/tt0425007" in it })
+    }
+
+    @Test
+    fun ocenaIMDbZIndeksuJestWDziesiatychCzesciachPrzeliczonaNaLiczbe() {
+        val ref = index.find("Matrix", 1999, series = false)
+        assertEquals(8.7, ref?.imdbRating ?: 0.0, 0.001)
+        assertEquals(2_000_000, ref?.imdbVotes)
+        assertNull(index.find("Pitbull", 2005, series = false)?.imdbRating) // film bez oceny w danych
     }
 }
