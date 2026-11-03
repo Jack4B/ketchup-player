@@ -60,8 +60,13 @@ class KeyProbeTest {
             assertTrue("token nie wycieka do adresu", "api_key" !in url && token !in url)
             assertEquals("Bearer $token", headers["Authorization"])
             seen.clear()
-            probe(mapOf("themoviedb.org" to Result.success("{}"))).check(ApiKeys(tmdb = "abcdef0123456789"))
-            assertTrue("api_key=abcdef0123456789" in seen.single().first)
+            val shortKey = "k".repeat(SHORT_KEY_LENGTH)
+            probe(mapOf("themoviedb.org" to Result.success("{}"))).check(ApiKeys(tmdb = shortKey))
+            assertTrue("api_key=$shortKey" in seen.single().first)
             assertTrue(seen.single().second.isEmpty())
         }
+
+    private companion object {
+        const val SHORT_KEY_LENGTH = 16
+    }
 }
