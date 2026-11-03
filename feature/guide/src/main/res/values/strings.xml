@@ -21,6 +21,13 @@
     <string name="guide_interest_remove_hint">OK na słowie usuwa je z listy</string>
     <string name="guide_interest_empty">Dodaj słowa kluczowe (film, serial, drużyna), a pokażemy audycje z najbliższej doby.</string>
     <string name="guide_interest_none">Nic z twojej listy nie leci w ciągu najbliższych 24 godzin.</string>
+    <string name="guide_now_label">TERAZ</string>
+    <string name="guide_next_label">NASTĘPNIE</string>
+    <string name="guide_remaining">jeszcze %1$d min</string>
+    <string name="guide_no_epg">Brak programu dla tego kanału</string>
+    <string name="guide_no_epg_hint">Włącz źródło przewodnika w Ustawienia › Telewizja albo podaj adres EPG listy. Nazwa kanału musi pasować do kanału w przewodniku.</string>
+    <string name="guide_channel_group">Grupa: %1$s</string>
+    <string name="guide_channel_number">Kanał nr %1$d</string>
     <string name="guide_now">TERAZ · %1$s</string>
     <string name="guide_later">PÓŹNIEJ · %1$s</string>
     <string name="guide_radar_top">TOP DNIA</string>

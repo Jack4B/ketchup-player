@@ -6,7 +6,7 @@ import pl.ketchupplayer.tv.epg.xmltv.XmlTvChannel
 
 /**
  * Dopasowanie kanałów z pliku XMLTV do kanałów katalogu: najpierw po `epgId` (bez względu na wielkość liter),
- * potem po znormalizowanej nazwie (z sufiksami jakości HD/FHD/UHD/4K/SD odciętymi po obu stronach).
+ * potem po znormalizowanej nazwie (z sufiksami jakości HD/FHD/UHD/4K/SD/RAW odciętymi po obu stronach).
  */
 class EpgMatcher(
     keys: List<ChannelEpgKey>,
@@ -26,6 +26,6 @@ class EpgMatcher(
         normName.split(' ').filter { it.isNotEmpty() && it !in QUALITY_TOKENS }.joinToString(" ")
 
     private companion object {
-        val QUALITY_TOKENS = setOf("hd", "fhd", "uhd", "4k", "sd", "h265", "hevc")
+        val QUALITY_TOKENS = setOf("hd", "fhd", "uhd", "4k", "sd", "h265", "hevc", "raw")
     }
 }

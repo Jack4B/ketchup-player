@@ -39,7 +39,7 @@ class M3uProvider(
                 playlist
             }.fold(
                 onSuccess = { playlist ->
-                    lastEpgUrl = playlist.epgUrl
+                    lastEpgUrl = playlist.epgUrl ?: XmltvFromGetPhp.derive(url)
                     when {
                         // Lista tylko z filmami i serialami jest poprawna: kanałów na żywo po prostu nie ma.
                         playlist.channels.isEmpty() && lastVod != null -> Result.success(emptyList())

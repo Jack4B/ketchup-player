@@ -20,6 +20,24 @@ class M3uProviderTest {
             assertEquals("https://epg.example.invalid/x.xml", p.epgUrl())
         }
 
+    /** Panele Xtream trzymają EPG pod xmltv.php z tymi samymi danymi co get.php; inne odtwarzacze to wyliczają. */
+    @Test
+    fun `adres EPG wyliczony z get-php gdy lista nie ma url-tvg`() =
+        runTest {
+            val plain = "#EXTM3U\n#EXTINF:-1,A\nhttp://h.example.invalid/a\n"
+            val getPhp = "http://panel.example.invalid:8080/get.php?username=jan&password=tajne&type=m3u_plus&output=ts"
+            val p = M3uProvider(ProviderId("p"), getPhp) { Result.success(plain) }
+            p.loadChannels().getOrThrow()
+            assertEquals("http://panel.example.invalid:8080/xmltv.php?username=jan&password=tajne", p.epgUrl())
+            // url-tvg z listy ma pierwszeństwo; zwykły adres bez get.php nie daje wyliczonego EPG.
+            val withTvg = M3uProvider(ProviderId("p"), getPhp) { Result.success(list) }
+            withTvg.loadChannels().getOrThrow()
+            assertEquals("https://epg.example.invalid/x.xml", withTvg.epgUrl())
+            val other = M3uProvider(ProviderId("p"), "http://l.example.invalid/x.m3u") { Result.success(plain) }
+            other.loadChannels().getOrThrow()
+            assertEquals(null, other.epgUrl())
+        }
+
     @Test
     fun `401 to Unauthorized, 500 to Network`() =
         runTest {

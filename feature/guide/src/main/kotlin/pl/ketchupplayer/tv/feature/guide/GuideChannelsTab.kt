@@ -284,39 +284,98 @@ private fun PreviewPane(
                 )
             }
         }
-        Text(channel?.displayName.orEmpty(), fontSize = 14.sp, color = c.textSecondary, maxLines = 1)
+        ProgramInfo(channel, now, upcoming, state.nowMs)
+    }
+}
+
+/**
+ * Pod podglądem: „TERAZ” (tytuł, godziny, ile zostało, pasek, opis) i „NASTĘPNIE” (do pięciu audycji). Bez EPG
+ * panel nie zostaje pusty: mówi, że brakuje programu, i podaje, gdzie go włączyć.
+ */
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun ProgramInfo(
+    channel: Channel?,
+    now: EpgProgramme?,
+    upcoming: List<EpgProgramme>,
+    nowMs: Long,
+) {
+    val c = KetchupTheme.colors
+    Text(channel?.displayName.orEmpty(), fontSize = 14.sp, color = c.textSecondary, maxLines = 1)
+    if (now == null && upcoming.isEmpty()) {
         Text(
-            now?.title ?: channel?.displayName.orEmpty(),
-            fontSize = 22.sp,
+            channel?.displayName.orEmpty(),
+            fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = c.textPrimary,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
-        if (now != null) {
-            Text("${clock(now.startMs)}–${clock(now.endMs)}", fontSize = 15.sp, color = c.textSecondary, maxLines = 1)
-            ProgressBar(now.progressAt(state.nowMs), Modifier.fillMaxWidth())
-            now.description?.let {
-                Text(it, fontSize = 15.sp, color = c.textPrimary, maxLines = 3, overflow = TextOverflow.Ellipsis)
-            }
+        Text(stringResource(R.string.guide_no_epg), fontSize = 18.sp, color = c.textPrimary)
+        Text(stringResource(R.string.guide_no_epg_hint), fontSize = 15.sp, color = c.textSecondary, maxLines = 4)
+        channel?.group?.let {
+            Text(stringResource(R.string.guide_channel_group, it), fontSize = 15.sp, color = c.textSecondary)
         }
+        channel?.number?.let {
+            Text(stringResource(R.string.guide_channel_number, it), fontSize = 15.sp, color = c.textSecondary)
+        }
+        return
+    }
+    if (now != null) {
+        Text(stringResource(R.string.guide_now_label), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = c.accent)
+        Text(
+            now.title,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = c.textPrimary,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        val left = ((now.endMs - nowMs) / MINUTE_MS).toInt().coerceAtLeast(0)
+        Text(
+            "${clock(now.startMs)}–${clock(now.endMs)} · ${stringResource(R.string.guide_remaining, left)}",
+            fontSize = 15.sp,
+            color = c.textSecondary,
+            maxLines = 1,
+        )
+        ProgressBar(now.progressAt(nowMs), Modifier.fillMaxWidth())
+        now.description?.let {
+            Text(
+                it,
+                fontSize = 16.sp,
+                color = c.textPrimary,
+                maxLines = DESCRIPTION_LINES,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+    if (upcoming.isNotEmpty()) {
+        Text(
+            stringResource(R.string.guide_next_label),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = c.accent,
+            modifier = Modifier.padding(top = 6.dp),
+        )
         upcoming.forEach {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     clock(it.startMs),
-                    fontSize = 14.sp,
+                    fontSize = 16.sp,
                     color = c.textSecondary,
                     modifier = Modifier.width(UPCOMING_TIME),
                 )
-                Text(it.title, fontSize = 14.sp, color = c.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(it.title, fontSize = 16.sp, color = c.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
     }
 }
 
 private const val PREVIEW_RATIO = 16f / 9f
-private const val UPCOMING = 3
-private val UPCOMING_TIME = 48.dp
+private const val UPCOMING = 5
+private const val DESCRIPTION_LINES = 6
+private const val MINUTE_MS = 60_000L
+private val UPCOMING_TIME = 56.dp
 
 /** Nagłówek listy (makieta v5): nazwa grupy i „N z M kanałów”, żeby było widać, ile z całej listy pokazuje filtr. */
 @OptIn(ExperimentalTvMaterial3Api::class)

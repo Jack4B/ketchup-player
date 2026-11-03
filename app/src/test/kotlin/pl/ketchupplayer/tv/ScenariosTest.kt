@@ -357,6 +357,48 @@ class ScenariosTest {
         waitForText("Dzień na świecie")
     }
 
+    /**
+     * Raport z boxa 3.11: prawy panel „Na żywo” był w połowie pusty i nie pobierał programu. Lista z panelu typu
+     * Xtream (`get.php?username&password`) nie ma `url-tvg`, więc adres XMLTV wyliczamy (`xmltv.php`), a panel pokazuje
+     * „TERAZ”, opis, ile minut zostało i listę „NASTĘPNIE”.
+     */
+    @Test
+    fun epgWyliczonyZGetPhpWypelniaPanelProgramem() {
+        val host = "http://127.0.0.1:${server.port}"
+        server.serve("/get.php") {
+            "#EXTM3U\n#EXTINF:-1 tvg-id=\"TVN24.pl\" group-title=\"Info\",PL| TVN 24\n$host/tvn24.m3u8\n"
+        }
+        server.serve("/xmltv.php") {
+            ListFactory.xmltvNow(
+                "TVN24.pl",
+                "Fakty o dziewiętnastej",
+                "Dzień na świecie",
+                nowDescription = "Opis audycji.",
+            )
+        }
+        runBlocking {
+            val url = server.url("/get.php?username=jan&password=tajne&type=m3u_plus")
+            assertTrue(catalog.addM3u("Panel", url) is AddProviderResult.Added)
+        }
+        nav("Na żywo")
+        waitForText("Fakty o dziewiętnastej", timeoutMs = BIG_WAIT_MS)
+        waitForText("Opis audycji.")
+        waitForText("NASTĘPNIE")
+        waitForText("Dzień na świecie")
+        waitForText("jeszcze", substring = true)
+    }
+
+    /** Kanał bez żadnego EPG: panel nie zostaje pusty, mówi, czego brakuje i gdzie to włączyć. */
+    @Test
+    fun naZywoBezEpgPokazujeKarteZPodpowiedzia() {
+        val host = "http://127.0.0.1:${server.port}"
+        server.serve("/b.m3u") { "#EXTM3U\n#EXTINF:-1 group-title=\"Info\",Kanal Bez Programu\n$host/b.m3u8\n" }
+        runBlocking { assertTrue(catalog.addM3u("Bez EPG", server.url("/b.m3u")) is AddProviderResult.Added) }
+        nav("Na żywo")
+        waitForText("Brak programu dla tego kanału")
+        waitForText("Ustawienia", substring = true)
+    }
+
     /** Scenariusz: lista w skali prawdziwego dostawcy (29 MB, 100 tys. wpisów): szybki import, tylko kanały na żywo. */
     @Test
     fun duzaListaDostawcyImportujeSieIPokazujeKanaly() {

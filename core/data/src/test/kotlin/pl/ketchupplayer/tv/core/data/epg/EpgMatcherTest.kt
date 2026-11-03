@@ -13,6 +13,7 @@ class EpgMatcherTest {
             ChannelEpgKey("c2", null, "info24"),
             ChannelEpgKey("c3", "jeden.pl", "jeden fhd"), // ten sam epgId u drugiego dostawcy
             ChannelEpgKey("c4", null, "tvp 1 hd"),
+            ChannelEpgKey("c5", null, "tvn raw"), // wariant strumienia „RAW” u dostawców IPTV
         )
     private val matcher = EpgMatcher(keys)
 
@@ -25,6 +26,11 @@ class EpgMatcherTest {
     fun `dopasowanie po nazwie z odcieciem sufiksow jakosci`() {
         assertEquals(setOf("c2"), matcher.match(XmlTvChannel("x", listOf("INFO24 HD"))))
         assertEquals(setOf("c4"), matcher.match(XmlTvChannel("y", listOf("TVP 1"))))
+    }
+
+    @Test
+    fun `wariant RAW kanalu dostaje program kanalu bazowego`() {
+        assertEquals(setOf("c5"), matcher.match(XmlTvChannel("tvn.pl", listOf("TVN"))))
     }
 
     @Test
