@@ -33,6 +33,7 @@ class ProviderServer {
                             runCatching { handler(request) }.getOrElse { return MockResponse().setResponseCode(503) }
                         // Treść „HTTP404” = serwer odrzuca żądanie (np. nieznany User-Agent), jak panele IPTV.
                         if (body == NOT_FOUND) return MockResponse().setResponseCode(404)
+                        if (body == UNAUTHORIZED) return MockResponse().setResponseCode(401)
                         return MockResponse().setBody(body)
                     }
                 }
@@ -73,6 +74,9 @@ class ProviderServer {
 
     companion object {
         const val NOT_FOUND = "HTTP404"
+
+        /** Serwis odrzuca klucz API (zły klucz): 401. */
+        const val UNAUTHORIZED = "HTTP401"
     }
 }
 

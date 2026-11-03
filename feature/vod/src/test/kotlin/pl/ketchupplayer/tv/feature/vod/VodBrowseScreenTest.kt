@@ -197,6 +197,28 @@ class VodBrowseScreenTest {
         )
     }
 
+    /**
+     * Raport z boxa 3.11: po wybraniu grupy i wejściu na kafle LEWO nie przywracało grup. Panel kategorii po
+     * schowaniu traci przewinięcie, więc wybrana grupa z końca długiej listy nie jest skomponowana i fokus nie ma
+     * gdzie wrócić.
+     */
+    @Test
+    fun `LEWO z kafli wraca na wybrana grupe takze gdy jest daleko na liscie`() {
+        val many = (1..80).map { "Grupa $it" to 1 }
+        val s = base.copy(categories = many, category = "Grupa 70")
+        show(s)
+        key(Key.ShiftLeft) // pierwszy klawisz po starcie tylko przełącza tryb wejścia
+        settle()
+        // Fokus ma gdzie wylądować tylko wtedy, gdy wybrana grupa jest skomponowana (fokus sprawdza emulator).
+        compose.onNodeWithText("Grupa 70").assertExists()
+        key(Key.DirectionRight)
+        settle()
+        compose.onNodeWithText("Grupa 70").assertDoesNotExist() // kafle: panel schowany
+        key(Key.DirectionLeft)
+        settle()
+        compose.onNodeWithText("Grupa 70").assertExists() // powrót: wybrana grupa znowu jest w panelu
+    }
+
     @Test
     fun `BACK z siatki wysuwa kategorie`() {
         val events = mutableListOf<VodBrowseEvent>()

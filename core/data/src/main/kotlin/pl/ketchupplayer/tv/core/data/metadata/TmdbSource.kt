@@ -33,8 +33,12 @@ class TmdbSource(
         val kind = if (series) "tv" else "movie"
         val id = knownId ?: search(apiKey, kind, title, year, series) ?: return null
         val url =
-            "${endpoints.tmdb}/$kind/$id?api_key=$apiKey&language=pl-PL&append_to_response=credits,external_ids"
-        val body = fetcher.fetch(url).getOrNull()?.let(MetadataJson::parse) ?: return null
+            "${endpoints.tmdb}/$kind/$id?${TmdbAuth.param(
+                apiKey,
+            )}language=pl-PL&append_to_response=credits,external_ids"
+        val body =
+            fetcher.fetchWithHeaders(url, TmdbAuth.headers(apiKey)).getOrNull()?.let(MetadataJson::parse)
+                ?: return null
         return TmdbMeta(
             rating = body.num("vote_average")?.takeIf { it > 0.0 },
             overview = body.str("overview"),
@@ -56,12 +60,13 @@ class TmdbSource(
     ): Long? {
         val q = URLEncoder.encode(title, "UTF-8")
         val yearParam = year?.let { if (series) "&first_air_date_year=$it" else "&year=$it" }.orEmpty()
-        val base = "${endpoints.tmdb}/search/$kind?api_key=$apiKey&language=pl-PL&query=$q"
+        val base = "${endpoints.tmdb}/search/$kind?${TmdbAuth.param(apiKey)}language=pl-PL&query=$q"
+        val headers = TmdbAuth.headers(apiKey)
         // Z rokiem trafniej, ale rok w nazwie bywa błędny: bez trafienia próbujemy jeszcze bez roku.
         for (url in listOfNotNull(base + yearParam, base.takeIf { year != null })) {
             val first =
                 fetcher
-                    .fetch(url)
+                    .fetchWithHeaders(url, headers)
                     .getOrNull()
                     ?.let(MetadataJson::parse)
                     ?.get("results")
@@ -100,4 +105,20 @@ class TmdbSource(
         const val MAX_CAST = 6
         const val MAX_GENRES = 3
     }
+}
+
+/**
+ * TMDB ma dwa dane dostępowe: krótki „klucz API” (v3, parametr `api_key`) i długi „API Read Access Token” (JWT,
+ * nagłówek Bearer). Użytkownicy często wklejają ten drugi, więc obsługujemy oba.
+ */
+internal object TmdbAuth {
+    fun isToken(key: String) = key.startsWith("eyJ") && key.length > TOKEN_MIN_LENGTH
+
+    /** Fragment zapytania z kluczem (z końcowym `&`) albo pusty, gdy użyto tokenu w nagłówku. */
+    fun param(key: String) = if (isToken(key)) "" else "api_key=$key&"
+
+    fun headers(key: String): Map<String, String> =
+        if (isToken(key)) mapOf("Authorization" to "Bearer $key") else emptyMap()
+
+    private const val TOKEN_MIN_LENGTH = 60
 }

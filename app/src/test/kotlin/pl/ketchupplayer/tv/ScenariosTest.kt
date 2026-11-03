@@ -1463,6 +1463,8 @@ class ScenariosTest {
         assertTrue("bez wyszukiwania w MDBList", server.requestedPaths.none { it.startsWith("/mdblist/search") })
     }
 
+    private val invalidKeyBody = """{"Response":"False","Error":"Invalid API key!"}"""
+
     /** Scenariusz: klucze API wpisane w Ustawieniach → Oceny i opisy są zapisane (w SecretStore, nie w repo). */
     @Test
     fun kluczeMetadanychWpisaneWUstawieniachSaZapisane() {
@@ -1472,6 +1474,25 @@ class ScenariosTest {
         click("Zapisz")
         waitFor { runBlocking { metadataKeys.userEntered().tmdb } == "klucz-tmdb-123" }
         waitForText("Zapisano", substring = true)
+    }
+
+    /**
+     * Raport z boxa 3.11: mimo wpisanych kluczy brak opisów i ocen, a aplikacja nie mówiła dlaczego. „Sprawdź klucze”
+     * pyta każdy serwis jednym znanym zapytaniem i podaje wynik: działa, odrzucony (zły klucz) albo brak klucza.
+     */
+    @Test
+    fun sprawdzenieKluczyPokazujeWynikKazdegoSerwisu() {
+        server.serve("/tmdb/movie/603") { "{}" }
+        server.serve("/omdb/") { invalidKeyBody }
+        settingsPage("Oceny i opisy")
+        waitForText("Brak kluczy", substring = true)
+        compose.onAllNodes(hasSetTextAction())[0].performTextInput("klucz-tmdb-ok")
+        compose.onAllNodes(hasSetTextAction())[1].performTextInput("zly-klucz-omdb")
+        click("Sprawdź klucze")
+        waitForText("TMDB: klucz działa")
+        waitForText("OMDb: serwis odrzucił klucz", substring = true)
+        waitForText("MDBList: brak klucza")
+        waitForText("Trakt: brak klucza")
     }
 
     /** Scenariusz (prośba z raportu): ekran list pokazuje, ile połączeń jest w użyciu i do kiedy ważne jest konto. */

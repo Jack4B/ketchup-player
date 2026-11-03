@@ -223,6 +223,28 @@ if [ "$F1" != "Film 01" ]; then
   FAIL_PROVIDER=1
 fi
 
+# --- Regresja: nawigacja w Filmach (raport z boxa 3.11): z kafli LEWO ma przywrócić grupy (kategorie) ---
+# Panel kategorii jest po dotyku widoczny; PRAWO wchodzi na kafle (panel się chowa), LEWO z pierwszej kolumny wraca.
+adb shell input keyevent KEYCODE_BACK; sleep 1.5   # BACK z siatki wysuwa kategorie (albo nic nie robi, gdy już są)
+dump ui_filmy_start
+if ! grep -q 'Wszystkie' "$OUT/ui_filmy_start.xml"; then
+  echo "=== Filmy: po BACK nie widać grup (Wszystkie) ===" >&2
+  FAIL_PROVIDER=1
+fi
+key KEYCODE_DPAD_RIGHT
+dump ui_filmy_kafle
+if grep -q 'text="Wszystkie"' "$OUT/ui_filmy_kafle.xml"; then
+  echo "=== Filmy: PRAWO nie weszło na kafle (grupy dalej widoczne) ===" >&2
+  FAIL_PROVIDER=1
+fi
+key KEYCODE_DPAD_LEFT
+dump ui_filmy_lewo
+shot 17_filmy_lewo
+if ! grep -q 'Wszystkie' "$OUT/ui_filmy_lewo.xml"; then
+  echo "=== Filmy: LEWO z kafli nie przywróciło grup (błąd nawigacji z boxa) ===" >&2
+  FAIL_PROVIDER=1
+fi
+
 # --- Regresja: duża lista (raport z boxa 3.11: lista ok. 100 tys. pozycji, w tym 76 tys. odcinków, nie wczytywała się) ---
 # Dane syntetyczne o kształcie prawdziwej listy M3U (4000 kanałów + 96 tys. filmów i odcinków, ok. 25 MB).
 python3 - "$SRV/duza.m3u" <<'PY'

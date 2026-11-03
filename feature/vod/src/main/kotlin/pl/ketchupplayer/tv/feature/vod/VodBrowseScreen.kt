@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -114,17 +115,24 @@ fun VodBrowseScreen(
     val categoryFocus = remember { FocusRequester() }
     val gridFirst = remember { FocusRequester() }
     var revealTick by remember { mutableIntStateOf(0) }
+    // Wysuwanie kategorii trwa kilka klatek: w tym czasie zdarzenia fokusu kafla nie mogą ich z powrotem schować.
+    var revealing by remember { mutableStateOf(false) }
     val reveal: () -> Unit = {
+        revealing = true
         categoriesOpen = true
         revealTick++
     }
     BackHandler(enabled = !categoriesOpen, onBack = reveal)
     LaunchedEffect(revealTick, state.loading, state.total == 0) {
         // Start i powrót: fokus na wybranej kategorii (panel potrzebuje chwili na złożenie).
-        repeat(FOCUS_SETTLE_FRAMES) { withFrameNanos { } }
-        repeat(FOCUS_RETRIES) {
-            withFrameNanos { }
-            if (runCatching { categoryFocus.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
+        try {
+            repeat(FOCUS_SETTLE_FRAMES) { withFrameNanos { } }
+            repeat(FOCUS_RETRIES) {
+                withFrameNanos { }
+                if (runCatching { categoryFocus.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
+            }
+        } finally {
+            revealing = false
         }
     }
     Box(Modifier.fillMaxSize()) {
@@ -173,7 +181,7 @@ fun VodBrowseScreen(
                                 gridFirst,
                                 { onEvent(VodBrowseEvent.Visible(it)) },
                             ) { index, entry ->
-                                categoriesOpen = false
+                                if (!revealing) categoriesOpen = false
                                 focusedIndex = index
                                 focused = entry
                             }
@@ -233,7 +241,18 @@ private fun CategoriesPanel(
                 right
             },
     ) {
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        // Panel składa się od nowa po każdym wysunięciu, więc zaczyna od wybranej grupy (inaczej daleka grupa nie jest
+        // skomponowana i fokus nie ma gdzie wrócić).
+        val selectedIndex =
+            when (state.category) {
+                null -> 0
+                CATEGORY_RECENT -> 1
+                else -> (state.categories.indexOfFirst { it.first == state.category } + 2).coerceAtLeast(0)
+            }
+        LazyColumn(
+            state = rememberLazyListState(initialFirstVisibleItemIndex = selectedIndex),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             item(key = "all") {
                 CategoryItem(
                     stringResource(R.string.vod_all),

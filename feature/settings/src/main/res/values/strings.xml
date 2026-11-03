@@ -115,7 +115,7 @@
     <string name="metadata_title">Oceny i opisy</string>
     <string name="metadata_intro">Oceny i opisy po polsku pobieramy z TMDB, OMDb, MDBList i Traktu. IMDb i Rotten Tomatoes nie mają własnych publicznych API: ich oceny dają OMDb i MDBList. Wpisz tyle darmowych kluczy, ile chcesz (wystarczy jeden).</string>
     <string name="metadata_tmdb_field">Klucz TMDB (opisy, obsada, ocena TMDB)</string>
-    <string name="metadata_tmdb_hint">TMDB: themoviedb.org, konto, potem Ustawienia → API → klucz v3.</string>
+    <string name="metadata_tmdb_hint">TMDB: themoviedb.org, konto, potem Ustawienia → API: wklej „API Key” albo „API Read Access Token” (oba działają).</string>
     <string name="metadata_omdb_field">Klucz OMDb (IMDb, Rotten Tomatoes, Metacritic)</string>
     <string name="metadata_omdb_hint">OMDb: omdbapi.com/apikey.aspx, klucz przychodzi na e-mail (1000 zapytań dziennie).</string>
     <string name="metadata_mdblist_field">Klucz MDBList (IMDb, Rotten Tomatoes, Metacritic, Trakt naraz)</string>
@@ -123,6 +123,13 @@
     <string name="metadata_trakt_field">Client ID Trakt (ocena Trakt, opis po polsku)</string>
     <string name="metadata_trakt_hint">Trakt: trakt.tv/oauth/applications, nowa aplikacja (adres zwrotny urn:ietf:wg:oauth:2.0:oob), skopiuj Client ID.</string>
     <string name="metadata_save">Zapisz</string>
+    <string name="metadata_check">Sprawdź klucze</string>
+    <string name="metadata_checking">Sprawdzam klucze…</string>
+    <string name="metadata_check_ok">%1$s: klucz działa</string>
+    <string name="metadata_check_no_key">%1$s: brak klucza</string>
+    <string name="metadata_check_bad">%1$s: serwis odrzucił klucz (%2$s). Sprawdź, czy skopiowałeś cały klucz.</string>
+    <string name="metadata_check_limit">%1$s: dzienny limit zapytań wyczerpany, spróbuj jutro</string>
+    <string name="metadata_check_error">%1$s: brak odpowiedzi (%2$s). Sprawdź połączenie z internetem.</string>
     <string name="metadata_status_saved">Zapisano. Oceny pojawią się przy przewijaniu filmów.</string>
     <string name="metadata_status_builtin">Używane są klucze wbudowane w aplikację.</string>
     <string name="metadata_status_none">Brak kluczy: oceny i opisy z zewnętrznych źródeł są wyłączone.</string>

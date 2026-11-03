@@ -3,6 +3,7 @@ package pl.ketchupplayer.tv.feature.settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -18,6 +19,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
 import pl.ketchupplayer.tv.core.data.metadata.ApiKeys
+import pl.ketchupplayer.tv.core.data.metadata.KeyCheck
+import pl.ketchupplayer.tv.core.data.metadata.KeyStatus
 import pl.ketchupplayer.tv.core.designsystem.KetchupButton
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.designsystem.ScreenScaffold
@@ -30,7 +33,7 @@ fun MetadataSettingsRoute(
     viewModel: MetadataSettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    MetadataSettingsScreen(state, viewModel::save, onBack)
+    MetadataSettingsScreen(state, viewModel::save, onBack, viewModel::check)
 }
 
 /**
@@ -43,6 +46,7 @@ fun MetadataSettingsScreen(
     state: MetadataUiState,
     onSave: (ApiKeys) -> Unit,
     onBack: () -> Unit,
+    onCheck: (ApiKeys) -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
     val c = KetchupTheme.colors
@@ -67,7 +71,18 @@ fun MetadataSettingsScreen(
             KeyField(R.string.metadata_trakt_field, R.string.metadata_trakt_hint, draft.trakt) {
                 draft = draft.copy(trakt = it)
             }
-            KetchupButton(stringResource(R.string.metadata_save), { onSave(draft) }, primary = true)
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                KetchupButton(stringResource(R.string.metadata_save), { onSave(draft) }, primary = true)
+                KetchupButton(stringResource(R.string.metadata_check), { onCheck(draft) })
+            }
+            if (state.checking) {
+                Text(
+                    stringResource(R.string.metadata_checking),
+                    fontSize = 16.sp,
+                    color = c.textSecondary,
+                )
+            }
+            state.checks?.forEach { check -> KeyCheckLine(check) }
             val status =
                 when {
                     state.saved -> R.string.metadata_status_saved
@@ -90,4 +105,20 @@ private fun KeyField(
 ) {
     Text(stringResource(hint), fontSize = 15.sp, color = KetchupTheme.colors.textSecondary)
     TextInputField(stringResource(label), value, onChange, Modifier)
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun KeyCheckLine(check: KeyCheck) {
+    val c = KetchupTheme.colors
+    val text =
+        when (check.status) {
+            KeyStatus.NO_KEY -> stringResource(R.string.metadata_check_no_key, check.source)
+            KeyStatus.OK -> stringResource(R.string.metadata_check_ok, check.source)
+            KeyStatus.BAD_KEY -> stringResource(R.string.metadata_check_bad, check.source, check.detail)
+            KeyStatus.LIMIT -> stringResource(R.string.metadata_check_limit, check.source)
+            KeyStatus.ERROR -> stringResource(R.string.metadata_check_error, check.source, check.detail)
+        }
+    val color = if (check.status == KeyStatus.OK) c.textPrimary else c.textSecondary
+    Text(text, fontSize = 16.sp, color = color)
 }
