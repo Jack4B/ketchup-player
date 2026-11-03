@@ -223,6 +223,41 @@ if [ "$F1" != "Film 01" ]; then
   FAIL_PROVIDER=1
 fi
 
+# --- Regresja: duża lista (raport z boxa 3.11: lista ok. 100 tys. pozycji, w tym 76 tys. odcinków, nie wczytywała się) ---
+# Dane syntetyczne o kształcie prawdziwej listy M3U (4000 kanałów + 96 tys. filmów i odcinków, ok. 25 MB).
+python3 - "$SRV/duza.m3u" <<'PY'
+import sys
+with open(sys.argv[1], "w", encoding="utf-8") as f:
+    f.write("#EXTM3U\n")
+    for i in range(4000):
+        f.write(f'#EXTINF:-1 tvg-id="K{i}.pl" tvg-name="PL| Kanal {i}" tvg-logo="http://127.0.0.1:8099/logo/{i}.png" '
+                f'group-title="PL| LIVE {i % 40}",PL| Kanal {i}\nhttp://127.0.0.1:8099/live/u/p/{i}\n')
+    for i in range(96000):
+        kind = "series" if i % 4 else "movie"
+        f.write(f'#EXTINF:-1 tvg-id="" tvg-name="Pozycja {i} S01E01" tvg-logo="http://127.0.0.1:8099/img/{i}.jpg" '
+                f'group-title="|PL| SERIALE {i % 100}",Pozycja {i} S01E01\nhttp://127.0.0.1:8099/{kind}/u/p/{i}.mkv\n')
+PY
+tap "Ustawienia" || FAIL_PROVIDER=1
+tap "Listy i dostawcy" || true
+tap "Dodaj dostawcę" || FAIL_PROVIDER=1
+type_checked "ListaDuza"
+key KEYCODE_ENTER
+type_checked "http://127.0.0.1:8099/duza.m3u"
+key KEYCODE_ENTER
+BIG_OK=0
+for _ in $(seq 1 60); do
+  sleep 6
+  adb shell uiautomator dump /sdcard/ui_big.xml >/dev/null
+  adb pull /sdcard/ui_big.xml "$OUT/ui_big.xml" >/dev/null
+  if grep -q "Kanały: 4000" "$OUT/ui_big.xml"; then BIG_OK=1; break; fi
+done
+shot 21_duza_lista
+if [ "$BIG_OK" != 1 ]; then
+  echo "=== Duża lista (100 tys. pozycji) nie wczytała się w 6 minut (brak „Kanały: 4000”) ===" >&2
+  adb logcat -d | grep -E "OutOfMemory|FATAL EXCEPTION|ANR in" | head -10 >&2 || true
+  FAIL_PROVIDER=1
+fi
+
 # --- Regresja: Ustawienia > Wygląd (raport z boxa 2.11): wszystkie motywy w panelu i LEWO wraca do kategorii ---
 # focused_text: teksty zaznaczonego elementu z drzewa UI. Compose daje tekst w węzłach potomnych, więc zbieramy
 # teksty wszystkich węzłów mieszczących się w ramce elementu z focused="true".

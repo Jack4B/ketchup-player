@@ -79,46 +79,35 @@ class OkHttpTextFetcher(
             Result.failure(NetworkException.Io(e))
         }
 
+    /**
+     * Strumień bajtów (rozpakowany gzip). Odpowiedź najpierw ląduje w pliku tymczasowym, dopiero potem jest czytana
+     * przez [block]: serwer dostaje dane w tempie sieci, a nie w tempie zapisu do bazy. Wolne boxy zapisywały katalog
+     * wolniej, niż serwer chciał czekać (nginx zrywa połączenie z wolnym odbiorcą), i lista się nie pobierała, choć
+     * inne odtwarzacze (najpierw pobierają całość) wczytywały ją bez problemu.
+     */
     override suspend fun <T> fetchStream(
         url: String,
         block: (InputStream) -> T,
-    ): Result<T> =
-        withContext(Dispatchers.IO) {
-            try {
-                streamClient.newCall(Request.Builder().url(url).build()).execute().use { response ->
-                    if (!response.isSuccessful) return@withContext Result.failure(response.toHttpFailure())
-                    val body = response.body ?: return@withContext Result.success(block("".byteInputStream()))
-                    val raw = BufferedInputStream(LimitedInputStream(body.byteStream(), streamMaxBytes, meter), BUFFER)
-                    val counted = LimitedInputStream(maybeGunzip(raw), streamMaxBytes)
-                    counted.use { Result.success(block(it)) }
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: NetworkException) {
-                Result.failure(e)
-            } catch (e: IOException) {
-                Result.failure(NetworkException.Io(e))
-            } catch (e: IllegalArgumentException) {
-                Result.failure(NetworkException.Io(e))
-            }
-        }
+    ): Result<T> = withDownloaded(url) { file -> openLimited(file).use { block(it) } }
 
     override suspend fun <T> fetchLines(
         url: String,
         block: (Sequence<String>) -> T,
     ): Result<T> =
+        withDownloaded(url) { file ->
+            openLimited(file).bufferedReader(Charsets.UTF_8).use { block(it.lineSequence()) }
+        }
+
+    /** Pobiera [url] do pliku tymczasowego, wywołuje [use] i zawsze kasuje plik. Błędy sieci to [Result.failure]. */
+    private suspend fun <T> withDownloaded(
+        url: String,
+        use: (java.io.File) -> T,
+    ): Result<T> =
         withContext(Dispatchers.IO) {
+            var file: java.io.File? = null
             try {
-                streamClient.newCall(Request.Builder().url(url).build()).execute().use { response ->
-                    if (!response.isSuccessful) return@withContext Result.failure(response.toHttpFailure())
-                    val body = response.body ?: return@withContext Result.success(block(emptySequence()))
-                    val raw = BufferedInputStream(LimitedInputStream(body.byteStream(), streamMaxBytes, meter), BUFFER)
-                    // Drugi limit liczy bajty po rozpakowaniu, żeby „bomba gzip” też została ucięta.
-                    val counted = LimitedInputStream(maybeGunzip(raw), streamMaxBytes)
-                    counted.bufferedReader(Charsets.UTF_8).use { reader ->
-                        Result.success(block(reader.lineSequence()))
-                    }
-                }
+                file = download(url)
+                Result.success(use(file))
             } catch (e: CancellationException) {
                 throw e
             } catch (e: NetworkException) {
@@ -127,8 +116,43 @@ class OkHttpTextFetcher(
                 Result.failure(NetworkException.Io(e))
             } catch (e: IllegalArgumentException) {
                 Result.failure(NetworkException.Io(e))
+            } finally {
+                file?.delete()
             }
         }
+
+    /** Ściąga odpowiedź do pliku tymczasowego; przy błędzie plik jest kasowany. */
+    private fun download(url: String): java.io.File {
+        val file = java.io.File.createTempFile("ketchup-list", ".tmp")
+        var done = false
+        try {
+            downloadInto(url, file)
+            done = true
+            return file
+        } finally {
+            if (!done) file.delete()
+        }
+    }
+
+    /** Limit [streamMaxBytes], licznik postępu; HTTP spoza 2xx to [NetworkException.Http]. */
+    private fun downloadInto(
+        url: String,
+        file: java.io.File,
+    ) {
+        streamClient.newCall(Request.Builder().url(url).build()).execute().use { response ->
+            if (!response.isSuccessful) throw response.toHttpFailure()
+            val body = response.body ?: return
+            LimitedInputStream(body.byteStream(), streamMaxBytes, meter).use { input ->
+                file.outputStream().buffered(BUFFER).use { out -> input.copyTo(out, BUFFER) }
+            }
+        }
+    }
+
+    /** Plik jako strumień z rozpakowaniem gzip; drugi limit liczy bajty po rozpakowaniu („bomba gzip”). */
+    private fun openLimited(file: java.io.File): InputStream {
+        val raw = BufferedInputStream(file.inputStream(), BUFFER)
+        return LimitedInputStream(maybeGunzip(raw), streamMaxBytes)
+    }
 
     private fun maybeGunzip(input: BufferedInputStream): InputStream {
         input.mark(2)
