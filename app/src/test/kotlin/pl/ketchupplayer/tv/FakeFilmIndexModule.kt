@@ -14,14 +14,19 @@ object FakeFilmIndex : FilmIndex {
     @Volatile
     var entries: Map<String, FilmRef> = emptyMap()
 
+    /** Prawdziwy plik indeksu z repozytorium (zamiast wpisów): scenariusze sprawdzają całą ścieżkę z assetem. */
+    @Volatile
+    var real: FilmIndex? = null
+
     override fun find(
         title: String,
         year: Int?,
         series: Boolean,
-    ): FilmRef? = entries[title]
+    ): FilmRef? = entries[title] ?: real?.find(title, year, series)
 
     fun reset() {
         entries = emptyMap()
+        real = null
     }
 }
 

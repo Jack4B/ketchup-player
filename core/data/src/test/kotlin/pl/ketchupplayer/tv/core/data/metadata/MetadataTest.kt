@@ -3,10 +3,12 @@ package pl.ketchupplayer.tv.core.data.metadata
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -137,6 +139,40 @@ class MetadataTest {
             assertEquals("Plot EN", meta.overview)
             assertTrue(urls.none { "tmdb.invalid" in it })
             assertTrue(urls.any { "t=Matrix" in it && "y=1999" in it && "type=movie" in it })
+        }
+
+    /**
+     * Raport z emulatora 3.11: dopisanie metadanych do filmu (INSERT OR REPLACE) przenosiło jego wiersz na koniec
+     * katalogu, a kolejność „Najnowsze” to kolejność wstawienia: filmy skakały po wzbogaceniu, a siatka za nimi.
+     */
+    @Test
+    fun `wzbogacenie filmu nie zmienia jego miejsca w katalogu`() =
+        runBlocking {
+            val second =
+                db
+                    .vod()
+                    .get(
+                        "m1",
+                    )!!
+                    .copy(id = "m2", title = "Drugi", normTitle = "drugi", ref = "r2", year = 2000)
+            db.vod().insertAll(listOf(second))
+            val before =
+                db
+                    .vod()
+                    .observeByKind("MOVIE")
+                    .first()
+                    .map { it.id }
+            assertEquals(listOf("m1", "m2"), before)
+            keys.save(ApiKeys(tmdb = "klucz-t", omdb = "klucz-o"))
+            assertTrue(repository().ensure("m1")) // wzbogacenie pierwszego filmu zapisuje opis, ocenę i plakat
+            val after =
+                db
+                    .vod()
+                    .observeByKind("MOVIE")
+                    .first()
+                    .map { it.id }
+            assertEquals("kolejność po wzbogaceniu", before, after)
+            assertNotNull(db.vod().get("m1")!!.poster)
         }
 
     @Test

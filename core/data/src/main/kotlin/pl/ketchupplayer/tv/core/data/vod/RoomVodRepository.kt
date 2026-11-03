@@ -80,7 +80,7 @@ class RoomVodRepository
             val item = dao.get(itemId)?.toModel() ?: return
             if (!item.plot.isNullOrBlank() && item.cast != null && item.backdrop != null) return
             val provider = providerDao.get(item.providerId.value)?.let { factory.create(it) } ?: return
-            provider.loadVodInfo(item).onSuccess { info -> dao.insertAll(listOf(item.withInfo(info).toEntity())) }
+            provider.loadVodInfo(item).onSuccess { info -> dao.update(item.withInfo(info).toEntity()) }
         }
 
         override suspend fun enrichDurations(limit: Int): Int {
@@ -96,7 +96,7 @@ class RoomVodRepository
                         failures = 0
                         // 0 = sprawdzono i dostawca nie podaje: nie pytamy o ten film w kółko.
                         val withDuration = item.withInfo(info).let { it.copy(durationMin = it.durationMin ?: 0) }
-                        dao.insertAll(listOf(withDuration.toEntity()))
+                        dao.update(withDuration.toEntity())
                         if ((withDuration.durationMin ?: 0) > 0) done++
                     }
                     ++failures >= MAX_FAILURES -> return done

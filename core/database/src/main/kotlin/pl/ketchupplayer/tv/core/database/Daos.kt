@@ -215,6 +215,13 @@ interface VodDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(items: List<VodItemEntity>)
 
+    /**
+     * Aktualizacja jednej pozycji w miejscu. `insertAll` (REPLACE) kasuje i wstawia wiersz od nowa, więc film
+     * trafiał na koniec katalogu (kolejność „Najnowsze” to rowid) i siatka podążała za nim.
+     */
+    @androidx.room.Update
+    suspend fun update(item: VodItemEntity)
+
     @Query("DELETE FROM vod_episodes WHERE seriesId IN (SELECT id FROM vod_items WHERE providerId = :providerId)")
     suspend fun deleteEpisodesByProvider(providerId: String)
 

@@ -1542,6 +1542,37 @@ class ScenariosTest {
         )
     }
 
+    /**
+     * Raport emulatora 3.11: Matrix (1999) z listy nie dostał oceny z indeksu, choć sam plik indeksu ją ma. Scenariusz
+     * idzie całą ścieżką na PRAWDZIWYM pliku indeksu z repozytorium, bez kluczy i bez sieci.
+     */
+    @Test
+    fun matrix1999DostajeOceneIMDbZPrawdziwegoIndeksuNaKarcie() {
+        FakeFilmIndex.real =
+            pl.ketchupplayer.tv.core.data.metadata.SqliteFilmIndex(
+                android.database.sqlite.SQLiteDatabase.openDatabase(
+                    java.io.File("../core/data/src/main/assets/film_index.db").path,
+                    null,
+                    android.database.sqlite.SQLiteDatabase.OPEN_READONLY,
+                ),
+            )
+        val movies =
+            (60 downTo 1).joinToString("") {
+                "#EXTINF:-1 group-title=\"Dramat\",Film %02d\nhttp://h.example.invalid/movie/u/p/%d.mkv\n".format(
+                    it,
+                    it,
+                )
+            }
+        server.serve("/m.m3u") {
+            "#EXTM3U\n#EXTINF:-1 group-title=\"Dramat\",Matrix (1999)\n" +
+                "http://h.example.invalid/movie/u/p/0.mkv\n$movies"
+        }
+        runBlocking { assertTrue(catalog.addM3u("Filmy", server.url("/m.m3u")) is AddProviderResult.Added) }
+        nav("Filmy")
+        waitForText("Matrix")
+        waitForText("IMDb 8,7", timeoutMs = BIG_WAIT_MS)
+    }
+
     private val invalidKeyBody = """{"Response":"False","Error":"Invalid API key!"}"""
 
     /** Scenariusz: klucze API wpisane w Ustawieniach → Oceny i opisy są zapisane (w SecretStore, nie w repo). */

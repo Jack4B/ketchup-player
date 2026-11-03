@@ -76,7 +76,7 @@ class MetadataRepository
                 VodMetaEntity(itemId, r.tmdb, r.imdb, r.rtPercent, now, found = true, r.metacritic, r.trakt, deepMs),
             )
             val merged = MetadataMerge.fill(item, result)
-            if (merged != item) dao.insertAll(listOf(merged.toEntity()))
+            if (merged != item) dao.update(merged.toEntity())
             return true
         }
 
