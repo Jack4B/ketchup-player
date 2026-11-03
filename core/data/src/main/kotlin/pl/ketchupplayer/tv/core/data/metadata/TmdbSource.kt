@@ -27,9 +27,11 @@ class TmdbSource(
         title: String,
         year: Int?,
         series: Boolean,
+        /** Id TMDB z wbudowanego indeksu: pomija wyszukiwanie (jedno zapytanie mniej, trafienie pewne). */
+        knownId: Long? = null,
     ): TmdbMeta? {
         val kind = if (series) "tv" else "movie"
-        val id = search(apiKey, kind, title, year, series) ?: return null
+        val id = knownId ?: search(apiKey, kind, title, year, series) ?: return null
         val url =
             "${endpoints.tmdb}/$kind/$id?api_key=$apiKey&language=pl-PL&append_to_response=credits,external_ids"
         val body = fetcher.fetch(url).getOrNull()?.let(MetadataJson::parse) ?: return null

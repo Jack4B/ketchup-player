@@ -21,7 +21,10 @@ class WikipediaSource(
         title: String,
         year: Int?,
         series: Boolean,
+        /** Tytuł strony z wbudowanego indeksu: czytamy ją wprost, bez wyszukiwania. */
+        pageTitle: String? = null,
     ): String? {
+        pageTitle?.let { exact -> filmExtract(exact, year, series)?.let { return it } }
         val kindWord = if (series) "serial" else "film"
         val query = URLEncoder.encode("$title $kindWord ${year ?: ""}".trim(), "UTF-8")
         val searchUrl =

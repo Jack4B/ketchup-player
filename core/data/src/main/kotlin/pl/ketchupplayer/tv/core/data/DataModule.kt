@@ -126,6 +126,7 @@ abstract class DataModule {
         @Singleton
         fun metadataService(
             fetcher: TextFetcher,
+            index: pl.ketchupplayer.tv.core.data.metadata.FilmIndex,
             endpoints: pl.ketchupplayer.tv.core.data.metadata.MetadataEndpoints,
         ): pl.ketchupplayer.tv.core.data.metadata.MetadataService =
             pl.ketchupplayer.tv.core.data.metadata.MetadataService(
@@ -145,6 +146,7 @@ abstract class DataModule {
                     wikipedia =
                         pl.ketchupplayer.tv.core.data.metadata
                             .WikipediaSource(fetcher, endpoints),
+                    index = index,
                 ),
             )
     }

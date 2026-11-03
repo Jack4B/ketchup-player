@@ -11,3 +11,4 @@ build/
 .mcp.local.json
 .kotlin/
 captures/
+__pycache__/

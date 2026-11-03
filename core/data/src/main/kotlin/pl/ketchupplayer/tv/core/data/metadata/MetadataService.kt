@@ -21,6 +21,8 @@ class MetadataSources(
     val trakt: TraktSource? = null,
     val mdblist: MdbListSource? = null,
     val wikipedia: WikipediaSource? = null,
+    /** Wbudowany indeks: identyfikatory bez zapytań (TMDB, IMDb, strona plwiki). */
+    val index: FilmIndex = NoFilmIndex,
 )
 
 /**
@@ -49,23 +51,17 @@ class MetadataService(
         deep: Boolean = false,
     ): MetaResult? {
         val series = item.kind == VodKind.SERIES
-        val t = keyed(keys.tmdb) { sources.tmdb.lookup(it, item.title, item.year, series) }
+        val ref = sources.index.find(item.title, item.year, series)
+        val t = keyed(keys.tmdb) { sources.tmdb.lookup(it, item.title, item.year, series, ref?.tmdb) }
         val tr = keyed(keys.trakt) { sources.trakt?.lookup(it, item.title, item.year, series) }
-        val imdbId = t?.imdbId ?: tr?.imdbId
+        val imdbId = t?.imdbId ?: tr?.imdbId ?: ref?.imdb
         val omdbCap = if (deep) DEEP_CAP else CARD_OMDB_CAP
         val o =
             metered("omdb", 1, omdbCap, keys.omdb) { sources.omdb.lookup(it, imdbId, item.title, item.year, series) }
-        val m =
-            if (deep) {
-                metered("mdblist", if (imdbId != null) 1 else 2, DEEP_CAP, keys.mdblist) {
-                    sources.mdblist?.lookup(it, imdbId, item.title, item.year, series)
-                }
-            } else {
-                null
-            }
+        val m = if (deep) mdblist(item, keys, imdbId, series) else null
         val polish = t?.overview ?: tr?.overview
         // Wikipedia tylko dla ekranu szczegółów i tylko wtedy, gdy żadne źródło nie dało polskiego opisu.
-        val wiki = if (deep && polish == null) sources.wikipedia?.lookup(item.title, item.year, series) else null
+        val wiki = if (deep && polish == null) wikipedia(item, series, ref) else null
         if (listOf(t, tr, o, m, wiki).all { it == null }) return null
         return MetaResult(
             ratings = mergeRatings(t, tr, o, m),
@@ -77,6 +73,22 @@ class MetadataService(
             backdrop = t?.backdrop,
         )
     }
+
+    private suspend fun mdblist(
+        item: VodItem,
+        keys: ApiKeys,
+        imdbId: String?,
+        series: Boolean,
+    ): MdbListMeta? =
+        metered("mdblist", if (imdbId != null) 1 else 2, DEEP_CAP, keys.mdblist) {
+            sources.mdblist?.lookup(it, imdbId, item.title, item.year, series)
+        }
+
+    private suspend fun wikipedia(
+        item: VodItem,
+        series: Boolean,
+        ref: FilmRef?,
+    ): String? = sources.wikipedia?.lookup(item.title, item.year, series, ref?.plWikiTitle)
 
     /** Źródło bez klucza (puste pole) jest pomijane. */
     private suspend fun <T> keyed(

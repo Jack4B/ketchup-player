@@ -139,6 +139,7 @@ class ScenariosTest {
         blockImageNetwork()
         blockImageNetwork()
         FakePlayers.reset()
+        FakeFilmIndex.reset()
         // Hermetyczność: wbudowane źródła EPG (internet) wyłączone, EPG tylko z serwera testowego.
         runBlocking {
             // DataStore jest singletonem procesu: stan poprzedniego scenariusza (ustawienia, znacznik importu EPG)
@@ -1426,6 +1427,40 @@ class ScenariosTest {
         )
         nav("Na żywo")
         waitForText("Kanal Koniec Duzej Listy")
+    }
+
+    /**
+     * Wbudowany indeks filmów (Wikidata): film rozpoznany offline daje id IMDb i stronę Wikipedii, więc opis idzie
+     * wprost ze strony (bez wyszukiwania), a MDBList dostaje id (jedno zapytanie, bez szukania po tytule).
+     */
+    @Test
+    fun filmZIndeksuWbudowanegoOszczedzaZapytania() {
+        serveXtreamVod()
+        FakeFilmIndex.entries =
+            mapOf(
+                "Pitbull" to
+                    pl.ketchupplayer.tv.core.data.metadata
+                        .FilmRef("tt0425007", 9475, 2005, "Pitbull_(film_2005)", "Pitbull", "Pitbull"),
+            )
+        server.serve("/wiki/api/rest_v1/page/summary/Pitbull_(film_2005)") {
+            """{"type":"standard","description":"polski film z 2005 roku","extract":"Opis ze strony z indeksu."}"""
+        }
+        server.serve("/mdblist/imdb/movie/tt0425007") { """{"ratings":[{"source":"imdb","value":7.6}]}""" }
+        runBlocking {
+            metadataKeys.save(
+                pl.ketchupplayer.tv.core.data.metadata
+                    .ApiKeys(mdblist = "klucz-m"),
+            )
+        }
+        addXtreamViaUi("dobre-haslo")
+        waitForText("Kanały: 2", substring = true)
+        nav("Filmy")
+        waitForText("Pitbull")
+        click("Pitbull")
+        waitForText("IMDb 7,6")
+        waitForText("Opis ze strony z indeksu.")
+        assertTrue("bez wyszukiwania w Wikipedii", server.requestedPaths.none { it == "/wiki/w/api.php" })
+        assertTrue("bez wyszukiwania w MDBList", server.requestedPaths.none { it.startsWith("/mdblist/search") })
     }
 
     /** Scenariusz: klucze API wpisane w Ustawieniach → Oceny i opisy są zapisane (w SecretStore, nie w repo). */
