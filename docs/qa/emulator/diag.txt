@@ -1,0 +1,7 @@
+host curl a.m3u: 200
+host curl hls: 200
+emulator curl: ok
+index.m3u8
+index0.ts
+index1.ts
+fokus: kategoria='Wygląd' opcje='Auto' po LEWO='Wygląd'

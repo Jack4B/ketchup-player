@@ -1,0 +1,97 @@
+package pl.ketchupplayer.tv.feature.guide
+
+import pl.ketchupplayer.tv.core.model.Channel
+import pl.ketchupplayer.tv.epg.radar.InterestHit
+import pl.ketchupplayer.tv.epg.radar.RadarItem
+import pl.ketchupplayer.tv.epg.radar.RadarSlot
+import pl.ketchupplayer.tv.player.engine.PlaybackStatus
+
+/** Okno czasu siatki i kanały w kolejności wyświetlania (ulubione na początku). */
+data class GuideUiState(
+    val loading: Boolean = true,
+    val channels: List<Channel> = emptyList(),
+    val favorites: Set<String> = emptySet(),
+    /** Początek osi czasu (zaokrąglony w dół do pół godziny) i jej koniec, ms UTC. */
+    val windowStartMs: Long = 0,
+    val windowEndMs: Long = 0,
+    val nowMs: Long = 0,
+    /** Rośnie po zakończeniu importu EPG; wiersze przeładowują wtedy swoje audycje. */
+    val epgRevision: Int = 0,
+    /** Grupy kanałów (polskie pierwsze), wybrana grupa i liczniki do panelu grup. */
+    val groups: List<String> = emptyList(),
+    val selectedGroup: String? = null,
+    val favoritesSelected: Boolean = false,
+    val recentSelected: Boolean = false,
+    val groupCounts: Map<String, Int> = emptyMap(),
+    val totalCount: Int = 0,
+    val recentCount: Int = 0,
+    /** Audycje trwające teraz: id kanału -> audycja; odświeżane z bazy (też po imporcie EPG). */
+    val onAir: Map<String, pl.ketchupplayer.tv.core.model.EpgProgramme> = emptyMap(),
+)
+
+/** Żywy podgląd: odtwarzacz (null = brak) i kanał, który w nim gra. */
+data class PreviewUi(
+    val player: androidx.media3.common.Player? = null,
+    val channelId: String? = null,
+    val status: PlaybackStatus = PlaybackStatus.IDLE,
+)
+
+/** Wybór w panelu grup: wszystkie / konkretna grupa / ulubione / ostatnio oglądane. */
+sealed interface GuideGroup {
+    data object All : GuideGroup
+
+    data class Named(
+        val name: String,
+    ) : GuideGroup
+
+    data object Favorites : GuideGroup
+
+    data object Recent : GuideGroup
+}
+
+/** Geometria siatki: długość audycji w minutach -> szerokość bloku. */
+object GuideGeometry {
+    const val WINDOW_MINUTES = 12 * 60
+    const val STEP_MINUTES = 30
+    const val DP_PER_MINUTE = 4f
+    const val MIN_BLOCK_DP = 28f
+    private const val MS_PER_MINUTE = 60_000L
+
+    /** Początek okna: bieżąca pełna półgodzina. */
+    fun windowStart(nowMs: Long): Long {
+        val step = STEP_MINUTES * MS_PER_MINUTE
+        return nowMs - Math.floorMod(nowMs, step)
+    }
+
+    fun windowEnd(startMs: Long): Long = startMs + WINDOW_MINUTES * MS_PER_MINUTE
+
+    /** Odsunięcie bloku od lewej krawędzi osi i jego szerokość w dp, przycięte do okna. Null = poza oknem. */
+    fun place(
+        startMs: Long,
+        endMs: Long,
+        windowStartMs: Long,
+        windowEndMs: Long,
+    ): Pair<Float, Float>? {
+        val from = maxOf(startMs, windowStartMs)
+        val to = minOf(endMs, windowEndMs)
+        if (to <= from) return null
+        val offset = (from - windowStartMs) / MS_PER_MINUTE.toFloat() * DP_PER_MINUTE
+        val width = ((to - from) / MS_PER_MINUTE.toFloat() * DP_PER_MINUTE).coerceAtLeast(MIN_BLOCK_DP)
+        return offset to width
+    }
+
+    fun totalWidthDp(): Float = WINDOW_MINUTES * DP_PER_MINUTE
+}
+
+/** Zakładka Radar: wybrany slot i jego pozycje (przeliczane po imporcie EPG i zmianie ulubionych). */
+data class RadarUiState(
+    val slot: RadarSlot = RadarSlot.TOP_DAY,
+    val loading: Boolean = true,
+    val items: List<RadarItem> = emptyList(),
+)
+
+/** Zakładka „Moje zainteresowania”: słowa kluczowe użytkownika i pasujące audycje z najbliższej doby. */
+data class InterestsUiState(
+    val keywords: List<String> = emptyList(),
+    val hits: List<InterestHit> = emptyList(),
+)

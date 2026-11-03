@@ -1,0 +1,8 @@
+11-02 08:00:00.000 I/KeyGuard( 100): KG t=10000 key=20 rep=0 age=2 gap=1100 dev=3 src=501 drop=0
+11-02 08:00:00.000 I/KeyGuard( 100): KG t=10040 key=20 rep=0 age=2 gap=40 dev=3 src=501 drop=1
+11-02 08:00:01.000 I/KeyGuard( 100): KG t=11139 key=20 rep=0 age=2 gap=1100 dev=3 src=501 drop=0
+11-02 08:00:01.000 I/KeyGuard( 100): KG t=11179 key=20 rep=0 age=2 gap=40 dev=3 src=501 drop=1
+11-02 08:00:02.000 I/KeyGuard( 100): KG t=12279 key=20 rep=0 age=2 gap=1100 dev=3 src=501 drop=0
+11-02 08:00:02.000 I/KeyGuard( 100): KG t=12319 key=20 rep=0 age=2 gap=40 dev=3 src=501 drop=1
+11-02 08:00:03.000 I/KeyGuard( 100): KG t=13419 key=20 rep=0 age=2 gap=1100 dev=3 src=501 drop=0
+11-02 08:00:04.000 I/KeyGuard( 100): KG t=14519 key=20 rep=0 age=2 gap=1100 dev=3 src=501 drop=0

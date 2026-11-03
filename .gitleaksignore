@@ -1,0 +1,7 @@
+# Znane fałszywe alarmy gitleaks. Każdy wpis: odcisk z raportu (commit:plik:reguła:linia) i uzasadnienie.
+#
+# app/src/test/resources/fixtures/iptv-org-pl.m3u to kopia PUBLICZNEJ listy iptv-org (kanały PL) użyta jako dane
+# testowe (zasada projektu: fixture'y tylko z publicznych list). Ścieżki strumieni typu /live/<liczba>/<ciąg>/<id>.m3u8
+# są częścią publicznego adresu cudzego strumienia, nie sekretem tego projektu ani konta użytkownika.
+a99fd1848067240c6bd6902e8d8b2ff11ce1871c:app/src/test/resources/fixtures/iptv-org-pl.m3u:generic-api-key:175
+a99fd1848067240c6bd6902e8d8b2ff11ce1871c:app/src/test/resources/fixtures/iptv-org-pl.m3u:generic-api-key:177

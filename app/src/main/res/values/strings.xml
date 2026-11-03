@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Ketchup Player</string>
+    <string name="list_badge_name">Lista „%1$s”</string>
+    <string name="list_badge_connections">Lista „%1$s” · połączenia %2$d z %3$d</string>
+    <string name="nav_profile">Profil</string>
+    <string name="nav_search">Szukaj</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_live">Na żywo</string>
+    <string name="nav_movies">Filmy</string>
+    <string name="nav_series">Seriale</string>
+    <string name="nav_mylist">Moja lista</string>
+    <string name="nav_settings">Ustawienia</string>
+    <string name="coming_soon">Ten ekran pojawi się w kolejnej wersji.</string>
+    <string name="settings_cat_providers">Listy i dostawcy</string>
+    <string name="settings_cat_groups">Grupy i kategorie</string>
+    <string name="settings_cat_playback">Odtwarzanie</string>
+    <string name="settings_cat_metadata">Oceny i opisy</string>
+    <string name="settings_cat_tv">Telewizja</string>
+    <string name="settings_cat_vod">Filmy i seriale</string>
+    <string name="settings_cat_recording">Nagrywanie</string>
+    <string name="settings_cat_network">Sieć i VPN</string>
+    <string name="settings_cat_profiles">Profile</string>
+    <string name="settings_cat_appearance">Wygląd</string>
+    <string name="settings_cat_remote">Pilot</string>
+    <string name="settings_cat_services">Usługi zewnętrzne</string>
+    <string name="settings_cat_data">Dane i pamięć</string>
+    <string name="settings_cat_about">O aplikacji</string>
+    <string name="settings_about_name">Ketchup Player</string>
+    <string name="settings_about_version">Wersja %1$s</string>
+    <string name="settings_about_text">Odtwarzacz własnych list IPTV. Aplikacja nie dostarcza żadnych treści.</string>
+</resources>

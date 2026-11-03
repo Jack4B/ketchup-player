@@ -1,0 +1,7 @@
+[   10.000000] /dev/input/event3: EV_KEY       KEY_DOWN             DOWN
+[   10.080000] /dev/input/event3: EV_KEY       KEY_DOWN             UP
+[   11.100000] /dev/input/event3: EV_KEY       KEY_DOWN             DOWN
+[   11.180000] /dev/input/event3: EV_KEY       KEY_DOWN             UP
+[   12.200000] /dev/input/event3: EV_KEY       KEY_DOWN             DOWN
+[   13.300000] /dev/input/event3: EV_KEY       KEY_DOWN             DOWN
+[   14.400000] /dev/input/event3: EV_KEY       KEY_DOWN             DOWN

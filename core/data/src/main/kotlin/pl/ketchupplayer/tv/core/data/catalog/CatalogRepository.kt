@@ -1,0 +1,107 @@
+package pl.ketchupplayer.tv.core.data.catalog
+
+import kotlinx.coroutines.flow.Flow
+import pl.ketchupplayer.tv.core.model.Channel
+import pl.ketchupplayer.tv.core.model.ProviderId
+import pl.ketchupplayer.tv.core.model.ProviderInfo
+import pl.ketchupplayer.tv.core.model.StreamSpec
+
+enum class AddProviderError { INVALID_NAME, INVALID_URL, INVALID_CREDENTIALS }
+
+/** Wynik dodania dostawcy: id albo błąd walidacji/pobrania. */
+sealed interface AddProviderResult {
+    data class Added(
+        val id: ProviderId,
+        val channelCount: Int,
+    ) : AddProviderResult
+
+    data class Invalid(
+        val error: AddProviderError,
+    ) : AddProviderResult
+
+    /** Dostawca zapisany, ale pierwsze pobranie listy się nie udało (można ponowić z ekranu dostawców). */
+    data class SavedWithError(
+        val id: ProviderId,
+        val message: String,
+    ) : AddProviderResult
+}
+
+/** Etap trwającego importu listy (duża lista z filmami to minuty pracy, użytkownik musi widzieć postęp). */
+enum class ImportPhase { DOWNLOADING, SAVING_CHANNELS, SAVING_VOD }
+
+/** Stan importu: etap i liczba pozycji, jeśli już znana (dla etapów zapisu). */
+data class ImportStatus(
+    val phase: ImportPhase,
+    val count: Int = 0,
+)
+
+/** Katalog kanałów (offline-first: UI zawsze czyta z bazy). */
+interface CatalogRepository {
+    val providers: Flow<List<ProviderInfo>>
+
+    /** Etap trwającego pobierania/zapisu listy albo null, gdy nic się nie dzieje. */
+    val importStatus: kotlinx.coroutines.flow.StateFlow<ImportStatus?>
+
+    /** Bajty pobrane w bieżącym imporcie (0 po zakończeniu); UI pokazuje to przy wolnej sieci. */
+    val downloadedBytes: kotlinx.coroutines.flow.StateFlow<Long>
+
+    fun liveChannels(): Flow<List<Channel>>
+
+    fun liveGroups(): Flow<List<String>>
+
+    suspend fun addM3u(
+        name: String,
+        url: String,
+        userAgentId: String? = null,
+    ): AddProviderResult
+
+    suspend fun addXtream(
+        name: String,
+        server: String,
+        username: String,
+        password: String,
+        userAgentId: String? = null,
+    ): AddProviderResult
+
+    /** Adres XMLTV dostawcy (może zawierać dane logowania; trzymany w `SecretStore`). */
+    suspend fun epgUrl(id: ProviderId): String?
+
+    /** Test połączenia: jedno lekkie zapytanie z podanym nagłówkiem; wynik to krótki tekst (bez danych logowania). */
+    suspend fun probeConnection(
+        id: ProviderId,
+        userAgentId: String,
+    ): String
+
+    /** Stan konta u dostawcy (połączenia, ważność); porażka, gdy dostawca nie podaje takich danych albo brak sieci. */
+    suspend fun accountInfo(id: ProviderId): Result<pl.ketchupplayer.tv.core.model.AccountInfo> =
+        Result.failure(UnsupportedOperationException())
+
+    /** Pobiera listę ponownie; przy błędzie zostawia dotychczasowe kanały i zapisuje komunikat błędu. */
+    suspend fun refresh(id: ProviderId): Result<Int>
+
+    suspend fun remove(id: ProviderId)
+
+    suspend fun channel(id: String): Channel?
+
+    /** Id kanałów oznaczonych jako ulubione (przeżywają odświeżenie listy dostawcy). */
+    fun favoriteIds(): Flow<Set<String>>
+
+    /** Ostatnio oglądane kanały na żywo (najnowszy pierwszy); kanały usunięte z katalogu są pomijane. */
+    fun recentChannels(limit: Int): Flow<List<Channel>>
+
+    suspend fun markWatched(channelId: String)
+
+    suspend fun setFavorite(
+        channelId: String,
+        favorite: Boolean,
+    )
+
+    /**
+     * Łańcuch równoważnych kanałów do failoveru: [channelId] pierwszy, potem ten sam kanał (ta sama znormalizowana
+     * nazwa) u pozostałych dostawców wg ich kolejności. Zawsze zawiera przynajmniej wskazany kanał, jeśli istnieje.
+     */
+    suspend fun equivalents(channelId: String): List<Channel>
+
+    /** Rozwiązuje adres odtwarzania kanału przez jego dostawcę. */
+    suspend fun resolveStream(channelId: String): Result<StreamSpec>
+}

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="guide_count">%1$s z %2$s kanałów</string>
+    <string name="guide_live">● NA ŻYWO</string>
+    <string name="guide_title">Na żywo</string>
+    <string name="guide_no_data">Brak danych przewodnika</string>
+    <string name="guide_empty">Brak kanałów. Dodaj listę u dostawców.</string>
+    <string name="guide_open_providers">Dostawcy</string>
+    <string name="guide_groups">Grupy</string>
+    <string name="guide_groups_chip">Grupy:</string>
+    <string name="guide_group_all">Wszystkie</string>
+    <string name="guide_group_favorites">★ Ulubione</string>
+    <string name="guide_group_recent">Ostatnie</string>
+    <string name="guide_group_none">Bez grupy</string>
+    <string name="guide_tab_list">Kanały</string>
+    <string name="guide_tab_grid">Przewodnik</string>
+    <string name="guide_tab_radar">Radar</string>
+    <string name="guide_tab_interests">Moje zainteresowania</string>
+    <string name="guide_interest_hint">Wpisz tytuł, np. Premier League</string>
+    <string name="guide_interest_add">Dodaj</string>
+    <string name="guide_interest_remove_hint">OK na słowie usuwa je z listy</string>
+    <string name="guide_interest_empty">Dodaj słowa kluczowe (film, serial, drużyna), a pokażemy audycje z najbliższej doby.</string>
+    <string name="guide_interest_none">Nic z twojej listy nie leci w ciągu najbliższych 24 godzin.</string>
+    <string name="guide_now_label">TERAZ</string>
+    <string name="guide_next_label">NASTĘPNIE</string>
+    <string name="guide_remaining">jeszcze %1$d min</string>
+    <string name="guide_no_epg">Brak programu dla tego kanału</string>
+    <string name="guide_no_epg_hint">Włącz źródło przewodnika w Ustawienia › Telewizja albo podaj adres EPG listy. Nazwa kanału musi pasować do kanału w przewodniku.</string>
+    <string name="guide_channel_group">Grupa: %1$s</string>
+    <string name="guide_channel_number">Kanał nr %1$d</string>
+    <string name="guide_now">TERAZ · %1$s</string>
+    <string name="guide_later">PÓŹNIEJ · %1$s</string>
+    <string name="guide_radar_top">TOP DNIA</string>
+    <string name="guide_radar_now">Teraz</string>
+    <string name="guide_radar_soon">Za chwilę</string>
+    <string name="guide_radar_evening">Wieczorem</string>
+    <string name="guide_radar_empty">Brak audycji w tym oknie. Sprawdź źródła EPG w Ustawieniach.</string>
+    <string name="guide_preview_loading">Ładowanie podglądu…</string>
+    <string name="guide_preview_error">Podgląd niedostępny · OK otwiera kanał</string>
+</resources>

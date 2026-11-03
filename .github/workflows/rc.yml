@@ -1,0 +1,112 @@
+name: Release candidate
+
+# Kandydat na wydanie (rc): ręcznie z gałęzi dev (Actions -> Release candidate -> Run workflow, wersja np. 0.9.6-rc1).
+# Bramka: dla tego samego SHA workflow CI (w tym emulator) musi być zakończony sukcesem, inaczej nic się nie buduje.
+# Podpis: gdy są sekrety z docs/RELEASE.md, APK jest podpisany kluczem wydania (R8); bez nich budujemy debug
+# (instalowalny na boxie kluczem debug, inny pakiet niż wydanie). Wynik: GitHub pre-release z APK i skryptem testowym.
+#   - wypchnięcie gałęzi `rcbuild/<wersja>` (np. `git push origin dev:rcbuild/0.9.6-rc1`) albo tagu `rc-<wersja>`: działa
+#     także wtedy, gdy ten plik nie jest jeszcze na domyślnej gałęzi (ręczne uruchomienie wymaga pliku na `main`).
+on:
+  push:
+    branches: ["rcbuild/**"]
+    tags: ["rc-*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Wersja kandydata, np. 0.9.6-rc1"
+        required: true
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  rc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+      - name: Bramka - CI zielony na tym kodzie
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Commity bota (baseline Roborazzi, zrzuty emulatora) nie uruchamiają CI, więc je pomijamy: liczy się najbliższy
+          # commit z kodem, o ile wszystko nad nim zmienia wyłącznie zrzuty albo dokumentację (docs/).
+          sha="$(git rev-parse HEAD)"
+          for _ in $(seq 1 10); do
+            result="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${sha}&status=completed&per_page=20" \
+              --jq '[.workflow_runs[] | select(.event == "push")] | sort_by(.created_at) | last | .conclusion // "brak"')"
+            echo "CI dla ${sha}: ${result}"
+            if [ "${result}" = "success" ]; then ok=1; break; fi
+            others="$(git show --name-only --format= "${sha}" | grep -vE '(/src/test/screenshots/|^docs/)' || true)"
+            if [ -n "${others}" ]; then break; fi
+            sha="$(git rev-parse "${sha}^")"
+          done
+          if [ "${ok:-0}" != "1" ]; then
+            echo "::error::CI (z emulatorem) nie jest zielony na kodzie tego commitu. Wydanie rc dopiero po zielonym CI."
+            exit 1
+          fi
+          echo "Bramka OK: CI zielony na ${sha}; wszystkie nowsze commity zmieniają tylko zrzuty i dokumentację."
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Wersja
+        id: ver
+        run: |
+          V="${{ github.event.inputs.version }}"
+          if [ -z "${V}" ]; then V="${GITHUB_REF_NAME#rcbuild/}"; V="${V#rc-}"; fi
+          base="${V%%-*}"
+          IFS=. read -r MAJ MIN PAT <<< "${base}"
+          rc="${V##*rc}"; [ "${rc}" = "${V}" ] && rc=0
+          echo "name=${V}" >> "$GITHUB_OUTPUT"
+          echo "code=$(( (MAJ * 10000 + MIN * 100 + PAT) * 100 + rc ))" >> "$GITHUB_OUTPUT"
+          echo "short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Klucz podpisu (jeśli jest w sekretach)
+        id: sign
+        env:
+          KEYSTORE_B64: ${{ secrets.KETCHUP_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "${KEYSTORE_B64}" ]; then
+            echo "${KEYSTORE_B64}" | base64 -d > "${RUNNER_TEMP}/ketchup.jks"
+            echo "KETCHUP_KEYSTORE_FILE=${RUNNER_TEMP}/ketchup.jks" >> "$GITHUB_ENV"
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Build APK
+        env:
+          KETCHUP_KEYSTORE_PASSWORD: ${{ secrets.KETCHUP_KEYSTORE_PASSWORD }}
+          KETCHUP_KEY_ALIAS: ${{ secrets.KETCHUP_KEY_ALIAS }}
+          KETCHUP_KEY_PASSWORD: ${{ secrets.KETCHUP_KEY_PASSWORD }}
+        run: |
+          args="-PversionName=${{ steps.ver.outputs.name }} -PversionCode=${{ steps.ver.outputs.code }}"
+          if [ "${{ steps.sign.outputs.signed }}" = "true" ]; then
+            ./gradlew :app:assembleRelease ${args}
+            cp app/build/outputs/apk/release/app-release.apk "KetchupPlayer-${{ steps.ver.outputs.name }}-${{ steps.ver.outputs.short }}.apk"
+          else
+            ./gradlew :app:assembleDebug ${args}
+            cp app/build/outputs/apk/debug/app-debug.apk "KetchupPlayer-${{ steps.ver.outputs.name }}-${{ steps.ver.outputs.short }}.apk"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KetchupPlayer-${{ steps.ver.outputs.name }}
+          path: |
+            KetchupPlayer-${{ steps.ver.outputs.name }}-${{ steps.ver.outputs.short }}.apk
+            tools/tvbox/ketchup_tvbox_test.sh
+      - name: GitHub pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.name }}
+          name: Ketchup Player ${{ steps.ver.outputs.name }} (kandydat)
+          prerelease: true
+          target_commitish: ${{ github.sha }}
+          body: |
+            Kandydat na wydanie (${{ github.ref_name }}), commit ${{ steps.ver.outputs.short }}.
+            CI (w tym emulator) zielony na tym commicie. Podpis: ${{ steps.sign.outputs.signed == 'true' && 'klucz wydania' || 'debug (brak sekretów)' }}.
+            Test na boxie: `tools/tvbox/ketchup_tvbox_test.sh` (komendy w docs/TVBOX-TESTY.md).
+          files: |
+            KetchupPlayer-${{ steps.ver.outputs.name }}-${{ steps.ver.outputs.short }}.apk
+            tools/tvbox/ketchup_tvbox_test.sh

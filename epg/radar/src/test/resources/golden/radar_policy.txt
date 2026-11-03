@@ -1,0 +1,82 @@
+rating|<null>|-1
+rating||-1
+rating|bez oceny|-1
+rating|O: 7,5/10|75
+rating|O:7.5/10|75
+rating|Film. O : 10/10|100
+rating|O: 10,0/10|100
+rating|O: 10,5/10|-1
+rating|O: 0/10|0
+rating|xO: 8/10|-1
+rating|Ocena O: 3,2 / 10|32
+rating|o: 9,9/10 dalej|99
+rating|O: 11/10|-1
+rating|O: 5/10 i O: 8/10|50
+rating|-O: 6,1/10|61
+slot|TOP_DAY|-1800000|1800000|true
+slot|TOP_DAY|0|600000|true
+slot|TOP_DAY|-600000|0|false
+slot|TOP_DAY|60000|3600000|true
+slot|TOP_DAY|5400000|7200000|true
+slot|TOP_DAY|5460000|7200000|true
+slot|TOP_DAY|14400000|18000000|true
+slot|TOP_DAY|7200000|10800000|true
+slot|TOP_DAY|7200000|10800001|true
+slot|TOP_DAY|28800000|32400000|true
+slot|TOP_DAY|-25200000|-21600000|false
+slot|TOP_DAY|-25200000|-21599999|false
+slot|TOP_DAY|68400000|72000000|false
+slot|TOP_DAY|60000|60000|false
+slot|TOP_DAY|300000|60000|false
+slot|NOW|-1800000|1800000|true
+slot|NOW|0|600000|true
+slot|NOW|-600000|0|false
+slot|NOW|60000|3600000|false
+slot|NOW|5400000|7200000|false
+slot|NOW|5460000|7200000|false
+slot|NOW|14400000|18000000|false
+slot|NOW|7200000|10800000|false
+slot|NOW|7200000|10800001|false
+slot|NOW|28800000|32400000|false
+slot|NOW|-25200000|-21600000|false
+slot|NOW|-25200000|-21599999|false
+slot|NOW|68400000|72000000|false
+slot|NOW|60000|60000|false
+slot|NOW|300000|60000|false
+slot|SOON|-1800000|1800000|false
+slot|SOON|0|600000|false
+slot|SOON|-600000|0|false
+slot|SOON|60000|3600000|true
+slot|SOON|5400000|7200000|true
+slot|SOON|5460000|7200000|false
+slot|SOON|14400000|18000000|false
+slot|SOON|7200000|10800000|false
+slot|SOON|7200000|10800001|false
+slot|SOON|28800000|32400000|false
+slot|SOON|-25200000|-21600000|false
+slot|SOON|-25200000|-21599999|false
+slot|SOON|68400000|72000000|false
+slot|SOON|60000|60000|false
+slot|SOON|300000|60000|false
+slot|EVENING|-1800000|1800000|false
+slot|EVENING|0|600000|false
+slot|EVENING|-600000|0|false
+slot|EVENING|60000|3600000|false
+slot|EVENING|5400000|7200000|false
+slot|EVENING|5460000|7200000|false
+slot|EVENING|14400000|18000000|true
+slot|EVENING|7200000|10800000|false
+slot|EVENING|7200000|10800001|true
+slot|EVENING|28800000|32400000|false
+slot|EVENING|-25200000|-21600000|false
+slot|EVENING|-25200000|-21599999|false
+slot|EVENING|68400000|72000000|false
+slot|EVENING|60000|60000|false
+slot|EVENING|300000|60000|false
+order|[100, 95, 90, 85, 80, 75, 70, 65, 60, 55]|[1, 1, 1, 2, 2, 3, 3, 4, 4, 5]|0,1,3,4,5,2,6,7,8,9,
+order|[100, 99, 98, 97]|[1, 1, 1, 1]|0,1,2,3,
+order|[100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 5, 4]|[1, 1, 2, 2, 1, 1, 3, 3, 4, 4, 5, 5]|0,1,2,3,4,6,5,7,8,9,10,11,
+order|[100, 50, 49, 48]|[2, 2, 2, 3]|0,1,3,2,
+order|[100, 90]|[0, 0]|0,1,
+order|[]|[]|
+order|[100, 90, 80]|[1, 16, 20]|0,1,2,
