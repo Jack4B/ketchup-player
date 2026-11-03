@@ -3,6 +3,7 @@ package pl.ketchupplayer.tv.core.network
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.SocketPolicy
 import okio.Buffer
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -178,5 +179,39 @@ class OkHttpTextFetcherTest {
                 503,
                 (fetcher().fetchLines(url()) { it.count() }.exceptionOrNull() as NetworkException.Http).code,
             )
+        }
+
+    private val m3u = (1..400).joinToString("\n", prefix = "#EXTM3U\n") { "#EXTINF:-1,Kanal $it\nhttp://x/$it" }
+
+    /** Panele składające listę w locie często zrywają połączenie; inne odtwarzacze biorą to, co dotarło. */
+    @Test
+    fun `lista urwana w polowie daje to co dotarlo zamiast bledu`() =
+        runTest {
+            server.enqueue(
+                MockResponse().setBody(m3u).setSocketPolicy(SocketPolicy.DISCONNECT_DURING_RESPONSE_BODY),
+            )
+            val lines = fetcher(10_000_000).fetchLines(url()) { it.toList() }.getOrThrow()
+            assertTrue("dotarlo ${lines.size} linii", lines.size in 100..799)
+            assertEquals("#EXTM3U", lines.first())
+        }
+
+    @Test
+    fun `lista gzip urwana w polowie daje to co dotarlo zamiast bledu`() =
+        runTest {
+            val gz = ByteArrayOutputStream().also { o -> GZIPOutputStream(o).use { it.write(m3u.toByteArray()) } }
+            server.enqueue(
+                MockResponse()
+                    .setBody(Buffer().write(gz.toByteArray()))
+                    .setSocketPolicy(SocketPolicy.DISCONNECT_DURING_RESPONSE_BODY),
+            )
+            val lines = fetcher(10_000_000).fetchLines(url()) { it.toList() }.getOrThrow()
+            assertEquals("#EXTM3U", lines.first())
+        }
+
+    @Test
+    fun `urwanie bez zadnych danych nadal jest bledem`() =
+        runTest {
+            server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST))
+            assertTrue(fetcher().fetchLines(url()) { it.toList() }.isFailure)
         }
 }

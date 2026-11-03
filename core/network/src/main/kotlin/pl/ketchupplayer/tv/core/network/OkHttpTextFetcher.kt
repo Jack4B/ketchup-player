@@ -114,7 +114,7 @@ class OkHttpTextFetcher(
                     val body = response.body ?: return@withContext Result.success(block(emptySequence()))
                     val raw = BufferedInputStream(LimitedInputStream(body.byteStream(), streamMaxBytes, meter), BUFFER)
                     // Drugi limit liczy bajty po rozpakowaniu, żeby „bomba gzip” też została ucięta.
-                    val counted = LimitedInputStream(maybeGunzip(raw), streamMaxBytes)
+                    val counted = TruncationTolerantInputStream(LimitedInputStream(maybeGunzip(raw), streamMaxBytes))
                     counted.bufferedReader(Charsets.UTF_8).use { reader ->
                         Result.success(block(reader.lineSequence()))
                     }
@@ -205,6 +205,40 @@ private suspend fun Call.await(): Response =
             },
         )
     }
+
+/**
+ * Panele IPTV składają listę w locie i często zrywają połączenie przed czasem albo podają zły Content-Length;
+ * inne odtwarzacze biorą wtedy to, co dotarło. Błąd wejścia/wyjścia PO odebraniu pierwszych bajtów kończy strumień
+ * (ucięta ostatnia linia jest odrzucana przez parser), a bez żadnych danych nadal jest błędem. Przekroczenie limitu
+ * ([NetworkException]) przechodzi bez zmian.
+ */
+private class TruncationTolerantInputStream(
+    private val delegate: InputStream,
+) : InputStream() {
+    private var received = false
+
+    override fun read(): Int =
+        try {
+            delegate.read().also { if (it >= 0) received = true }
+        } catch (e: IOException) {
+            endOrThrow(e)
+        }
+
+    override fun read(
+        b: ByteArray,
+        off: Int,
+        len: Int,
+    ): Int =
+        try {
+            delegate.read(b, off, len).also { if (it > 0) received = true }
+        } catch (e: IOException) {
+            endOrThrow(e)
+        }
+
+    override fun close() = delegate.close()
+
+    private fun endOrThrow(e: IOException): Int = if (received) -1 else throw e
+}
 
 /** Strumień, który po przekroczeniu [limit] bajtów rzuca [NetworkException.TooLarge]. */
 private class LimitedInputStream(
