@@ -13,6 +13,13 @@ import java.util.TimeZone
 class ProviderServer {
     /** Ścieżki wszystkich odebranych żądań (do sprawdzania, ile razy aplikacja pytała dany serwis). */
     val requestedPaths = java.util.concurrent.CopyOnWriteArrayList<String>()
+    private val active =
+        java.util.concurrent.atomic
+            .AtomicInteger(0)
+
+    /** Największa liczba żądań obsługiwanych naraz (panele IPTV blokują drugie połączenie z konta, np. błędem 444). */
+    @Volatile var maxConcurrent = 0
+        private set
     private val byteRoutes = java.util.concurrent.ConcurrentHashMap<String, ByteArray>()
     private val routes = java.util.concurrent.ConcurrentHashMap<String, (RecordedRequest) -> String>()
     private val server =
@@ -22,6 +29,19 @@ class ProviderServer {
                     override fun dispatch(request: RecordedRequest): MockResponse {
                         val path = request.path.orEmpty().substringBefore('?')
                         requestedPaths += path
+                        val now = active.incrementAndGet()
+                        if (now > maxConcurrent) maxConcurrent = now
+                        try {
+                            return respond(request, path)
+                        } finally {
+                            active.decrementAndGet()
+                        }
+                    }
+
+                    private fun respond(
+                        request: RecordedRequest,
+                        path: String,
+                    ): MockResponse {
                         byteRoutes[path]?.let { return MockResponse().setBody(okio.Buffer().write(it)) }
                         // Klucz „ścieżka?action” (API Xtream) ma pierwszeństwo przed samą ścieżką.
                         val action = request.requestUrl?.queryParameter("action")

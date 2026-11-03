@@ -77,10 +77,21 @@ class RoomEpgRepository
             val matched = HashSet<String>()
             val context = currentCoroutineContext()
             for (url in urls) {
+                var yielded = false
                 val result =
-                    streams.open(
-                        url,
-                    ) { input -> importStream(input, matcher, now, matched) { context.isActive } }
+                    streams.open(url) { input ->
+                        // Czeka lista z tego samego konta: EPG oddaje połączenie i spróbuje później.
+                        val count =
+                            importStream(input, matcher, now, matched) {
+                                (
+                                    context.isActive &&
+                                        !pl.ketchupplayer.tv.core.network.HostGate
+                                            .contended(url)
+                                ).also { ok -> if (!ok) yielded = true }
+                            }
+                        if (yielded) throw java.io.IOException("EPG ustępuje liście z tego samego konta")
+                        count
+                    }
                 result.onSuccess { imported += it }.onFailure { failed++ }
             }
             if (failed == urls.size) {

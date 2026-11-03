@@ -83,23 +83,26 @@ class OkHttpTextFetcher(
         url: String,
         block: (InputStream) -> T,
     ): Result<T> =
-        withContext(Dispatchers.IO) {
-            try {
-                streamClient.newCall(Request.Builder().url(url).build()).execute().use { response ->
-                    if (!response.isSuccessful) return@withContext Result.failure(response.toHttpFailure())
-                    val body = response.body ?: return@withContext Result.success(block("".byteInputStream()))
-                    val raw = BufferedInputStream(LimitedInputStream(body.byteStream(), streamMaxBytes, meter), BUFFER)
-                    val counted = LimitedInputStream(maybeGunzip(raw), streamMaxBytes)
-                    counted.use { Result.success(block(it)) }
+        HostGate.exclusive(url) {
+            withContext(Dispatchers.IO) {
+                try {
+                    streamClient.newCall(Request.Builder().url(url).build()).execute().use { response ->
+                        if (!response.isSuccessful) return@withContext Result.failure(response.toHttpFailure())
+                        val body = response.body ?: return@withContext Result.success(block("".byteInputStream()))
+                        val raw =
+                            BufferedInputStream(LimitedInputStream(body.byteStream(), streamMaxBytes, meter), BUFFER)
+                        val counted = LimitedInputStream(maybeGunzip(raw), streamMaxBytes)
+                        counted.use { Result.success(block(it)) }
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: NetworkException) {
+                    Result.failure(e)
+                } catch (e: IOException) {
+                    Result.failure(NetworkException.Io(e))
+                } catch (e: IllegalArgumentException) {
+                    Result.failure(NetworkException.Io(e))
                 }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: NetworkException) {
-                Result.failure(e)
-            } catch (e: IOException) {
-                Result.failure(NetworkException.Io(e))
-            } catch (e: IllegalArgumentException) {
-                Result.failure(NetworkException.Io(e))
             }
         }
 
@@ -107,26 +110,30 @@ class OkHttpTextFetcher(
         url: String,
         block: (Sequence<String>) -> T,
     ): Result<T> =
-        withContext(Dispatchers.IO) {
-            try {
-                streamClient.newCall(Request.Builder().url(url).build()).execute().use { response ->
-                    if (!response.isSuccessful) return@withContext Result.failure(response.toHttpFailure())
-                    val body = response.body ?: return@withContext Result.success(block(emptySequence()))
-                    val raw = BufferedInputStream(LimitedInputStream(body.byteStream(), streamMaxBytes, meter), BUFFER)
-                    // Drugi limit liczy bajty po rozpakowaniu, żeby „bomba gzip” też została ucięta.
-                    val counted = TruncationTolerantInputStream(LimitedInputStream(maybeGunzip(raw), streamMaxBytes))
-                    counted.bufferedReader(Charsets.UTF_8).use { reader ->
-                        Result.success(block(reader.lineSequence()))
+        HostGate.exclusive(url) {
+            withContext(Dispatchers.IO) {
+                try {
+                    streamClient.newCall(Request.Builder().url(url).build()).execute().use { response ->
+                        if (!response.isSuccessful) return@withContext Result.failure(response.toHttpFailure())
+                        val body = response.body ?: return@withContext Result.success(block(emptySequence()))
+                        val raw =
+                            BufferedInputStream(LimitedInputStream(body.byteStream(), streamMaxBytes, meter), BUFFER)
+                        // Drugi limit liczy bajty po rozpakowaniu, żeby „bomba gzip” też została ucięta.
+                        val counted =
+                            TruncationTolerantInputStream(LimitedInputStream(maybeGunzip(raw), streamMaxBytes))
+                        counted.bufferedReader(Charsets.UTF_8).use { reader ->
+                            Result.success(block(reader.lineSequence()))
+                        }
                     }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: NetworkException) {
+                    Result.failure(e)
+                } catch (e: IOException) {
+                    Result.failure(NetworkException.Io(e))
+                } catch (e: IllegalArgumentException) {
+                    Result.failure(NetworkException.Io(e))
                 }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: NetworkException) {
-                Result.failure(e)
-            } catch (e: IOException) {
-                Result.failure(NetworkException.Io(e))
-            } catch (e: IllegalArgumentException) {
-                Result.failure(NetworkException.Io(e))
             }
         }
 

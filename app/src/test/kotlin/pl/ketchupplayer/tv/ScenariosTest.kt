@@ -388,6 +388,36 @@ class ScenariosTest {
         waitForText("jeszcze", substring = true)
     }
 
+    /**
+     * Raport z boxa 3.11: błąd 444 przy wczytywaniu listy. Panele IPTV dopuszczają zwykle jedno połączenie na konto i
+     * blokują drugie, a EPG z `xmltv.php` tego samego konta ruszał w tle zaraz po dodaniu listy. Ruch do jednego
+     * serwera nie może się nakładać: kolejna lista czeka, aż skończy się pobieranie EPG.
+     */
+    @Test
+    fun listaIEpgZTegoSamegoKontaNieLaczaSieRownoczesnie() {
+        val host = "http://127.0.0.1:${server.port}"
+        server.serve("/get.php") {
+            "#EXTM3U\n#EXTINF:-1 tvg-id=\"TVN24.pl\" group-title=\"Info\",PL| TVN 24\n$host/tvn24.m3u8\n"
+        }
+        server.serve("/xmltv.php") {
+            Thread.sleep(slowEpgMs)
+            ListFactory.xmltvNow("TVN24.pl", "Fakty", "Dzień")
+        }
+        server.serve("/b.m3u") { "#EXTM3U\n#EXTINF:-1 group-title=\"X\",Kanal B\n$host/b.m3u8\n" }
+        runBlocking {
+            val url = server.url("/get.php?username=jan&password=tajne&type=m3u_plus")
+            assertTrue(catalog.addM3u("Panel", url) is AddProviderResult.Added)
+        }
+        waitFor(timeoutMs = BIG_WAIT_MS) { server.requestedPaths.any { it == "/xmltv.php" } } // EPG ruszył w tle
+        // Dodanie drugiej listy w osobnym wątku, a test pompuje pętlę główną (zwolnienie bramki po EPG tego wymaga).
+        var added: AddProviderResult? = null
+        val adder = Thread { added = runBlocking { catalog.addM3u("B", server.url("/b.m3u")) } }.also { it.start() }
+        waitFor(timeoutMs = BIG_WAIT_MS) { added != null }
+        adder.join()
+        assertTrue(added is AddProviderResult.Added)
+        assertEquals("żądania do jednego serwera nie mogą się nakładać", 1, server.maxConcurrent)
+    }
+
     /** Kanał bez żadnego EPG: panel nie zostaje pusty, mówi, czego brakuje i gdzie to włączyć. */
     @Test
     fun naZywoBezEpgPokazujeKarteZPodpowiedzia() {
@@ -1572,6 +1602,8 @@ class ScenariosTest {
         waitForText("Matrix")
         waitForText("IMDb 8,7", timeoutMs = BIG_WAIT_MS)
     }
+
+    private val slowEpgMs = 2_500L
 
     private val invalidKeyBody = """{"Response":"False","Error":"Invalid API key!"}"""
 
