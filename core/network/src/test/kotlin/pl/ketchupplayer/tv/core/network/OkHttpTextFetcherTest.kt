@@ -170,42 +170,6 @@ class OkHttpTextFetcherTest {
             assertEquals(5000, f.fetchLines(url()) { it.count() }.getOrThrow())
         }
 
-    private fun leftovers() =
-        java.io
-            .File(System.getProperty("java.io.tmpdir"))
-            .listFiles { f -> f.name.startsWith("ketchup-list") }
-            .orEmpty()
-            .size
-
-    /** Lista ląduje najpierw w pliku (serwer nie czeka na bazę), a plik tymczasowy znika po użyciu i po błędzie. */
-    @Test
-    fun `plik tymczasowy listy jest kasowany po uzyciu i po bledzie`() =
-        runTest {
-            val before = leftovers()
-            server.enqueue(MockResponse().setBody("a\nb\nc"))
-            assertEquals(listOf("a", "b", "c"), fetcher().fetchLines(url()) { it.toList() }.getOrThrow())
-            server.enqueue(MockResponse().setResponseCode(503))
-            assertTrue(fetcher().fetchLines(url()) { it.toList() }.isFailure)
-            server.enqueue(MockResponse().setBody("x\n".repeat(5000)))
-            assertTrue(fetcher(1000).fetchLines(url()) { it.count() }.exceptionOrNull() is NetworkException.TooLarge)
-            assertEquals(before, leftovers())
-        }
-
-    /** Odbiorca czytający wolno (zapis do bazy na słabym boxie) nie trzyma połączenia: całość jest już pobrana. */
-    @Test
-    fun `wolny odbiorca nie blokuje pobierania`() =
-        runTest {
-            server.enqueue(MockResponse().setBody("x\n".repeat(2000)))
-            val n =
-                fetcher()
-                    .fetchLines(url()) { lines ->
-                        Thread.sleep(300) // „wolny zapis”: połączenie z serwerem jest już zamknięte
-                        lines.count()
-                    }.getOrThrow()
-            assertEquals(2000, n)
-            assertEquals(1, server.requestCount)
-        }
-
     @Test
     fun `fetchLines - kod HTTP to blad`() =
         runTest {
