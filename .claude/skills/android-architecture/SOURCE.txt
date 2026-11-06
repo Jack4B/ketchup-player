@@ -1,0 +1,1 @@
+Source: https://github.com/new-silvermoon/awesome-android-agent-skills/tree/HEAD/.github/skills/architecture/android-architecture
