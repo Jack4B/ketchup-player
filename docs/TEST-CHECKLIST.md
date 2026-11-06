@@ -1,6 +1,6 @@
 # Lista testów beta: Ketchup Player (TV)
 
-Wersja: beta 0.2 (Live TV, Filmy, Seriale, wygląd wg makiet v3). Co jest sprawdzane automatycznie w CI, a co trzeba sprawdzić ręcznie na prawdziwym boxie.
+Wersja: beta 0.2 (Live TV, Filmy, Seriale, wygląd wg języka v5 / makiet v5.1). Co jest sprawdzane automatycznie w CI, a co trzeba sprawdzić ręcznie na prawdziwym boxie.
 Oznaczenia: ✅ pokryte automatycznie, 🖐 do sprawdzenia ręcznie na TV, ⚠ znane ograniczenie.
 
 ## Przygotowanie
