@@ -17,6 +17,13 @@
 - Wbudowany indeks filmów i seriali od 1980 (asset `core/data/src/main/assets/film_index.db`): dane z Wikidata (CC0), generowane skryptami `tools/wikidata/` (`fetch_films.py` -> `fetch_labels.py` -> `pack_index.py`). Daje offline id IMDb/TMDB i stronę plwiki, więc opis i oceny idą po id (mniej zapytań, trafienie pewne). Normalizacja tytułu w `FilmTitles.normalize` i w `pack_index.py` musi być identyczna (test golden). Oceny IMDb (kolumny `rating`/`votes`, dziesiąte części) pochodzą z publicznego pliku IMDb `title.ratings.tsv.gz` (datasets.imdbws.com, użytek osobisty i niekomercyjny; `pack_index.py` trzeci argument): to migawka z dnia budowy, rezerwa gdy brak kluczy lub API nie odpowiada (API ma pierwszeństwo). Etykiety: `fetch_labels_sparql.py` (szybkie, SPARQL VALUES).
 - UI: skill `.claude/skills/ketchup-design-taste` (rozpoznanie, pierwszeństwo, antywzorce, ocena 0-100, pętla poprawek) i `docs/DESIGN-LOG.md` (jedna linia na decyzję). Nowy lub zmieniony ekran: przejdź kroki skilla, zero blokerów.
 
+## Workflow sesji
+
+- Pętla mikro-PR, bramki 8 kroków, Cloud (bez boxa/adb), reguły PR→`dev`: skill `.claude/skills/ketchup-workflow` (`ketchup-workflow`).
+- Pamięć checklist / APK / box: skill `ketchup-pamiec` + checkboxy w `docs/PLAN-1.0.md` i `docs/PLAN-FINALNY.md` (to status między sesjami).
+- Komendy: `/next-step` — wybór punktu i plan mikro-PR (czekaj na OK); `/verify` — spotless/test/assemble lub CI gdy brak SDK.
+- Jedna sesja ≈ jeden mikro-PR. Nigdy `main`, nigdy force-push, nie merguj bez właściciela. Po domknięciu: odhacz plan, krótki raport (format w skillu).
+
 ## Mapa kodu i gałęzie (stan 6.11.2026)
 
 Kod Kotlin/Compose jest na `dev` (i kopiach `rcbuild/*`). `main` to zaległy pień dokumentacji (0 plików `.kt`) — nie zgaduj, że „nie ma aplikacji”.
