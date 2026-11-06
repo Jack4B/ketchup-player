@@ -42,14 +42,82 @@ Płytki klon z `fetch` tylko `main` ukrywa `dev`. Zawsze: `git ls-remote --heads
 - Sekrety produkcji: `DataStoreSecretStore` + AES-256-GCM i klucz w Android Keystore (komentarz o `InMemorySecretStore` w `SecretStore.kt` jest nieaktualny).
 - Zero sekretów w repo. Klucze API tylko z Ustawień albo env CI.
 
-## Plan pracy (od istniejącego kodu — nie od Fazy 0)
+## Plan finalny (zaakceptowany 2026-11-06)
 
-Faza 0 (Gradle, moduły, CI) jest zrobiona.
-
-1. Domknięcie 1.0 według `docs/PLAN-1.0.md`: jakość na boxie (fokus pilota po danych), brakujące testy emulatora (E1/E2/E5, P1), wielościeżkowe audio/napisy, pomiar płynności, podpisany APK (`docs/RELEASE.md`).
-2. Szlif v5 w UI (luki DESIGN-LOG): pigułki kart list, pasek zaznaczenia w Filmach, szkło OSD, ambient, tokeny typografii/odstępów; Profil nie zostaje na `ComingSoon` bez decyzji.
-3. Bezpieczeństwo P1 (pinowanie HTTPS metadanych, URL EPG z hasłem w SecretStore).
-4. 1.1: profile + PIN, przypomnienia Radaru, scoring między sesjami, Stalker, backup legacy.
-5. 2.0: telefon jako pełny obywatel; później Cast/VPN/NAS i nagrywanie.
+Pełna treść z zakresem, miejscami w kodzie, DoD, testami, nakładem i zależnościami: `docs/PLAN-FINALNY.md`. Start od istniejącego kodu na `dev` — **bez Fazy 0**. Nakład: S ≈ do 1 dnia, M ≈ kilka dni, L ≈ tydzień+.
 
 Nie przepisywać silnika poza `PlayerController`. Nie wklejać plików BK Player Next. Nie force-pushować, nie pushować na `main`, nie scalać bez właściciela.
+
+### imdb-db i licencja IMDb
+
+Źródło: [bbilly1/imdb-db](https://github.com/bbilly1/imdb-db) (FastAPI + PostgreSQL, ingest oficjalnych TSV z [datasets.imdbws.com](https://datasets.imdbws.com/), nie scraper imdb.com). Datasety IMDb są wyłącznie na **użytek osobisty i niekomercyjny** (zakaz scrapowania strony, zakaz publikowania ponownie / odsprzedaży / przerabiania na publiczną bazę filmów; wymagane wskazanie źródła: *Information courtesy of IMDb (https://www.imdb.com). Used with permission.*).
+
+- **Wolno:** użytkownik sam stawia serwis na swoim serwerze/NAS; aplikacja na jego TV czyta **jego** instancję (opcja C).
+- **Nie wolno:** publicznego proxy Ketchupa z danymi IMDb, bundle’a pełnej bazy w sklepie, commitu TSV do repo, scrapowania imdb.com.
+- **Nie powiększamy** szarej strefy migawki `film_index.db` (`pack_index.py` + `title.ratings.tsv.gz` w APK). Indeks identyfikatorów z Wikidaty (CC0) zostaje; pełniejszego IMDb do APK nie pakujemy.
+- Na TV / w Room pełna baza (~2 GB+ już przy `basics`+`ratings`) jest odrzucona. Rozszerzanie migawki w APK jako ścieżka imdb-db — nie.
+- Integracja: opcjonalne źródło `ImdbDbSource` w `MetadataSources`, wyłączone do wpisania URL. Merge: `imdb = omdb ?: mdblist ?: imdbDb ?: indexImdb`. Token w `SecretStore`. Attribution na pigułce i w Ustawieniach / O aplikacji.
+
+### Krok 1 — Domknięcie jakości 1.0 na boxie (L)
+
+- **Zakres:** `PLAN-1.0.md` 1.1, 1.2, 1.3 (D-pad Szukaj / Moja lista), 1.5 (podgląd Na żywo na urządzeniu). Analiza `keyguard.txt` / `getevent.txt`, raport z boxa (rc 0.9.11).
+- **Miejsca:** `MainActivity` / `KeyRepeatGuard`, `feature/vod` (tryby SEARCH/MYLIST), testy D-pad analogiczne do siatki Filmów, `tools/tvbox/`, `docs/PLAN-1.0.md`.
+- **DoD:** Codzienne ścieżki (import, EPG, live, VOD, player, ustawienia, BACK) bez znanych blokerów na boxie; skoki fokusu naprawione albo świadomie zostawione z danymi.
+- **Testy:** Istniejące E2E + nowe D-pad Szukaj/Moja lista; `ketchup_tvbox_test.sh` bez FAIL na ścieżkach rdzenia.
+- **Zależności:** dostęp do boxa i logów pilota.
+
+### Krok 2 — Bramka emulatora i odtwarzacz wielościeżkowy (M–L)
+
+- **Zakres:** `PLAN-1.0` 1.7 i 1.11 — E1/E2/E5, P1 w `docs/PLAN-TESTY-EMULATOR.md`; HLS z ffmpeg (audio/napisy); ewentualne poprawki selekcji ścieżek w `player/engine`.
+- **Miejsca:** `.github/scripts/emulator-smoke.sh`, `ExoPlayerController`, `PlayerTracks`, `feature/player-ui`.
+- **DoD:** Nazwane scenariusze E/P zielone w CI na tym samym SHA co kandydat; ścieżki audio/napisów przełączalne na strumieniu testowym.
+- **Testy:** Emulator CI + unit `TrackLabels` / `PlayerStateMapper` jeśli zmieni się mapowanie.
+- **Zależności:** krok 1 nie blokuje startu; blokuje wydanie 1.0.
+
+### Krok 3 — Wydajność na urządzeniu (M)
+
+- **Zakres:** `PLAN-1.0` 1.8 (płynność VOD i otwarcie playera); import: kanały najpierw, VOD w tle (jeśli jeszcze nie na boxie). 2.3 (LazyLayout EPG, prefetch Coil) tylko jeśli pomiary pokażą potrzebę.
+- **Miejsca:** `core/data` import katalogu, Coil w `feature/vod` / `guide`, ewentualnie siatka EPG.
+- **DoD:** Zapisane liczby z boxa i poprawka największego zacięcia albo świadoma decyzja „wystarczy”.
+- **Testy:** Regresja importu (`M3uPerformanceTest` / scenariusze); brak nowego jank w LayoutAudit.
+- **Zależności:** krok 1 (żeby mierzyć realne dane).
+
+### Krok 4 — Wydanie 1.0 (M)
+
+- **Zakres:** 2.1 keystore i sekrety (`docs/RELEASE.md`), 2.2 baseline profile na urządzeniu, 2.5 pełny przebieg CI+emulator+skrypt boxa+checklista, 2.6 tag `1.0.0`.
+- **Miejsca:** `.github/workflows/release.yml`, `app/build.gradle.kts` signing, Macrobenchmark jeśli wejdzie.
+- **DoD:** Podpisany APK (nie debug), zielone CI na SHA tagu, numer biegu CI przy APK, checklista ręczna odhaczona.
+- **Testy:** Brama `rc.yml` / `release.yml` + `docs/TEST-CHECKLIST.md`.
+- **Zależności:** kroki 1–2 (i 3, jeśli wyszedł bloker wydajności).
+
+### Krok 5 — Szlif v5 / v5.1 (M–L; równolegle do 3–4, nie blokuje rc jakości)
+
+- **Zakres:** Luki DESIGN-LOG: pigułki kart list, pasek zaznaczenia w Filmach, szkło OSD, ambient z plakatu, pełniejsze rozmycie, tokeny typografii/odstępów; decyzja o `ComingSoon` profilu. PR #8 niesie makiety v5.1 i ten plan; merge zostaje decyzją właściciela.
+- **Miejsca:** `core/designsystem`, `feature/vod`, `feature/player-ui`, `feature/home`, `app/.../AppNavigation.kt`, `docs/mockups/v5.1/`, DESIGN-LOG.
+- **DoD:** Zrzuty Roborazzi zgodne z v5.1 (Morski); LayoutAudit przechodzi; zero nowych literałów palety obok `Palette.kt`.
+- **Testy:** Roborazzi, scenariusze układu, testy Appearance/ThemePicker.
+- **Zależności:** zaakceptowane v5.1 (PR #8).
+
+### Krok 6 — Bezpieczeństwo P1 (M)
+
+- **Zakres:** (a) własne URL-e EPG z `password=` wyjąć z JSON DataStore do `SecretStore` (`DataStoreEpgSourcesRepository`); (b) w `network_security_config.xml` wymusić HTTPS dla hostów metadanych: omdbapi.com, trakt.tv, mdblist.com, wikipedia.org / wikimedia.org, iptv-org (github.io) — obok już pinowanego TMDB; (c) zaktualizować nieaktualny komentarz w `SecretStore.kt`.
+- **Miejsca:** `core/data/.../epg/DataStoreEpgSourcesRepository.kt`, `app/src/main/res/xml/network_security_config.xml`, `core/security/SecretStore.kt`.
+- **DoD:** Custom EPG z credentials nie leży jawnym tekstem w preferencjach; metadane nie zejdą na HTTP; testy repozytorium EPG i (jeśli są) konfiguracji sieci.
+- **Testy:** `EpgSourcesRepositoryTest`; regresja importu XMLTV Xtream (URL z loginem już jest w SecretStore katalogu).
+- **Zależności:** niezależne od imdb-db; warto przed krokiem 7 (ten sam config sieci).
+
+### Krok 7 — Integracja imdb-db (M; po 1.0 albo równolegle do szlifu, nie w ścieżce krytycznej wydania)
+
+- **Zakres:** ADR + krótka instrukcja Docker (tylko `basics`+`ratings`, cron ingest, `API_TOKEN`). Pole URL + token w Ustawieniach → Oceny i opisy; `ImdbDbSource` (OkHttp, HostGate, timeout); `GET /api/titles/{tconst}` i fallback search; wpisanie w `MetadataSources` / `mergeRatings`; podpis courtesy w UI. **Nie** commitujemy datasetów ani forka serwisu, **nie** powiększamy `film_index.db`.
+- **Miejsca:** `core/data/.../metadata/ImdbDbSource.kt` (nowy), `MetadataService.kt`, `MetadataEndpoints.kt` / `DataModule.kt`, `ImdbDbSettings` w DataStore+SecretStore, `MetadataSettingsScreen.kt` / ViewModel, `network_security_config.xml`, strings (attribution).
+- **DoD:** Bez URL źródło milczy. Z URL i `tt…` z indeksu pigułka IMDb wypełnia się bez OMDb. Token nie w logach. Dokument licencyjny: osobisty self-host, zakaz publicznego proxy, zakaz scrapingu imdb.com.
+- **Testy:** MockWebServer (`ImdbDbSourceTest`): tconst, fallback title+year, 404, zły token, brak hosta; golden merge (OMDb > imdb-db > migawka indeksu).
+- **Zależności:** krok 6 (sieć/sekrety); działający `FilmIndex` (już jest).
+
+### Krok 8 — 1.1: profile i PIN (L)
+
+- **Zakres:** Profile z PIN-em (ekran z makiet v5.1), hash w `SecretStore` (PBKDF2), przypomnienia Radaru (1.10), scoring między sesjami, Stalker, backup legacy (BKP/BKL), zdrowie EPG. Telefon = 2.0. Nagrywanie / Cast / VPN / NAS — później.
+- **Miejsca:** `:feature:profiles`, nawigacja `Section.PROFILE` / `ComingSoon`, `core/security`, WorkManager/powiadomienia dla Radaru.
+- **DoD:** PIN blokuje profil dziecięcy (D-pad), sekrety nie w Room jawnym tekstem, testy PIN (bez wektorów ataku w logach), scenariusze E2E.
+- **Testy:** unit hash/verify, UI PIN, brak wycieku w `Redactor`.
+- **Zależności:** po 1.0 (krok 4); makieta PIN już jest w v5.1.
