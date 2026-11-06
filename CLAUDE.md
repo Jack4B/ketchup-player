@@ -1,13 +1,13 @@
 # Ketchup Player — zasady pracy dla agentów
 
-Status produktu na 6.11.2026 (Europe/Warsaw): **repozytorium projektowe**. Jest konspekt, branding i makiety. **Nie ma jeszcze projektu Gradle ani kodu Kotlina.** Plan budowy poniżej obowiązuje **dopiero po akceptacji makiet v4 przez właściciela** (`status: mockups pending approval`).
+Status produktu na 6.11.2026 (Europe/Warsaw): **repozytorium projektowe**. Jest konspekt, branding i zaakceptowane makiety v4. **Nie ma jeszcze projektu Gradle ani kodu Kotlina.** `status: mockups v4 approved 2026-11-06`. Plan budowy (Faza 0 na początku) obowiązuje.
 
 ## 1. Stan repozytorium (aktualny — nie zgaduj)
 
 - Brak `settings.gradle.kts`, `gradlew`, modułów `:app`, plików `.kt`. **Nie wołaj** `./gradlew` — komenda nie istnieje, dopóki Faza 0 nie wejdzie na `main`.
 - Wiążąca specyfikacja produktu: `docs/KONSPEKT.md` (logika, dostawcy, bezpieczeństwo, port polityk).
 - **Wygląd i tokeny:** obowiązują makiety **v4** (`docs/mockups/v4/`), nie paleta z logo w §4.0 konspektu i nie appendix „Motywy kolorystyczne” (Turkus/Szary/Bursztyn — to v2). `CLAUDE.md` + `docs/mockups/v4/NOTATKI-v4.md` wygrywają przy konflikcie kolorystycznym, aż konspekt zostanie zaktualizowany ADR-em.
-- v3 (`docs/mockups/v3-*`) to historia. Zawiera plakaty z Wikimedia / rozpoznawalne kadry — **nie używać** w implementacji, screenshotach sklepowych ani nowych makietach.
+- v3: w repo zostają tylko notatki (`docs/mockups/NOTATKI-v3.md`). PNG i HTML v3 z rozpoznawalnymi plakatami usunięto 6.11.2026. Implementować wyłącznie v4.
 - Logo: `branding/source/ketchup-player-logo.jpg` (2752×1536). Nie projektować nowego. Wariantów `branding/derived/` jeszcze nie ma (zadanie Fazy B).
 - Zakaz wklejania plików ze starego BK Player Next.
 - Zero sekretów w repo. Debrid / scrapery / URL resolver: poza zakresem (poza zaplanowanym, wyłączalnym modułem Teleman z §13.3).
@@ -152,7 +152,7 @@ v3 był świetnym kierunkiem 10-foot UI, ale nie nadawał się jako jedyne źró
 
 ## 8. Plan budowy aplikacji (po akceptacji v4)
 
-Nie zaczynaj Fazy 0 ani F, dopóki właściciel nie zaakceptuje makiet v4. Po akceptacji zmień ten status na `mockups accepted` i trzymaj PNG v4 jako referencję Roborazzi.
+Makiety v4 są zaakceptowane (2026-11-06). PNG v4 to referencja Roborazzi. Następny krok inżynierski: **Faza 0** (Gradle + CI).
 
 ### Faza 0 — Fundament repo (ok. 1 tydz.)
 

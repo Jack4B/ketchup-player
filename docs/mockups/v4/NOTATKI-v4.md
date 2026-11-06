@@ -1,6 +1,6 @@
 # Ketchup Player — makiety v4
 
-Data: 6.11.2026 (Europe/Warsaw). Obowiązujące makiety do akceptacji właściciela. v3 zostaje w `docs/mockups/v3-*` jako historia (z plakatami Wikimedia — nie używać w implementacji ani w materiałach sklepowych).
+Data: 6.11.2026 (Europe/Warsaw). **Zaakceptowane** przez właściciela 6.11.2026. Obowiązujące makiety implementacyjne. Zrzuty i HTML v3 z plakatami usunięto z repozytorium; notatki v3 zostają jako historia decyzji o motywach.
 
 ## Decyzja o palecie (jedno źródło prawdy)
 
@@ -62,4 +62,4 @@ python3 docs/mockups/v4/generate.py
 python3 docs/mockups/v4/screenshot.py
 ```
 
-Status: **oczekuje na akceptację właściciela**. Po akceptacji te PNG są referencją dla Roborazzi i Fazy F.
+Status: **zaakceptowane 6.11.2026**. Te PNG są referencją dla Roborazzi i Fazy F.

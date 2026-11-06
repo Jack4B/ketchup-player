@@ -1,4 +1,7 @@
 # Ketchup Player — makiety v3: notatki (Lumen)
+
+> **Aktualizacja 6.11.2026:** makiety obowiązujące to **v4** (`docs/mockups/v4/`). Pliki PNG i HTML v3 (z zaślepkami plakatów z Wikimedia / rozpoznawalnymi kadrami) zostały usunięte z repozytorium. Poniższe notatki zostają jako zapis decyzji o trzech motywach i kontrastach; nie implementować wyglądu z v3 ani nie przywracać tamtych obrazów.
+
 Data: 31.10.2026. Uwaga do v2: to był jeden szary motyw z różnymi akcentami, a akcent ma być osobnym wyborem w Ustawieniach. W v3 są **3 pełne motywy** (tła, panele, szyna, siatka EPG, nakładki OSD, tony tekstu, promienie zaokrągleń) i **osobny wybór „Kolor akcentu”**. v1 i v2 zostają na Dysku.
 
 > ⚠ **PLAKATY SĄ TYMCZASOWYMI ZAŚLEPKAMI Z WIKIMEDIA COMMONS — TYLKO DO UŻYTKU WEWNĘTRZNEGO, NIE DO WYDANIA.** Tytuły pod plakatami są fikcyjne. Logotypy kanałów (JEDEN, INFO24, SPORT+…) i audycje EPG są fikcyjne.
