@@ -5,6 +5,7 @@ description: Pamięć projektu Ketchup Player. Użyj na początku KAŻDEJ sesji 
 # Ketchup Player: pamięć i tryb pracy
 
 ## Na starcie sesji (obowiązkowo)
+0. Przeczytaj `docs/HANDOFF.md` (migawka ostatniej sesji, nie backlog; `/wczytaj-projekt`). Plan poniżej nadal wygrywa.
 1. Przeczytaj `docs/PLAN-1.0.md` (jedyne źródło prawdy: etap 1 i etap 2, checklisty `[ ]`/`[x]`) i `CLAUDE.md`.
 2. Sprawdź `git log --oneline -15` oraz stan CI ostatniego commita (`get_check_runs`, nie list_workflow_runs).
 3. Powiedz użytkownikowi jednym zdaniem, który punkt planu robisz teraz.
@@ -15,7 +16,7 @@ description: Pamięć projektu Ketchup Player. Użyj na początku KAŻDEJ sesji 
 - Nowy błąd z boxa: NAJPIERW test, który go odtwarza, potem poprawka. Nowy ekran: Roborazzi + test D-pad + scenariusz E2E.
 - Sekrety: adres listy z loginem i hasłem NIGDY do repo, raportów ani logów.
 - Zrzuty poglądowe wysyłaj (SendUserFile), sprawdź je przed wysłaniem (ciemne tło, realistyczne dane, kilka pozycji).
-- Po każdym dostarczeniu odhacz punkty w `docs/PLAN-1.0.md` i zacommituj plan.
+- Status (HANDOFF + punkty w `docs/PLAN-1.0.md`) aktualizuj w tym samym PR przed końcowym CI, nie po merge. Odhaczaj tylko spełnione kryteria (stany: nagłówek `docs/HANDOFF.md`). Commit i push dopiero po zgodzie użytkownika.
 
 ## Zasady techniczne (nauczone na błędach)
 - Repozytoria ze stanem (EPG, katalog) muszą być `@Singleton` w DataModule.

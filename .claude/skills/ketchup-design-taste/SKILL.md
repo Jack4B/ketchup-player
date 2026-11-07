@@ -10,7 +10,7 @@ i nie uruchamiamy ich skryptów. Przyjęte są: proces z pisemnym rozpoznaniem, 
 z poziomami, ocena punktowa i zapis decyzji. Uzupełnia `android-tv-ui` (reguły fokusu i D-pada) i `LayoutAudit` (pomiar).
 
 ## Pierwszeństwo (gdy źródła się różnią, wygrywa wyższe)
-1. **Marka i spec:** `docs/KONSPEKT.md`, makiety v3, tokeny w `core:designsystem` (Palette, Motion, FocusItem, PosterCard…).
+1. **Marka i spec:** `docs/KONSPEKT.md`, język v5 i makiety v5.1, tokeny w `core:designsystem` (Palette, Motion, FocusItem, PosterCard…).
    Nie przemalowujemy Morski/Grafit/Czerń. Zmiana wyglądu istniejącego elementu idzie przez tokeny, nie przez nowe wartości.
 2. **Minimum użytkowe TV:** kontrast >= 4,5:1, widoczny fokus, wszystko wykonalne D-pad + OK + BACK, czcionka >= 14 sp,
    cel fokusu >= 36 dp (cel projektowy 48 dp), animacje wg `Motion`.

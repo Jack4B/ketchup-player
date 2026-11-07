@@ -1,6 +1,6 @@
 # Plan pracy: sesje i testy (stan na 1.11.2026)
 
-Cel: aplikacja zgodna z makietami v3 i z ergonomią TiViMate (`RAPORT-UI-TIVIMATE.md` od użytkownika), sprawdzona
+Cel: aplikacja zgodna z językiem v5 (tokeny w kodzie, makiety v5.1) i z ergonomią TiViMate (`RAPORT-UI-TIVIMATE.md` od użytkownika), sprawdzona
 na prawdziwym boxie (Leelbox „UHD Google TV STB”, Android 12). Zasady: najpierw test odtwarzający błąd, wszystko
 D-pad + OK + BACK, zero sekretów w repo, teksty w `strings.xml`.
 
