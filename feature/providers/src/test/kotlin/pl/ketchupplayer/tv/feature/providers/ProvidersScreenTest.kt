@@ -43,8 +43,8 @@ class ProvidersScreenTest {
     private fun show(
         state: ProvidersUiState,
         events: MutableList<ProvidersEvent> = mutableListOf(),
-        onBack: () -> Unit = {},
         clock: UiClock = UiClock.Frozen,
+        onBack: () -> Unit = {},
     ) {
         compose.setContent {
             KetchupTheme(device = DeviceClass.TV) {
