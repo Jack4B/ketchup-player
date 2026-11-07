@@ -35,10 +35,8 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
+import pl.ketchupplayer.tv.core.designsystem.LocalUiClock
 import pl.ketchupplayer.tv.player.engine.PlayerState
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -56,6 +54,7 @@ internal fun VodOsd(
     modifier: Modifier,
 ) {
     val c = KetchupTheme.colors
+    val uiClock = LocalUiClock.current
     val duration = state.durationMs ?: 0L
     val position = scrub?.targetMs ?: state.positionMs
     val progress = if (duration > 0) (position.toFloat() / duration).coerceIn(0f, 1f) else 0f
@@ -90,7 +89,7 @@ internal fun VodOsd(
             if (duration > 0) {
                 Text(
                     stringResource(R.string.player_remaining, clock(remaining)) + "  ·  " +
-                        stringResource(R.string.player_ends_at, endsAt(remaining)),
+                        stringResource(R.string.player_ends_at, uiClock.hhmmAfter(remaining)),
                     fontSize = 18.sp,
                     color = Color.White.copy(alpha = SECONDARY_ALPHA),
                 )
@@ -225,9 +224,6 @@ private fun Modifier.centeredAt(fraction: Float): Modifier =
             )
         layout(maxW, placeable.height) { placeable.placeRelative(x, 0) }
     }
-
-private fun endsAt(remainingMs: Long): String =
-    SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(System.currentTimeMillis() + remainingMs))
 
 private val BUBBLE_H = 40.dp
 private val BAR = 6.dp

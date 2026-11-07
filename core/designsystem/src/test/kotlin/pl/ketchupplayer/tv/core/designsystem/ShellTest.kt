@@ -2,6 +2,7 @@ package pl.ketchupplayer.tv.core.designsystem
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Row
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
@@ -49,11 +50,18 @@ class ShellTest {
     ) {
         compose.setContent {
             KetchupTheme(theme, device = DeviceClass.TV) {
-                AppShell(entries, selected, onSelect, onRailBack) {
-                    ShellScreen("Na żywo") {
-                        Row {
-                            KetchupButton("Pierwszy", {}, primary = true, modifier = Modifier.requestFocusWhenPlaced())
-                            KetchupButton("Drugi", {})
+                CompositionLocalProvider(LocalUiClock provides UiClock.Frozen) {
+                    AppShell(entries, selected, onSelect, onRailBack) {
+                        ShellScreen("Na żywo") {
+                            Row {
+                                KetchupButton(
+                                    "Pierwszy",
+                                    {},
+                                    primary = true,
+                                    modifier = Modifier.requestFocusWhenPlaced(),
+                                )
+                                KetchupButton("Drugi", {})
+                            }
                         }
                     }
                 }
