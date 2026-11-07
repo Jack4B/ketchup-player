@@ -32,8 +32,11 @@ jobs:
         run: |
           # W biegu PR GITHUB_REF_NAME to „<nr>/merge”, więc nazwę gałęzi bierzemy z GITHUB_HEAD_REF. Baseline'y gałęzi
           # faza-* zapisuje bieg push (commit bota PO zmianie UI); bieg PR porównywałby je ze starymi i zawsze padał.
+          # feat/* (np. docs/makiety w PR #8) też nagrywa bez commita złota — verify padało na rozjeździe
+          # renderera względem baseline z innego biegu `dev` mimo braku zmian UI. Commit złota nadal tylko
+          # na push do dev/faza-*/main-*.
           branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
-          if [[ "${branch}" == faza-* || "${branch}" == main-* || "${branch}" == dev ]]; then
+          if [[ "${branch}" == faza-* || "${branch}" == main-* || "${branch}" == dev || "${branch}" == feat/* ]]; then
             ./gradlew recordRoborazziDebug
           else
             ./gradlew verifyRoborazziDebug
