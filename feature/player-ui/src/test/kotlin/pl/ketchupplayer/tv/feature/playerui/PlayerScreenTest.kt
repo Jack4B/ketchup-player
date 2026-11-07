@@ -1,9 +1,11 @@
 package pl.ketchupplayer.tv.feature.playerui
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -26,12 +28,16 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import pl.ketchupplayer.tv.core.designsystem.DeviceClass
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
+import pl.ketchupplayer.tv.core.designsystem.LocalUiClock
+import pl.ketchupplayer.tv.core.designsystem.UiClock
 import pl.ketchupplayer.tv.core.model.StreamSpec
 import pl.ketchupplayer.tv.player.engine.PlaybackStatus
 import pl.ketchupplayer.tv.player.engine.PlayerController
 import pl.ketchupplayer.tv.player.engine.PlayerState
 import pl.ketchupplayer.tv.player.engine.TrackInfo
 import pl.ketchupplayer.tv.player.engine.TrackOption
+import java.time.Instant
+import java.time.ZoneId
 
 internal class FakeController(
     initial: PlayerState = PlayerState(),
@@ -109,21 +115,24 @@ class PlayerScreenTest {
         zap: List<pl.ketchupplayer.tv.core.model.Channel> = emptyList(),
         currentId: String? = null,
         onZap: (String) -> Unit = {},
+        clock: UiClock = UiClock.Frozen,
     ) {
         compose.setContent {
             KetchupTheme(device = DeviceClass.TV) {
-                PlayerScreen(
-                    ui,
-                    controller,
-                    onRetry,
-                    onBack,
-                    vodTitle = vodTitle,
-                    showClock = showClock,
-                    vodInfo = vodInfo,
-                    zapChannels = zap,
-                    currentChannelId = currentId,
-                    onZap = onZap,
-                )
+                CompositionLocalProvider(LocalUiClock provides clock) {
+                    PlayerScreen(
+                        ui,
+                        controller,
+                        onRetry,
+                        onBack,
+                        vodTitle = vodTitle,
+                        showClock = showClock,
+                        vodInfo = vodInfo,
+                        zapChannels = zap,
+                        currentChannelId = currentId,
+                        onZap = onZap,
+                    )
+                }
             }
         }
         compose.waitForIdle()
@@ -358,6 +367,19 @@ class PlayerScreenTest {
             showClock = false,
         )
         assertFalse(hasClock())
+    }
+
+    /** Zegar pokazuje czas ze źródła ([LocalUiClock]) w jawnej strefie i odświeża się wraz z jego upływem. */
+    @Test
+    fun zegarPokazujeCzasZeZrodlaIOdswiezaSie() {
+        var now = Instant.parse("2026-01-15T11:34:00Z")
+        val clock = UiClock({ now }, { ZoneId.of("Europe/Warsaw") })
+        val controller = FakeController(PlayerState(status = PlaybackStatus.READY))
+        show(PlayerUiState.Playing("JEDEN HD"), controller, clock = clock)
+        compose.onNodeWithText("12:34").assertExists()
+        now = Instant.parse("2026-01-15T11:35:00Z")
+        compose.mainClock.advanceTimeBy(11_000)
+        compose.onNodeWithText("12:35").assertExists()
     }
 
     @Test

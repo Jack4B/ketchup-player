@@ -31,11 +31,13 @@ import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.VodItem
 import pl.ketchupplayer.tv.core.model.VodKind
 
-@OptIn(ExperimentalTestApi::class)
-@RunWith(RobolectricTestRunner::class)
-@GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(sdk = [34], qualifiers = "w960dp-h540dp-xhdpi")
-open class HomeScreenTest {
+/**
+ * Wspólna reguła Compose i dane ekranu Home dla wariantów rozmiaru ([HomeScreenTest], [HomeScreenTallTest]).
+ * Celowo bez własnych testów: testy deklarują klasy wariantów, a wspólne scenariusze to metody pomocnicze.
+ * Odziedziczony test zrzutowy zapisywałby ten sam plik wzorca w innym rozmiarze (pilnuje tego
+ * [HomeScreenVariantsTest]).
+ */
+abstract class HomeScreenFixture {
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
 
@@ -101,8 +103,8 @@ open class HomeScreenTest {
 
     private fun key(k: Key) = compose.onRoot().performKeyInput { pressKey(k) }
 
-    @Test
-    fun screenshot() {
+    /** Ekran Home na tle motywu, jak w zrzutach. */
+    protected fun showRows() {
         compose.setContent {
             KetchupTheme(device = DeviceClass.TV) {
                 Box(Modifier.fillMaxSize().background(KetchupTheme.colors.background).padding(16.dp)) {
@@ -110,12 +112,10 @@ open class HomeScreenTest {
                 }
             }
         }
-        compose.onRoot().captureRoboImage("src/test/screenshots/home_rows.png")
     }
 
     /** D-pad: hero ma fokus; DÓŁ schodzi do rzędów, OK na hero wznawia film. */
-    @Test
-    fun dpadSchodziDoRzedowIOtwieraSzczegoly() {
+    protected fun scenariuszDpadSchodziDoRzedowIOtwieraSzczegoly() {
         val opened = mutableListOf<String>()
         val played = mutableListOf<String>()
         compose.setContent {
@@ -134,8 +134,7 @@ open class HomeScreenTest {
     }
 
     /** „Mam czas na…”: wybór 30 min pokazuje filmy do dokończenia z czasem, który zostaje; ponowny wybór je chowa. */
-    @Test
-    fun mamCzasNaPokazujeCoSieZmiesci() {
+    protected fun scenariuszMamCzasNaPokazujeCoSieZmiesci() {
         compose.setContent { KetchupTheme(device = DeviceClass.TV) { HomeScreen(state, {}, {}, {}) } }
         compose.waitForIdle()
         compose.onNodeWithText("30 min").performClick()
@@ -146,8 +145,7 @@ open class HomeScreenTest {
         assertEquals(0, compose.onAllNodesWithText("Zostało 1 min", substring = true).fetchSemanticsNodes().size)
     }
 
-    @Test
-    fun mamCzasNaBezDanychPodpowiadaCoZrobic() {
+    protected fun scenariuszMamCzasNaBezDanychPodpowiadaCoZrobic() {
         compose.setContent {
             KetchupTheme(device = DeviceClass.TV) { HomeScreen(state.copy(continueVod = emptyList()), {}, {}, {}) }
         }
@@ -158,21 +156,52 @@ open class HomeScreenTest {
     }
 }
 
-/** Wysoki ekran (pełna lista rzędów Home) do zrzutu poglądowego. */
+/**
+ * Ekran Home 960x540 dp. Scenariusze (D-pad, „Mam czas na…”) są wspólne z [HomeScreenTallTest] przez metody
+ * pomocnicze [HomeScreenFixture]; zrzut `home_rows.png` zapisuje tylko ta klasa.
+ */
+@OptIn(ExperimentalTestApi::class)
+@RunWith(RobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [34], qualifiers = "w960dp-h540dp-xhdpi")
+class HomeScreenTest : HomeScreenFixture() {
+    @Test
+    fun screenshot() {
+        showRows()
+        compose.onRoot().captureRoboImage("src/test/screenshots/home_rows.png")
+    }
+
+    @Test
+    fun dpadSchodziDoRzedowIOtwieraSzczegoly() = scenariuszDpadSchodziDoRzedowIOtwieraSzczegoly()
+
+    @Test
+    fun mamCzasNaPokazujeCoSieZmiesci() = scenariuszMamCzasNaPokazujeCoSieZmiesci()
+
+    @Test
+    fun mamCzasNaBezDanychPodpowiadaCoZrobic() = scenariuszMamCzasNaBezDanychPodpowiadaCoZrobic()
+}
+
+/**
+ * Wysoki ekran Home 960x900 dp (pełna lista rzędów): te same scenariusze co [HomeScreenTest] plus zrzut poglądowy
+ * `home_rows_tall.png`, który zapisuje wyłącznie ta klasa.
+ */
 @OptIn(ExperimentalTestApi::class)
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], qualifiers = "w960dp-h900dp-xhdpi")
-class HomeScreenTallTest : HomeScreenTest() {
+class HomeScreenTallTest : HomeScreenFixture() {
     @Test
     fun screenshotWysoki() {
-        compose.setContent {
-            KetchupTheme(device = DeviceClass.TV) {
-                Box(Modifier.fillMaxSize().background(KetchupTheme.colors.background).padding(16.dp)) {
-                    HomeScreen(state, {}, {}, {})
-                }
-            }
-        }
+        showRows()
         compose.onRoot().captureRoboImage("src/test/screenshots/home_rows_tall.png")
     }
+
+    @Test
+    fun dpadSchodziDoRzedowIOtwieraSzczegoly() = scenariuszDpadSchodziDoRzedowIOtwieraSzczegoly()
+
+    @Test
+    fun mamCzasNaPokazujeCoSieZmiesci() = scenariuszMamCzasNaPokazujeCoSieZmiesci()
+
+    @Test
+    fun mamCzasNaBezDanychPodpowiadaCoZrobic() = scenariuszMamCzasNaBezDanychPodpowiadaCoZrobic()
 }
