@@ -1,3 +1,5 @@
+> **Historyczne (v3).** Aktualny język UI to **v5** w kodzie (`Palette.kt`, DESIGN-LOG) oraz makiety uzupełniające **v5.1** w `docs/mockups/v5.1/`. Tych notatek nie używać jako źródła palety przy nowych ekranach.
+
 # Ketchup Player — makiety v3: notatki (Lumen)
 Data: 31.10.2026. Uwaga do v2: to był jeden szary motyw z różnymi akcentami, a akcent ma być osobnym wyborem w Ustawieniach. W v3 są **3 pełne motywy** (tła, panele, szyna, siatka EPG, nakładki OSD, tony tekstu, promienie zaokrągleń) i **osobny wybór „Kolor akcentu”**. v1 i v2 zostają na Dysku.
 
