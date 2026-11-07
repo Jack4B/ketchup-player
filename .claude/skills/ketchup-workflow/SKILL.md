@@ -11,22 +11,22 @@ Uzupełnia `ketchup-pamiec` (pamięć PLAN-1.0 / APK / box). Ten skill = **jak p
 
 - Świeży klon wybranej gałęzi; gałąź musi być na GitHub.
 - **Brak TV-boxa / adb / sensownego mobile-mcp.** Nie udawaj testów na urządzeniu.
-- Brak Android SDK w VM → nie blokuj się: kod + testy → push → **CI** (gitleaks, unit, lint, assemble, emulator).
+- Brak Android SDK w VM → nie blokuj się: kod + testy → (po zgodzie użytkownika) push → **CI** (gitleaks, unit, lint, assemble, emulator). Kontrole gradle, których nie da się wykonać, raportuj jako NOT_RUN z powodem.
 - `.mcp.json` / skills z repo; user-scope MCP z laptopa nie działa.
-- Status sesji: odhaczaj w planach w git — to pamięć między sesjami.
+- Status sesji: `docs/HANDOFF.md` (migawka ostatniej sesji, nie backlog) + checkboxy w planach w git — to pamięć między sesjami. Start: `/wczytaj-projekt`, koniec: `/domknij-projekt`.
 
 ## Pętla mikro-PR (obowiązkowa)
 
 1. Wybierz **pierwszy otwarty** punkt (`PLAN-FINALNY` / `PLAN-1.0`) albo argument użytkownika.
 2. **Plan mode**: pliki, testy, DoD, ryzyka (w tym brak urządzenia). Czekaj na **OK**.
 3. **TDD** (`test-driven-development`): test → implementacja minimalna (`ponytail` przy rozroście).
-4. Check: `./gradlew spotlessCheck testDebugUnitTest :app:assembleDebug` (+ `lintDebug` przy UI). Brak gradle → od razu push.
-5. Gałąź `feat/<krótki-opis>` → **PR tylko do `dev`**.
+4. Check: `./gradlew spotlessCheck testDebugUnitTest :app:assembleDebug` (+ `lintDebug` przy UI). Brak gradle → NOT_RUN z powodem; push dopiero po zgodzie użytkownika.
+5. Gałąź `feat/<krótki-opis>` (albo gałąź narzucona przez środowisko, np. `claude/*`) → **PR tylko do `dev`**. Commit/push/PR tylko po zgodzie użytkownika.
 6. Czekaj na CI; czerwone = fix + push na **tej samej** gałęzi.
 7. Raport użytkownikowi. **Nie merguj** bez decyzji.
-8. Po akceptacji/merge: odhacz checkboxy w `docs/PLAN-1.0.md` / `docs/PLAN-FINALNY.md` (i krótki status w `CLAUDE.md` jeśli dotyczy) → `/clear` lub nowa sesja.
+8. Status zadania aktualizuj w **tym samym PR, przed końcowym CI** (nie dopiero po merge): `docs/HANDOFF.md` (przez `/domknij-projekt`) i checkboxy w `docs/PLAN-1.0.md` / `docs/PLAN-FINALNY.md` (i krótki status w `CLAUDE.md` jeśli dotyczy). Odhaczaj tylko spełnione kryterium; stany `implemented` / `tested` / `awaiting_device` / `awaiting_merge` i zasady wyników testów: nagłówek `docs/HANDOFF.md`. Potem `/clear` lub nowa sesja.
 
-Komendy: `/next-step` (wybór + plan), `/verify` (bramka przed PR).
+Komendy: `/wczytaj-projekt` (stan, tylko odczyt), `/next-step` (wybór + plan), `/verify` (bramka przed PR), `/domknij-projekt` (zapis stanu bez publikacji).
 
 ## Bramki 8 kroków (`docs/PLAN-FINALNY.md`)
 
@@ -58,7 +58,7 @@ Opcjonalnie na prośbę użytkownika: `/ub-mode` (TDD i małe jednostki pracy). 
 
 | Blokada | Akcja |
 |---|---|
-| Brak SDK / gradle fail | PR + CI; napisz w raporcie |
+| Brak SDK | NOT_RUN w raporcie; po zgodzie PR + CI. Gradle fail z błędu kodu/testu = FAIL |
 | Potrzeba boxa | Testy auto + checklista dla usera; nie blokuj całego kroku |
 | Czerwone CI | Logi joba → fix → push |
 | Niejasny wymóg | Jedno pytanie, stop |
@@ -72,7 +72,7 @@ Po polsku, krótko:
 Zrobione: <1–3 punkty>
 PR: <url> → dev
 CI: <zielone|czerwone + job>
-Checkboxy: <które odhaczone / czekają na merge>
+Checkboxy: <odhaczone spełnione; niespełnione: awaiting_device / awaiting_merge>
 Następne: <punkt planu>
 Ryzyka / niewykonane na boxie: <…>
 ```

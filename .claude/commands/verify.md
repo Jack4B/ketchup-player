@@ -13,12 +13,11 @@ Wywołaj skill `ketchup-workflow` (reguły gałęzi/PR).
    - `./gradlew testDebugUnitTest`
    - `./gradlew :app:assembleDebug`
    - jeśli ruszany UI/zasoby: `./gradlew lintDebug`
-3. Jeśli gradle / SDK niedostępne (Cloud bez Android SDK):
-   - nie udawaj sukcesu
-   - upewnij się, że zmiany są commitnięte i wypchnięte na `feat/*`
-   - sprawdź CI przez `gh` / narzędzia GitHub (check runs na SHA gałęzi; nie zgaduj)
+3. Wynik każdej kontroli: **PASS**, **FAIL** (błąd kodu/testu) albo **NOT_RUN** z powodem (np. brak Android SDK) — brak SDK nie jest sukcesem.
+   - sprawdź CI przez `gh` / narzędzia GitHub (check runs na dokładnym SHA gałęzi; nie zgaduj; bez dostępu: „niezweryfikowane”)
+   - jeśli zmiany nie są commitnięte/wypchnięte: napisz to i **zapytaj użytkownika**; sam nie commituj, nie pushuj i nie otwieraj PR
 4. Podsumowanie po polsku:
-   - lokalne: OK / FAIL / pominięte (powód)
-   - CI: zielone / czerwone / brak PR — z linkiem
+   - lokalne: PASS / FAIL / NOT_RUN (powód), z SHA albo `working_tree` (PASS na `working_tree` nie jest dowodem dla commita)
+   - CI: zielone / czerwone / brak PR / niezweryfikowane — z linkiem i SHA
    - gotowe do PR→`dev`? (tak/nie + braki)
-5. Nie force-push. Nie merge. Nie push na `main`.
+5. **Nigdy po cichu commit, push ani PR.** Nie force-push. Nie merge. Nie push na `main`.

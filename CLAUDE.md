@@ -24,7 +24,8 @@
 - Pętla mikro-PR, bramki 8 kroków, Cloud (bez boxa/adb), reguły PR→`dev`: skill `.claude/skills/ketchup-workflow` (`ketchup-workflow`).
 - Pamięć checklist / APK / box: skill `ketchup-pamiec` + checkboxy w `docs/PLAN-1.0.md` i `docs/PLAN-FINALNY.md` (to status między sesjami).
 - Komendy: `/next-step` — wybór punktu i plan mikro-PR (czekaj na OK); `/verify` — spotless/test/assemble lub CI gdy brak SDK.
-- Jedna sesja ≈ jeden mikro-PR. Nigdy `main`, nigdy force-push, nie merguj bez właściciela. Po domknięciu: odhacz plan, krótki raport (format w skillu).
+- Jedna sesja ≈ jeden mikro-PR. Nigdy `main`, nigdy force-push, nie merguj bez właściciela. Status (plan + HANDOFF) w tym samym PR przed końcowym CI; krótki raport (format w skillu).
+- Stan ostatniej sesji: `docs/HANDOFF.md` (migawka, nie backlog; plany i checkboxy zostają w `docs/PLAN-*`) i `docs/HISTORIA-SESJI.md`. Komendy `/wczytaj-projekt` (tylko odczyt) i `/domknij-projekt` (zapis stanu, bez commit/push). Walidator `tools/handoff/` (testy: `python3 -B -m unittest discover -s tools/handoff`; obecne CI ich nie uruchamia).
 
 ## Mapa kodu i gałęzie (stan 6.11.2026)
 
