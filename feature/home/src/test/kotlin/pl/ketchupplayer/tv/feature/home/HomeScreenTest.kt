@@ -37,6 +37,7 @@ import pl.ketchupplayer.tv.core.model.VodKind
  * Odziedziczony test zrzutowy zapisywałby ten sam plik wzorca w innym rozmiarze (pilnuje tego
  * [HomeScreenVariantsTest]).
  */
+@OptIn(ExperimentalTestApi::class)
 abstract class HomeScreenFixture {
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
