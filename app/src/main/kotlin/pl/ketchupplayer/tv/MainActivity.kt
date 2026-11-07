@@ -17,11 +17,17 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.designsystem.LocalGlassBlur
+import pl.ketchupplayer.tv.core.designsystem.LocalUiClock
 import pl.ketchupplayer.tv.core.designsystem.ProvideUiScale
+import pl.ketchupplayer.tv.core.designsystem.UiClock
 import timber.log.Timber
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject
+    lateinit var uiClock: UiClock
+
     private val viewModel: AppViewModel by viewModels()
     private val keyGuard = KeyRepeatGuard()
 
@@ -61,7 +67,10 @@ class MainActivity : ComponentActivity() {
             val appearance by viewModel.appearance.collectAsStateWithLifecycle()
             KetchupTheme(appearance.theme, appearance.effectiveAccent, customHue = appearance.customHue) {
                 ProvideUiScale(appearance.uiScale) {
-                    CompositionLocalProvider(LocalGlassBlur provides appearance.glassBlur) {
+                    CompositionLocalProvider(
+                        LocalGlassBlur provides appearance.glassBlur,
+                        LocalUiClock provides uiClock,
+                    ) {
                         AppNavigation(onExit = { finish() })
                         AutoGlassProbe(appearance.glassBlurDecided, viewModel::applyGlassVerdict)
                     }

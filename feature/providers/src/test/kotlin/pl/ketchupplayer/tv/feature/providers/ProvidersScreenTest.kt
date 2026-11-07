@@ -1,6 +1,7 @@
 package pl.ketchupplayer.tv.feature.providers
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -19,6 +20,8 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import pl.ketchupplayer.tv.core.designsystem.DeviceClass
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
+import pl.ketchupplayer.tv.core.designsystem.LocalUiClock
+import pl.ketchupplayer.tv.core.designsystem.UiClock
 import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.ProviderInfo
 import pl.ketchupplayer.tv.core.model.ProviderType
@@ -40,10 +43,15 @@ class ProvidersScreenTest {
     private fun show(
         state: ProvidersUiState,
         events: MutableList<ProvidersEvent> = mutableListOf(),
+        clock: UiClock = UiClock.Frozen,
         onBack: () -> Unit = {},
     ) {
         compose.setContent {
-            KetchupTheme(device = DeviceClass.TV) { ProvidersScreen(state, { events += it }, onBack) }
+            KetchupTheme(device = DeviceClass.TV) {
+                CompositionLocalProvider(LocalUiClock provides clock) {
+                    ProvidersScreen(state, { events += it }, onBack)
+                }
+            }
         }
         compose.waitForIdle()
     }
@@ -55,6 +63,15 @@ class ProvidersScreenTest {
         show(ProvidersUiState())
         compose.onRoot().captureRoboImage("src/test/screenshots/providers_empty.png")
         compose.assertNoHorizontalOverflow()
+    }
+
+    /** „Odświeżono N dni temu” liczy się od czasu ze źródła ([LocalUiClock]), a nie od zegara systemowego. */
+    @Test
+    fun wiekOdswiezeniaLiczonyOdZrodlaCzasu() {
+        val refreshed = p1.copy(lastRefreshMs = UiClock.Frozen.nowMs() - 3 * MS_PER_DAY)
+        show(ProvidersUiState(providers = listOf(refreshed)))
+        // Liczba dni pochodzi ze źródła czasu; końcówka („dzień/dni/dnia”) zależy od reguł liczby mnogiej locale testu.
+        compose.onNodeWithText("odświeżono 3 ", substring = true).assertExists()
     }
 
     @Test
@@ -134,3 +151,5 @@ class ProvidersScreenTest {
         assertEquals(listOf<ProvidersEvent>(ProvidersEvent.SelectUserAgent("vlc")), events)
     }
 }
+
+private const val MS_PER_DAY = 86_400_000L

@@ -1,6 +1,7 @@
 package pl.ketchupplayer.tv.core.designsystem
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 
 /** Standardowe pozycje szyny (etykiety PL) do podglądów i testów ekranów w powłoce. */
 fun previewRailEntries(): List<RailEntry> =
@@ -16,11 +17,16 @@ fun previewRailEntries(): List<RailEntry> =
         RailEntry("settings", "Ustawienia", RailIcon.SETTINGS),
     )
 
-/** Ekran w powłoce z szyną, jak w aplikacji: do zrzutów Roborazzi porównywanych z makietami v3. */
+/**
+ * Ekran w powłoce z szyną, jak w aplikacji: do zrzutów Roborazzi porównywanych z makietami v3.
+ * Zegar w nagłówku jest zamrożony ([UiClock.Frozen]), żeby zrzuty nie zależały od godziny uruchomienia testu.
+ */
 @Composable
 fun ShellPreview(
     selected: String,
     content: @Composable () -> Unit,
 ) {
-    AppShell(previewRailEntries(), selected, {}, {}) { content() }
+    CompositionLocalProvider(LocalUiClock provides UiClock.Frozen) {
+        AppShell(previewRailEntries(), selected, {}, {}) { content() }
+    }
 }
