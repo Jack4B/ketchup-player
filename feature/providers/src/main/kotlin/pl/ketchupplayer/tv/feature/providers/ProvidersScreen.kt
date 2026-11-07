@@ -27,6 +27,7 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
 import pl.ketchupplayer.tv.core.designsystem.KetchupButton
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
+import pl.ketchupplayer.tv.core.designsystem.LocalUiClock
 import pl.ketchupplayer.tv.core.designsystem.ScreenScaffold
 import pl.ketchupplayer.tv.core.designsystem.ScreenTitle
 import pl.ketchupplayer.tv.core.designsystem.SettingsListItem
@@ -87,7 +88,8 @@ private fun ProviderList(
             onClick = { onEvent(ProvidersEvent.Toggle(p.id)) },
             modifier = if (i == 0) Modifier.requestFocusWhenPlaced() else Modifier,
         )
-        val now = remember { System.currentTimeMillis() }
+        val uiClock = LocalUiClock.current
+        val now = remember(uiClock) { uiClock.nowMs() }
         HealthLine(SourceHealthRules.of(p, now))
         state.accounts[p.id.value]?.let { AccountLine(it, now) }
         if (state.expandedId == p.id) {

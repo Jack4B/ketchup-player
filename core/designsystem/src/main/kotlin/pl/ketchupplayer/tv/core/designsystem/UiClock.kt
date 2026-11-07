@@ -17,7 +17,14 @@ class UiClock(
     private val zone: () -> ZoneId,
 ) {
     /** Czas w formacie HH:mm w strefie źródła. */
-    fun hhmm(): String = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault()).format(now().atZone(zone()))
+    fun hhmm(): String = hhmmAfter(0)
+
+    /** Czas po upływie [deltaMs] od teraz (np. koniec filmu), HH:mm w strefie źródła. */
+    fun hhmmAfter(deltaMs: Long): String =
+        DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault()).format(now().plusMillis(deltaMs).atZone(zone()))
+
+    /** Bieżący czas źródła w milisekundach epoki (do wyświetlania wieku danych, nie do odmierzania czasu). */
+    fun nowMs(): Long = now().toEpochMilli()
 
     companion object {
         /** Czas i strefa urządzenia. */

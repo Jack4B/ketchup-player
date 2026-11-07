@@ -381,6 +381,14 @@ class PlayerScreenTest {
         compose.onNodeWithText("12:35").assertExists()
     }
 
+    /** OSD filmu: „koniec ok.” to czas ze źródła ([LocalUiClock]) plus pozostały czas, w jawnej strefie. */
+    @Test
+    fun osdFilmuPokazujeKoniecLiczonyZeZrodlaCzasu() {
+        val state = PlayerState(status = PlaybackStatus.READY, positionMs = 2_400_000, durationMs = 6_240_000)
+        show(PlayerUiState.Playing("Film"), FakeController(state), vodTitle = "Film")
+        assertTrue(has("koniec ok. 13:38")) // 12:34 + 64 min pozostałych
+    }
+
     @Test
     fun screenshotZegara() {
         show(PlayerUiState.Playing("JEDEN HD"), FakeController(PlayerState(status = PlaybackStatus.READY)))

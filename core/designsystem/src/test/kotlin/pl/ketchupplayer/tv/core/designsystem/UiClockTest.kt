@@ -54,4 +54,33 @@ class UiClockTest {
         val fmt = DateTimeFormatter.ofPattern("HH:mm")
         assertEquals(true, shown == before.format(fmt) || shown == after.format(fmt))
     }
+
+    @Test
+    fun godzinaPoUplywieOdstepuLiczonaWJawnejStrefie() {
+        val clock = UiClock.fixed(Instant.parse("2026-01-15T11:34:00Z"), ZoneId.of("Europe/Warsaw"))
+        assertEquals("12:34", clock.hhmmAfter(0))
+        assertEquals("13:38", clock.hhmmAfter(3_840_000))
+    }
+
+    @Test
+    fun godzinaPoUplywieOdstepuPrzechodziPrzezPolnoc() {
+        val clock = UiClock.fixed(Instant.parse("2026-01-15T22:50:00Z"), ZoneId.of("Europe/Warsaw"))
+        assertEquals("23:50", clock.hhmm())
+        assertEquals("00:54", clock.hhmmAfter(64 * 60_000L))
+    }
+
+    @Test
+    fun biezacyCzasWMilisekundachPochodziZeZrodla() {
+        val instant = Instant.parse("2026-01-15T11:34:00Z")
+        assertEquals(instant.toEpochMilli(), UiClock.fixed(instant, ZoneOffset.UTC).nowMs())
+        assertEquals(UiClock.Frozen.nowMs(), UiClock.Frozen.nowMs())
+    }
+
+    @Test
+    fun zegarSystemowyMilisekundyBliskoCzasuSystemowego() {
+        val before = System.currentTimeMillis()
+        val shown = UiClock.System.nowMs()
+        val after = System.currentTimeMillis()
+        assertEquals(true, shown in (before - 5)..(after + 5))
+    }
 }
