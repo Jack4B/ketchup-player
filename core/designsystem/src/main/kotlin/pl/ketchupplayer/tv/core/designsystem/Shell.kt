@@ -61,9 +61,6 @@ import androidx.compose.ui.zIndex
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
 import kotlinx.coroutines.delay
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /** Czy ekran jest osadzony w [AppShell] (wtedy tło, marginesy i nagłówek z zegarem daje powłoka). */
 val LocalInShell = staticCompositionLocalOf { false }
@@ -449,14 +446,15 @@ private val HEADER_HEIGHT = 44.dp
 private val BADGE_MAX_WIDTH = 300.dp
 private val TITLE_SIZE = 24.sp
 
-/** Zegar HH:mm w nagłówku; odświeża się co kilka sekund. */
+/** Zegar HH:mm w nagłówku; odświeża się co kilka sekund. Czas daje [LocalUiClock] (domyślnie czas urządzenia). */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun ClockText(modifier: Modifier = Modifier) {
     val c = KetchupTheme.colors
-    val text by produceState(clockNow()) {
+    val clock = LocalUiClock.current
+    val text by produceState(clock.hhmm(), clock) {
         while (true) {
-            value = clockNow()
+            value = clock.hhmm()
             delay(CLOCK_TICK_MS)
         }
     }
@@ -471,9 +469,8 @@ fun ClockText(modifier: Modifier = Modifier) {
     )
 }
 
-private const val CLOCK_TICK_MS = 5_000L
-
-private fun clockNow(): String = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+/** Odstęp odświeżania zegara w nagłówku. */
+internal const val CLOCK_TICK_MS = 5_000L
 
 /** Ekran w powłoce: nagłówek + treść. Marginesy i tło daje [AppShell]. */
 @Composable

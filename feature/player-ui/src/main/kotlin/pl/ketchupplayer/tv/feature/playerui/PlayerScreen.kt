@@ -48,6 +48,7 @@ import androidx.tv.material3.Text
 import kotlinx.coroutines.delay
 import pl.ketchupplayer.tv.core.designsystem.KetchupButton
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
+import pl.ketchupplayer.tv.core.designsystem.LocalUiClock
 import pl.ketchupplayer.tv.core.designsystem.requestFocusWhenPlaced
 import pl.ketchupplayer.tv.player.engine.PlaybackStatus
 import pl.ketchupplayer.tv.player.engine.PlayerController
@@ -549,9 +550,10 @@ private const val SECONDS_PER_HOUR = 3600L
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun PlayerClock(modifier: Modifier) {
-    val time by androidx.compose.runtime.produceState(clockNow()) {
+    val clock = LocalUiClock.current
+    val time by androidx.compose.runtime.produceState(clock.hhmm(), clock) {
         while (true) {
-            value = clockNow()
+            value = clock.hhmm()
             delay(CLOCK_REFRESH_MS)
         }
     }
@@ -578,9 +580,6 @@ private fun PlayerClock(modifier: Modifier) {
                 .padding(horizontal = 14.dp, vertical = 6.dp),
     )
 }
-
-private fun clockNow(): String =
-    java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date())
 
 private const val CLOCK_REFRESH_MS = 10_000L
 private const val CLOCK_SP = 28

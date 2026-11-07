@@ -28,18 +28,36 @@ jobs:
         run: ./gradlew spotlessCheck detekt
       - name: Testy jednostkowe
         run: ./gradlew testDebugUnitTest :core:model:test :core:policy:test :epg:radar:test :provider:api:test
+      - name: "Raporty JUnit XML (etap: testy jednostkowe)"
+        if: always()
+        run: |
+          # Kopia samych plików TEST-*.xml z każdego modułu do katalogu etapu. Potem czyścimy wyniki testów, żeby raporty
+          # kolejnego etapu (Roborazzi) nie mieszały się z tymi, a zadania testowe wykonały się ponownie (wynik z cache
+          # lub UP-TO-DATE nie zastępuje wykonania w trybie verify).
+          mkdir -p junit-reports/unit
+          find . -path ./junit-reports -prune -o -path '*/build/test-results/*' -name 'TEST-*.xml' -print0 \
+            | xargs -0 -r cp --parents -t junit-reports/unit
+          find . -path ./junit-reports -prune -o -type d -path '*/build/test-results' -print0 | xargs -0 -r rm -rf
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: junit-unit
+          path: junit-reports/unit
+          if-no-files-found: warn
       - name: Roborazzi (gałęzie dev, faza-* i main-* nagrywają baseline, main i inne gałęzie weryfikują)
+        id: roborazzi
         run: |
           # W biegu PR GITHUB_REF_NAME to „<nr>/merge”, więc nazwę gałęzi bierzemy z GITHUB_HEAD_REF. Baseline'y gałęzi
           # faza-* zapisuje bieg push (commit bota PO zmianie UI); bieg PR porównywałby je ze starymi i zawsze padał.
-          # feat/* (np. docs/makiety w PR #8) też nagrywa bez commita złota — verify padało na rozjeździe
-          # renderera względem baseline z innego biegu `dev` mimo braku zmian UI. Commit złota nadal tylko
-          # na push do dev/faza-*/main-*.
           branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
-          if [[ "${branch}" == faza-* || "${branch}" == main-* || "${branch}" == dev || "${branch}" == feat/* ]]; then
+          if [[ "${branch}" == faza-* || "${branch}" == main-* || "${branch}" == dev ]]; then
+            echo "mode=record" >> "${GITHUB_OUTPUT}"
             ./gradlew recordRoborazziDebug
           else
-            ./gradlew verifyRoborazziDebug
+            echo "mode=verify" >> "${GITHUB_OUTPUT}"
+            # --continue: zbierz porażki ze wszystkich modułów, zamiast przerywać po pierwszej (kod wyjścia nadal
+            # niezerowy przy błędach).
+            ./gradlew verifyRoborazziDebug --continue
           fi
       - name: Commit baseline Roborazzi (tylko gdy dopiero co nagrany)
         if: github.event_name == 'push' && (startsWith(github.ref_name, 'faza-') || startsWith(github.ref_name, 'main-') || github.ref_name == 'dev')
@@ -52,6 +70,18 @@ jobs:
             # Gałąź mogła pójść do przodu w trakcie biegu (nasz push, commit bota z emulatora): rebase i ponów.
             git pull --rebase origin "${GITHUB_REF_NAME}" && git push || { git pull --rebase origin "${GITHUB_REF_NAME}" && git push; }
           fi
+      - name: "Raporty JUnit XML (etap: Roborazzi)"
+        if: always() && steps.roborazzi.outcome != 'skipped'
+        run: |
+          mkdir -p junit-reports/roborazzi
+          find . -path ./junit-reports -prune -o -path '*/build/test-results/*' -name 'TEST-*.xml' -print0 \
+            | xargs -0 -r cp --parents -t junit-reports/roborazzi
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.roborazzi.outcome != 'skipped'
+        with:
+          name: junit-roborazzi-${{ steps.roborazzi.outputs.mode }}
+          path: junit-reports/roborazzi
+          if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         if: always()
         with:
