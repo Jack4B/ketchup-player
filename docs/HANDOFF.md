@@ -34,25 +34,28 @@ Zasady:
 ## Stan
 
 ```handoff
-updated_at: 2026-11-07T14:41:30+01:00
+updated_at: 2026-11-07T23:28:44+01:00
 status: ready_for_review
 branch: ccr-a5500ce0-233anr
-pr: none
-base_sha: 677cddebc997ab3ee93afd3bfee23b90420d3124
-verified_code_sha: 677cddebc997ab3ee93afd3bfee23b90420d3124
-dirty_tree: dirty
-dirty_files: .claude/commands/next-step.md; .claude/commands/verify.md; .claude/skills/ketchup-pamiec/SKILL.md; .claude/skills/ketchup-workflow/SKILL.md; CLAUDE.md; .claude/commands/domknij-projekt.md; .claude/commands/wczytaj-projekt.md; tools/handoff/test_validate_handoff.py; tools/handoff/validate_handoff.py; docs/HANDOFF.md; docs/HISTORIA-SESJI.md
-outside_handoff_changes: .claude/commands/next-step.md; .claude/commands/verify.md; .claude/skills/ketchup-pamiec/SKILL.md; .claude/skills/ketchup-workflow/SKILL.md; CLAUDE.md; .claude/commands/domknij-projekt.md; .claude/commands/wczytaj-projekt.md; tools/handoff/test_validate_handoff.py; tools/handoff/validate_handoff.py
-task_state: implemented
-plan_point: poza punktami planu: nadbudowa przekazywania stanu sesji (HANDOFF, historia, walidator, komendy); plany merytoryczne bez zmian
-done: HANDOFF i historia; walidator tools/handoff z 53 testami (RED potem GREEN); komendy /wczytaj-projekt i /domknij-projekt; poprawki /next-step, /verify, ketchup-workflow, ketchup-pamiec, CLAUDE.md; gałąź sesji fast-forward do PR #8 (677cdde)
-unfinished: na moment pomiaru nic nie zacommitowane (zgoda na commit, push i PR do dev udzielona); CI na SHA tej paczki do sprawdzenia po push; testy walidatora nie są uruchamiane przez obecne CI
-next_action: po commicie powtórzyć testy walidatora i git diff --check na jego SHA, push, PR do dev (zależy od PR #8), sprawdzić CI na końcowym SHA; potem użytkownik decyduje o kolejności merge (bez merge przed jego zgodą)
-blockers: decyzja użytkownika o kolejności merge (najpierw PR #8); nowy PR do dev zawiera 4 commity #8 do czasu jego merge
-do_not_touch: kod aplikacji; .github/workflows; .claude/settings.json; wzorce Roborazzi; PR #8 (bez merge, rebase i force-push)
-test: python3 -B -m unittest discover -s tools/handoff -p 'test_*.py' | PASS | working_tree | 2026-11-07T14:40:46+01:00, exit 0, 53 testy; RED przed implementacją: ModuleNotFoundError; CI tych testów nie uruchamia
-test: git diff --check (śledzone) i kontrola białych znaków plików nieśledzonych | PASS | working_tree | 2026-11-07T14:40:46+01:00, exit 0, bez uwag
-test: ./gradlew spotlessCheck | NOT_RUN | none | próba exit 1: nie rozwiązano wtyczki com.android.application:8.10.1 (brak dostępu do repozytoriów i Android SDK w Cloud)
-test: CI build + emulator + gitleaks na head PR #8 | PASS | 677cddebc997ab3ee93afd3bfee23b90420d3124 | https://github.com/Jack4B/ketchup-player/actions/runs/42352920981
-test: CI na commicie z tą paczką | NOT_RUN | none | w chwili zapisu commit jeszcze nie istnieje; wynik na dokładnym SHA jest w raporcie sesji i w PR (dokument nie zawiera własnego SHA)
+pr: https://github.com/Jack4B/ketchup-player/pull/9
+base_sha: b9ca3a336ed3a73968df7244e9c194c61cf94f89
+verified_code_sha: f4416505f90e77059fd335f3c8bd8d5fc80797d7
+dirty_tree: clean
+dirty_files: none
+outside_handoff_changes: none
+task_state: awaiting_merge
+plan_point: poza punktami planu: przekazywanie stanu sesji (PR #9) i deterministyczne zrzuty Roborazzi (PR #10), makiety v5.1 i workflow (PR #8); plany merytoryczne bez zmian
+done: PR #10 scalony do dev (zegar UI, Home w dwóch rozmiarach, "koniec ok." i wiek odświeżenia ze źródła czasu, 22 wzorce, --continue i raporty JUnit w CI); PR #8 scalony do dev po aktualizacji gałęzi (CI w trybie verify); gałąź PR #9 zaktualizowana o dev bez konfliktów, własny diff = 11 plików handoff; dev po #10 i #8: CI zielone, 0 zmian w PNG Roborazzi, bot dopisał tylko docs/qa/emulator
+unfinished: PR #9 czeka na scalenie po końcowym CI (wpis zapisany przed scaleniem: na dev PR #9 jest już scalony); żadna kolejna funkcja aplikacji nie została rozpoczęta
+next_action: nowa sesja: repo Jack4B/ketchup-player, gałąź dev, komenda /wczytaj-projekt; następny punkt planu wg docs/PLAN-FINALNY.md (krok 1: 1.1, 1.2, 1.3, 1.5), po akceptacji użytkownika
+blockers: none
+do_not_touch: main; PR #5 (dev do main); kod aplikacji bez zlecenia; lista IPTV z danymi logowania nie jest częścią repo ani zadania
+test: python3 -B -m unittest discover -s tools/handoff -p 'test_*.py' | PASS | f48d447284136850d7d8ecd0808dda559af7f3fd | 2026-11-07T23:28:44+01:00, exit 0, 53 testy (lokalnie na czystym drzewie; CI tych testów nie uruchamia)
+test: git diff --check origin/dev..HEAD | PASS | f48d447284136850d7d8ecd0808dda559af7f3fd | exit 0, bez uwag
+test: CI PR #10 verify (junit-roborazzi-verify), dwa wykonania | PASS | f4416505f90e77059fd335f3c8bd8d5fc80797d7 | https://github.com/Jack4B/ketchup-player/actions/runs/42398919081 ; 298 testów 0 FAIL, wykonania 19:39 i 20:21 Europe/Warsaw, 24 dotknięte testy zrzutowe PASS
+test: CI PR #8 verify po aktualizacji o dev | PASS | 9180a20e1edb6786c7fac7778ec42287841b7462 | https://github.com/Jack4B/ketchup-player/actions/runs/42414573838 ; 298 testów 0 FAIL
+test: CI dev (tryb record, nie verify) po scaleniu PR #10 | PASS | 497bc93235fc2a4d11152f9bf06d06876d34d09d | https://github.com/Jack4B/ketchup-player/actions/runs/42412060376 ; 0 zmian PNG Roborazzi
+test: CI dev (tryb record, nie verify) po scaleniu PR #8 | PASS | a502d4cce1f25f9a8b84bf70cc2ebeaac8c9510d | https://github.com/Jack4B/ketchup-player/actions/runs/42418275718 ; 0 zmian PNG Roborazzi
+test: ./gradlew spotlessCheck i testy aplikacji lokalnie | NOT_RUN | none | brak Android SDK w środowisku Cloud; wykonywane w CI
+test: CI PR #9 po aktualizacji o dev (pełne, z emulatorem) | NOT_RUN | none | uruchamia się po tym zapisie; wynik w raporcie sesji i w PR (dokument nie zawiera własnego SHA)
 ```
