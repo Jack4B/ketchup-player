@@ -43,6 +43,8 @@ Komendy: `/next-step` (wybór + plan), `/verify` (bramka przed PR).
 
 Krok 2 może iść równolegle z 1, ale **blokuje** wydanie. Nie skacz bramek bez pytania.
 
+Opcjonalnie na prośbę użytkownika: `/ub-mode` (TDD i małe jednostki pracy). Nie rozszerza zakresu planu; narzędzia towarzyszące nie są automatycznie instalowane.
+
 ## Reguły twarde
 
 - PR → **`dev`**. Nigdy push/merge na **`main`**.

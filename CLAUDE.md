@@ -19,6 +19,8 @@
 
 ## Workflow sesji
 
+- Opcjonalnie `/ub-mode`: skill `.claude/skills/ub-mode` (MIT, Robert C. Martin); ładuj tylko na prośbę. Zasady projektu i zakres mikro-PR wygrywają; bez refaktoru na zapas i bez automatycznego merge.
+
 - Pętla mikro-PR, bramki 8 kroków, Cloud (bez boxa/adb), reguły PR→`dev`: skill `.claude/skills/ketchup-workflow` (`ketchup-workflow`).
 - Pamięć checklist / APK / box: skill `ketchup-pamiec` + checkboxy w `docs/PLAN-1.0.md` i `docs/PLAN-FINALNY.md` (to status między sesjami).
 - Komendy: `/next-step` — wybór punktu i plan mikro-PR (czekaj na OK); `/verify` — spotless/test/assemble lub CI gdy brak SDK.
