@@ -13,7 +13,10 @@ class HomeScreenVariantsTest {
     private val variants = listOf(HomeScreenTest::class.java, HomeScreenTallTest::class.java)
 
     private fun testNames(variant: Class<*>) =
-        variant.methods.filter { it.isAnnotationPresent(Test::class.java) }.map { it.name }.toSet()
+        variant.methods
+            .filter { it.isAnnotationPresent(Test::class.java) }
+            .map { it.name }
+            .toSet()
 
     @Test
     fun kazdyWariantRozmiaruMaWylacznieWlasneTesty() {
@@ -35,7 +38,12 @@ class HomeScreenVariantsTest {
                 .filter { it.extension == "kt" }
                 .flatMap { file -> captures.findAll(file.readText()).map { it.groupValues[1] } }
                 .toList()
-        val duplicated = paths.groupBy { it }.filterValues { it.size > 1 }.keys.sorted()
+        val duplicated =
+            paths
+                .groupBy { it }
+                .filterValues { it.size > 1 }
+                .keys
+                .sorted()
         assertEquals("Ten sam plik wzorca zapisuje więcej niż jedno miejsce", emptyList<String>(), duplicated)
         assertEquals(true, paths.isNotEmpty())
     }

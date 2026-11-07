@@ -3,8 +3,10 @@ package pl.ketchupplayer.tv.core.designsystem
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.Instant
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 
 class UiClockTest {
     @Test
@@ -46,10 +48,10 @@ class UiClockTest {
 
     @Test
     fun zegarSystemowyPokazujeBiezacyCzasUrzadzenia() {
-        val before = java.time.LocalTime.now().withSecond(0).withNano(0)
+        val before = LocalTime.now().withSecond(0).withNano(0)
         val shown = UiClock.System.hhmm()
-        val after = java.time.LocalTime.now().withSecond(0).withNano(0)
-        val fmt = java.time.format.DateTimeFormatter.ofPattern("HH:mm")
+        val after = LocalTime.now().withSecond(0).withNano(0)
+        val fmt = DateTimeFormatter.ofPattern("HH:mm")
         assertEquals(true, shown == before.format(fmt) || shown == after.format(fmt))
     }
 }
