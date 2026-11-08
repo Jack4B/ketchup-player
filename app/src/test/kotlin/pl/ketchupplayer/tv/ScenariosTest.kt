@@ -1252,6 +1252,39 @@ class ScenariosTest {
         }
     }
 
+    /**
+     * Syntetyczny katalog o cechach dużej listy (nie lista użytkownika): import z prawdziwym Room, Filmy i Seriale
+     * zgrupowane z odcinków, Szukaj we wszystkim oraz dodawanie i usuwanie z Mojej listy.
+     */
+    @Test
+    fun syntetycznyKatalogImportujeSzukaIPamietaUlubione() {
+        val host = server.baseUrl()
+        server.serve("/syn.m3u") { SyntheticCatalog.m3u(host) }
+        addProviderViaUi("Katalog syntetyczny", server.url("/syn.m3u"))
+        waitForText("Kanały: ${SyntheticCatalog.LIVE}", substring = true)
+        nav("Filmy")
+        waitForText("Burza")
+        nav("Seriale")
+        waitForText("Komisariat 7")
+        waitForText("Rodzina Kowalskich")
+        nav("Szukaj")
+        waitForText("Burza")
+        compose.onNode(hasSetTextAction()).performTextInput("komis")
+        waitFor { compose.onAllNodesWithText("Burza").fetchSemanticsNodes().isEmpty() }
+        waitForText("Komisariat 7")
+        nav("Filmy")
+        click("Burza")
+        click("+ Moja lista")
+        waitForText("✓ Moja lista")
+        nav("Moja lista")
+        waitForText("Burza")
+        click("Burza")
+        click("✓ Moja lista")
+        waitForText("+ Moja lista")
+        nav("Moja lista")
+        waitForText("Moja lista jest pusta", substring = true)
+    }
+
     /** Przegląd nawigacji (plan 1.3): BACK z treści każdej sekcji przenosi fokus na jej pozycję w szynie. */
     @Test
     fun backZKazdejSekcjiWracaNaSzyne() {
