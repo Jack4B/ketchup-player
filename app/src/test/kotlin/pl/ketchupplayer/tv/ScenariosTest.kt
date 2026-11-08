@@ -2,6 +2,9 @@ package pl.ketchupplayer.tv
 
 import android.os.Looper
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.click
@@ -9,6 +12,7 @@ import androidx.compose.ui.test.filter
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isFocused
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -79,6 +83,10 @@ class ScenariosTest {
         const val CLOCK_STEP_MS = 500L
         const val GRID_ROW = 10_000f
         const val SETTLED_READS = 3
+        const val REMOTE_STEPS = 10
+        val RAIL_LABELS = listOf("Profil", "Szukaj", "Home", "Na żywo", "Filmy", "Seriale", "Moja lista", "Ustawienia")
+        val VOD_CATEGORIES = listOf("Wszystkie", "Ostatnio dodane", "Dramat", "Komedia", "Kryminał")
+        const val RAIL_SETTLE_MS = 500L
     }
 
     @get:Rule(order = -1)
@@ -1000,6 +1008,54 @@ class ScenariosTest {
             compose.waitForIdle()
         }
 
+    private fun describeNode(node: SemanticsNode): String {
+        val description = node.config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString()
+        val text = node.config.getOrNull(SemanticsProperties.Text)?.joinToString { it.text }
+        return listOfNotNull(description?.let { "opis=$it" }, text?.let { "tekst=$it" }).joinToString(", ")
+    }
+
+    /** Opisy elementów z fokusem (opis dostępności i tekst), do asercji „gdzie jest fokus” bez znajomości drzewa. */
+    private fun focusedDescriptions(): List<String> {
+        val nodes = compose.onAllNodes(isFocused()).fetchSemanticsNodes()
+        return nodes.map { describeNode(it) }
+    }
+
+    private fun focusedHas(part: String) = focusedDescriptions().any { it.contains(part) }
+
+    private fun railFocused() = focusedDescriptions().any { d -> RAIL_LABELS.any { d.startsWith("opis=$it") } }
+
+    private fun categoryFocused() = focusedDescriptions().any { d -> VOD_CATEGORIES.any { d == "tekst=$it" } }
+
+    /**
+     * Wybór sekcji samym pilotem: LEWO do szyny, GÓRA na jej początek, DÓŁ do pozycji [label], OK. Ścieżka użytkownika
+     * na boxie (fokus po wyborze sekcji zostaje na szynie albo przechodzi na treść, więc LEWO powtarzamy do skutku).
+     */
+    private fun openSectionWithRemote(label: String) {
+        pressKeys(listOf(Key.ShiftLeft))
+        repeat(REMOTE_STEPS) { if (!railFocused()) pressKeys(listOf(Key.DirectionLeft)) }
+        check(railFocused()) { "LEWO nie doprowadziło na szynę, fokus: ${focusedDescriptions()}" }
+        // Szyna zdąży się rozwinąć (inaczej tylko aktywna pozycja przyjmuje fokus).
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(RAIL_SETTLE_MS))
+        compose.waitForIdle()
+        repeat(REMOTE_STEPS) { pressKeys(listOf(Key.DirectionUp)) }
+        repeat(REMOTE_STEPS) { if (!focusedHas("opis=$label")) pressKeys(listOf(Key.DirectionDown)) }
+        compose.onNodeWithContentDescription(label).assertIsFocused()
+        pressKeys(listOf(Key.DirectionCenter))
+    }
+
+    /** Z szyny i z kategorii w prawo, z reszty w dół: naturalna droga od szyny/pola szukania do wyniku. */
+    private fun walkRemoteTo(target: String) {
+        val trace = mutableListOf(focusedDescriptions().toString())
+        repeat(REMOTE_STEPS) {
+            if (!focusedHas(target)) {
+                pressKeys(listOf(if (railFocused() || categoryFocused()) Key.DirectionRight else Key.DirectionDown))
+                trace += focusedDescriptions().toString()
+            }
+        }
+        println("TRASA FOKUSU do '$target': ${trace.joinToString(" -> ")}")
+        check(focusedHas(target)) { "Nie dotarto do '$target': ${trace.joinToString(" -> ")}" }
+    }
+
     /** Błąd z boxa: po wejściu w Ustawienia nie dało się wrócić pilotem do szyny i innych sekcji. */
     @Test
     fun zUstawienPilotemMoznaWrocicDoSzynyIInnychSekcji() {
@@ -1096,6 +1152,51 @@ class ScenariosTest {
         compose.mainClock.advanceTimeBy(500)
         compose.waitForIdle()
         compose.onNodeWithContentDescription("Na żywo").assertIsFocused()
+    }
+
+    /**
+     * Plan 1.3, Moja lista i Szukaj samym pilotem na prawdziwym grafie (Room, serwer Xtream): wejście z szyny, fokus,
+     * plakat, szczegóły, BACK do szyny i Home. Dane (Pitbull na liście) przygotowane dotykiem; fraza wpisana przez IME
+     * (`performTextInput`) w polu, do którego fokus doszedł klawiszem.
+     */
+    @Test
+    fun mojaListaISzukajDzialajaSamymPilotem() {
+        serveXtreamVod()
+        addXtreamViaUi("dobre-haslo")
+        waitForText("Kanały: 2", substring = true)
+        nav("Filmy")
+        click("Pitbull")
+        click("+ Moja lista")
+        waitForText("✓ Moja lista")
+
+        openSectionWithRemote("Moja lista")
+        waitForText("Pitbull")
+        waitFor { focusedHas("tekst=Wszystkie") } // fokus na kategorii, jak w Filmach
+        pressKeys(listOf(Key.DirectionRight))
+        waitFor { focusedHas("Pitbull") }
+        pressKeys(listOf(Key.DirectionCenter))
+        waitForText("FILM") // szczegóły filmu
+        back()
+        waitFor { compose.onAllNodesWithText("FILM").fetchSemanticsNodes().isEmpty() } // wróciła lista
+        waitFor { focusedDescriptions().isNotEmpty() } // po powrocie fokus nie jest zgubiony
+        compose.mainClock.advanceTimeBy(500)
+        compose.waitForIdle()
+        back() // z listy na szynę
+        compose.onNodeWithContentDescription("Moja lista").assertIsFocused()
+        back() // z szyny na Home
+        waitForText("Mam czas na", substring = true)
+
+        openSectionWithRemote("Szukaj")
+        waitForText("Seksmisja")
+        waitForText("Rodzina Kowalskich") // filmy i seriale razem
+        waitFor { focusedHas("tekst=Wszystkie") }
+        pressKeys(listOf(Key.DirectionUp))
+        compose.onNode(hasSetTextAction()).assertIsFocused()
+        compose.onNode(hasSetTextAction()).performTextInput("kowal")
+        waitFor { compose.onAllNodesWithText("Seksmisja").fetchSemanticsNodes().isEmpty() }
+        walkRemoteTo("Rodzina Kowalskich")
+        pressKeys(listOf(Key.DirectionCenter))
+        waitForText("SERIAL") // szczegóły serialu
     }
 
     /** Przegląd nawigacji (plan 1.3): BACK z treści każdej sekcji przenosi fokus na jej pozycję w szynie. */
@@ -1727,6 +1828,28 @@ class ScenariosTest {
         waitForText("Lista: połączenia 1 z 2")
     }
 
+    /** Audyt układu: pusta Moja lista, Szukaj z wynikami i Szukaj bez wyników (plan 1.3). */
+    private fun auditEmptyMyListAndSearch(audit: (String) -> Unit) {
+        nav("Moja lista")
+        waitForText("Moja lista jest pusta", substring = true)
+        audit("Moja lista (pusta)")
+        nav("Szukaj")
+        waitForText("Seksmisja")
+        audit("Szukaj")
+        compose.onAllNodes(hasSetTextAction())[0].performTextInput("zzz")
+        waitForText("Brak wyników dla", substring = true)
+        audit("Szukaj (brak wyników)")
+    }
+
+    /** Audyt układu: Moja lista z pozycją dodaną na szczegółach filmu (ekran szczegółów jest otwarty). */
+    private fun auditFilledMyList(audit: (String) -> Unit) {
+        click("+ Moja lista")
+        waitForText("✓ Moja lista")
+        nav("Moja lista")
+        waitForText("Pitbull")
+        audit("Moja lista")
+    }
+
     /**
      * Audyt układu (raport 2.11: „czy nikt się nie chowa, czy jest wyśrodkowane, czy czcionki dobrze dobrane”):
      * przechodzi przez główne ekrany jako telewizor i mierzy wyjście poza ekran, minimalną czcionkę, rozmiar celów
@@ -1761,6 +1884,9 @@ class ScenariosTest {
         nav("Seriale")
         waitForText("Rodzina Kowalskich")
         audit("Seriale")
+        auditEmptyMyListAndSearch { audit(it) }
+        nav("Seriale")
+        waitForText("Rodzina Kowalskich")
         click("Pitbull".takeIf { false } ?: "Rodzina Kowalskich")
         waitForText("SERIAL")
         audit("Szczegóły serialu")
@@ -1769,6 +1895,7 @@ class ScenariosTest {
         click("Pitbull")
         waitForText("FILM")
         audit("Szczegóły filmu")
+        auditFilledMyList { audit(it) }
         listOf(
             "Dostawcy",
             "Grupy i kategorie",
