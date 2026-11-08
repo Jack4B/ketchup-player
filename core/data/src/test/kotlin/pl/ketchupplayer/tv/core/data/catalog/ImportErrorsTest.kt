@@ -42,8 +42,8 @@ class ImportErrorsTest {
 
     @Test
     fun `komunikat HTTP zawiera odpowiedz serwera`() {
-        val msg = friendlyImportError("HTTP 513 · serwer: nginx, «Too many connections»")
-        assertTrue("HTTP 513" in msg && "Too many connections" in msg && "nginx" in msg)
+        val msg = friendlyImportError("HTTP 513 · serwer: nginx, «zbyt wiele połączeń»")
+        assertTrue("HTTP 513" in msg && "zbyt wiele połączeń" in msg && "nginx" in msg)
     }
 
     // --- Issue #12: dane dostępu w tekście błędu (wyłącznie fikcyjne). ---
@@ -64,6 +64,14 @@ class ImportErrorsTest {
         val out = msg("HTTP 404 · serwer: nginx, «nie znaleziono $secretUrl»")
         assertNoSecret(out)
         assertTrue("HTTP 404" in out || "404" in out)
+    }
+
+    @Test
+    fun `tresc odpowiedzi serwera ze sciezka bez schematu nie jest wyswietlana`() {
+        val out = msg("HTTP 404 · serwer: nginx, «The requested URL /user123/pass456/77 was not found»")
+        assertNoSecret(out)
+        assertFalse(out, "requested URL" in out)
+        assertTrue(out, "nginx" in out)
     }
 
     @Test

@@ -30,4 +30,13 @@ class SafeErrorsTest {
         assertEquals("Błąd sieci (IllegalArgumentException)", out)
         assertTrue(safeErrorText(null, "Błąd") == "Błąd")
     }
+
+    @Test
+    fun `probe opisuje ksztalt odpowiedzi zamiast przepisywac jej tresc`() {
+        assertEquals("lista M3U (#EXTM3U)", probeShape("#EXTM3U url-tvg=\"$secretUrl\""))
+        assertEquals("odpowiedź JSON", probeShape("""{"user_info":{"username":"user123","password":"pass456"}}"""))
+        val page = "The requested URL /user123/pass456/77 was not found"
+        assertEquals("odpowiedź w innym formacie", probeShape(page))
+        assertEquals("pusta odpowiedź", probeShape("  "))
+    }
 }

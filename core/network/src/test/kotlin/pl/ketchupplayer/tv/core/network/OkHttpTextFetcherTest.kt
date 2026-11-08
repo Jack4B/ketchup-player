@@ -38,7 +38,10 @@ class OkHttpTextFetcherTest {
             assertEquals(true, NetworkClients.DEFAULT_USER_AGENT.startsWith("OTT Navigator/"))
         }
 
-    /** Błąd 513 (jak u dostawców blokujących łącze): wyjątek niesie serwer i oczyszczoną treść, bez haseł. */
+    /**
+     * Błąd 513 (jak u dostawców blokujących łącze): wyjątek niesie nagłówek serwera i stałą podpowiedź rozpoznaną w
+     * treści, nigdy samą treść (issue #12).
+     */
     @Test
     fun `blad HTTP niesie krotki opis serwera bez danych logowania`() =
         runTest {
@@ -54,8 +57,8 @@ class OkHttpTextFetcherTest {
                 ).fetch(url()).exceptionOrNull() as NetworkException.Http
             assertEquals(513, failure.code)
             val msg = failure.message.orEmpty()
-            assertEquals(true, "nginx" in msg && "Blocked" in msg && "too many connections" in msg)
-            assertEquals(false, "tajne123" in msg || "jan&" in msg)
+            assertEquals(true, "nginx" in msg && "zbyt wiele połączeń" in msg)
+            assertEquals(false, "tajne123" in msg || "jan&" in msg || "Blocked" in msg)
         }
 
     @Test
@@ -213,5 +216,20 @@ class OkHttpTextFetcherTest {
         runTest {
             server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST))
             assertTrue(fetcher().fetchLines(url()) { it.toList() }.isFailure)
+        }
+
+    @Test
+    fun `tresc odpowiedzi serwera ze sciezka bez schematu nie trafia do wyjatku`() =
+        runTest {
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(404)
+                    .setHeader("Server", "nginx")
+                    .setBody("The requested URL /user123/pass456/77 was not found on this server"),
+            )
+            val failure = OkHttpTextFetcher(NetworkClients.stream()).fetch(url()).exceptionOrNull()
+            val msg = failure?.message.orEmpty()
+            assertEquals(false, "user123" in msg || "pass456" in msg || "requested URL" in msg)
+            assertEquals(true, "HTTP 404" in msg && "nginx" in msg)
         }
 }

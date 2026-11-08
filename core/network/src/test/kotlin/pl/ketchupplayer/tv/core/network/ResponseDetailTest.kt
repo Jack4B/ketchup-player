@@ -27,8 +27,10 @@ class ResponseDetailTest {
     }
 
     @Test
-    fun `znana granica - sciezka bez schematu w tresci odpowiedzi nie jest maskowana`() {
+    fun `znana granica - sanitizeDetail nie maskuje sciezki bez schematu, wiec tresci serwera sie nie przepisuje`() {
         assertTrue(sanitizeDetail("The requested URL /user123/pass456/77 was not found").contains("pass456"))
+        assertEquals("nie znaleziono zasobu", bodyHint("The requested URL /user123/pass456/77 was not found"))
+        assertEquals(null, bodyHint("Internal user123 secret page"))
     }
 
     @Test

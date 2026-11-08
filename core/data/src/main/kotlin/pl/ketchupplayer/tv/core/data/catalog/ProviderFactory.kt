@@ -14,7 +14,6 @@ import pl.ketchupplayer.tv.provider.xtream.XtreamProvider
 import javax.inject.Inject
 
 private const val PROBE_LINES = 2
-private const val PROBE_CHARS = 80
 
 /** Składa dostawcę z wpisu w bazie i sekretów; zwraca null, gdy brakuje zapisanych danych. */
 class ProviderFactory
@@ -57,12 +56,7 @@ class ProviderFactory
                     ProviderType.STALKER -> null
                 } ?: return "brak danych dostawcy"
             return result.fold(
-                onSuccess = { lines ->
-                    "OK · " +
-                        pl.ketchupplayer.tv.core.network
-                            .sanitizeDetail(lines.joinToString(" "))
-                            .take(PROBE_CHARS)
-                },
+                onSuccess = { lines -> "OK · " + probeShape(lines.joinToString(" ")) },
                 onFailure = { safeErrorText(it, "błąd sieci") },
             )
         }
@@ -84,3 +78,17 @@ class ProviderFactory
             }
         }
     }
+
+/**
+ * Opis kształtu odpowiedzi próbnej (M3U / JSON / inne) zamiast przepisywania jej treści: treść serwera jest nieufna i
+ * może zawierać dane dostępu w formie, której `Redactor` nie rozpozna (issue #12).
+ */
+internal fun probeShape(text: String): String {
+    val t = text.trimStart()
+    return when {
+        t.startsWith("#EXTM3U", ignoreCase = true) -> "lista M3U (#EXTM3U)"
+        t.startsWith("{") || t.startsWith("[") -> "odpowiedź JSON"
+        t.isEmpty() -> "pusta odpowiedź"
+        else -> "odpowiedź w innym formacie"
+    }
+}

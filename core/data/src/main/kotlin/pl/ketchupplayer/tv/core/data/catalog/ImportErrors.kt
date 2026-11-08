@@ -42,15 +42,29 @@ fun friendlyImportError(raw: String?): String {
     }
 }
 
-/** Fragment po „ · ” w komunikacie HTTP: co odpowiedział serwer (typ serwera, treść) bez danych logowania. */
+/**
+ * Fragment po „ · ” w komunikacie HTTP: co odpowiedział serwer (typ serwera, stała podpowiedź w «…»). Tekst w «…» nie
+ * jest przepisywany (obrona w głąb: treść odpowiedzi serwera jest nieufna, a ścieżka bez schematu nie jest maskowana
+ * przez [Redactor]); zostają tylko znane, własne podpowiedzi.
+ */
 private fun serverDetail(text: String): String {
     val i = text.indexOf(" · ")
     if (i < 0) return ""
-    val detail = Redactor.redact(text.substring(i + 3)).trim().take(DETAIL_MAX)
+    val raw = text.substring(i + 3)
+    val withHint = HINT.replace(raw) { m -> if (m.groupValues[1] in KNOWN_HINTS) m.value else "" }
+    val detail =
+        Redactor
+            .redact(withHint)
+            .replace(TRAILING_SEPARATORS, "")
+            .trim()
+            .take(DETAIL_MAX)
     return if (detail.isEmpty()) "" else "\nOdpowiedź serwera: $detail"
 }
 
 private const val DETAIL_MAX = 200
+private val TRAILING_SEPARATORS = Regex("""[\s,]+$""")
+private val HINT = Regex("""«([^»]*)»""")
+private val KNOWN_HINTS = setOf("zbyt wiele połączeń", "dostęp zablokowany", "nie znaleziono zasobu")
 
 private fun httpMessage(code: Int): String =
     when {
