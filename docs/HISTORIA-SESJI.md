@@ -33,3 +33,10 @@ Krótkie wpisy dopisywane chronologicznie (nowe na końcu); starych nie przepisu
 - Poprawki testów: `FocusItemTest` zamiast sondy, tryb klawiszowy w testach modułowych (`SideEffect`, z kontrolą), scenariusze pilota E2E z oknem w trybie nie-dotykowym (`TvBoxRule` + `@StartsInRemoteMode`, `Instrumentation.setInTouchMode`, kontrola `requireRemoteMode`); wcześniejsza wersja z refleksją (`bcf8852`) zastąpiona. Asercji nie osłabiano.
 - `bcf8852`: bieg 42476586646 padł na pobieraniu Gradle (timeout 10000 ms), testów nie wykonano. Następny krok: jeden bieg CI na końcowym SHA i odczyt JUnit; potem usunięcie sond.
 - `676cf21`: bieg 42477518536 znów padł na pobieraniu Gradle (timeout 10000 ms), testów nie wykonano. Użytkownik zatwierdził jedną zmianę poza zakresem testów: `networkTimeout` 10000 -> 60000 w `gradle-wrapper.properties` (uzasadnienie: powtarzające się timeouty 10 s; nie naprawia HTTP 504). Jeden automatyczny bieg CI na tym SHA.
+
+## 2026-11-08 (Europe/Warsaw), poprawki testów i diagnostyka OOM (PR #11, w toku)
+
+- Bieg `6844d2f` (diagnostyczny `--info --stacktrace` w Spotless): Gradle, Spotless/ktlint i Detekt przeszły (pierwotny wyjątek ktlint nieuchwycony), 505 z 511 testów PASS. `FocusItemTest` 4/4 i scenariusz syntetycznego katalogu PASS; ścieżki Szukaj w module PASS. Czerwone: 3 testy Mojej listy (błędne oczekiwanie pierwszego plakatu: kolejność wg `addedMs`, nie wg listy), test LEWO na pustej liście (LEWO z akcji wchodzi w pole, strzałki zostają w polu) i 2 scenariusze pilota E2E z `OutOfMemoryError`.
+- `06961d2`: jawna kolejność Mojej listy (czasy 500/300/100, kolejność wejściowa inna niż w siatce) i tożsamość elementu reagującego na OK; test trasy LEWO do pola i BACK na szynę (wygoda do oceny na boxie, dopisane do checklisty); znaczniki etapów, kontrola trybu okna i strażnik (60 s bez etapu: ostatni etap, stos wątku, przerwanie) w scenariuszach pilota; usunięte sondy modułu; `TvBoxRule` przywraca tryb dotyku. Bez zmian produkcji, sterty i trace.
+- Następny krok: odczyt JUnit z biegu na SHA tego wpisu (KROK/STRAŻNIK), minimalna poprawka po ustaleniu przyczyny OOM, potem usunięcie sond i flag CI.
+
