@@ -26,3 +26,10 @@ Krótkie wpisy dopisywane chronologicznie (nowe na końcu); starych nie przepisu
 - Analiza dużej listy M3U użytkownika (prywatny plik poza repo): parser aplikacji na JVM bez błędów; odtwarzanie nie sprawdzone (polityka sieci). `Redactor` nie maskuje adresów `host/użytkownik/hasło/id`.
 - Blokada: pobieranie zależności w CI (Gradle HTTP 504, potem brak ktlint-cli). Bez zmian w CI. Następny krok: powtórzyć CI, gdy pobieranie działa.
 - Dopisane: syntetyczny katalog o cechach dużej listy (fixture i scenariusz Room, Szukaj, ulubione; niewykonane), luka Redactor zgłoszona jako issue #12. CI na `50b979c`: Gradle 504 na pierwszym kroku; bez dalszych prób.
+
+## 2026-11-08 (Europe/Warsaw), diagnoza fokusu w Robolectric (PR #11, w toku)
+
+- Bieg `cdf8952` (po jednym zatwierdzonym ponowieniu i poprawce sondy) wykonał 517 testów: 507 PASS, 10 FAIL; scenariusz syntetycznego katalogu PASS. Dane z sond: w Robolectric tryb wejścia zostaje Touch, semantyka `Focused` elementów `FocusItem` jest w nim pusta, choć OK klika właściwy element, a DÓŁ przenosi fokus; w trybie klawiszowym semantyka pokazuje fokus. Wniosek: ograniczenie środowiska testowego, kod produkcyjny bez zmian. Poprzednia hipoteza („FocusItem nie bierze fokusu”) obalona (pierwsza sonda nie opakowała treści w `KetchupTheme`).
+- Poprawki testów: `FocusItemTest` zamiast sondy, tryb klawiszowy w testach modułowych (`SideEffect`, z kontrolą), scenariusze pilota E2E z oknem w trybie nie-dotykowym (`TvBoxRule` + `@StartsInRemoteMode`, `Instrumentation.setInTouchMode`, kontrola `requireRemoteMode`); wcześniejsza wersja z refleksją (`bcf8852`) zastąpiona. Asercji nie osłabiano.
+- `bcf8852`: bieg 42476586646 padł na pobieraniu Gradle (timeout 10000 ms), testów nie wykonano. Następny krok: jeden bieg CI na końcowym SHA i odczyt JUnit; potem usunięcie sond.
+
