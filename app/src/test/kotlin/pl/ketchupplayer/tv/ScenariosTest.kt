@@ -1063,9 +1063,9 @@ class ScenariosTest {
     }
 
     /**
-     * Strażnik: jeśli przez [WATCHDOG_MS] nie pojawi się nowy znacznik etapu, drukuje ostatni etap oraz stos wątku testu
-     * (hipoteza OOM: pętla klatek w `waitForIdle`; stos wskaże, w którym wywołaniu) i zleca głównej pętli przerwanie
-     * testu błędem z nazwą ostatniego etapu. Nie zmienia sterty, trace ani logiki testów.
+     * Strażnik: jeśli przez [WATCHDOG_MS] nie pojawi się nowy znacznik etapu, drukuje ostatni etap oraz stos wątku
+     * testu (hipoteza OOM: pętla klatek w `waitForIdle`; stos wskaże, w którym wywołaniu) i zleca głównej pętli
+     * przerwanie testu błędem z nazwą ostatniego etapu. Nie zmienia sterty, trace ani logiki testów.
      */
     private fun withWatchdog(block: () -> Unit) {
         val mainThread = Looper.getMainLooper().thread
