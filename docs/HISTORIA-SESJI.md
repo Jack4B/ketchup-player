@@ -17,3 +17,11 @@ Krótkie wpisy dopisywane chronologicznie (nowe na końcu); starych nie przepisu
 - PR #8 zaktualizowany o `dev` (konflikt `ci.yml` rozwiązany na korzyść `dev`: gałęzie `feat/*` przechodzą prawdziwy verify), CI zielone (verify, 298 testów), scalony do `dev`.
 - PR #9: gałąź zaktualizowana o `dev` bez konfliktów, własny diff = 11 plików handoff, 53 testy walidatora PASS na `f48d447`; HANDOFF zaktualizowany przed końcowym CI.
 - Następny krok: nowa sesja na `dev`, `/wczytaj-projekt`; kolejna funkcja nie rozpoczęta.
+
+## 2026-11-08 (Europe/Warsaw): D-pad w Szukaj i Moja lista (PR #11, w toku)
+
+- Gałąź sesji przesunięta na `dev` (`338800b`, fast-forward); 53 testy walidatora PASS na tym SHA; bot zmienił tylko `docs/qa/emulator/`.
+- Draft PR #11: testy D-pad dla trybów Moja lista i Szukaj (moduł `feature:vod`), scenariusz E2E i rozszerzony audyt układu; kod produkcyjny bez zmian.
+- Wyniki CI: asercje fokusu czerwone, bo `FocusItem` nie pokazuje fokusu w drzewie semantyki Robolectric (tryb wejścia zostaje Touch); przyczyna nieustalona, sonda `FocusItemReproTest` dopisana, wynik czeka na działający build. Strzałki w polu wyszukiwania zostają w polu.
+- Analiza dużej listy M3U użytkownika (prywatny plik poza repo): parser aplikacji na JVM bez błędów; odtwarzanie nie sprawdzone (polityka sieci). `Redactor` nie maskuje adresów `host/użytkownik/hasło/id`.
+- Blokada: pobieranie zależności w CI (Gradle HTTP 504, potem brak ktlint-cli). Bez zmian w CI. Następny krok: powtórzyć CI, gdy pobieranie działa.

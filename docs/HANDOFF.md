@@ -34,28 +34,29 @@ Zasady:
 ## Stan
 
 ```handoff
-updated_at: 2026-11-07T23:28:44+01:00
-status: ready_for_review
+updated_at: 2026-11-08T10:21:32+01:00
+status: blocked
 branch: ccr-a5500ce0-233anr
-pr: https://github.com/Jack4B/ketchup-player/pull/9
-base_sha: b9ca3a336ed3a73968df7244e9c194c61cf94f89
-verified_code_sha: f4416505f90e77059fd335f3c8bd8d5fc80797d7
+pr: https://github.com/Jack4B/ketchup-player/pull/11
+base_sha: 338800b5f5116f31b4175b8f9f91615520a81898
+verified_code_sha: 9e1a5aa739bde4f3e08326c81f925de83b6f48df
 dirty_tree: clean
 dirty_files: none
 outside_handoff_changes: none
-task_state: awaiting_merge
-plan_point: poza punktami planu: przekazywanie stanu sesji (PR #9) i deterministyczne zrzuty Roborazzi (PR #10), makiety v5.1 i workflow (PR #8); plany merytoryczne bez zmian
-done: PR #10 scalony do dev (zegar UI, Home w dwóch rozmiarach, "koniec ok." i wiek odświeżenia ze źródła czasu, 22 wzorce, --continue i raporty JUnit w CI); PR #8 scalony do dev po aktualizacji gałęzi (CI w trybie verify); gałąź PR #9 zaktualizowana o dev bez konfliktów, własny diff = 11 plików handoff; dev po #10 i #8: CI zielone, 0 zmian w PNG Roborazzi, bot dopisał tylko docs/qa/emulator
-unfinished: PR #9 czeka na scalenie po końcowym CI (wpis zapisany przed scaleniem: na dev PR #9 jest już scalony); żadna kolejna funkcja aplikacji nie została rozpoczęta
-next_action: nowa sesja: repo Jack4B/ketchup-player, gałąź dev, komenda /wczytaj-projekt; następny punkt planu wg docs/PLAN-FINALNY.md (krok 1: 1.1, 1.2, 1.3, 1.5), po akceptacji użytkownika
-blockers: none
-do_not_touch: main; PR #5 (dev do main); kod aplikacji bez zlecenia; lista IPTV z danymi logowania nie jest częścią repo ani zadania
-test: python3 -B -m unittest discover -s tools/handoff -p 'test_*.py' | PASS | f48d447284136850d7d8ecd0808dda559af7f3fd | 2026-11-07T23:28:44+01:00, exit 0, 53 testy (lokalnie na czystym drzewie; CI tych testów nie uruchamia)
-test: git diff --check origin/dev..HEAD | PASS | f48d447284136850d7d8ecd0808dda559af7f3fd | exit 0, bez uwag
-test: CI PR #10 verify (junit-roborazzi-verify), dwa wykonania | PASS | f4416505f90e77059fd335f3c8bd8d5fc80797d7 | https://github.com/Jack4B/ketchup-player/actions/runs/42398919081 ; 298 testów 0 FAIL, wykonania 19:39 i 20:21 Europe/Warsaw, 24 dotknięte testy zrzutowe PASS
-test: CI PR #8 verify po aktualizacji o dev | PASS | 9180a20e1edb6786c7fac7778ec42287841b7462 | https://github.com/Jack4B/ketchup-player/actions/runs/42414573838 ; 298 testów 0 FAIL
-test: CI dev (tryb record, nie verify) po scaleniu PR #10 | PASS | 497bc93235fc2a4d11152f9bf06d06876d34d09d | https://github.com/Jack4B/ketchup-player/actions/runs/42412060376 ; 0 zmian PNG Roborazzi
-test: CI dev (tryb record, nie verify) po scaleniu PR #8 | PASS | a502d4cce1f25f9a8b84bf70cc2ebeaac8c9510d | https://github.com/Jack4B/ketchup-player/actions/runs/42418275718 ; 0 zmian PNG Roborazzi
-test: ./gradlew spotlessCheck i testy aplikacji lokalnie | NOT_RUN | none | brak Android SDK w środowisku Cloud; wykonywane w CI
-test: CI PR #9 po aktualizacji o dev (pełne, z emulatorem) | NOT_RUN | none | uruchamia się po tym zapisie; wynik w raporcie sesji i w PR (dokument nie zawiera własnego SHA)
+task_state: implemented
+plan_point: 1.3 (część do zrobienia w chmurze): D-pad i audyt układu dla Szukaj i Moja lista; analiza dużej listy M3U użytkownika
+done: dopisane testy (VodBrowseModesScreenTest, scenariusz E2E mojaListaISzukajDzialajaSamymPilotem, audyt układu Moja lista i Szukaj) wraz z tymczasowymi sondami fokusu; analiza listy M3U parserem aplikacji na JVM; ustalone: strzałki w polu wyszukiwania zostają w polu (Robolectric), Redactor nie maskuje adresów host/użytkownik/hasło/id
+unfinished: przyczyna braku fokusu FocusItem w testach nieustalona (hipoteza: struktura clickable + focusable albo semantyka Focused, do rozstrzygnięcia sondą FocusItemReproTest); testy z asercjami fokusu nadal czerwone w ostatnim biegu z wynikami; sondy (println, FocusItemReproTest) do usunięcia przed scaleniem; kryterium 1.3 nie zamknięte
+next_action: gdy CI znowu pobiera zależności: odczytać raport JUnit z FocusItemReproTest na 60ae6be, przepisać asercje fokusu według wyniku (bez requestFocus w teście i bez zmian FocusItem bez dowodu), usunąć sondy, zaktualizować ten wpis przed końcowym CI; osobno, po decyzji: mikro-PR Redactor dla ścieżek host/użytkownik/hasło/id (test najpierw)
+blockers: CI build na 16f9279 (5 prób, pobranie Gradle: HTTP 504) i na 60ae6be (spotless: brak ktlint-cli 1.5.0 z Maven Central) zablokowany pobieraniem zależności, to nie błąd kodu; odtwarzanie próbki strumieni zablokowane polityką sieci środowiska (serwery mediów to adresy IP); brak TV-boxa
+do_not_touch: main; PR #5 (dev do main); lista IPTV (adres i dane dostępu tylko w prywatnym pliku poza repo, nigdy w commitach, logach i raportach); CI i wersja Gradle; produkcyjna obsługa fokusu bez dowodu
+test: python3 -B -m unittest discover -s tools/handoff -p 'test_*.py' | PASS | 338800b5f5116f31b4175b8f9f91615520a81898 | 53 testy, exit 0 (klon w katalogu roboczym; CI tych testów nie uruchamia)
+test: CI dev po scaleniu PR #9 | PASS | 9e1a5aa739bde4f3e08326c81f925de83b6f48df | https://github.com/Jack4B/ketchup-player/actions/runs/42423901738 ; gitleaks, build, emulator
+test: CI PR #11 po poprawce nazwy testu | FAIL | d2787cd313a20d8b703695e112c655214f6fe1f9 | https://github.com/Jack4B/ketchup-player/actions/runs/42463375114 ; nowe testy z asercjami fokusu czerwone, sondy wykonane; E2E mojaListaISzukajDzialajaSamymPilotem czerwony
+test: CI PR #11 na bieżącej gałęzi | NOT_RUN | none | build zablokowany pobieraniem zależności (Gradle 504 na 16f9279; ktlint-cli 1.5.0 na 60ae6be), uruchomienia testów nie było
+test: parser M3U aplikacji na prawdziwej liście (JVM, bez Gradle) | PASS | working_tree | 4578 kanałów w 109 grupach, 19159 filmów, 3475 seriali, 76386 odcinków, 0 pominiętych, parsowanie 774 ms, wyszukiwanie 25-50 ms; to nie jest import do Room ani pomiar na boxie
+test: odtwarzanie próbki strumieni z prawdziwej listy | NOT_RUN | none | serwery mediów to adresy IP, polityka sieci środowiska ich nie przepuszcza (403)
+test: D-pad, ulubione i import do Room na prawdziwej liście | NOT_RUN | none | wymaga środowiska Android; lista nie może trafić do CI
+test: ./gradlew lokalnie | NOT_RUN | none | brak Android SDK w środowisku Cloud
+test: TV-box (fokus, BACK, Szukaj, Moja lista) | NOT_RUN | none | brak urządzenia
 ```
