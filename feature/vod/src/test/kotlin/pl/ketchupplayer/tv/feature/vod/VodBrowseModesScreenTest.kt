@@ -2,6 +2,7 @@ package pl.ketchupplayer.tv.feature.vod
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Column
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -121,6 +122,11 @@ class VodBrowseModesScreenTest {
     ) {
         compose.setContent {
             KetchupTheme(device = DeviceClass.TV) {
+                // TV startuje w trybie nie-dotykowym, a Robolectric w dotykowym; w dotykowym FocusItem (clickable) nie
+                // pokazuje fokusu w semantyce, więc test byłby ślepy. Przełączenie w SideEffect następuje przed
+                // pierwszym żądaniem fokusu ekranu (efekty startują po zastosowaniu kompozycji).
+                val modes = LocalInputModeManager.current
+                SideEffect { modes.requestInputMode(InputMode.Keyboard) }
                 var state by remember { mutableStateOf(initial) }
                 ShellPreview(railId) {
                     VodBrowseScreen(
@@ -137,8 +143,7 @@ class VodBrowseModesScreenTest {
                 }
             }
         }
-        // Bez przesuwania zegara: początkowy fokus ekran ponawia przez kilkanaście klatek, a w teście tryb wejścia jest
-        // dotykowy, dopóki pierwszy klawisz go nie przełączy (na TV tryb jest klawiszowy od startu).
+        // Bez przesuwania zegara: początkowy fokus ekran ponawia przez kilkanaście klatek.
         compose.waitForIdle()
     }
 

@@ -1,6 +1,7 @@
 package pl.ketchupplayer.tv
 
 import android.os.Looper
+import android.view.ViewTreeObserver
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -1035,10 +1036,29 @@ class ScenariosTest {
     private fun categoryFocused() = focusedDescriptions().any { d -> VOD_CATEGORIES.any { d == "tekst=$it" } }
 
     /**
+     * Na TV pierwszy klawisz pilota przełącza okno w tryb nie-dotykowy (Compose: `InputMode.Keyboard`). Robolectric
+     * tego nie robi: `performKeyInput` zostawia tryb dotykowy, a w nim `FocusItem` (clickable) nie pokazuje fokusu w
+     * semantyce, choć D-pad działa (kliknięcie trafia w element, do którego fokus doszedł; potwierdza to
+     * `FocusItemTest` w :core:designsystem). Odtwarzamy to, co robi system (powiadomienie o zmianie trybu dotyku
+     * okna), niczego nie wymuszając na fokusie: ścieżkę do elementu nadal przechodzi pilot.
+     */
+    private fun enterRemoteMode() {
+        compose.runOnUiThread {
+            val observer = compose.activity.window.decorView.viewTreeObserver
+            ViewTreeObserver::class.java
+                .getDeclaredMethod("dispatchOnTouchModeChanged", Boolean::class.javaPrimitiveType)
+                .apply { isAccessible = true }
+                .invoke(observer, false)
+        }
+        compose.waitForIdle()
+    }
+
+    /**
      * Wybór sekcji samym pilotem: LEWO do szyny, GÓRA na jej początek, DÓŁ do pozycji [label], OK. Ścieżka użytkownika
      * na boxie (fokus po wyborze sekcji zostaje na szynie albo przechodzi na treść, więc LEWO powtarzamy do skutku).
      */
     private fun openSectionWithRemote(label: String) {
+        enterRemoteMode()
         pressKeys(listOf(Key.ShiftLeft))
         repeat(REMOTE_STEPS) { if (!railFocused()) pressKeys(listOf(Key.DirectionLeft)) }
         check(railFocused()) { "LEWO nie doprowadziło na szynę, fokus: ${focusedDescriptions()}" }
