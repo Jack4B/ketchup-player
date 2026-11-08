@@ -58,3 +58,9 @@ Krótkie wpisy dopisywane chronologicznie (nowe na końcu); starych nie przepisu
 - Pełne CI na `85494a7` zielone (junit-unit 509 testów, junit-roborazzi-verify 316, 0 failures i 0 skipped, emulator); przegląd względem `dev` bez zastrzeżeń blokujących.
 - Dwa drobiazgi: (1) kanarek `ComposeView` w `inRemoteMode` sprzątany idempotentnie w `finally` także po błędzie (tryb najpierw, potem kanarek, pierwotny wyjątek nie jest maskowany), z testem wymuszonego błędu; (2) zdanie punktu 1.3 w `PLAN-1.0.md` zaktualizowane (testy modułowe i scenariusz E2E istnieją, ograniczenia i testy boxa wymienione), checkbox nieodhaczony.
 
+## 2026-11-08 (Europe/Warsaw), scalenie PR #11 i aktualizacja PR #13
+
+- PR #11 (D-pad w Szukaj i Moja lista, audyt układu) scalony do `dev` (`1989e91`); CI push na tym SHA zielone (build, gitleaks, emulator); bot dopisał zrzuty emulatora (`ba6c2bc`). Punkt 1.3 nie zamknięty: zimny start w trybie klawiszowym, BACK ze szczegółów, LEWO na pustej Mojej liście i testy boxa pozostają otwarte.
+- PR #13 (skrypt testów RC na boxie): przegląd tylko do odczytu (bash -n, ShellCheck, 129 testów offline na atrapach), następnie zwykły merge `dev` do gałęzi (bez rebase i force-push; konfliktów brak, skrypt i dokumentacja bez zmian). Skrypt nie sprawdza BACK ze szczegółów, LEWO z akcji pustej listy ani strzałek w polu wyszukiwania; nie jest zamiennikiem testu na boxie.
+- Decyzje właściciela: issue #12 (maskowanie `host/użytkownik/hasło/id`) naprawiane przed następnym RC (najpierw testy `Redactor`), wstępnie RC `0.9.11-rc2`; wydanie dopiero po zatwierdzonych scaleniach i weryfikacji; personalizacja (PR #14) po pierwszym RC.
+
