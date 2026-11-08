@@ -1,7 +1,6 @@
 package pl.ketchupplayer.tv.core.data.catalog
 
 import pl.ketchupplayer.tv.core.common.ErrorText
-import pl.ketchupplayer.tv.core.common.Redactor
 
 private const val HTTP_UNAUTHORIZED = 401
 private const val HTTP_FORBIDDEN = 403
@@ -25,7 +24,7 @@ fun friendlyImportError(raw: String?): String {
             ?.toInt()
     return when {
         code != null -> httpMessage(code) + serverDetail(text)
-        text.isBlank() -> "Nieznany błąd pobierania listy."
+        text.isBlank() -> MSG_UNKNOWN
         "większa niż" in text -> {
             val mb =
                 LIMIT_BYTES
@@ -37,36 +36,36 @@ fun friendlyImportError(raw: String?): String {
             "Lista jest zbyt duża (limit ${mb ?: "?"} MB). Wpisz mniejszą listę."
         }
         "nie zawiera żadnych kanałów" in text ->
-            "Serwer odpowiedział, ale to nie jest lista kanałów. Konto może być nieaktywne albo adres błędny."
-        else -> networkMessage(text) ?: ErrorText.safe(text, "Nieznany błąd pobierania listy.")
+            MSG_NO_CHANNELS
+        else -> networkMessage(text) ?: ErrorText.safe(text, MSG_UNKNOWN)
     }
 }
 
 /**
- * Fragment po „ · ” w komunikacie HTTP: co odpowiedział serwer (typ serwera, stała podpowiedź w «…»). Tekst w «…» nie
- * jest przepisywany (obrona w głąb: treść odpowiedzi serwera jest nieufna, a ścieżka bez schematu nie jest maskowana
- * przez [Redactor]); zostają tylko znane, własne podpowiedzi.
+ * Fragment po „ · ” w komunikacie HTTP. Treść odpowiedzi i nagłówki serwera są nieufne, więc z tego fragmentu zostają
+ * wyłącznie części o ścisłym, własnym formacie ([SAFE_DETAIL_PART]): znana podpowiedź w «…» albo „ponów po: N s”.
+ * Wszystko inne (np. „serwer: …”, dawna treść odpowiedzi) jest pomijane, także z wpisów sprzed poprawki.
  */
 private fun serverDetail(text: String): String {
     val i = text.indexOf(" · ")
     if (i < 0) return ""
-    val raw = text.substring(i + 3)
-    val withHint = HINT.replace(raw) { m -> if (m.groupValues[1] in KNOWN_HINTS) m.value else "" }
     val detail =
-        Redactor
-            .redact(withHint)
-            .replace(TRAILING_SEPARATORS, "")
-            .trim()
-            .take(DETAIL_MAX)
-    return if (detail.isEmpty()) "" else "\nOdpowiedź serwera: $detail"
+        text
+            .substring(i + 3)
+            .split(", ")
+            .map { it.trim() }
+            .filter { SAFE_DETAIL_PART.matches(it) }
+    return if (detail.isEmpty()) "" else "\n$DETAIL_PREFIX${detail.joinToString(", ")}".take(DETAIL_MAX)
 }
 
 private const val DETAIL_MAX = 200
-private val TRAILING_SEPARATORS = Regex("""[\s,]+$""")
-private val HINT = Regex("""«([^»]*)»""")
-private val KNOWN_HINTS = setOf("zbyt wiele połączeń", "dostęp zablokowany", "nie znaleziono zasobu")
+internal const val DETAIL_PREFIX = "Odpowiedź serwera: "
 
-private fun httpMessage(code: Int): String =
+/** Własny format części szczegółu: stała podpowiedź z `bodyHint` albo odczekanie z `Retry-After` w sekundach. */
+internal val SAFE_DETAIL_PART =
+    Regex("""«(zbyt wiele połączeń|dostęp zablokowany|nie znaleziono zasobu)»|ponów po: \d{1,6} s""")
+
+internal fun httpMessage(code: Int): String =
     when {
         code == HTTP_UNAUTHORIZED || code == HTTP_FORBIDDEN ->
             "Dostawca odmówił dostępu (HTTP $code). Konto może być nieaktywne lub wygasłe albo dane są błędne."
@@ -75,13 +74,20 @@ private fun httpMessage(code: Int): String =
         else -> "Serwer dostawcy zwrócił błąd (HTTP $code). Sprawdź adres albo wpisz inną listę."
     }
 
+internal const val MSG_UNKNOWN = "Nieznany błąd pobierania listy."
+internal const val MSG_NO_CHANNELS =
+    "Serwer odpowiedział, ale to nie jest lista kanałów. Konto może być nieaktywne albo adres błędny."
+internal const val MSG_TIMEOUT =
+    "Serwer nie odpowiada (przekroczony czas). Sprawdź adres i internet albo wpisz inną listę."
+internal const val MSG_HOST = "Nie znaleziono serwera. Sprawdź adres i połączenie z internetem."
+internal const val MSG_CERT = "Nie udało się nawiązać bezpiecznego połączenia (certyfikat). Spróbuj adresu z http."
+internal const val MSG_CONNECT = "Nie można połączyć się z serwerem. Sprawdź adres i port."
+
 private fun networkMessage(text: String): String? =
     when {
-        "SocketTimeout" in text || "InterruptedIO" in text ->
-            "Serwer nie odpowiada (przekroczony czas). Sprawdź adres i internet albo wpisz inną listę."
-        "UnknownHost" in text -> "Nie znaleziono serwera. Sprawdź adres i połączenie z internetem."
-        "SSL" in text || "Certificate" in text ->
-            "Nie udało się nawiązać bezpiecznego połączenia (certyfikat). Spróbuj adresu z http."
-        "ConnectException" in text || "NoRoute" in text -> "Nie można połączyć się z serwerem. Sprawdź adres i port."
+        "SocketTimeout" in text || "InterruptedIO" in text -> MSG_TIMEOUT
+        "UnknownHost" in text -> MSG_HOST
+        "SSL" in text || "Certificate" in text -> MSG_CERT
+        "ConnectException" in text || "NoRoute" in text -> MSG_CONNECT
         else -> null
     }

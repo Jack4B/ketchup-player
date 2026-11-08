@@ -186,28 +186,47 @@ class CatalogRepositoryTest {
             assertNoSecret(db.providers().get(r.id.value)?.lastError)
         }
 
+    private suspend fun presentedAfterStoring(stored: String): Pair<String?, String?> {
+        response = Result.success(list)
+        val repo = repo()
+        val id = (repo.addM3u("A", "http://a.example.invalid/x") as AddProviderResult.Added).id
+        db.providers().markRefreshed(id.value, now, stored, null)
+        val shown =
+            repo.providers
+                .first()
+                .single()
+                .lastError
+        return shown to db.providers().get(id.value)?.lastError
+    }
+
     @Test
-    fun `stary wpis lastError z adresem jest maskowany przy odczycie, a w bazie zostaje do nadpisania (issue 12)`() =
+    fun `stary wpis lastError z adresem nie trafia do UI, a w bazie zostaje do nadpisania (issue 12)`() =
         runTest {
-            response = Result.success(list)
-            val repo = repo()
-            val id = (repo.addM3u("A", "http://a.example.invalid/x") as AddProviderResult.Added).id
-            db.providers().markRefreshed(id.value, now, "unexpected url: $secretUrl", null)
-            assertNoSecret(
-                repo.providers
-                    .first()
-                    .single()
-                    .lastError,
-            )
-            // Nie czyścimy bazy masowo: wcześniejszy wpis może nadal zawierać dane do następnego odświeżenia listy.
-            assertTrue(
-                db
-                    .providers()
-                    .get(id.value)
-                    ?.lastError
-                    .orEmpty()
-                    .contains("pass456"),
-            )
+            val (shown, inDb) = presentedAfterStoring("unexpected url: $secretUrl")
+            assertNoSecret(shown)
+            assertEquals(STORED_ERROR_GENERIC, shown)
+            // Nie czyścimy bazy masowo: wcześniejszy wpis zostaje do następnego odświeżenia listy.
+            assertTrue(inDb.orEmpty().contains("pass456"))
+        }
+
+    @Test
+    fun `stary tekst serwera bez schematu nie trafia do UI, stan bledu zostaje (issue 12)`() =
+        runTest {
+            val old = "The requested URL /user123/pass456/77 was not found"
+            val (shown, inDb) = presentedAfterStoring(old)
+            assertNotNull(shown)
+            assertNoSecret(shown)
+            assertEquals(STORED_ERROR_GENERIC, shown)
+            assertEquals(old, inDb)
+        }
+
+    @Test
+    fun `znany bezpieczny lastError jest pokazywany bez zmian`() =
+        runTest {
+            val known = httpMessage(404)
+            val (shown, inDb) = presentedAfterStoring(known)
+            assertEquals(known, shown)
+            assertEquals(known, inDb)
         }
 
     @Test

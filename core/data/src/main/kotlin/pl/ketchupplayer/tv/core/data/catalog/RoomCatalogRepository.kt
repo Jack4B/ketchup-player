@@ -5,7 +5,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.withLock
 import pl.ketchupplayer.tv.core.common.Clock
 import pl.ketchupplayer.tv.core.common.ErrorText
-import pl.ketchupplayer.tv.core.common.Redactor
 import pl.ketchupplayer.tv.core.common.SafeErrorMessage
 import pl.ketchupplayer.tv.core.data.vod.NEW_EPISODES_WINDOW_MS
 import pl.ketchupplayer.tv.core.database.ChannelDao
@@ -52,8 +51,9 @@ class RoomCatalogRepository
                         urlHost = hostOf(e.url),
                         channelCount = channelDao.count(e.id),
                         lastRefreshMs = e.lastRefreshMs,
-                        // Wpisy zapisane przed poprawką #12 mogły zawierać adresy: maskujemy także przy odczycie.
-                        lastError = e.lastError?.let { Redactor.redact(it) },
+                        // Wpisy sprzed poprawki #12 mogły zawierać adresy lub tekst serwera: do UI idą tylko rozpoznane
+                        // komunikaty, reszta jako ogólna informacja (baza bez zmian).
+                        lastError = presentStoredError(e.lastError),
                     )
                 }
             }
@@ -343,5 +343,5 @@ private fun pl.ketchupplayer.tv.core.model.Episode.toEpisodeEntity() =
         addedMs,
     )
 
-private const val VOD_SKIPPED = "Filmy i seriale pominięte (błąd pobierania katalogu)"
-private const val VOD_SKIPPED_MEMORY = "Filmy i seriale pominięte (za duży katalog na tym urządzeniu)"
+internal const val VOD_SKIPPED = "Filmy i seriale pominięte (błąd pobierania katalogu)"
+internal const val VOD_SKIPPED_MEMORY = "Filmy i seriale pominięte (za duży katalog na tym urządzeniu)"

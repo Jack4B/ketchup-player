@@ -6,6 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import pl.ketchupplayer.tv.core.common.ErrorText
 import pl.ketchupplayer.tv.core.common.SafeErrorMessage
+import java.time.Instant
 
 /** Dane wyłącznie fikcyjne (`*.example.invalid`, user123, pass456). */
 class ResponseDetailTest {
@@ -41,5 +42,42 @@ class ResponseDetailTest {
         val io = NetworkException.Io(IllegalArgumentException("unexpected url: $host/user123/pass456/77.ts"))
         assertEquals("Błąd sieci: IllegalArgumentException", ErrorText.of(io, "x"))
         assertEquals("HTTP 503", ErrorText.of(NetworkException.Http(503), "x"))
+    }
+
+    // --- Retry-After: nagłówek jest nieufny, do komunikatu idzie tylko sparsowana liczba sekund. ---
+
+    private val now = Instant.parse("2026-11-08T20:00:00Z")
+
+    @Test
+    fun `Retry-After w sekundach jest parsowany`() {
+        assertEquals(120L, parseRetryAfter("120", now))
+        assertEquals(30L, parseRetryAfter(" 30 ", now))
+        assertEquals(0L, parseRetryAfter("0", now))
+    }
+
+    @Test
+    fun `Retry-After jako data HTTP daje sekundy wzgledem biezacego czasu`() {
+        assertEquals(120L, parseRetryAfter("Sun, 08 Nov 2026 20:02:00 GMT", now))
+        assertEquals(0L, parseRetryAfter("Sun, 08 Nov 2026 19:00:00 GMT", now))
+    }
+
+    @Test
+    fun `niepoprawny Retry-After jest odrzucany, takze z danymi dostepu`() {
+        val bad =
+            listOf(
+                "",
+                "abc",
+                "-5",
+                "1.5",
+                "12 s",
+                "user123:pass456",
+                "/user123/pass456/77",
+                "120; user123:pass456",
+                "Sun, 99 Foo 2026 user123 GMT",
+                "Mon, 08 Nov 2026 20:02:00 GMT",
+                "Thu, 01 Jan 2099 00:00:00 GMT",
+                "9999999999",
+            )
+        bad.forEach { assertEquals(it, null, parseRetryAfter(it, now)) }
     }
 }

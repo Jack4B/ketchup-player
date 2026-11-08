@@ -42,8 +42,8 @@ class ImportErrorsTest {
 
     @Test
     fun `komunikat HTTP zawiera odpowiedz serwera`() {
-        val msg = friendlyImportError("HTTP 513 · serwer: nginx, «zbyt wiele połączeń»")
-        assertTrue("HTTP 513" in msg && "zbyt wiele połączeń" in msg && "nginx" in msg)
+        val msg = friendlyImportError("HTTP 513 · ponów po: 30 s, «zbyt wiele połączeń»")
+        assertTrue("HTTP 513" in msg && "zbyt wiele połączeń" in msg && "ponów po: 30 s" in msg)
     }
 
     // --- Issue #12: dane dostępu w tekście błędu (wyłącznie fikcyjne). ---
@@ -70,8 +70,15 @@ class ImportErrorsTest {
     fun `tresc odpowiedzi serwera ze sciezka bez schematu nie jest wyswietlana`() {
         val out = msg("HTTP 404 · serwer: nginx, «The requested URL /user123/pass456/77 was not found»")
         assertNoSecret(out)
-        assertFalse(out, "requested URL" in out)
-        assertTrue(out, "nginx" in out)
+        assertFalse(out, "requested URL" in out || "nginx" in out)
+        assertTrue(out, out.startsWith("Nie znaleziono listy"))
+    }
+
+    @Test
+    fun `naglowek serwera i niepoprawny czas oczekiwania z danymi dostepu nie sa wyswietlane`() {
+        val out = msg("HTTP 503 · serwer: user123:pass456, ponów po: /user123/pass456/77 s")
+        assertNoSecret(out)
+        assertFalse(out, "Odpowiedź serwera" in out)
     }
 
     @Test

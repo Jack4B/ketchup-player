@@ -39,8 +39,8 @@ class OkHttpTextFetcherTest {
         }
 
     /**
-     * Błąd 513 (jak u dostawców blokujących łącze): wyjątek niesie nagłówek serwera i stałą podpowiedź rozpoznaną w
-     * treści, nigdy samą treść (issue #12).
+     * Błąd 513 (jak u dostawców blokujących łącze): wyjątek niesie stałą podpowiedź rozpoznaną w treści, nigdy samą
+     * treść ani nagłówek `Server` (issue #12).
      */
     @Test
     fun `blad HTTP niesie krotki opis serwera bez danych logowania`() =
@@ -57,8 +57,8 @@ class OkHttpTextFetcherTest {
                 ).fetch(url()).exceptionOrNull() as NetworkException.Http
             assertEquals(513, failure.code)
             val msg = failure.message.orEmpty()
-            assertEquals(true, "nginx" in msg && "zbyt wiele połączeń" in msg)
-            assertEquals(false, "tajne123" in msg || "jan&" in msg || "Blocked" in msg)
+            assertEquals(true, "zbyt wiele połączeń" in msg)
+            assertEquals(false, "tajne123" in msg || "jan&" in msg || "Blocked" in msg || "nginx" in msg)
         }
 
     @Test
@@ -230,6 +230,40 @@ class OkHttpTextFetcherTest {
             val failure = OkHttpTextFetcher(NetworkClients.stream()).fetch(url()).exceptionOrNull()
             val msg = failure?.message.orEmpty()
             assertEquals(false, "user123" in msg || "pass456" in msg || "requested URL" in msg)
-            assertEquals(true, "HTTP 404" in msg && "nginx" in msg)
+            assertEquals(true, "HTTP 404" in msg)
+            assertEquals(false, "nginx" in msg)
+        }
+
+    private suspend fun failureWith(
+        server: MockWebServer,
+        url: String,
+        build: MockResponse.() -> Unit,
+    ): String {
+        server.enqueue(MockResponse().setResponseCode(503).apply(build))
+        val failure = OkHttpTextFetcher(NetworkClients.stream()).fetch(url).exceptionOrNull()
+        return failure?.message.orEmpty()
+    }
+
+    @Test
+    fun `naglowek Server z danymi dostepu nie trafia do wyjatku`() =
+        runTest {
+            val msg = failureWith(server, url()) { setHeader("Server", "user123:pass456 /user123/pass456/77") }
+            assertEquals("HTTP 503", msg)
+        }
+
+    @Test
+    fun `Retry-After jest przekazywany tylko jako sparsowane sekundy`() =
+        runTest {
+            assertEquals("HTTP 503 · ponów po: 120 s", failureWith(server, url()) { setHeader("Retry-After", "120") })
+        }
+
+    @Test
+    fun `niepoprawny Retry-After z danymi dostepu jest pomijany`() =
+        runTest {
+            val bad = listOf("soon /user123/pass456/77", "120; user123:pass456", "-5", "1.5", "99999999")
+            bad.forEach { value ->
+                val msg = failureWith(server, url()) { setHeader("Retry-After", value) }
+                assertEquals(value, "HTTP 503", msg)
+            }
         }
 }
