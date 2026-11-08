@@ -330,7 +330,7 @@ class VodBrowseModesScreenTest {
     }
 
     @Test
-    fun `szukaj - brak wynikow: komunikat i powrot pilotem na szyne bez gubienia fokusu`() {
+    fun `szukaj - brak wynikow, komunikat i powrot pilotem na szyne bez gubienia fokusu`() {
         val (initial, results) = search("zzz")
         show(initial, "search", results)
         press(Key.ShiftLeft)

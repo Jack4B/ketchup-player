@@ -87,6 +87,7 @@ class ScenariosTest {
         val RAIL_LABELS = listOf("Profil", "Szukaj", "Home", "Na żywo", "Filmy", "Seriale", "Moja lista", "Ustawienia")
         val VOD_CATEGORIES = listOf("Wszystkie", "Ostatnio dodane", "Dramat", "Komedia", "Kryminał")
         const val RAIL_SETTLE_MS = 500L
+        const val SONDA_STEPS = 4
     }
 
     @get:Rule(order = -1)
@@ -1197,6 +1198,28 @@ class ScenariosTest {
         walkRemoteTo("Rodzina Kowalskich")
         pressKeys(listOf(Key.DirectionCenter))
         waitForText("SERIAL") // szczegóły serialu
+    }
+
+    /** SONDA (tymczasowa, diagnostyka): gdzie jest fokus tuż po wyborze sekcji OK z szyny i po chwili. */
+    @Test
+    fun sondaFokusuPoWyborzeSekcji() {
+        serveXtreamVod()
+        addXtreamViaUi("dobre-haslo")
+        waitForText("Kanały: 2", substring = true)
+        nav("Filmy")
+        click("Pitbull")
+        click("+ Moja lista")
+        waitForText("✓ Moja lista")
+        listOf("Filmy", "Seriale", "Moja lista", "Szukaj", "Filmy").forEach { label ->
+            openSectionWithRemote(label)
+            val trace = mutableListOf(focusedDescriptions().toString())
+            repeat(SONDA_STEPS) {
+                Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(RAIL_SETTLE_MS))
+                compose.waitForIdle()
+                trace += focusedDescriptions().toString()
+            }
+            println("SONDA $label: ${trace.joinToString(" -> ")}")
+        }
     }
 
     /** Przegląd nawigacji (plan 1.3): BACK z treści każdej sekcji przenosi fokus na jej pozycję w szynie. */
