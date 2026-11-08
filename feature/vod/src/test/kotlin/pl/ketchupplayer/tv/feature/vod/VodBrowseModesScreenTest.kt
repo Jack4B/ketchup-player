@@ -245,6 +245,7 @@ class VodBrowseModesScreenTest {
             }
         }
         compose.waitForIdle()
+
         fun state(label: String) = println("SONDA1 $label: tryb=${modes?.inputMode} fokus=${focused()}")
         state("start")
         compose.runOnIdle { println("SONDA1 requestFocus w trybie dotyku: ${requester.requestFocus()}") }
