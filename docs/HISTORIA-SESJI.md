@@ -40,3 +40,10 @@ Krótkie wpisy dopisywane chronologicznie (nowe na końcu); starych nie przepisu
 - `06961d2`: jawna kolejność Mojej listy (czasy 500/300/100, kolejność wejściowa inna niż w siatce) i tożsamość elementu reagującego na OK; test trasy LEWO do pola i BACK na szynę (wygoda do oceny na boxie, dopisane do checklisty); znaczniki etapów, kontrola trybu okna i strażnik (60 s bez etapu: ostatni etap, stos wątku, przerwanie) w scenariuszach pilota; usunięte sondy modułu; `TvBoxRule` przywraca tryb dotyku. Bez zmian produkcji, sterty i trace.
 - Następny krok: odczyt JUnit z biegu na SHA tego wpisu (KROK/STRAŻNIK), minimalna poprawka po ustaleniu przyczyny OOM, potem usunięcie sond i flag CI.
 
+## 2026-11-08 (Europe/Warsaw), scenariusz pilota E2E po przygotowaniu danych (PR #11, w toku)
+
+- Biegi 74de962 → 5cc19cc: strażnik skrócił zawieszenie (OOM po ok. 7 min) do 60 s i wskazał miejsce: helper `click` w przygotowaniu danych w oknie startującym w trybie nie-dotykowym. Przyczyna **nierozstrzygnięta** (zapis jako osobne ustalenie); hipotezy o wstrzykiwaniu dotyku nie traktujemy jako ustalonej.
+- Scenariusz pilota przerobiony: dane w trybie dotyku, potem okno w trybie klawiszowym (`requestFocusFromTouch`), kontrola okna i Compose kanarkiem, przywrócenie trybu w `finally`; zakres opisany jako obsługa pilotem po przygotowaniu danych, nie dowód zimnego startu. Na 5cc19cc przełączenie potwierdzone, ścieżki trzech sekcji pilotem przechodzą (509/510).
+- Odkrycie: BACK ze szczegółów filmu przenosi fokus na szynę, szczegóły zostają, drugi BACK prowadzi na Home (`Shell.BackHandler`, `DetailsRoute` bez `onBack`); test zapisuje obecne zachowanie, decyzja o zmianie należy do właściciela (checklista box).
+- Usunięto sondę `sondaFokusuPoWyborzeSekcji` i wydruki; zostaje strażnik i znaczniki etapów bez wydruków. Lokalne `detekt-cli` i `ktlint-cli` (te same wersje co CI) wyłapały błędy lintu przed pushem.
+

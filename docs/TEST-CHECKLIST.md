@@ -133,6 +133,8 @@ Opis w jednym zdaniu, numer scenariusza z tej listy, zrzut ekranu. Przy crashu: 
 - 🖐 Moja lista (pusta): LEWO z akcji „Dostawcy” wchodzi w pole wyszukiwania (strzałki zostają w polu), na szynę prowadzi
   BACK; ocenić, czy ta trasa jest wygodna (test D-pad w CI pilnuje tylko obecnej trasy, nie UX). Sprawdzić też Szukaj i
   Moja lista pilotem: kolejność plakatów (najnowsze dodane najpierw), OK otwiera plakat z fokusem, BACK/LEWO na szynę.
+- 🖐 Szczegóły filmu: BACK przenosi fokus na szynę (szczegóły zostają), drugi BACK prowadzi na Home; ocenić, czy BACK ma
+  zamykać szczegóły do listy (zasada „BACK cofa o jeden poziom”); decyzja właściciela, test D-pad pilnuje obecnego zachowania.
 - 🖐 OSD filmu: GÓRA/INFO pokazuje „O FILMIE” (opis, obsada); trzymanie ◀ ▶ przyspiesza przewijanie.
 - 🖐 HOME w trakcie odtwarzania: dźwięk milknie; powrót wznawia.
 - 🖐 Pilot: pojedyncze krótkie naciśnięcie strzałki = jedno pole (skrypt: krok „Test pilota”, pliki keyguard.txt/getevent.txt).

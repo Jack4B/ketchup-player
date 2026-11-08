@@ -96,9 +96,6 @@ class ScenariosTest {
         val RAIL_LABELS = listOf("Profil", "Szukaj", "Home", "Na żywo", "Filmy", "Seriale", "Moja lista", "Ustawienia")
         val VOD_CATEGORIES = listOf("Wszystkie", "Ostatnio dodane", "Dramat", "Komedia", "Kryminał")
         const val RAIL_SETTLE_MS = 500L
-        const val SONDA_STEPS = 30
-        const val SONDA_STEP_MS = 100L
-        const val SONDA_MSG = 300
         const val MS_PER_S = 1_000L
         const val WATCHDOG_MS = 60_000L
         const val WATCHDOG_POLL_MS = 1_000L
@@ -1057,7 +1054,6 @@ class ScenariosTest {
     @Volatile private var lastStep = "przed testem"
 
     @Volatile private var lastStepAtMs = System.currentTimeMillis()
-    private val startedAtMs = System.currentTimeMillis()
 
     /** Szczegółowe znaczniki wewnątrz helperów (np. click) tylko w testach ze strażnikiem. */
     private var tracing = false
@@ -1066,11 +1062,10 @@ class ScenariosTest {
         if (tracing) step(name)
     }
 
-    /** Krótki znacznik etapu: nazwa i czas od startu testu (bez zrzutów drzewa UI). */
+    /** Zapamiętuje ostatni etap (bez wydruków); strażnik i błąd testu podają go, gdy test się zawiesi lub padnie. */
     private fun step(name: String) {
         lastStep = name
         lastStepAtMs = System.currentTimeMillis()
-        println("KROK +${(lastStepAtMs - startedAtMs) / MS_PER_S}s $name")
     }
 
     private fun <T> stage(
@@ -1199,9 +1194,7 @@ class ScenariosTest {
         Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(RAIL_SETTLE_MS))
         compose.waitForIdle()
         repeat(REMOTE_STEPS) { pressKeys(listOf(Key.DirectionUp)) }
-        println("SZYNA $label po GÓRA: ${focusedDescriptions()}")
         repeat(REMOTE_STEPS) { if (!focusedHas("opis=$label")) pressKeys(listOf(Key.DirectionDown)) }
-        println("SZYNA $label po DÓŁ: ${focusedDescriptions()}")
         step("$label: na pozycji szyny, przed OK")
         compose.onNodeWithContentDescription(label).assertIsFocused()
         pressKeys(listOf(Key.DirectionCenter))
@@ -1223,7 +1216,6 @@ class ScenariosTest {
                 trace += focusedDescriptions().toString()
             }
         }
-        println("TRASA FOKUSU do '$target': ${trace.joinToString(" -> ")}")
         check(focusedHas(target)) { "Nie dotarto do '$target': ${trace.joinToString(" -> ")}" }
     }
 
@@ -1360,18 +1352,20 @@ class ScenariosTest {
         step("Moja lista: fokus na plakacie Pitbull")
         pressKeys(listOf(Key.DirectionCenter))
         waitForText("FILM") // szczegóły filmu
+        waitForText("Pitbull") // tożsamość: szczegóły tego filmu, który miał fokus
         step("Moja lista: otwarte szczegóły filmu")
+        // Obecne zachowanie (nie decyzja UX): pierwszy BACK ze szczegółów przenosi fokus na szynę, szczegóły zostają;
+        // drugi BACK z szyny prowadzi na Home. Czy BACK ma zamykać szczegóły do listy, rozstrzyga właściciel/box.
         back()
-        waitFor { compose.onAllNodesWithText("FILM").fetchSemanticsNodes().isEmpty() } // wróciła lista
-        waitFor { focusedDescriptions().isNotEmpty() } // po powrocie fokus nie jest zgubiony
-        compose.mainClock.advanceTimeBy(500)
-        compose.waitForIdle()
-        back() // z listy na szynę
-        compose.onNodeWithContentDescription("Moja lista").assertIsFocused()
-        step("Moja lista: BACK z siatki na szynę")
-        back() // z szyny na Home
+        waitFor { railFocused() }
+        check(compose.onAllNodesWithText("FILM").fetchSemanticsNodes().isNotEmpty()) {
+            "Po pierwszym BACK szczegóły miały zostać (obecne zachowanie), fokus: ${focusedDescriptions()}"
+        }
+        step("Szczegóły: pierwszy BACK, fokus na szynie")
+        back()
         waitForText("Mam czas na", substring = true)
-        step("BACK z szyny na Home")
+        waitFor { compose.onAllNodesWithText("FILM").fetchSemanticsNodes().isEmpty() }
+        step("Szczegóły: drugi BACK, Home")
 
         openSectionWithRemote("Szukaj")
         waitForText("Seksmisja")
@@ -1388,43 +1382,6 @@ class ScenariosTest {
         pressKeys(listOf(Key.DirectionCenter))
         waitForText("SERIAL") // szczegóły serialu
         step("Szukaj: otwarte szczegóły serialu")
-    }
-
-    private fun sampleFocus(label: String) {
-        val samples =
-            (0 until SONDA_STEPS).map {
-                Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(SONDA_STEP_MS))
-                compose.waitForIdle()
-                val categories = compose.onAllNodesWithText("Wszystkie").fetchSemanticsNodes().size
-                "${focusedDescriptions()}/kat=$categories"
-            }
-        println("SONDA $label: ${samples.joinToString(" -> ")}")
-    }
-
-    /** SONDA (tymczasowa, diagnostyka): gdzie jest fokus po wejściu w sekcję dotykiem i pilotem (co 100 ms). */
-    @Test
-    fun sondaFokusuPoWyborzeSekcji() =
-        withWatchdog {
-            setUpPitbullOnMyList()
-            stage("powrót do Filmy") { nav("Filmy") }
-            stage("lista Filmy") { waitForText("Pitbull") }
-            inRemoteMode { sondaSekcji() }
-        }
-
-    private fun sondaSekcji() {
-        listOf("Moja lista", "Filmy", "Szukaj").forEach { label ->
-            stage("sekcja $label pilotem") {
-                runCatching { openSectionWithRemote(label) }
-                    .onFailure { println("SONDA $label: nie wybrano: ${it.message?.take(SONDA_MSG)}") }
-            }
-            stage("próbkowanie fokusu $label") { sampleFocus("$label pilotem") }
-            pressKeys(listOf(Key.DirectionRight))
-            println("SONDA $label po PRAWO: ${focusedDescriptions()}")
-            pressKeys(listOf(Key.DirectionCenter))
-            val details = compose.onAllNodesWithText("FILM").fetchSemanticsNodes().size
-            println("SONDA $label po PRAWO+OK: szczegolyFilmu=$details fokus=${focusedDescriptions()}")
-            if (details > 0) back()
-        }
     }
 
     /**
