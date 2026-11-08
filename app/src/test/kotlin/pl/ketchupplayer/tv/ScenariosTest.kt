@@ -259,7 +259,12 @@ class ScenariosTest {
                 .fetchSemanticsNodes()
                 .isNotEmpty()
         }
-        clickable(text).performScrollTo().performClick()
+        val target = clickable(text)
+        trace("click '$text': przed performScrollTo")
+        target.performScrollTo()
+        trace("click '$text': po performScrollTo, przed performClick")
+        target.performClick()
+        trace("click '$text': po performClick")
     }
 
     private fun addProviderViaUi(
@@ -1045,6 +1050,13 @@ class ScenariosTest {
     @Volatile private var lastStepAtMs = System.currentTimeMillis()
     private val startedAtMs = System.currentTimeMillis()
 
+    /** Szczegółowe znaczniki wewnątrz helperów (np. click) tylko w testach ze strażnikiem. */
+    private var tracing = false
+
+    private fun trace(name: String) {
+        if (tracing) step(name)
+    }
+
     /** Krótki znacznik etapu: nazwa i czas od startu testu (bez zrzutów drzewa UI). */
     private fun step(name: String) {
         lastStep = name
@@ -1071,6 +1083,7 @@ class ScenariosTest {
         val mainThread = Looper.getMainLooper().thread
         val finished = java.util.concurrent.CountDownLatch(1)
         lastStepAtMs = System.currentTimeMillis()
+        tracing = true
         var fired = false
         kotlin.concurrent.thread(isDaemon = true, name = "straznik-e2e") {
             while (!finished.await(WATCHDOG_POLL_MS, java.util.concurrent.TimeUnit.MILLISECONDS)) {
@@ -1097,17 +1110,60 @@ class ScenariosTest {
         }
     }
 
+    // --- Tryb pilota po przygotowaniu danych (PR #11) ---
+
+    @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
+    private var canaryModes: androidx.compose.ui.input.InputModeManager? = null
+
+    private fun windowInTouchMode() = compose.activity.window.decorView.isInTouchMode
+
     /**
-     * Kontrola, że test oznaczony [StartsInRemoteMode] naprawdę ma okno w trybie nie-dotykowym (jak TV). Bez tego
-     * semantyka fokusu `FocusItem` jest pusta i asercje pilota byłyby ślepe, więc przy niepowodzeniu przerywamy z
-     * jasnym komunikatem zamiast jechać dalej tak, jakby przełączenie się udało.
+     * Kanarek stanu Compose: mały `ComposeView` dodany do okna PRZED przełączeniem trybu. Ma własny
+     * `InputModeManager`, ale rejestruje się w tym samym oknie co aplikacja, więc jego tryb pokazuje, czy zmiana trybu
+     * okna dotarła do Compose. Nie czyta ani nie zmienia stanu aplikacji.
      */
-    private fun requireRemoteMode() {
-        val inTouchMode = compose.activity.window.decorView.isInTouchMode
-        step("tryb okna: isInTouchMode=$inTouchMode")
-        check(!inTouchMode) {
-            "Okno jest w trybie dotyku: TvBoxRule z @StartsInRemoteMode nie przełączyła go " +
-                "(Instrumentation.setInTouchMode(false) przed startem aktywności); asercje fokusu pilota byłyby ślepe"
+    @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
+    private fun installInputModeCanary() {
+        compose.runOnUiThread {
+            val canary =
+                androidx.compose.ui.platform.ComposeView(compose.activity).apply {
+                    setContent { canaryModes = androidx.compose.ui.platform.LocalInputModeManager.current }
+                }
+            compose.activity.addContentView(canary, android.view.ViewGroup.LayoutParams(1, 1))
+        }
+        compose.waitForIdle()
+    }
+
+    /**
+     * Wykonuje [block] z oknem w trybie nie-dotykowym (jak TV po pierwszym klawiszu pilota). Dane przygotowuje się
+     * wcześniej w trybie dotyku (sprawdzone helpery UI), więc to jest test OBSŁUGI PILOTEM po przygotowaniu danych,
+     * a nie dowód poprawności zimnego startu całej aplikacji w trybie klawiszowym (zob. nierozstrzygnięte zawieszenie
+     * w HANDOFF). Przełączenie: publiczne `View.requestFocusFromTouch()` (framework wychodzi wtedy z trybu dotyku i
+     * powiadamia nasłuchujących, w tym Compose); wynik jest sprawdzany w oknie i w kanarku Compose, a po teście (także
+     * po błędzie) przywracany jest tryb dotyku po stronie menedżera okien.
+     */
+    @Suppress("DEPRECATION")
+    @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
+    private fun <T> inRemoteMode(block: () -> T): T {
+        installInputModeCanary()
+        step("tryb przed przełączeniem: okno dotyk=${windowInTouchMode()}, Compose=${canaryModes?.inputMode}")
+        check(windowInTouchMode() && canaryModes?.inputMode == androidx.compose.ui.input.InputMode.Touch) {
+            "Setup ma przebiegać w trybie dotyku: okno dotyk=${windowInTouchMode()}, Compose=${canaryModes?.inputMode}"
+        }
+        try {
+            val decor = compose.activity.window.decorView
+            compose.runOnUiThread { decor.requestFocusFromTouch() }
+            compose.waitForIdle()
+            step("tryb po przełączeniu: okno dotyk=${windowInTouchMode()}, Compose=${canaryModes?.inputMode}")
+            check(!windowInTouchMode()) { "Okno nadal w trybie dotyku po requestFocusFromTouch()" }
+            check(canaryModes?.inputMode == androidx.compose.ui.input.InputMode.Keyboard) {
+                "Compose nie przeszedł w tryb klawiszowy mimo zmiany trybu okna: ${canaryModes?.inputMode}"
+            }
+            return block()
+        } finally {
+            androidx.test.platform.app.InstrumentationRegistry
+                .getInstrumentation()
+                .setInTouchMode(true)
         }
     }
 
@@ -1116,7 +1172,7 @@ class ScenariosTest {
      * na boxie (fokus po wyborze sekcji zostaje na szynie albo przechodzi na treść, więc LEWO powtarzamy do skutku).
      */
     private fun openSectionWithRemote(label: String) {
-        requireRemoteMode()
+        check(!windowInTouchMode()) { "Ścieżka pilota wymaga okna w trybie klawiszowym (inRemoteMode)" }
         step("$label: przed pierwszym klawiszem")
         pressKeys(listOf(Key.ShiftLeft))
         step("$label: po pierwszym klawiszu, fokus ${focusedDescriptions()}")
@@ -1255,16 +1311,17 @@ class ScenariosTest {
 
     /**
      * Plan 1.3, Moja lista i Szukaj samym pilotem na prawdziwym grafie (Room, serwer Xtream): wejście z szyny, fokus,
-     * plakat, szczegóły, BACK do szyny i Home. Dane (Pitbull na liście) przygotowane dotykiem; fraza wpisana przez IME
-     * (`performTextInput`) w polu, do którego fokus doszedł klawiszem.
+     * plakat, szczegóły, BACK do szyny i Home. Zakres: test OBSŁUGI PILOTEM po przygotowaniu danych. Dane (Pitbull na
+     * liście) przygotowane w trybie dotyku helperami UI, potem okno przechodzi w tryb klawiszowy ([inRemoteMode]) i
+     * ścieżka idzie D-pad / OK / BACK; fraza wpisana przez IME (`performTextInput`) w polu, do którego fokus doszedł
+     * klawiszem. To NIE jest dowód poprawności zimnego startu aplikacji w trybie klawiszowym (przygotowanie danych w
+     * takim oknie zawieszało się w `click`; przyczyna nierozstrzygnięta, zob. HANDOFF).
      */
     @Test
-    @StartsInRemoteMode
     fun mojaListaISzukajDzialajaSamymPilotem() =
         withWatchdog {
-            requireRemoteMode()
-            setUpPitbullOnMyList()
-            remoteScenario()
+            setUpPitbullOnMyList() // dane w trybie dotyku
+            inRemoteMode { remoteScenario() } // ścieżka wyłącznie D-pad / OK / BACK (+ IME dla frazy)
         }
 
     private fun setUpPitbullOnMyList() {
@@ -1330,27 +1387,29 @@ class ScenariosTest {
 
     /** SONDA (tymczasowa, diagnostyka): gdzie jest fokus po wejściu w sekcję dotykiem i pilotem (co 100 ms). */
     @Test
-    @StartsInRemoteMode
     fun sondaFokusuPoWyborzeSekcji() =
         withWatchdog {
-            requireRemoteMode()
             setUpPitbullOnMyList()
             stage("powrót do Filmy") { nav("Filmy") }
             stage("lista Filmy") { waitForText("Pitbull") }
-            listOf("Moja lista", "Filmy", "Szukaj").forEach { label ->
-                stage("sekcja $label pilotem") {
-                    runCatching { openSectionWithRemote(label) }
-                        .onFailure { println("SONDA $label: nie wybrano: ${it.message?.take(SONDA_MSG)}") }
-                }
-                stage("próbkowanie fokusu $label") { sampleFocus("$label pilotem") }
-                pressKeys(listOf(Key.DirectionRight))
-                println("SONDA $label po PRAWO: ${focusedDescriptions()}")
-                pressKeys(listOf(Key.DirectionCenter))
-                val details = compose.onAllNodesWithText("FILM").fetchSemanticsNodes().size
-                println("SONDA $label po PRAWO+OK: szczegolyFilmu=$details fokus=${focusedDescriptions()}")
-                if (details > 0) back()
-            }
+            inRemoteMode { sondaSekcji() }
         }
+
+    private fun sondaSekcji() {
+        listOf("Moja lista", "Filmy", "Szukaj").forEach { label ->
+            stage("sekcja $label pilotem") {
+                runCatching { openSectionWithRemote(label) }
+                    .onFailure { println("SONDA $label: nie wybrano: ${it.message?.take(SONDA_MSG)}") }
+            }
+            stage("próbkowanie fokusu $label") { sampleFocus("$label pilotem") }
+            pressKeys(listOf(Key.DirectionRight))
+            println("SONDA $label po PRAWO: ${focusedDescriptions()}")
+            pressKeys(listOf(Key.DirectionCenter))
+            val details = compose.onAllNodesWithText("FILM").fetchSemanticsNodes().size
+            println("SONDA $label po PRAWO+OK: szczegolyFilmu=$details fokus=${focusedDescriptions()}")
+            if (details > 0) back()
+        }
+    }
 
     /**
      * Syntetyczny katalog o cechach dużej listy (nie lista użytkownika): import z prawdziwym Room, Filmy i Seriale
