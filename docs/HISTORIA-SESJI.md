@@ -53,3 +53,8 @@ Krótkie wpisy dopisywane chronologicznie (nowe na końcu); starych nie przepisu
 - Wycofane tymczasowe `--info --stacktrace` z kroku Spotless + Detekt (zgoda użytkownika); `networkTimeout` 60000 zostaje; workflow względem `dev` bez zmian.
 - Otwarte (nie zamknięte): zimny start w trybie klawiszowym, BACK ze szczegółów (test pilnuje obecnego zachowania, nie akceptuje go), LEWO na pustej Mojej liście, testy fizycznego boxa. Punkty planu wymagające boxa bez odhaczenia.
 
+## 2026-11-08 (Europe/Warsaw), poprawki po końcowym przeglądzie PR #11
+
+- Pełne CI na `85494a7` zielone (junit-unit 509 testów, junit-roborazzi-verify 316, 0 failures i 0 skipped, emulator); przegląd względem `dev` bez zastrzeżeń blokujących.
+- Dwa drobiazgi: (1) kanarek `ComposeView` w `inRemoteMode` sprzątany idempotentnie w `finally` także po błędzie (tryb najpierw, potem kanarek, pierwotny wyjątek nie jest maskowany), z testem wymuszonego błędu; (2) zdanie punktu 1.3 w `PLAN-1.0.md` zaktualizowane (testy modułowe i scenariusz E2E istnieją, ograniczenia i testy boxa wymienione), checkbox nieodhaczony.
+

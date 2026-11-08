@@ -1119,6 +1119,12 @@ class ScenariosTest {
     @OptIn(ExperimentalComposeUiApi::class)
     private var canaryModes: InputModeManager? = null
 
+    /** Kanarek w oknie; ustawiany PRZED dodaniem, żeby sprzątanie widziało też nieudaną instalację. */
+    private var canaryView: View? = null
+
+    /** Wynik ostatniego sprzątania po trybie pilota (sprawdza go test ścieżki błędu). */
+    private var cleanupReport = ""
+
     private fun windowInTouchMode() = compose.activity.window.decorView.isInTouchMode
 
     /**
@@ -1127,19 +1133,26 @@ class ScenariosTest {
      * okna dotarła do Compose. Nie czyta ani nie zmienia stanu aplikacji.
      */
     @OptIn(ExperimentalComposeUiApi::class)
-    private fun installInputModeCanary(): View {
+    private fun installInputModeCanary() {
         val canary = ComposeView(compose.activity)
+        canaryView = canary
         compose.runOnUiThread {
             canary.setContent { canaryModes = LocalInputModeManager.current }
             compose.activity.addContentView(canary, ViewGroup.LayoutParams(1, 1))
         }
         compose.waitForIdle()
-        return canary
+    }
+
+    /** Idempotentnie zdejmuje kanarek z okna na wątku UI (nic nie robi, gdy go nie ma lub już zdjęto). */
+    private fun detachInputModeCanary() {
+        val canary = canaryView ?: return
+        canaryView = null
+        compose.runOnUiThread { (canary.parent as? ViewGroup)?.removeView(canary) }
     }
 
     /** Kanarek jest drugim korzeniem semantyki (`onRoot()` wymaga jednego), więc po odczycie trybu go usuwamy. */
-    private fun removeInputModeCanary(canary: View) {
-        compose.runOnUiThread { (canary.parent as? ViewGroup)?.removeView(canary) }
+    private fun removeInputModeCanary() {
+        detachInputModeCanary()
         compose.waitForIdle()
         val roots = compose.onAllNodes(isRoot()).fetchSemanticsNodes().size
         step("kanarek usunięty, korzeni semantyki: $roots")
@@ -1147,22 +1160,39 @@ class ScenariosTest {
     }
 
     /**
+     * Sprzątanie w `finally`: najpierw tryb (kanarek nie może go zablokować), potem kanarek; każdy krok osobno
+     * zabezpieczony, żeby błąd sprzątania nie zamaskował pierwotnego wyjątku testu. Nie czeka na bezczynność.
+     */
+    @Suppress("DEPRECATION")
+    private fun cleanUpAfterRemoteMode() {
+        val mode = runCatching { InstrumentationRegistry.getInstrumentation().setInTouchMode(true) }
+        val canary = runCatching { detachInputModeCanary() }
+        cleanupReport =
+            "tryb=${mode.fold({ "przywrócony" }, { "BŁĄD $it" })}, " +
+            "kanarek=${canary.fold({ "usunięty" }, { "BŁĄD $it" })}"
+        if (mode.isFailure || canary.isFailure) println("Sprzątanie po trybie pilota: $cleanupReport")
+    }
+
+    /**
      * Wykonuje [block] z oknem w trybie nie-dotykowym (jak TV po pierwszym klawiszu pilota). Dane przygotowuje się
      * wcześniej w trybie dotyku (sprawdzone helpery UI), więc to jest test OBSŁUGI PILOTEM po przygotowaniu danych,
      * a nie dowód poprawności zimnego startu całej aplikacji w trybie klawiszowym (zob. nierozstrzygnięte zawieszenie
      * w HANDOFF). Przełączenie: publiczne `View.requestFocusFromTouch()` (framework wychodzi wtedy z trybu dotyku i
-     * powiadamia nasłuchujących, w tym Compose); wynik jest sprawdzany w oknie i w kanarku Compose, a po teście (także
-     * po błędzie) przywracany jest tryb dotyku po stronie menedżera okien.
+     * powiadamia nasłuchujących, w tym Compose); wynik jest sprawdzany w oknie i w kanarku Compose. Kanarek jest
+     * usuwany przed [block] (jeden korzeń semantyki), a w `finally` także po błędzie instalacji, kontroli lub
+     * przełączenia ([cleanUpAfterRemoteMode]). [beforeRemoval] to punkt do wymuszenia błędu w teście sprzątania.
      */
-    @Suppress("DEPRECATION")
     @OptIn(ExperimentalComposeUiApi::class)
-    private fun <T> inRemoteMode(block: () -> T): T {
-        val canary = installInputModeCanary()
-        step("tryb przed przełączeniem: okno dotyk=${windowInTouchMode()}, Compose=${canaryModes?.inputMode}")
-        check(windowInTouchMode() && canaryModes?.inputMode == InputMode.Touch) {
-            "Setup ma przebiegać w trybie dotyku: okno dotyk=${windowInTouchMode()}, Compose=${canaryModes?.inputMode}"
-        }
+    private fun <T> inRemoteMode(
+        beforeRemoval: () -> Unit = {},
+        block: () -> T,
+    ): T {
         try {
+            installInputModeCanary()
+            step("tryb przed przełączeniem: okno dotyk=${windowInTouchMode()}, Compose=${canaryModes?.inputMode}")
+            check(windowInTouchMode() && canaryModes?.inputMode == InputMode.Touch) {
+                "Setup w trybie dotyku: okno dotyk=${windowInTouchMode()}, Compose=${canaryModes?.inputMode}"
+            }
             val decor = compose.activity.window.decorView
             compose.runOnUiThread { decor.requestFocusFromTouch() }
             compose.waitForIdle()
@@ -1171,10 +1201,11 @@ class ScenariosTest {
             check(canaryModes?.inputMode == InputMode.Keyboard) {
                 "Compose nie przeszedł w tryb klawiszowy mimo zmiany trybu okna: ${canaryModes?.inputMode}"
             }
-            removeInputModeCanary(canary)
+            beforeRemoval()
+            removeInputModeCanary()
             return block()
         } finally {
-            InstrumentationRegistry.getInstrumentation().setInTouchMode(true)
+            cleanUpAfterRemoteMode()
         }
     }
 
@@ -1315,6 +1346,26 @@ class ScenariosTest {
         compose.mainClock.advanceTimeBy(500)
         compose.waitForIdle()
         compose.onNodeWithContentDescription("Na żywo").assertIsFocused()
+    }
+
+    /**
+     * Ścieżka błędu pomocnika [inRemoteMode] (PR #11): błąd wymuszony po przełączeniu trybu, przed usunięciem kanarka.
+     * `finally` ma usunąć kanarek (zostaje jeden korzeń semantyki), przywrócić tryb po stronie menedżera okien i nie
+     * zamaskować pierwotnego wyjątku; blok z ścieżką pilota nie może się wykonać.
+     */
+    @Test
+    fun pomocniczyWidokITrybSaSprzatanePoBledzieWTrybiePilota() {
+        var blockRan = false
+        val failure =
+            runCatching {
+                inRemoteMode(beforeRemoval = { error("wymuszony błąd po przełączeniu trybu") }) { blockRan = true }
+            }.exceptionOrNull()
+        compose.waitForIdle()
+        assertEquals("wymuszony błąd po przełączeniu trybu", failure?.message)
+        assertTrue("blok pilota nie powinien się wykonać po błędzie", !blockRan)
+        assertEquals("tryb=przywrócony, kanarek=usunięty", cleanupReport)
+        assertTrue("kanarek nadal w oknie", canaryView == null)
+        assertEquals(1, compose.onAllNodes(isRoot()).fetchSemanticsNodes().size)
     }
 
     /**
