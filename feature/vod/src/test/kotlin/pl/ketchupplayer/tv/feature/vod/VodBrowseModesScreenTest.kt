@@ -17,6 +17,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.pressKey
@@ -127,7 +128,9 @@ class VodBrowseModesScreenTest {
                 }
             }
         }
-        settle()
+        // Bez przesuwania zegara: początkowy fokus ekran ponawia przez kilkanaście klatek, a w teście tryb wejścia jest
+        // dotykowy, dopóki pierwszy klawisz go nie przełączy (na TV tryb jest klawiszowy od startu).
+        compose.waitForIdle()
     }
 
     private fun settle() {
@@ -169,7 +172,16 @@ class VodBrowseModesScreenTest {
     /** Naturalny ruch użytkownika ku treści: z szyny i z kategorii w prawo, z reszty w dół. */
     private fun nextKey() = if (onRail() || onCategory()) Key.DirectionRight else Key.DirectionDown
 
-    /** Idzie pilotem do pozycji z [target] (max [maxSteps] ruchów); zwraca trasę fokusu do opisu błędu. */
+    /** Przycisk „Szukaj” klawiatury ekranowej: aplikacja przenosi wtedy fokus z pola w dół, do wyników. */
+    private fun imeSearch() {
+        compose.onNode(hasSetTextAction()).performImeAction()
+        settle()
+    }
+
+    /**
+     * Idzie pilotem do pozycji z [target] (max [maxSteps] ruchów); zwraca trasę fokusu do opisu błędu. Z pola
+     * wyszukiwania wychodzi przyciskiem „Szukaj” klawiatury ekranowej, bo strzałki zostają w polu.
+     */
     private fun walkTo(
         target: String,
         maxSteps: Int = 3,
@@ -177,7 +189,7 @@ class VodBrowseModesScreenTest {
         val trace = mutableListOf(focused().toString())
         repeat(maxSteps) {
             if (!focusedHas(target)) {
-                press(nextKey())
+                if (focusedHas("pole")) imeSearch() else press(nextKey())
                 trace += focused().toString()
             }
         }
@@ -266,7 +278,7 @@ class VodBrowseModesScreenTest {
      * (przejście do Dostawców). Test pilnuje, że akcja jest osiągalna z szyny samym pilotem i że OK ją wykonuje.
      */
     @Test
-    fun `pusta moja lista - z szyny pilotem dochodzi sie do akcji, OK ja wykonuje`() {
+    fun `pusta moja lista - z szyny przez pole i akcje Szukaj klawiatury dochodzi sie do akcji, OK ja wykonuje`() {
         show(emptyMyList(), "mylist")
         press(Key.ShiftLeft)
         back() // fokus na szynie, jak po wyborze pozycji z szyny
@@ -299,13 +311,13 @@ class VodBrowseModesScreenTest {
     }
 
     @Test
-    fun `szukaj - GORA z kategorii wchodzi w pole, stamtad pilotem do wyniku`() {
+    fun `szukaj - GORA z kategorii wchodzi w pole, akcja Szukaj klawiatury prowadzi do wyniku`() {
         val (initial, _) = search()
         show(initial, "search")
         press(Key.ShiftLeft)
         press(Key.DirectionUp)
         compose.onNode(hasSetTextAction()).assertIsFocused()
-        walkTo("Komisariat 7")
+        walkTo("Komisariat 7") // pole -> akcja Szukaj klawiatury -> fokus w dół
         press(Key.DirectionCenter)
         assertEquals(listOf("p:s2"), opened)
     }
@@ -321,6 +333,7 @@ class VodBrowseModesScreenTest {
         compose.onNode(hasSetTextAction()).assertIsFocused()
         compose.onNode(hasSetTextAction()).performTextInput("kowal") // IME
         settle()
+        imeSearch() // przycisk „Szukaj” klawiatury
         assertEquals(listOf("kowal"), queries)
         compose.onNodeWithText("Rodzina Kowalskich").assertExists()
         compose.onNodeWithText("Burza", substring = true).assertDoesNotExist()
@@ -338,8 +351,8 @@ class VodBrowseModesScreenTest {
         compose.onNode(hasSetTextAction()).performTextInput("zzz") // IME
         settle()
         compose.onNodeWithText("Brak wyników dla", substring = true).assertExists()
-        press(Key.DirectionDown)
-        assertTrue("Fokus zniknął po DÓŁ z pola", focused().isNotEmpty())
+        imeSearch() // przycisk „Szukaj” klawiatury: fokus idzie w dół, mimo że wyników nie ma
+        assertTrue("Fokus zniknął po akcji Szukaj", focused().isNotEmpty())
         press(Key.DirectionRight)
         assertTrue("Fokus zniknął po PRAWO przy braku wyników", focused().isNotEmpty())
         leaveToRail()

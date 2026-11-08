@@ -87,7 +87,9 @@ class ScenariosTest {
         val RAIL_LABELS = listOf("Profil", "Szukaj", "Home", "Na żywo", "Filmy", "Seriale", "Moja lista", "Ustawienia")
         val VOD_CATEGORIES = listOf("Wszystkie", "Ostatnio dodane", "Dramat", "Komedia", "Kryminał")
         const val RAIL_SETTLE_MS = 500L
-        const val SONDA_STEPS = 4
+        const val SONDA_STEPS = 30
+        const val SONDA_STEP_MS = 100L
+        const val SONDA_MSG = 300
     }
 
     @get:Rule(order = -1)
@@ -1012,7 +1014,12 @@ class ScenariosTest {
     private fun describeNode(node: SemanticsNode): String {
         val description = node.config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString()
         val text = node.config.getOrNull(SemanticsProperties.Text)?.joinToString { it.text }
-        return listOfNotNull(description?.let { "opis=$it" }, text?.let { "tekst=$it" }).joinToString(", ")
+        val isField = node.config.contains(SemanticsProperties.EditableText)
+        return listOfNotNull(
+            description?.let { "opis=$it" },
+            text?.let { "tekst=$it" },
+            "pole".takeIf { isField },
+        ).joinToString(", ")
     }
 
     /** Opisy elementów z fokusem (opis dostępności i tekst), do asercji „gdzie jest fokus” bez znajomości drzewa. */
@@ -1039,7 +1046,9 @@ class ScenariosTest {
         Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(RAIL_SETTLE_MS))
         compose.waitForIdle()
         repeat(REMOTE_STEPS) { pressKeys(listOf(Key.DirectionUp)) }
+        println("SZYNA $label po GÓRA: ${focusedDescriptions()}")
         repeat(REMOTE_STEPS) { if (!focusedHas("opis=$label")) pressKeys(listOf(Key.DirectionDown)) }
+        println("SZYNA $label po DÓŁ: ${focusedDescriptions()}")
         compose.onNodeWithContentDescription(label).assertIsFocused()
         pressKeys(listOf(Key.DirectionCenter))
     }
@@ -1049,7 +1058,13 @@ class ScenariosTest {
         val trace = mutableListOf(focusedDescriptions().toString())
         repeat(REMOTE_STEPS) {
             if (!focusedHas(target)) {
-                pressKeys(listOf(if (railFocused() || categoryFocused()) Key.DirectionRight else Key.DirectionDown))
+                if (focusedHas("pole")) {
+                    // Strzałki zostają w polu; wyjście to przycisk „Szukaj” klawiatury ekranowej (fokus w dół).
+                    compose.onNode(hasSetTextAction()).performImeAction()
+                    compose.waitForIdle()
+                } else {
+                    pressKeys(listOf(if (railFocused() || categoryFocused()) Key.DirectionRight else Key.DirectionDown))
+                }
                 trace += focusedDescriptions().toString()
             }
         }
@@ -1200,7 +1215,18 @@ class ScenariosTest {
         waitForText("SERIAL") // szczegóły serialu
     }
 
-    /** SONDA (tymczasowa, diagnostyka): gdzie jest fokus tuż po wyborze sekcji OK z szyny i po chwili. */
+    private fun sampleFocus(label: String) {
+        val samples =
+            (0 until SONDA_STEPS).map {
+                Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(SONDA_STEP_MS))
+                compose.waitForIdle()
+                val categories = compose.onAllNodesWithText("Wszystkie").fetchSemanticsNodes().size
+                "${focusedDescriptions()}/kat=$categories"
+            }
+        println("SONDA $label: ${samples.joinToString(" -> ")}")
+    }
+
+    /** SONDA (tymczasowa, diagnostyka): gdzie jest fokus po wejściu w sekcję dotykiem i pilotem (co 100 ms). */
     @Test
     fun sondaFokusuPoWyborzeSekcji() {
         serveXtreamVod()
@@ -1210,15 +1236,13 @@ class ScenariosTest {
         click("Pitbull")
         click("+ Moja lista")
         waitForText("✓ Moja lista")
-        listOf("Filmy", "Seriale", "Moja lista", "Szukaj", "Filmy").forEach { label ->
-            openSectionWithRemote(label)
-            val trace = mutableListOf(focusedDescriptions().toString())
-            repeat(SONDA_STEPS) {
-                Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(RAIL_SETTLE_MS))
-                compose.waitForIdle()
-                trace += focusedDescriptions().toString()
-            }
-            println("SONDA $label: ${trace.joinToString(" -> ")}")
+        nav("Filmy")
+        waitForText("Pitbull")
+        sampleFocus("Filmy po dotyku")
+        listOf("Moja lista", "Filmy", "Szukaj").forEach { label ->
+            runCatching { openSectionWithRemote(label) }
+                .onFailure { println("SONDA $label: nie wybrano: ${it.message?.take(SONDA_MSG)}") }
+            sampleFocus("$label pilotem")
         }
     }
 
