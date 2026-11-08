@@ -6,9 +6,12 @@ Nie jest zamiennikiem oceny człowieka ani testów na fizycznym pilocie, a wynik
 
 ## Przygotowanie (raz)
 1. W Termuxie: `termux-setup-storage`.
-2. Zależności instalujesz **sam** (skrypt niczego nie instaluje, a przy braku narzędzia kończy z kodem 3 i listą braków):
+2. **Zależności użytkownika w Termuxie** (wymagane do uruchomienia skryptu). Instalujesz je **sam**: skrypt niczego nie instaluje, a przy
+   braku narzędzia kończy z kodem 3 i listą braków:
    `pkg install android-tools coreutils unzip zip gawk sed grep aapt`
-   (`aapt` jest potrzebne do odczytu pakietu, wersji i aktywności ze wskazanego APK; bez niego instalacja jest zablokowana).
+   (`aapt` odczytuje pakiet, wersję i aktywność ze wskazanego APK; bez niego instalacja jest zablokowana). To jedyne wymagane narzędzia:
+   `adb`, `timeout`, `sha256sum`, `stat`, `base64`, `mktemp`, `head`, `sort`, `cut`, `date`, `tr` (coreutils), `unzip`, `zip`, `awk`, `sed`, `grep`, `aapt`.
+   **Nie potrzebujesz** `jq`, `python3` ani ShellChecka: używają ich wyłącznie testy deweloperskie (sekcja „Testy skryptu”).
 3. Opcjonalnie prywatna konfiguracja **urządzenia** `~/.ketchup-test.env` (poza repo). Plik **nie jest wykonywany** jako kod;
    czytane są tylko klucze `DEVICE_IP`, `PORT`, `ADB_TARGET`. Wpisy `M3U_URL` i `XTREAM_*` są ignorowane (adres listy podajesz
    tylko w ukrytym monicie):
@@ -22,11 +25,13 @@ Nie jest zamiennikiem oceny człowieka ani testów na fizycznym pilocie, a wynik
 ## Uruchomienie RC (prosta instrukcja)
 ```
 cp ~/storage/downloads/player/ketchup_tvbox_test.sh ~/ && sed -i 's/\r$//' ~/ketchup_tvbox_test.sh
-bash ~/ketchup_tvbox_test.sh "$HOME/storage/downloads/player/KetchupPlayer-<wersja>-<sha>.apk"
+bash ~/ketchup_tvbox_test.sh
 ```
-Skrypt zapyta o adres listy M3U **z ukrytym wpisywaniem** (nie trafia do historii, argumentów, konfiguracji ani raportu). Zamiast
-monitu możesz podać `--lista-plik PLIK` (pierwsza linia pliku; zalecane `chmod 600`) albo `--bez-listy`. Ścieżka może mieć spacje
-(w cudzysłowie). Wyniki: `Download/KetchupPlayerTest/<data>/` (`report.md`, `results.json`, `ketchup-wyniki-<data>.zip`).
+Skrypt zada **dwa monity**: (1) **ścieżkę do pliku APK** (widoczną; spacje, cudzysłowy z wklejenia i `~/` są obsłużone; do 3 prób),
+(2) **adres listy M3U z ukrytym wpisywaniem** (nie trafia do historii, argumentów, konfiguracji ani raportu). Ścieżkę APK możesz też
+podać jako argument (skrót, najlepiej w cudzysłowie): `bash ~/ketchup_tvbox_test.sh "…/KetchupPlayer-<wersja>-<sha>.apk"`. Zamiast
+monitu adresu możesz użyć `--lista-plik PLIK` (pierwsza linia pliku; zalecane `chmod 600`) albo `--bez-listy`. Bez terminala i bez
+argumentu skrypt kończy się kodem 2. Wyniki: `Download/KetchupPlayerTest/<data>/` (`report.md`, `results.json`, `ketchup-wyniki-<data>.zip`).
 **Do przekazania wystarczy ten ZIP**; zawiera wyłącznie oczyszczone materiały.
 
 ### Opcje
@@ -97,14 +102,18 @@ Za mało zdarzeń sprzętu = MANUAL_REQUIRED (`TOO_FEW_PRESSES`). Kompletna diag
 `DROPPED_BY_FILTER`). Duplikaty przyjęte przez aplikację = FAIL (`DUPLICATES_ACCEPTED`: zwiększ Czułość pilota w Ustawieniach,
 Odtwarzanie). ADB nie odtwarza duplikatów fizycznego pilota; scenariusz tego nie udaje.
 
-## Testy skryptu (offline, bez urządzenia)
+## Testy skryptu (offline, bez urządzenia): zależności tylko deweloperskie
+Te narzędzia są potrzebne **wyłącznie** do uruchamiania testów skryptu na komputerze lub w Cloud, nie na boxie ani w Termuxie użytkownika:
+`bash` 4+, `jq` (walidacja JSON), `python3` (wysłanie prawdziwego Ctrl+C w teście), `zip`/`unzip`, `awk`, `sed`, `grep`, `coreutils`
+oraz opcjonalnie **ShellCheck** (`SHELLCHECK_BIN` albo w `PATH`; bez niego kontrola jest raportowana jako NOT_RUN).
 ```
 bash tools/tvbox/tests/run_tests.sh          # atrapa adb/aapt, tylko fikcyjne sekrety; ShellCheck, jeśli jest (SHELLCHECK_BIN)
 bash tools/tvbox/test_analyze_keys.sh        # analizator pilota na próbkach + zgodność z wbudowaną kopią
 ```
 Obecne CI tych testów **nie uruchamia**. Pokrywają: błąd instalacji (konflikt podpisu, obniżenie wersji, timeout, zły pakiet,
 niezgodna wersja), brak narzędzi i danych, utratę pierwszego planu i ADB, Ctrl+C, nieodświeżone UI, wpisywanie bez interpretacji
-w powłoce, plik konfiguracji bez wykonywania, brak adresu w raporcie/ZIP/środowisku, oczyszczanie kodowanych wariantów i
+w prawdziwej powłoce `sh` atrapy (apostrof, spacje, `&`, `;`, `$()`, backtick, `|`, cudzysłów, ukośnik; z kontrolą ujemną dowodzącą, że wykonanie
+zostałoby wykryte), dwa monity (ścieżka APK, ukryty adres), plik konfiguracji bez wykonywania, brak adresu w raporcie/ZIP/środowisku, oczyszczanie kodowanych wariantów i
 `REDACTION_FAILED`, JSON/Markdown, brak obserwowalności fokusu. **To nie jest test na boxie**: pełne scenariusze UI (Szukaj, Moja
 lista, odtwarzanie) są sprawdzone tylko we fragmentach modelu; dopasowanie do prawdziwego układu ekranów nastąpi na pierwszym RC.
 

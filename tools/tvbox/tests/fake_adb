@@ -79,7 +79,16 @@ case "$cmd" in
         else [ -n "${FAKE_UI_SLEEP:-}" ] && sleep "$FAKE_UI_SLEEP"; gen_ui > "$D/remote_ui.xml"; echo "UI hierchary dumped to: /sdcard/kt_ui.xml"; fi;;
       "input keyevent"*) k="${c##* }"; echo "KEY $k" >> "$D/input.log"; key_event "$k";;
       "input text"*) echo "TEXT[$c]" >> "$D/input.log"
-        t="${c#input text \'}"; t="${t%\'}"; t="${t//%s/ }"; t="${t//\'\\\'\'/\'}"; printf '%s' "$t" >> "$D/state/field";;
+        # Prawdziwa powłoka sh parsuje polecenie jak urządzenie; zamiast systemowego `input` działa zaślepka zapisująca argument.
+        mkdir -p "$D/stub"
+        cat > "$D/stub/input" <<'STUB'
+#!/bin/sh
+[ "$1" = text ] || exit 0
+printf 'ARG[%s]\n' "$2" >> "$FAKE_DIR/args.log"
+printf '%s' "$2" | sed 's/%s/ /g' | tr -d '\n' >> "$FAKE_DIR/state/field"
+STUB
+        chmod +x "$D/stub/input"
+        env PATH="$D/stub:$PATH" FAKE_DIR="$D" sh -c "$c";;
       "input tap"*) echo "TAP $c" >> "$D/input.log";;
       "dumpsys audio"*) cat "$D/audio" 2>/dev/null;;
       "dumpsys SurfaceFlinger"*) cat "$D/layers" 2>/dev/null;;

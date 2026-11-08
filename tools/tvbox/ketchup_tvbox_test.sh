@@ -3,7 +3,7 @@
 #  ketchup_tvbox_test.sh :: testy RC Ketchup Player na TV boxie przez ADB z Termuxa.
 #  Jeden samodzielny plik (do pobrania razem z RC). Szczegóły: docs/TVBOX-TESTY.md.
 #
-#  Użycie:  bash ketchup_tvbox_test.sh [opcje] "ścieżka/do/pliku.apk"
+#  Użycie:  bash ketchup_tvbox_test.sh [opcje] ["ścieżka/do/pliku.apk"]   (bez ścieżki: monit o plik APK, potem ukryty monit o adres listy)
 #  Adres listy M3U: ukryty monit (nigdy z argumentów ani z pliku konfiguracji) albo --lista-plik PLIK (pierwsza linia).
 #  Konfiguracja urządzenia (NIE do repo): ~/.ketchup-test.env, linie KLUCZ="wartość" (plik NIE jest wykonywany):
 #     DEVICE_IP="192.168.1.170"   PORT="5555"   ADB_TARGET="host:port"
@@ -31,7 +31,7 @@ WORK=""; OUT=""; SECRETS_FILE=""
 ADB_BIN="${ADB_BIN:-adb}"; ADB_T="${ADB_TIMEOUT:-25}"; KEY_DELAY="${KEY_DELAY:-0.6}"
 ABORT=0; ABORT_CODE=""; INTERRUPTED=0; FINALIZED=0; ADB_FAILS=0
 START_DEVICE_DATE=""; START_PID=""; EXPECTED_RESTARTS=0
-FORM_ACTIVE=0; UI_OK=0; UI_SEQ=0; SH_OUT=""; SH_RC=0
+FORM_ACTIVE=0; UI_OK=0; UI_SEQ=0; SH_OUT=""; SH_RC=0; TTY_OK=0; NEED_APK_PROMPT=0
 DEV_MODEL=""; DEV_ANDROID=""; DEV_SCREEN=""; SCREEN_H=1080
 R_ID=(); R_NAME=(); R_STATUS=(); R_CODE=(); R_STEPS=(); R_EXP=(); R_ACT=(); R_EVID=(); R_TOUCH=()
 SC_ID=""; SC_NAME=""; SC_STEPS=""; SC_TOUCH=0
@@ -58,6 +58,17 @@ md_cell() {
   printf '%s' "$s"
 }
 say() { printf '%s\n' "$*" >&2; }
+# Terminal interaktywny: fd 3 = wejście, fd 4 = wyjście monitów. KETCHUP_TTY / KETCHUP_TTY_OUT pozwalają testom offline podstawić
+# odpowiedzi z pliku; normalnie /dev/tty (monity działają tylko przy prawdziwym terminalu).
+open_tty() {
+  TTY_OK=0
+  if [ -n "${KETCHUP_TTY:-}" ] && [ -r "$KETCHUP_TTY" ]; then exec 3< "$KETCHUP_TTY"; exec 4>> "${KETCHUP_TTY_OUT:-/dev/null}"; TTY_OK=1
+  elif [ -t 0 ] && [ -r /dev/tty ] && [ -w /dev/tty ]; then exec 3< /dev/tty; exec 4>> /dev/tty; TTY_OK=1
+  fi
+}
+prompt() { printf '%s' "$1" >&4; }       # monit na terminal (nie do raportu ani logów)
+ask_line() { IFS= read -r "$1" <&3; }    # odpowiedź widoczna
+ask_hidden() { IFS= read -rs "$1" <&3; printf '\n' >&4; }   # odpowiedź ukryta (adres listy)
 
 # ---------- oczyszczanie: dozwolone pola + maski + weryfikacja (nigdy nie obiecujemy pełnej ochrony regexami) ----------
 # sanitize: stdin -> stdout. Maskuje adresy, parametry z danymi dostępu, ścieżki host/użytkownik/hasło/id, IP, MAC i
@@ -399,7 +410,7 @@ load_config() { # parser, NIE source: nic z pliku nie jest wykonywane; M3U_URL i
 }
 usage() {
   cat <<'EOF'
-Użycie: ketchup_tvbox_test.sh [opcje] "ścieżka/do/pliku.apk"
+Użycie: ketchup_tvbox_test.sh [opcje] ["ścieżka/do/pliku.apk"]   (bez ścieżki skrypt o nią zapyta)
   --lista-plik PLIK   pierwsza linia pliku = adres listy M3U (domyślnie ukryty monit)
   --bez-listy         pomiń scenariusze wymagające listy
   --reset-dane        DESTRUKCYJNE: wyczyść dane aplikacji (wymaga ręcznego potwierdzenia)
@@ -435,7 +446,7 @@ parse_args() {
   case "$SEED" in ''|*[!0-9]*) say "--ziarno wymaga liczby"; exit 2;; esac
   [ "$STRESS_N" -gt 1000 ] && { say "--stres: maksymalnie 1000"; exit 2; }
   case "$USER_CODE_SHA" in ''|*[!0-9a-fA-F]*) [ -n "$USER_CODE_SHA" ] && { say "--sha-kodu: tylko znaki szesnastkowe"; exit 2; };; esac
-  if [ "${#pos[@]}" -eq 0 ]; then say "Brak ścieżki do pliku APK."; usage >&2; exit 2; fi
+  if [ "${#pos[@]}" -eq 0 ]; then NEED_APK_PROMPT=1; return 0; fi
   APK="${pos[0]}"
   if [ "${#pos[@]}" -gt 1 ]; then  # ścieżka ze spacjami podana bez cudzysłowu: skleja tylko, gdy taki plik istnieje
     APK="${pos[*]}"
@@ -458,6 +469,23 @@ preflight_tools() {
   fi
   return 0
 }
+# ask_apk: bez argumentu skrypt pyta o ścieżkę APK (argument pozostaje skrótem). Do 3 prób; spacje, cudzysłowy z przeciągnięcia
+# pliku i ~ są obsługiwane; plik musi istnieć.
+ask_apk() {
+  local p try
+  [ "$TTY_OK" = 1 ] || { say "Brak ścieżki do pliku APK (podaj argument albo uruchom w terminalu)."; usage >&2; exit 2; }
+  for try in 1 2 3; do
+    prompt "Ścieżka do pliku APK (spacje dozwolone): "
+    p=""; ask_line p || true
+    p="${p#"${p%%[![:space:]]*}"}"; p="${p%"${p##*[![:space:]]}"}"
+    case "$p" in \"*\") p="${p#\"}"; p="${p%\"}";; \'*\') p="${p#\'}"; p="${p%\'}";; esac
+    # shellcheck disable=SC2088  # celowo dopasowujemy dosłowne "~/" wpisane przez użytkownika
+    case "$p" in "~/"*) p="$HOME/${p#\~/}";; esac
+    [ -f "$p" ] && { APK="$p"; return 0; }
+    say "Nie ma takiego pliku. Spróbuj ponownie ($try z 3)."
+  done
+  APK="$p"; return 0   # dalej scn_install zgłosi BLOCKED APK_MISSING
+}
 read_list_url() {
   [ "$NO_LIST" -eq 1 ] && return 1
   local u=""
@@ -466,9 +494,9 @@ read_list_url() {
     u=$(head -n1 "$LIST_FILE" | tr -d '\r')
     local perm; perm=$(stat -c %a "$LIST_FILE" 2>/dev/null || echo "")
     case "$perm" in ''|*00) ;; *) say "Uwaga: plik z adresem ma szerokie uprawnienia ($perm); zalecane chmod 600.";; esac
-  elif [ -t 0 ] && [ -r /dev/tty ]; then
-    printf 'Adres listy M3U (wpisywanie ukryte, Enter bez treści = pomiń import): ' > /dev/tty
-    IFS= read -rs u < /dev/tty; printf '\n' > /dev/tty
+  elif [ "$TTY_OK" = 1 ]; then
+    prompt 'Adres listy M3U (wpisywanie ukryte, Enter bez treści = pomiń import): '
+    ask_hidden u || true
   else
     say "Adres listy nie został podany (brak terminala i --lista-plik): scenariusze z listą zostaną pominięte."
     return 1
@@ -503,8 +531,8 @@ pick_target() {
     dev=$(tmo 10 "$ADB_BIN" devices 2>/dev/null | tr -d '\r' | awk 'NR > 1 && $2 == "device" { print $1 }')
     n=$(printf '%s\n' "$dev" | grep -c .)
     if [ "$n" -eq 1 ]; then TARGET="$dev"
-    elif [ -t 0 ] && [ -r /dev/tty ]; then
-      printf 'Adres urządzenia (host:port): ' > /dev/tty; IFS= read -r TARGET < /dev/tty
+    elif [ "$TTY_OK" = 1 ]; then
+      prompt 'Adres urządzenia (host:port): '; ask_line TARGET || true
     fi
   fi
   [[ "$TARGET" =~ ^[A-Za-z0-9._:-]{1,260}$ ]] || { TARGET=""; return 1; }
@@ -588,9 +616,9 @@ scn_start() {
   if [ "$RESET_DATA" -eq 1 ]; then
     st "reset danych aplikacji (tryb destrukcyjny, ręczne potwierdzenie)"
     local ans=""
-    if [ -t 0 ] && [ -r /dev/tty ]; then
-      printf 'To USUNIE dane aplikacji %s (listy, ulubione). Wpisz dokładnie: USUN DANE %s : ' "$PKG" "$PKG" > /dev/tty
-      IFS= read -r ans < /dev/tty
+    if [ "$TTY_OK" = 1 ]; then
+      prompt "To USUNIE dane aplikacji $PKG (listy, ulubione). Wpisz dokładnie: USUN DANE $PKG : "
+      ask_line ans || true
     fi
     if [ "$ans" != "USUN DANE $PKG" ]; then scn_end BLOCKED RESET_NOT_CONFIRMED "ręczne potwierdzenie resetu" "brak potwierdzenia: danych nie ruszono"; return 1; fi
     sh_ "pm clear --user $USR $PKG"
@@ -900,11 +928,11 @@ scn_playback() {
 scn_pilot() {
   scn_begin S09 "$(scn_title S09)"
   if [ "$PILOT" -ne 1 ]; then scn_end SKIPPED NOT_REQUESTED "test pilota" "nie wybrano --test-pilota"; return 0; fi
-  if ! { [ -t 0 ] && [ -r /dev/tty ]; }; then scn_end SKIPPED NO_TTY "test interaktywny" "brak terminala"; return 0; fi
+  if [ "$TTY_OK" != 1 ]; then scn_end SKIPPED NO_TTY "test interaktywny" "brak terminala"; return 0; fi
   local ke="$WORK/getevent.txt" kg="$WORK/keyguard.txt" out line st_ code desc
   st "zapis zdarzeń sprzętu (getevent) i KeyGuard; użytkownik naciska strzałkę w dół na pilocie 5 razy"
   guard || { scn_end BLOCKED "${ABORT_CODE:-ABORTED}" "aplikacja na pierwszym planie" "przerwano"; return 1; }
-  printf '>>> TEST PILOTA: wejdź w Filmy i 5 razy KRÓTKO naciśnij strzałkę w dół na PILOCIE (nie z telefonu). Masz 25 s.\n' > /dev/tty
+  prompt $'>>> TEST PILOTA: wejdź w Filmy i 5 razy KRÓTKO naciśnij strzałkę w dół na PILOCIE (nie z telefonu). Masz 25 s.\n'
   local n0
   sh_ "logcat -d -s KeyGuard:I"; n0=$(printf '%s\n' "$SH_OUT" | grep -c 'KG t=')
   tmo 28 "$ADB_BIN" -s "$TARGET" shell getevent -lt > "$ke" 2>/dev/null &
@@ -1113,6 +1141,8 @@ run_all() {
 main() {
   parse_args "$@"
   preflight_tools || exit 3
+  open_tty
+  [ "$NEED_APK_PROMPT" = 1 ] && ask_apk
   load_config "$HOME/.ketchup-test.env"
   init_workspace
   trap on_signal INT TERM

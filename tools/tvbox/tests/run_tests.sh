@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2319,SC1090,SC2034
+# shellcheck disable=SC2319,SC1090,SC2034,SC2088
 # Testy offline skryptu ketchup_tvbox_test.sh na atrapie adb (bez urządzenia, bez sieci, tylko fikcyjne dane).
 # Uruchomienie: bash tools/tvbox/tests/run_tests.sh   (obecne CI tych testów nie uruchamia)
 # To NIE jest test na boxie: sprawdza logikę skryptu, statusy, prywatność i odporność na błędy.
@@ -234,17 +234,22 @@ read -r a b c d e < "$T/stale.res"
 eq "świeże odświeżenie udane" "$a$b" "00"; eq "nieudane odświeżenie zgłasza błąd" "$c" "1"
 eq "po nieudanym odświeżeniu stare UI jest nieczytelne" "$d$e" "11"
 
-echo "== Wpisywanie adresu: bez interpretacji w powłoce =="
+echo "== Wpisywanie adresu: dane, nie kod (prawdziwa powłoka sh po stronie atrapy urządzenia) =="
 new_env
+nasty="a b;\$(touch $T/pwned_text)\`touch $T/pwned_text2\`'x|y&z\"q\\r;touch $T/pwned_text3 && touch $T/pwned_text4"
 (
   export KETCHUP_SOURCE_ONLY=1 ADB_BIN="$TV/tests/fake_adb" FAKE_DIR="$T/fake" ADB_TIMEOUT=10 NAP_SCALE=0
-  source "$SCRIPT"; WORK="$T/w"; mkdir -p "$WORK"; TARGET="x:1"; PKG="pl.ketchupplayer.tv"
-  type_text "a b;\$(touch $T/pwned_text)\`touch $T/pwned_text2\`'x|y&z"
+  source "$SCRIPT"; WORK="$T/w"; mkdir -p "$WORK/../fake/state" "$WORK"; TARGET="x:1"; PKG="pl.ketchupplayer.tv"
+  type_text "$nasty"
 )
-got=$(grep '^TEXT' "$T/fake/input.log")
-want="TEXT[input text 'a%sb;\$(touch%s$T/pwned_text)\`touch%s$T/pwned_text2\`'\\''x|y&z']"
-eq "type_text: cały tekst w pojedynczym cudzysłowie (spacje jako %s, apostrof jako '\\'')" "$got" "$want"
-[ ! -e "$T/pwned_text" ] && [ ! -e "$T/pwned_text2" ]; ok "type_text: nic nie zostało wykonane" $?
+want_arg="${nasty// /%s}"
+eq "type_text: urządzenie dostaje dokładnie jeden argument z całym tekstem (apostrof, spacje, &, średnik, \$(), backtick)" "$(cat "$T/fake/args.log")" "ARG[$want_arg]"
+eq "type_text: po zdekodowaniu %s pole ma oryginalny tekst" "$(cat "$T/fake/state/field")" "$nasty"
+for f in pwned_text pwned_text2 pwned_text3 pwned_text4; do [ ! -e "$T/$f" ]; ok "type_text: żadne polecenie z tekstu nie zostało wykonane ($f)" $?; done
+# Kontrola ujemna: gdyby tekst NIE był w cudzysłowie, ta sama atrapa wykonałaby polecenie (dowód, że test coś mierzy).
+FAKE_DIR="$T/fake" "$TV/tests/fake_adb" shell "input text zle;touch $T/kontrola" >/dev/null 2>&1
+[ -e "$T/kontrola" ]; ok "kontrola ujemna: surowe wywołanie wykonuje ; (test jest czuły na wykonanie)" $?
+new_env; printf 'DEVICE_IP="192.168.1.170"\n' > "$T/home/.ketchup-test.env"
 
 echo "== Adres listy: ukryty, poza raportem i środowiskiem procesów podrzędnych =="
 new_env
@@ -278,6 +283,32 @@ new_env; printf '11-08 10:00:00.000 E/AndroidRuntime( 4242): FATAL EXCEPTION: ma
 run -- "$APK" --bez-listy
 eq "czysty log: S12 PASS i plik w paczce" "$(st_of S12)" "PASS"
 has "czysty log: logi/app.txt w paczce" "$(unzip -l "$OUTDIR"/*.zip)" "logi/app.txt"
+
+echo "== Dwa monity: ścieżka APK (widoczna) i adres listy (ukryty); argument APK jest tylko skrótem =="
+new_env; mkdir -p "$T/fake/state"; echo Wizard > "$T/fake/state/section"; echo 1 > "$T/fake/state/wiz"
+printf '"%s"\n%s\n' "$APK" "$SECRET_URL" > "$T/odpowiedzi"
+run KETCHUP_TTY="$T/odpowiedzi" KETCHUP_TTY_OUT="$T/ttyout" -- 
+eq "bez argumentu z terminalem: S01 PASS (APK ze spacjami i cudzysłowami z monitu)" "$(st_of S01)" "PASS"
+eq "bez argumentu: adres z drugiego monitu, import S03 PASS" "$(st_of S03)" "PASS"
+has "monit APK był zadany" "$(cat "$T/ttyout")" "Ścieżka do pliku APK"
+has "monit adresu był zadany" "$(cat "$T/ttyout")" "Adres listy M3U"
+hasnt "adres nie został wypisany na terminal (wpisywanie ukryte)" "$(cat "$T/ttyout")" "srv.example.invalid"
+hasnt "adres nie trafił do raportu ani ZIP" "$(cat "$OUTDIR/report.md" "$OUTDIR/results.json")$(bundle_text)" "Kowalski7"
+new_env; printf 'nie-ma-takiego.apk\n%s\n' "$APK" > "$T/odpowiedzi"
+run KETCHUP_TTY="$T/odpowiedzi" KETCHUP_TTY_OUT="$T/ttyout" -- --bez-listy
+eq "zła ścieżka, potem poprawna: S01 PASS" "$(st_of S01)" "PASS"
+has "po złej ścieżce komunikat i ponowny monit" "$(cat "$T/stderr")" "Nie ma takiego pliku"
+new_env; printf 'a\nb\nc\n' > "$T/odpowiedzi"
+run KETCHUP_TTY="$T/odpowiedzi" KETCHUP_TTY_OUT="$T/ttyout" -- --bez-listy
+eq "trzy złe ścieżki: BLOCKED APK_MISSING" "$(st_of S01)/$(code_of S01)" "BLOCKED/APK_MISSING"
+new_env; cp "$APK" "$T/home/x.apk"; printf '%s\n' '~/x.apk' > "$T/odpowiedzi"
+run KETCHUP_TTY="$T/odpowiedzi" KETCHUP_TTY_OUT="$T/ttyout" -- --bez-listy
+eq "ścieżka z ~ rozwinięta: S01 PASS" "$(st_of S01)" "PASS"
+new_env; run -- --bez-listy
+eq "bez argumentu i bez terminala: kod 2" "$RC" "2"
+new_env; printf '%s\n' "$APK" > "$T/odpowiedzi"
+run KETCHUP_TTY="$T/odpowiedzi" KETCHUP_TTY_OUT="$T/ttyout" -- "$APK" --bez-listy
+eq "argument APK jako skrót: bez monitu o ścieżkę" "$(grep -c 'Ścieżka do pliku APK' "$T/ttyout" 2>/dev/null; true)" "0"
 
 echo "== Reset danych tylko po jawnym potwierdzeniu =="
 new_env; run -- "$APK" --bez-listy --reset-dane
