@@ -64,3 +64,9 @@ Krótkie wpisy dopisywane chronologicznie (nowe na końcu); starych nie przepisu
 - PR #13 (skrypt testów RC na boxie): przegląd tylko do odczytu (bash -n, ShellCheck, 129 testów offline na atrapach), następnie zwykły merge `dev` do gałęzi (bez rebase i force-push; konfliktów brak, skrypt i dokumentacja bez zmian). Skrypt nie sprawdza BACK ze szczegółów, LEWO z akcji pustej listy ani strzałek w polu wyszukiwania; nie jest zamiennikiem testu na boxie.
 - Decyzje właściciela: issue #12 (maskowanie `host/użytkownik/hasło/id`) naprawiane przed następnym RC (najpierw testy `Redactor`), wstępnie RC `0.9.11-rc2`; wydanie dopiero po zatwierdzonych scaleniach i weryfikacji; personalizacja (PR #14) po pierwszym RC.
 
+## 2026-11-08 (Europe/Warsaw), scalenie PR #13 i naprawa issue #12 (PR #15, w toku)
+
+- PR #13 (skrypt testów RC na boxie) scalony do `dev` zwykłym merge'em (`12e41f8`) po sprawdzeniu live (head, baza, kontrole, brak konfliktów i uwag); skrypt z 1155 liniami trafi do następnego RC przez `rc.yml`.
+- Issue #12 w osobnej gałęzi `fix/redactor-url-credentials` (PR #15): testy najpierw, potem szeroka reguła maskowania w kontekście URL (userinfo, parametry, ścieżki z prefiksem i bez, zagnieżdżone adresy usuwane w całości), wspólne bezpieczne komunikaty błędów (`ErrorText`, `SafeErrorMessage`) w miejscach wymienionych w zgłoszeniu oraz odczyt `lastError` z maskowaniem. Fałszywe trafienia dopuszczone przez właściciela i opisane w testach i PR.
+- Granice zapisane jawnie: logi bibliotek i systemu poza zasięgiem, adres bez schematu i JSON niemaskowane, stare wpisy `lastError` w bazie bez czyszczenia masowego. RC `0.9.11-rc2` (versionCode 91102) zatwierdzony wstępnie, nie wydany.
+

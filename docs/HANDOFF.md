@@ -34,28 +34,29 @@ Zasady:
 ## Stan
 
 ```handoff
-updated_at: 2026-11-08T18:26:11+01:00
+updated_at: 2026-11-08T19:19:17+01:00
 status: active
-branch: feat/tvbox-rc-skrypt
-pr: https://github.com/Jack4B/ketchup-player/pull/13
-base_sha: ba6c2bc66e8e20de05bbcacd4eb11c33c0d6d413
-verified_code_sha: 738455a42315bbfc702edf824500944607213315
+branch: fix/redactor-url-credentials
+pr: https://github.com/Jack4B/ketchup-player/pull/15
+base_sha: 12e41f8b62d618662dc715d34a98206841cea953
+verified_code_sha: 4bceadda7b17d69efb3855b8a3f23e26ca5ae617
 dirty_tree: clean
 dirty_files: none
 outside_handoff_changes: none
-task_state: awaiting_device
-plan_point: Krok 1 planu finalnego (jakość 1.0 na boxie): skrypt testów RC tools/tvbox/ketchup_tvbox_test.sh i docs/TVBOX-TESTY.md; nie zamyka 1.1, 1.2 ani 1.3
-done: PR #11 scalony do dev (merge 1989e9160d8176618dc02c5e4bc1b7f49db8cfc3); CI push na tym SHA zielone (build, gitleaks, emulator); po nim commit bota zrzutów emulatora (dev ba6c2bc); testy D-pad Szukaj i Moja lista (VodBrowseModesScreenTest 12 testów, scenariusz pilota E2E po przygotowaniu danych, FocusItemTest) są na dev, przyczyna czerwonych asercji fokusu to ograniczenie Robolectric (tryb dotyku), nie błąd aplikacji; PR #13: skrypt testów RC rozwinięty w jeden samodzielny plik (dwa monity: ścieżka APK widoczna i ukryty adres listy; instalacja z aapt bez -d, bez odinstalowania i bez pm clear, błąd instalacji kończy scenariusze aplikacji; D-pad/OK/BACK z warunkami i limitami; statusy PASS/FAIL/BLOCKED/SKIPPED/MANUAL_REQUIRED; oczyszczanie logów i REDACTION_FAILED; jeden ZIP bez zrzutów i surowych XML); aktualny dev włączony do gałęzi zwykłym merge'em (bez rebase i force-push); decyzje właściciela: issue #12 (maskowanie danych dostępu) naprawiane PRZED następnym RC, wstępna wersja RC 0.9.11-rc2 (versionCode 91102 wg rc.yml), personalizacja po pierwszym RC
-unfinished: OCZEKUJE NA URZĄDZENIE (po wydaniu RC, nie teraz): skrypt S00-S12 na boxie, ręczny test pilota (1.1, 1.2), D-pad i wygoda w Szukaj i Mojej liście, ocena obrazu i dźwięku, wydajność (1.8); OTWARTE: zimny start w trybie klawiszowym (przygotowanie danych w oknie startującym nie-dotykowo zawieszało helper click w Robolectric; przyczyna nierozstrzygnięta), BACK ze szczegółów filmu (obecnie pierwszy BACK -> szyna, drugi -> Home; sprzeczność z zasadą cofania o poziom do decyzji właściciela), LEWO z akcji pustej Mojej listy (wchodzi w pole wyszukiwania); skrypt NIE sprawdza BACK ze szczegółów, LEWO z akcji pustej listy ani strzałek w polu wyszukiwania (checklista ręczna), S03 tworzy dostawcę RC-test-<czas> do ręcznego usunięcia; pełne CI tej gałęzi na końcowym SHA do odczytania; issue #12 (Redactor) nie rozpoczęte, czeka plan mikro-PR; RC nie rozpoczęty (bez zmiany wersji, rcbuild, tagu, publikacji)
-next_action: odczytać pełne CI na końcowym SHA gałęzi (build z Roborazzi verify, emulator), zdjąć draft i zgłosić gotowość do merge'a; merge tylko za osobną zgodą właściciela; potem plan i mikro-PR issue #12 (testy Redactor najpierw), dopiero po zatwierdzonych scaleniach i weryfikacji RC 0.9.11-rc2 (push rcbuild/0.9.11-rc2 z dev po zielonym CI na tym SHA)
-blockers: brak TV-boxa (testy fizyczne po RC); pobieranie zależności w CI bywa zawodne (HTTP 504, timeout Gradle, brak ktlint-cli bez kodu HTTP); odtwarzanie próbki strumieni z listy użytkownika zablokowane polityką sieci środowiska
-do_not_touch: main; PR #5 (dev do main); PR #14 (personalizacja po pierwszym RC); lista IPTV (adres i dane dostępu tylko w prywatnym pliku poza repo, nigdy w commitach, logach i raportach); wydawanie RC, rcbuild, tag, publikacja i instalacja APK bez decyzji; produkcyjny UX BACK ze szczegółów bez decyzji właściciela
-test: bash -n skryptów tools/tvbox (6 plików) | PASS | working_tree | exit 0 po włączeniu dev; obejmuje ketchup_tvbox_test.sh, analyze_keys.sh, test_analyze_keys.sh, tests/run_tests.sh, tests/fake_adb, tests/fake_aapt
-test: ShellCheck 0.11.0 -S warning na skryptach i testach tools/tvbox | PASS | working_tree | 0 uwag, exit 0 (narzędzie tylko w Cloud)
-test: bash tools/tvbox/tests/run_tests.sh | PASS | working_tree | 129 z 129 sprawdzeń, 3 min 30 s; atrapy adb i aapt, tylko fikcyjne sekrety; to NIE jest test na boxie
+task_state: implemented
+plan_point: Bezpieczeństwo P1 (CLAUDE.md) i issue #12: maskowanie danych dostępu w adresach URL i bezpieczne komunikaty błędów; warunek następnego RC
+done: PR #11 (testy D-pad Szukaj i Moja lista) scalony do dev (1989e91); PR #13 (skrypt testów RC na boxie) scalony do dev (merge 12e41f8b62d618662dc715d34a98206841cea953), skrypt na dev ma 1155 linii; PR #15 (ta gałąź, draft): Redactor z SZEROKĄ regułą w kontekście URL (userinfo, rozszerzone parametry tylko w URL, ścieżki z prefiksem live/movie/series/timeshift i bez prefiksu także dla id bez rozszerzenia, zagnieżdżone adresy: cała wartość zastępowana maską bez dekodowania), ErrorText i SafeErrorMessage (nieznany wyjątek daje komunikat ogólny z kodem klasy), zastosowane w friendlyImportError, ProviderFactory, RoomCatalogRepository (zapis i odczyt lastError), KeyProbe i EpgSourcesViewModel; sanitizeDetail przez Redactor; testy napisane najpierw (czerwone na starym kodzie), lokalnie 27 z 27 w core:common i ImportErrorsTest 9 z 9, lint detekt i ktlint bez uwag; decyzje właściciela: szeroka reguła (fałszywe trafienia dopuszczone), bez zależności od SecretStore i rejestru sekretów, RC 0.9.11-rc2 (versionCode 91102) jeszcze nie publikowany
+unfinished: pełne CI PR #15 na końcowym SHA do odczytania (testy Robolectric Room/Timber wykonuje dopiero CI); GRANICE: logi bibliotek (Media3, OkHttp, Coil) i systemu omijają Redactor; adres bez schematu, JSON, własne nagłówki i ścieżki poza URL nie są maskowane; wpisy providers.lastError zapisane przed poprawką mogą nadal zawierać adresy w bazie do następnego odświeżenia listy (bez masowego czyszczenia; wyświetlanie maskowane przy odczycie); OTWARTE z poprzednich paczek: zimny start w trybie klawiszowym (przyczyna nierozstrzygnięta), BACK ze szczegółów filmu (obecne zachowanie bez akceptacji UX), LEWO z akcji pustej Mojej listy; OCZEKUJE NA URZĄDZENIE (po wydaniu RC): skrypt S00-S12, ręczny test pilota (1.1, 1.2), D-pad w Szukaj i Mojej liście, wydajność (1.8)
+next_action: odczytać pełne CI PR #15, zdjąć draft i zgłosić gotowość; merge tylko za osobną zgodą właściciela; RC 0.9.11-rc2 dopiero po zatwierdzonych scaleniach i zielonym CI push na dev na tym samym SHA (push rcbuild/0.9.11-rc2 z dev); osobna decyzja architektoniczna: maskowanie literalne znanych sekretów dostawców i przechwytywanie logów systemu i bibliotek
+blockers: brak TV-boxa (testy fizyczne po RC); pobieranie zależności w CI bywa zawodne (HTTP 504, timeout Gradle, brak ktlint-cli bez kodu HTTP)
+do_not_touch: main; PR #5 (dev do main); PR #14 (personalizacja po pierwszym RC); lista IPTV (adres i dane dostępu tylko w prywatnym pliku poza repo, nigdy w commitach, logach i raportach); wydawanie RC, rcbuild, tag, publikacja i instalacja APK bez decyzji; globalny rejestr rzeczywistych sekretów i zależność Redactora od SecretStore bez osobnej decyzji
 test: python3 -B -m unittest discover -s tools/handoff -p 'test_*.py' | PASS | working_tree | 53 testy, exit 0 (CI tych testów nie uruchamia)
-test: CI dev po scaleniu PR #11 | PASS | 1989e9160d8176618dc02c5e4bc1b7f49db8cfc3 | https://github.com/Jack4B/ketchup-player/actions/runs/42498355469 ; build (Roborazzi w trybie record na dev), gitleaks, emulator
-test: CI PR #13 na końcowym SHA gałęzi | NOT_RUN | none | uruchamiany po tym wpisie; wynik w raporcie sesji i w PR, nie jest tu przewidywany
+test: RedactorTest i ErrorTextTest (core:common, JUnit na kodzie źródłowym kompilatorem z dystrybucji Gradle) | PASS | 4bceadda7b17d69efb3855b8a3f23e26ca5ae617 | 27 z 27 lokalnie; przed implementacją 11 z 22 testów Redactora było czerwonych
+test: ImportErrorsTest | PASS | 4bceadda7b17d69efb3855b8a3f23e26ca5ae617 | 9 z 9 lokalnie (kompilacja z Redactor i ErrorText)
+test: detekt-cli 1.23.8 i ktlint-cli 1.5.0 (konfiguracja projektu) na core:common, core:network, core:data, feature:settings, app | PASS | 4bceadda7b17d69efb3855b8a3f23e26ca5ae617 | bez uwag; nie zastępuje kroku Spotless + Detekt w CI
+test: CI dev po scaleniu PR #11 | PASS | 1989e9160d8176618dc02c5e4bc1b7f49db8cfc3 | https://github.com/Jack4B/ketchup-player/actions/runs/42498355469 ; build, gitleaks, emulator
+test: CI dev po scaleniu PR #13 | NOT_RUN | none | bieg push 42508240664 na 12e41f8 był w toku w chwili zapisu; wynik w raporcie sesji
+test: CI PR #15 na końcowym SHA | NOT_RUN | none | uruchamiany po tym wpisie; wynik w raporcie sesji i w PR, nie jest tu przewidywany
 test: skrypt na TV-boxie (S00-S12) | NOT_RUN | none | po wydaniu RC; brak urządzenia
 test: TV-box (fokus, BACK, Szukaj, Moja lista, LEWO z akcji pustej listy, BACK ze szczegółów, zimny start) | NOT_RUN | none | brak urządzenia; pozycje w docs/TEST-CHECKLIST.md
 ```
