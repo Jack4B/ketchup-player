@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -49,13 +50,18 @@ class FocusItemReproTest {
 
     private fun host(content: @Composable () -> Unit) {
         compose.setContent {
-            modes = LocalInputModeManager.current
-            content()
+            KetchupTheme {
+                modes = LocalInputModeManager.current
+                content()
+            }
         }
         compose.waitForIdle()
     }
 
     private fun semanticFocus() = compose.onAllNodes(isFocused()).fetchSemanticsNodes().size
+
+    private fun semanticFocusUnmerged() =
+        compose.onAllNodes(isFocused(), useUnmergedTree = true).fetchSemanticsNodes().size
 
     private fun press(key: Key) {
         compose.onRoot().performKeyInput { pressKey(key) }
@@ -71,7 +77,11 @@ class FocusItemReproTest {
         compose.waitForIdle()
         val semantics = semanticFocus()
         press(Key.DirectionCenter)
-        println("REPRO $name: tryb=$mode requestFocus=$requested semantykaFokusu=$semantics klikniecia=$clicks")
+        val unmerged = semanticFocusUnmerged()
+        println(
+            "REPRO $name: tryb=$mode requestFocus=$requested scalona=$semantics " +
+                "niescalona=$unmerged klikniecia=$clicks",
+        )
     }
 
     private val box = Modifier.size(80.dp)
@@ -145,14 +155,25 @@ class FocusItemReproTest {
     @Test
     fun wariantFocusItemFokusRuchemStrzalki() {
         val a = FocusRequester()
+        var clicksB = 0
         host {
-            Box {
+            Column {
                 FocusItem({ clicks++ }, focusRequester = a) { Box(Modifier.size(40.dp)) }
+                FocusItem({ clicksB++ }) { Box(Modifier.size(40.dp)) }
             }
         }
         press(Key.ShiftLeft)
+        val requested = compose.runOnIdle { a.requestFocus() }
+        compose.waitForIdle()
+        val merged = semanticFocus()
+        val unmerged = semanticFocusUnmerged()
+        println(
+            "REPRO FocusItem A,B: po requestFocus($requested) scalona=$merged niescalona=$unmerged " +
+                "tryb=${modes?.inputMode}",
+        )
         press(Key.DirectionDown)
+        println("REPRO FocusItem A,B: po DOL scalona=${semanticFocus()} niescalona=${semanticFocusUnmerged()}")
         press(Key.DirectionCenter)
-        println("REPRO FocusItem po ShiftLeft+DOL+OK: semantykaFokusu=${semanticFocus()} klikniecia=$clicks")
+        println("REPRO FocusItem A,B: po OK klikA=$clicks klikB=$clicksB")
     }
 }
