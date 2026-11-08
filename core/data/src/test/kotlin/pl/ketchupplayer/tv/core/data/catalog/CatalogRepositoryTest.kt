@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -159,6 +160,73 @@ class CatalogRepositoryTest {
                     .single()
                     .lastError,
             )
+        }
+
+    private val secretUrl = "http://srv.example.invalid:8080/user123/pass456/77.ts"
+
+    private fun assertNoSecret(out: String?) =
+        assertFalse(out, out != null && (out.contains("user123") || out.contains("pass456")))
+
+    @Test
+    fun `wyjatek z adresem danych dostepu nie trafia do UI ani do bazy (issue 12)`() =
+        runTest {
+            response = Result.failure(IllegalArgumentException("unexpected url: $secretUrl"))
+            val repo = repo()
+            val r = repo.addM3u("A", "http://a.example.invalid/x")
+            assertTrue(r is AddProviderResult.SavedWithError)
+            val message = (r as AddProviderResult.SavedWithError).message
+            val stored =
+                repo.providers
+                    .first()
+                    .single()
+                    .lastError
+            assertNoSecret(message)
+            assertNoSecret(stored)
+            assertTrue(message, message.contains("IllegalArgumentException"))
+            assertNoSecret(db.providers().get(r.id.value)?.lastError)
+        }
+
+    private suspend fun presentedAfterStoring(stored: String): Pair<String?, String?> {
+        response = Result.success(list)
+        val repo = repo()
+        val id = (repo.addM3u("A", "http://a.example.invalid/x") as AddProviderResult.Added).id
+        db.providers().markRefreshed(id.value, now, stored, null)
+        val shown =
+            repo.providers
+                .first()
+                .single()
+                .lastError
+        return shown to db.providers().get(id.value)?.lastError
+    }
+
+    @Test
+    fun `stary wpis lastError z adresem nie trafia do UI, a w bazie zostaje do nadpisania (issue 12)`() =
+        runTest {
+            val (shown, inDb) = presentedAfterStoring("unexpected url: $secretUrl")
+            assertNoSecret(shown)
+            assertEquals(STORED_ERROR_GENERIC, shown)
+            // Nie czyścimy bazy masowo: wcześniejszy wpis zostaje do następnego odświeżenia listy.
+            assertTrue(inDb.orEmpty().contains("pass456"))
+        }
+
+    @Test
+    fun `stary tekst serwera bez schematu nie trafia do UI, stan bledu zostaje (issue 12)`() =
+        runTest {
+            val old = "The requested URL /user123/pass456/77 was not found"
+            val (shown, inDb) = presentedAfterStoring(old)
+            assertNotNull(shown)
+            assertNoSecret(shown)
+            assertEquals(STORED_ERROR_GENERIC, shown)
+            assertEquals(old, inDb)
+        }
+
+    @Test
+    fun `znany bezpieczny lastError jest pokazywany bez zmian`() =
+        runTest {
+            val known = httpMessage(404)
+            val (shown, inDb) = presentedAfterStoring(known)
+            assertEquals(known, shown)
+            assertEquals(known, inDb)
         }
 
     @Test

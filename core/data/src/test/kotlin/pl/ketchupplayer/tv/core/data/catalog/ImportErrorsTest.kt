@@ -1,5 +1,6 @@
 package pl.ketchupplayer.tv.core.data.catalog
 
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -41,7 +42,49 @@ class ImportErrorsTest {
 
     @Test
     fun `komunikat HTTP zawiera odpowiedz serwera`() {
-        val msg = friendlyImportError("HTTP 513 · serwer: nginx, «Too many connections»")
-        assertTrue("HTTP 513" in msg && "Too many connections" in msg && "nginx" in msg)
+        val msg = friendlyImportError("HTTP 513 · ponów po: 30 s, «zbyt wiele połączeń»")
+        assertTrue("HTTP 513" in msg && "zbyt wiele połączeń" in msg && "ponów po: 30 s" in msg)
+    }
+
+    // --- Issue #12: dane dostępu w tekście błędu (wyłącznie fikcyjne). ---
+
+    private val secretUrl = "http://srv.example.invalid:8080/user123/pass456/77.ts"
+
+    private fun assertNoSecret(out: String) = assertFalse(out, out.contains("user123") || out.contains("pass456"))
+
+    @Test
+    fun `nieznany tekst z adresem danych dostepu jest maskowany`() {
+        val out = msg("unexpected url: $secretUrl")
+        assertNoSecret(out)
+        assertTrue(out.startsWith("unexpected url: "))
+    }
+
+    @Test
+    fun `odpowiedz serwera z adresem w komunikacie HTTP jest maskowana`() {
+        val out = msg("HTTP 404 · serwer: nginx, «nie znaleziono $secretUrl»")
+        assertNoSecret(out)
+        assertTrue("HTTP 404" in out || "404" in out)
+    }
+
+    @Test
+    fun `tresc odpowiedzi serwera ze sciezka bez schematu nie jest wyswietlana`() {
+        val out = msg("HTTP 404 · serwer: nginx, «The requested URL /user123/pass456/77 was not found»")
+        assertNoSecret(out)
+        assertFalse(out, "requested URL" in out || "nginx" in out)
+        assertTrue(out, out.startsWith("Nie znaleziono listy"))
+    }
+
+    @Test
+    fun `naglowek serwera i niepoprawny czas oczekiwania z danymi dostepu nie sa wyswietlane`() {
+        val out = msg("HTTP 503 · serwer: user123:pass456, ponów po: /user123/pass456/77 s")
+        assertNoSecret(out)
+        assertFalse(out, "Odpowiedź serwera" in out)
+    }
+
+    @Test
+    fun `dlugi nieznany tekst jest przyciety po maskowaniu`() {
+        val out = msg("x".repeat(230) + " $secretUrl")
+        assertTrue(out.length <= 240)
+        assertNoSecret(out)
     }
 }
