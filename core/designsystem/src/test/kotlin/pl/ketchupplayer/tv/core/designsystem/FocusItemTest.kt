@@ -56,7 +56,12 @@ class FocusItemTest {
             KetchupTheme {
                 val manager = LocalInputModeManager.current
                 modes = manager
-                if (tv) SideEffect { manager.requestInputMode(InputMode.Keyboard) }
+                if (tv) {
+                    // Jedno żądanie przełączenia, bez powtarzania przy każdej rekompozycji.
+                    SideEffect {
+                        if (manager.inputMode != InputMode.Keyboard) manager.requestInputMode(InputMode.Keyboard)
+                    }
+                }
                 Column {
                     FocusItem({ clicks += "A" }, Modifier.testTag("a"), focusRequester = first) { Text("A") }
                     FocusItem({ clicks += "B" }, Modifier.testTag("b"), focusRequester = second) { Text("B") }

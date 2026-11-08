@@ -1,14 +1,12 @@
 package pl.ketchupplayer.tv.feature.vod
 
 import androidx.activity.ComponentActivity
-import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.input.InputModeManager
 import androidx.compose.ui.input.key.Key
@@ -76,8 +74,20 @@ private val SERIALE =
 
 private val KATALOG = MOVIES + SERIALE
 
-/** Najnowszy na Mojej liście jest „Złote miasto” (p:m7). */
-private val MOJA_LISTA = listOf(MOVIES[6], MOVIES[1], SERIALE[0])
+/**
+ * Moja lista używa tej samej siatki co Filmy: sortowanie „Najnowsze” = malejąco po czasie dodania pozycji do katalogu
+ * (`addedMs`), a nie po kolejności na liście (VodBrowseViewModel, VodSort.NEWEST). Czasy są jawne i różne, a kolejność
+ * na liście celowo inna niż oczekiwana w siatce, żeby test dowodził sortowania, a nie kolejności wejściowej.
+ */
+private val MOJA_LISTA =
+    listOf(
+        movie(1, "Most nad rzeką", "Dramat", 2018, 6.0, added = 100),
+        series(1, "Rodzina Kowalskich", "Komedia", 2011, 500),
+        movie(7, "Złote miasto", "Dramat", 2024, 8.6, added = 300),
+    )
+
+/** Oczekiwana kolejność plakatów w siatce Mojej listy (wpisana ręcznie z czasów powyżej: 500, 300, 100). */
+private val MOJA_LISTA_W_SIATCE = listOf("Rodzina Kowalskich", "Złote miasto", "Most nad rzeką")
 
 private val KATEGORIE = listOf("Wszystkie", "Ostatnio dodane", "Dramat", "Akcja", "Komedia", "Kryminał")
 private val SZYNA = listOf("Profil", "Szukaj", "Home", "Na żywo", "Przewodnik", "Filmy", "Seriale", "Moja lista")
@@ -128,7 +138,7 @@ class VodBrowseModesScreenTest {
                 // pierwszym żądaniem fokusu ekranu (efekty startują po zastosowaniu kompozycji).
                 val modes = LocalInputModeManager.current
                 inputModes = modes
-                SideEffect { modes.requestInputMode(InputMode.Keyboard) }
+                SideEffect { if (modes.inputMode != InputMode.Keyboard) modes.requestInputMode(InputMode.Keyboard) }
                 var state by remember { mutableStateOf(initial) }
                 ShellPreview(railId) {
                     VodBrowseScreen(
@@ -214,7 +224,6 @@ class VodBrowseModesScreenTest {
             }
         }
         val route = trace.joinToString(" -> ")
-        println("TRASA FOKUSU do '$target': $route")
         assertTrue("Nie dotarto do '$target' w $maxSteps ruchach: $route", focusedHas(target))
         return route
     }
@@ -230,7 +239,6 @@ class VodBrowseModesScreenTest {
             }
         }
         val route = trace.joinToString(" -> ")
-        println("TRASA FOKUSU na szynę: $route")
         assertTrue("LEWO nie doprowadziło na szynę: $route", onRail())
         return route
     }
@@ -244,80 +252,40 @@ class VodBrowseModesScreenTest {
         return stateOf(VodMode.SEARCH, repo) to phrases.associateWith { stateOf(VodMode.SEARCH, repo, it) }
     }
 
-    // --- SONDA (tymczasowa): tryb wejścia a początkowy fokus ---
-
-    @Test
-    fun sondaTrybuWejscia() {
-        val a = FocusRequester()
-        val b = FocusRequester()
-        var clicks = ""
-        var modes: InputModeManager? = null
-        compose.setContent {
-            KetchupTheme(device = DeviceClass.TV) {
-                modes = LocalInputModeManager.current
-                Column {
-                    FocusItem({ clicks += "A" }, focusRequester = a) { Text("A") }
-                    FocusItem({ clicks += "B" }, focusRequester = b) { Text("B") }
-                }
-            }
-        }
-        compose.waitForIdle()
-
-        fun state(label: String) {
-            println("SONDA1 $label: tryb=${modes?.inputMode} fokus=${focused()} klikniecia='$clicks'")
-        }
-
-        state("start")
-        compose.runOnIdle { println("SONDA1 requestFocus A: ${a.requestFocus()}") }
-        state("po requestFocus A")
-        press(Key.DirectionCenter)
-        state("po OK")
-        press(Key.ShiftLeft)
-        state("po ShiftLeft")
-        press(Key.DirectionDown)
-        press(Key.DirectionCenter)
-        state("po DOL+OK")
-        val switched = compose.runOnIdle { modes?.requestInputMode(InputMode.Keyboard) }
-        state("po requestInputMode(Keyboard)=$switched")
-        compose.runOnIdle { println("SONDA1 requestFocus B: ${b.requestFocus()}") }
-        state("po requestFocus B")
-        press(Key.DirectionCenter)
-        state("po OK na B")
-    }
-
-    @Test
-    fun sondaPoczatkowegoFokusuEkranu() {
-        show(stateOf(VodMode.MOVIES, FakeVodRepo(KATALOG)), "movies")
-        println("SONDA2 po show: ${focused()}")
-        press(Key.ShiftLeft)
-        println("SONDA2 po ShiftLeft: ${focused()}")
-        press(Key.DirectionRight)
-        println("SONDA2 po PRAWO: ${focused()}")
-        press(Key.DirectionCenter)
-        println("SONDA2 po OK: otwarto=$opened")
-        press(Key.DirectionLeft)
-        println("SONDA2 po LEWO: ${focused()}")
-    }
-
     // --- Moja lista z pozycjami ---
 
     @Test
-    fun `moja lista - kategorie, PRAWO na najnowszy plakat, OK otwiera szczegoly`() {
+    fun `moja lista - kategorie, PRAWO na najnowszy plakat, OK otwiera wlasnie ten element`() {
         show(filledMyList(), "mylist")
-        press(Key.ShiftLeft) // pierwszy klawisz po starcie tylko przełącza tryb wejścia
-        assertFocus("Wszystkie")
+        assertFocus("Wszystkie") // fokus startowy ekranu na kategorii
         press(Key.DirectionRight)
-        assertFocus("Złote miasto")
+        assertFocus(MOJA_LISTA_W_SIATCE[0])
         press(Key.DirectionCenter)
-        assertEquals(listOf("p:m7"), opened)
+        assertEquals(listOf("p:s1"), opened) // serial z czasem 500, nie film z początku listy
+    }
+
+    @Test
+    fun `moja lista - kolejnosc plakatow wg czasu dodania, OK otwiera ten, na ktorym jest fokus`() {
+        show(filledMyList(), "mylist")
+        press(Key.DirectionRight)
+        assertFocus(MOJA_LISTA_W_SIATCE[0])
+        press(Key.DirectionRight)
+        assertFocus(MOJA_LISTA_W_SIATCE[1])
+        press(Key.DirectionRight)
+        assertFocus(MOJA_LISTA_W_SIATCE[2])
+        press(Key.DirectionCenter)
+        assertEquals(listOf("p:m1"), opened) // trzeci w siatce, a pierwszy na liście wejściowej
+        press(Key.DirectionLeft)
+        assertFocus(MOJA_LISTA_W_SIATCE[1])
+        press(Key.DirectionCenter)
+        assertEquals(listOf("p:m1", "p:m7"), opened)
     }
 
     @Test
     fun `moja lista - LEWO z pierwszej kolumny wysuwa kategorie, kolejne LEWO przenosi na szyne`() {
         show(filledMyList(), "mylist")
-        press(Key.ShiftLeft)
         press(Key.DirectionRight)
-        assertFocus("Złote miasto")
+        assertFocus(MOJA_LISTA_W_SIATCE[0])
         compose.onNodeWithText("Wszystkie").assertDoesNotExist() // na miniaturach kategorie są schowane
         press(Key.DirectionLeft)
         assertFocus("Wszystkie")
@@ -328,9 +296,8 @@ class VodBrowseModesScreenTest {
     @Test
     fun `moja lista - BACK z siatki wysuwa kategorie, drugi BACK przenosi na szyne`() {
         show(filledMyList(), "mylist")
-        press(Key.ShiftLeft)
         press(Key.DirectionRight)
-        assertFocus("Złote miasto")
+        assertFocus(MOJA_LISTA_W_SIATCE[0])
         back()
         assertFocus("Wszystkie")
         back()
@@ -363,13 +330,22 @@ class VodBrowseModesScreenTest {
         assertEquals(1, providers)
     }
 
+    /**
+     * Obecna trasa (nie decyzja UX): LEWO z akcji „Dostawcy” wchodzi w pole wyszukiwania, w którym strzałki zostają
+     * (LEWO w polu nie zamyka formularza, KONSPEKT §formularze), a na szynę prowadzi BACK. Wymagania nie nakazują
+     * bezpośredniego powrotu LEWO z akcji; wygodę tej trasy ocenia się na boxie (docs/TEST-CHECKLIST.md).
+     */
     @Test
-    fun `pusta moja lista - LEWO z akcji wraca na szyne`() {
+    fun `pusta moja lista - LEWO z akcji wchodzi w pole wyszukiwania, BACK z pola wraca na szyne`() {
         show(emptyMyList(), "mylist")
         press(Key.ShiftLeft)
-        back()
+        back() // szyna
         walkTo("Dostawcy", maxSteps = 4)
-        leaveToRail()
+        press(Key.DirectionLeft)
+        assertTrue("LEWO z akcji ma prowadzić do pola: ${focused()}", focusedHas("pole"))
+        press(Key.DirectionLeft)
+        assertTrue("strzałki zostają w polu: ${focused()}", focusedHas("pole"))
+        back()
         compose.onNodeWithContentDescription("Moja lista").assertIsFocused()
     }
 

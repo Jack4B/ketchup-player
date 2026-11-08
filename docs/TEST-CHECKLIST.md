@@ -130,6 +130,9 @@ Opis w jednym zdaniu, numer scenariusza z tej listy, zrzut ekranu. Przy crashu: 
 - 🖐 Ustawienia otwierają się jako panel z prawej, BACK zamyka, fokus wraca na szynę.
 - 🖐 Na żywo: logo kanałów, żywy podgląd (wyciszony) po 1 s, pełny ekran zwalnia podgląd; przełącznik w Odtwarzaniu.
 - 🖐 Filmy/Seriale: PRAWO z kategorii wchodzi na miniatury i chowa kategorie (6 kolumn), LEWO/BACK je przywraca.
+- 🖐 Moja lista (pusta): LEWO z akcji „Dostawcy” wchodzi w pole wyszukiwania (strzałki zostają w polu), na szynę prowadzi
+  BACK; ocenić, czy ta trasa jest wygodna (test D-pad w CI pilnuje tylko obecnej trasy, nie UX). Sprawdzić też Szukaj i
+  Moja lista pilotem: kolejność plakatów (najnowsze dodane najpierw), OK otwiera plakat z fokusem, BACK/LEWO na szynę.
 - 🖐 OSD filmu: GÓRA/INFO pokazuje „O FILMIE” (opis, obsada); trzymanie ◀ ▶ przyspiesza przewijanie.
 - 🖐 HOME w trakcie odtwarzania: dźwięk milknie; powrót wznawia.
 - 🖐 Pilot: pojedyncze krótkie naciśnięcie strzałki = jedno pole (skrypt: krok „Test pilota”, pliki keyguard.txt/getevent.txt).

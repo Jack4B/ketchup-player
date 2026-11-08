@@ -35,10 +35,15 @@ class TvBoxRule : TestRule {
             override fun evaluate() {
                 val context = ApplicationProvider.getApplicationContext<android.app.Application>()
                 Shadows.shadowOf(context.packageManager).setSystemFeature(PackageManager.FEATURE_LEANBACK, true)
-                if (description.getAnnotation(StartsInRemoteMode::class.java) != null) {
-                    InstrumentationRegistry.getInstrumentation().setInTouchMode(false)
+                val remote = description.getAnnotation(StartsInRemoteMode::class.java) != null
+                if (remote) InstrumentationRegistry.getInstrumentation().setInTouchMode(false)
+                try {
+                    base.evaluate()
+                } finally {
+                    // Izolacja: kolejne testy zaczynają w domyślnym trybie dotyku Robolectric (NATIVE), nawet gdyby
+                    // reset cieni nie zadziałał; Robolectric i tak odtwarza stan sesji okien po teście.
+                    if (remote) InstrumentationRegistry.getInstrumentation().setInTouchMode(true)
                 }
-                base.evaluate()
             }
         }
 }

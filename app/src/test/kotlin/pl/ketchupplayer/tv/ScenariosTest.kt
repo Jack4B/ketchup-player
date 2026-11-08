@@ -90,6 +90,10 @@ class ScenariosTest {
         const val SONDA_STEPS = 30
         const val SONDA_STEP_MS = 100L
         const val SONDA_MSG = 300
+        const val MS_PER_S = 1_000L
+        const val WATCHDOG_MS = 60_000L
+        const val WATCHDOG_POLL_MS = 1_000L
+        const val WATCHDOG_FRAMES = 25
     }
 
     @get:Rule(order = -1)
@@ -1034,6 +1038,65 @@ class ScenariosTest {
 
     private fun categoryFocused() = focusedDescriptions().any { d -> VOD_CATEGORIES.any { d == "tekst=$it" } }
 
+    // --- Diagnostyka OOM w scenariuszach pilota (PR #11, tymczasowa) ---
+
+    @Volatile private var lastStep = "przed testem"
+
+    @Volatile private var lastStepAtMs = System.currentTimeMillis()
+    private val startedAtMs = System.currentTimeMillis()
+
+    /** Krótki znacznik etapu: nazwa i czas od startu testu (bez zrzutów drzewa UI). */
+    private fun step(name: String) {
+        lastStep = name
+        lastStepAtMs = System.currentTimeMillis()
+        println("KROK +${(lastStepAtMs - startedAtMs) / MS_PER_S}s $name")
+    }
+
+    private fun <T> stage(
+        name: String,
+        action: () -> T,
+    ): T {
+        step("$name: start")
+        val result = action()
+        step("$name: koniec")
+        return result
+    }
+
+    /**
+     * Strażnik: jeśli przez [WATCHDOG_MS] nie pojawi się nowy znacznik etapu, drukuje ostatni etap oraz stos wątku testu
+     * (hipoteza OOM: pętla klatek w `waitForIdle`; stos wskaże, w którym wywołaniu) i zleca głównej pętli przerwanie
+     * testu błędem z nazwą ostatniego etapu. Nie zmienia sterty, trace ani logiki testów.
+     */
+    private fun withWatchdog(block: () -> Unit) {
+        val mainThread = Looper.getMainLooper().thread
+        val finished = java.util.concurrent.CountDownLatch(1)
+        lastStepAtMs = System.currentTimeMillis()
+        var fired = false
+        kotlin.concurrent.thread(isDaemon = true, name = "straznik-e2e") {
+            while (!finished.await(WATCHDOG_POLL_MS, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+                val stalled = System.currentTimeMillis() - lastStepAtMs
+                if (!fired && stalled > WATCHDOG_MS) {
+                    fired = true
+                    val stage = lastStep
+                    println("STRAŻNIK: ${stalled / MS_PER_S}s bez etapu, ostatni: '$stage'. Stos:")
+                    val frames = mainThread.stackTrace
+                    val own = frames.filter { it.className.startsWith("pl.ketchupplayer") }
+                    (frames.take(WATCHDOG_FRAMES) + own).distinct().forEach { println("    at $it") }
+                    android.os.Handler(Looper.getMainLooper()).post {
+                        error("STRAŻNIK: ${stalled / MS_PER_S}s bez postępu, ostatni etap: '$stage'")
+                    }
+                }
+            }
+        }
+        try {
+            runCatching(block)
+                .onFailure { println("BŁĄD (${it::class.simpleName}) po etapie '$lastStep'") }
+                .getOrThrow()
+        } finally {
+            finished.countDown()
+        }
+    }
+
     /**
      * Kontrola, że test oznaczony [StartsInRemoteMode] naprawdę ma okno w trybie nie-dotykowym (jak TV). Bez tego
      * semantyka fokusu `FocusItem` jest pusta i asercje pilota byłyby ślepe, więc przy niepowodzeniu przerywamy z
@@ -1041,6 +1104,7 @@ class ScenariosTest {
      */
     private fun requireRemoteMode() {
         val inTouchMode = compose.activity.window.decorView.isInTouchMode
+        step("tryb okna: isInTouchMode=$inTouchMode")
         check(!inTouchMode) {
             "Okno jest w trybie dotyku: TvBoxRule z @StartsInRemoteMode nie przełączyła go " +
                 "(Instrumentation.setInTouchMode(false) przed startem aktywności); asercje fokusu pilota byłyby ślepe"
@@ -1053,8 +1117,11 @@ class ScenariosTest {
      */
     private fun openSectionWithRemote(label: String) {
         requireRemoteMode()
+        step("$label: przed pierwszym klawiszem")
         pressKeys(listOf(Key.ShiftLeft))
+        step("$label: po pierwszym klawiszu, fokus ${focusedDescriptions()}")
         repeat(REMOTE_STEPS) { if (!railFocused()) pressKeys(listOf(Key.DirectionLeft)) }
+        step("$label: po LEWO do szyny, fokus ${focusedDescriptions()}")
         check(railFocused()) { "LEWO nie doprowadziło na szynę, fokus: ${focusedDescriptions()}" }
         // Szyna zdąży się rozwinąć (inaczej tylko aktywna pozycja przyjmuje fokus).
         Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(RAIL_SETTLE_MS))
@@ -1063,8 +1130,10 @@ class ScenariosTest {
         println("SZYNA $label po GÓRA: ${focusedDescriptions()}")
         repeat(REMOTE_STEPS) { if (!focusedHas("opis=$label")) pressKeys(listOf(Key.DirectionDown)) }
         println("SZYNA $label po DÓŁ: ${focusedDescriptions()}")
+        step("$label: na pozycji szyny, przed OK")
         compose.onNodeWithContentDescription(label).assertIsFocused()
         pressKeys(listOf(Key.DirectionCenter))
+        step("$label: po OK")
     }
 
     /** Z szyny i z kategorii w prawo, z reszty w dół: naturalna droga od szyny/pola szukania do wyniku. */
@@ -1191,22 +1260,34 @@ class ScenariosTest {
      */
     @Test
     @StartsInRemoteMode
-    fun mojaListaISzukajDzialajaSamymPilotem() {
-        serveXtreamVod()
-        addXtreamViaUi("dobre-haslo")
-        waitForText("Kanały: 2", substring = true)
-        nav("Filmy")
-        click("Pitbull")
-        click("+ Moja lista")
-        waitForText("✓ Moja lista")
+    fun mojaListaISzukajDzialajaSamymPilotem() =
+        withWatchdog {
+            requireRemoteMode()
+            setUpPitbullOnMyList()
+            remoteScenario()
+        }
 
+    private fun setUpPitbullOnMyList() {
+        stage("serwer Xtream") { serveXtreamVod() }
+        stage("dodanie listy przez UI") { addXtreamViaUi("dobre-haslo") }
+        stage("import: Kanały: 2") { waitForText("Kanały: 2", substring = true) }
+        stage("sekcja Filmy") { nav("Filmy") }
+        stage("szczegóły Pitbull") { click("Pitbull") }
+        stage("dodanie do Mojej listy") { click("+ Moja lista") }
+        stage("potwierdzenie ✓ Moja lista") { waitForText("✓ Moja lista") }
+    }
+
+    private fun remoteScenario() {
         openSectionWithRemote("Moja lista")
         waitForText("Pitbull")
         waitFor { focusedHas("tekst=Wszystkie") } // fokus na kategorii, jak w Filmach
+        step("Moja lista: fokus na kategorii Wszystkie")
         pressKeys(listOf(Key.DirectionRight))
         waitFor { focusedHas("Pitbull") }
+        step("Moja lista: fokus na plakacie Pitbull")
         pressKeys(listOf(Key.DirectionCenter))
         waitForText("FILM") // szczegóły filmu
+        step("Moja lista: otwarte szczegóły filmu")
         back()
         waitFor { compose.onAllNodesWithText("FILM").fetchSemanticsNodes().isEmpty() } // wróciła lista
         waitFor { focusedDescriptions().isNotEmpty() } // po powrocie fokus nie jest zgubiony
@@ -1214,8 +1295,10 @@ class ScenariosTest {
         compose.waitForIdle()
         back() // z listy na szynę
         compose.onNodeWithContentDescription("Moja lista").assertIsFocused()
+        step("Moja lista: BACK z siatki na szynę")
         back() // z szyny na Home
         waitForText("Mam czas na", substring = true)
+        step("BACK z szyny na Home")
 
         openSectionWithRemote("Szukaj")
         waitForText("Seksmisja")
@@ -1223,11 +1306,15 @@ class ScenariosTest {
         waitFor { focusedHas("tekst=Wszystkie") }
         pressKeys(listOf(Key.DirectionUp))
         compose.onNode(hasSetTextAction()).assertIsFocused()
+        step("Szukaj: fokus w polu")
         compose.onNode(hasSetTextAction()).performTextInput("kowal")
         waitFor { compose.onAllNodesWithText("Seksmisja").fetchSemanticsNodes().isEmpty() }
+        step("Szukaj: wyniki zawężone")
         walkRemoteTo("Rodzina Kowalskich")
+        step("Szukaj: fokus na serialu")
         pressKeys(listOf(Key.DirectionCenter))
         waitForText("SERIAL") // szczegóły serialu
+        step("Szukaj: otwarte szczegóły serialu")
     }
 
     private fun sampleFocus(label: String) {
@@ -1244,29 +1331,26 @@ class ScenariosTest {
     /** SONDA (tymczasowa, diagnostyka): gdzie jest fokus po wejściu w sekcję dotykiem i pilotem (co 100 ms). */
     @Test
     @StartsInRemoteMode
-    fun sondaFokusuPoWyborzeSekcji() {
-        serveXtreamVod()
-        addXtreamViaUi("dobre-haslo")
-        waitForText("Kanały: 2", substring = true)
-        nav("Filmy")
-        click("Pitbull")
-        click("+ Moja lista")
-        waitForText("✓ Moja lista")
-        nav("Filmy")
-        waitForText("Pitbull")
-        sampleFocus("Filmy po dotyku")
-        listOf("Moja lista", "Filmy", "Szukaj").forEach { label ->
-            runCatching { openSectionWithRemote(label) }
-                .onFailure { println("SONDA $label: nie wybrano: ${it.message?.take(SONDA_MSG)}") }
-            sampleFocus("$label pilotem")
-            pressKeys(listOf(Key.DirectionRight))
-            println("SONDA $label po PRAWO: ${focusedDescriptions()}")
-            pressKeys(listOf(Key.DirectionCenter))
-            val details = compose.onAllNodesWithText("FILM").fetchSemanticsNodes().size
-            println("SONDA $label po PRAWO+OK: szczegolyFilmu=$details fokus=${focusedDescriptions()}")
-            if (details > 0) back()
+    fun sondaFokusuPoWyborzeSekcji() =
+        withWatchdog {
+            requireRemoteMode()
+            setUpPitbullOnMyList()
+            stage("powrót do Filmy") { nav("Filmy") }
+            stage("lista Filmy") { waitForText("Pitbull") }
+            listOf("Moja lista", "Filmy", "Szukaj").forEach { label ->
+                stage("sekcja $label pilotem") {
+                    runCatching { openSectionWithRemote(label) }
+                        .onFailure { println("SONDA $label: nie wybrano: ${it.message?.take(SONDA_MSG)}") }
+                }
+                stage("próbkowanie fokusu $label") { sampleFocus("$label pilotem") }
+                pressKeys(listOf(Key.DirectionRight))
+                println("SONDA $label po PRAWO: ${focusedDescriptions()}")
+                pressKeys(listOf(Key.DirectionCenter))
+                val details = compose.onAllNodesWithText("FILM").fetchSemanticsNodes().size
+                println("SONDA $label po PRAWO+OK: szczegolyFilmu=$details fokus=${focusedDescriptions()}")
+                if (details > 0) back()
+            }
         }
-    }
 
     /**
      * Syntetyczny katalog o cechach dużej listy (nie lista użytkownika): import z prawdziwym Room, Filmy i Seriale
