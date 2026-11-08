@@ -72,10 +72,11 @@ internal val MOVIES =
 
 internal class FakeVodRepo(
     private val all: List<VodEntry>,
+    private val mine: List<VodEntry> = emptyList(),
 ) : VodRepository {
     override fun entries(kind: VodKind): Flow<List<VodEntry>> = MutableStateFlow(all.filter { it.item.kind == kind })
 
-    override fun myList() = MutableStateFlow(emptyList<VodEntry>())
+    override fun myList() = MutableStateFlow(mine)
 
     override fun continueWatching(limit: Int) = MutableStateFlow(emptyList<VodEntry>())
 
