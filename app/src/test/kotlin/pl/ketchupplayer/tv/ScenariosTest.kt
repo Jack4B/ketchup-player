@@ -1,7 +1,14 @@
 package pl.ketchupplayer.tv
 
 import android.os.Looper
+import android.view.View
+import android.view.ViewGroup
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.input.InputMode
+import androidx.compose.ui.input.InputModeManager
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -13,6 +20,7 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
+import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -34,6 +42,7 @@ import androidx.compose.ui.test.swipeUp
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.test.platform.app.InstrumentationRegistry
 import com.github.takahirom.roborazzi.captureRoboImage
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -1112,8 +1121,8 @@ class ScenariosTest {
 
     // --- Tryb pilota po przygotowaniu danych (PR #11) ---
 
-    @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
-    private var canaryModes: androidx.compose.ui.input.InputModeManager? = null
+    @OptIn(ExperimentalComposeUiApi::class)
+    private var canaryModes: InputModeManager? = null
 
     private fun windowInTouchMode() = compose.activity.window.decorView.isInTouchMode
 
@@ -1122,16 +1131,24 @@ class ScenariosTest {
      * `InputModeManager`, ale rejestruje się w tym samym oknie co aplikacja, więc jego tryb pokazuje, czy zmiana trybu
      * okna dotarła do Compose. Nie czyta ani nie zmienia stanu aplikacji.
      */
-    @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
-    private fun installInputModeCanary() {
+    @OptIn(ExperimentalComposeUiApi::class)
+    private fun installInputModeCanary(): View {
+        val canary = ComposeView(compose.activity)
         compose.runOnUiThread {
-            val canary =
-                androidx.compose.ui.platform.ComposeView(compose.activity).apply {
-                    setContent { canaryModes = androidx.compose.ui.platform.LocalInputModeManager.current }
-                }
-            compose.activity.addContentView(canary, android.view.ViewGroup.LayoutParams(1, 1))
+            canary.setContent { canaryModes = LocalInputModeManager.current }
+            compose.activity.addContentView(canary, ViewGroup.LayoutParams(1, 1))
         }
         compose.waitForIdle()
+        return canary
+    }
+
+    /** Kanarek jest drugim korzeniem semantyki (`onRoot()` wymaga jednego), więc po odczycie trybu go usuwamy. */
+    private fun removeInputModeCanary(canary: View) {
+        compose.runOnUiThread { (canary.parent as? ViewGroup)?.removeView(canary) }
+        compose.waitForIdle()
+        val roots = compose.onAllNodes(isRoot()).fetchSemanticsNodes().size
+        step("kanarek usunięty, korzeni semantyki: $roots")
+        check(roots == 1) { "Po usunięciu kanarka powinien zostać jeden korzeń semantyki, jest $roots" }
     }
 
     /**
@@ -1143,11 +1160,11 @@ class ScenariosTest {
      * po błędzie) przywracany jest tryb dotyku po stronie menedżera okien.
      */
     @Suppress("DEPRECATION")
-    @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
+    @OptIn(ExperimentalComposeUiApi::class)
     private fun <T> inRemoteMode(block: () -> T): T {
-        installInputModeCanary()
+        val canary = installInputModeCanary()
         step("tryb przed przełączeniem: okno dotyk=${windowInTouchMode()}, Compose=${canaryModes?.inputMode}")
-        check(windowInTouchMode() && canaryModes?.inputMode == androidx.compose.ui.input.InputMode.Touch) {
+        check(windowInTouchMode() && canaryModes?.inputMode == InputMode.Touch) {
             "Setup ma przebiegać w trybie dotyku: okno dotyk=${windowInTouchMode()}, Compose=${canaryModes?.inputMode}"
         }
         try {
@@ -1156,14 +1173,13 @@ class ScenariosTest {
             compose.waitForIdle()
             step("tryb po przełączeniu: okno dotyk=${windowInTouchMode()}, Compose=${canaryModes?.inputMode}")
             check(!windowInTouchMode()) { "Okno nadal w trybie dotyku po requestFocusFromTouch()" }
-            check(canaryModes?.inputMode == androidx.compose.ui.input.InputMode.Keyboard) {
+            check(canaryModes?.inputMode == InputMode.Keyboard) {
                 "Compose nie przeszedł w tryb klawiszowy mimo zmiany trybu okna: ${canaryModes?.inputMode}"
             }
+            removeInputModeCanary(canary)
             return block()
         } finally {
-            androidx.test.platform.app.InstrumentationRegistry
-                .getInstrumentation()
-                .setInTouchMode(true)
+            InstrumentationRegistry.getInstrumentation().setInTouchMode(true)
         }
     }
 
