@@ -25,3 +25,4 @@ Krótkie wpisy dopisywane chronologicznie (nowe na końcu); starych nie przepisu
 - Wyniki CI: asercje fokusu czerwone, bo `FocusItem` nie pokazuje fokusu w drzewie semantyki Robolectric (tryb wejścia zostaje Touch); przyczyna nieustalona, sonda `FocusItemReproTest` dopisana, wynik czeka na działający build. Strzałki w polu wyszukiwania zostają w polu.
 - Analiza dużej listy M3U użytkownika (prywatny plik poza repo): parser aplikacji na JVM bez błędów; odtwarzanie nie sprawdzone (polityka sieci). `Redactor` nie maskuje adresów `host/użytkownik/hasło/id`.
 - Blokada: pobieranie zależności w CI (Gradle HTTP 504, potem brak ktlint-cli). Bez zmian w CI. Następny krok: powtórzyć CI, gdy pobieranie działa.
+- Dopisane: syntetyczny katalog o cechach dużej listy (fixture i scenariusz Room, Szukaj, ulubione; niewykonane), luka Redactor zgłoszona jako issue #12. CI na `50b979c`: Gradle 504 na pierwszym kroku; bez dalszych prób.
