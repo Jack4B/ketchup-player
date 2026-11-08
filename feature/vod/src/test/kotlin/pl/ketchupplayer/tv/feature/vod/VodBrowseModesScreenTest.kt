@@ -1,11 +1,16 @@
 package pl.ketchupplayer.tv.feature.vod
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.input.InputModeManager
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -21,6 +26,8 @@ import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.pressKey
+import androidx.tv.material3.ExperimentalTvMaterial3Api
+import androidx.tv.material3.Text
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -33,6 +40,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import pl.ketchupplayer.tv.core.data.vod.VodEntry
 import pl.ketchupplayer.tv.core.designsystem.DeviceClass
+import pl.ketchupplayer.tv.core.designsystem.FocusItem
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.designsystem.ShellPreview
 import pl.ketchupplayer.tv.core.model.VodItem
@@ -81,7 +89,7 @@ private const val MAX_LEFT = 6
  * zdarzenie wyszukiwania, powrót na szynę). Tekst frazy wpisuje klawiatura ekranowa (IME), więc w teście to
  * `performTextInput` na polu, do którego fokus doszedł pilotem; reszta ścieżki idzie klawiszami.
  */
-@OptIn(ExperimentalTestApi::class)
+@OptIn(ExperimentalTestApi::class, ExperimentalComposeUiApi::class, ExperimentalTvMaterial3Api::class)
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], qualifiers = "w960dp-h540dp-xhdpi")
@@ -222,6 +230,41 @@ class VodBrowseModesScreenTest {
     private fun search(vararg phrases: String): Pair<VodBrowseUiState, Map<String, VodBrowseUiState>> {
         val repo = FakeVodRepo(KATALOG)
         return stateOf(VodMode.SEARCH, repo) to phrases.associateWith { stateOf(VodMode.SEARCH, repo, it) }
+    }
+
+    // --- SONDA (tymczasowa): tryb wejścia a początkowy fokus ---
+
+    @Test
+    fun sondaTrybuWejscia() {
+        val requester = FocusRequester()
+        var modes: InputModeManager? = null
+        compose.setContent {
+            KetchupTheme(device = DeviceClass.TV) {
+                modes = LocalInputModeManager.current
+                Column { FocusItem({}, focusRequester = requester) { Text("A") } }
+            }
+        }
+        compose.waitForIdle()
+        fun state(label: String) = println("SONDA1 $label: tryb=${modes?.inputMode} fokus=${focused()}")
+        state("start")
+        compose.runOnIdle { println("SONDA1 requestFocus w trybie dotyku: ${requester.requestFocus()}") }
+        state("po requestFocus (dotyk)")
+        press(Key.ShiftLeft)
+        state("po ShiftLeft")
+        compose.runOnIdle { println("SONDA1 requestFocus w trybie klawiatury: ${requester.requestFocus()}") }
+        state("po requestFocus (klawiatura)")
+    }
+
+    @Test
+    fun sondaPoczatkowegoFokusuEkranu() {
+        show(stateOf(VodMode.MOVIES, FakeVodRepo(KATALOG)), "movies")
+        println("SONDA2 po show: ${focused()}")
+        press(Key.ShiftLeft)
+        println("SONDA2 po ShiftLeft: ${focused()}")
+        press(Key.DirectionRight)
+        println("SONDA2 po PRAWO: ${focused()}")
+        press(Key.DirectionLeft)
+        println("SONDA2 po LEWO: ${focused()}")
     }
 
     // --- Moja lista z pozycjami ---
