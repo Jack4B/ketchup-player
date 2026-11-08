@@ -47,3 +47,9 @@ Krótkie wpisy dopisywane chronologicznie (nowe na końcu); starych nie przepisu
 - Odkrycie: BACK ze szczegółów filmu przenosi fokus na szynę, szczegóły zostają, drugi BACK prowadzi na Home (`Shell.BackHandler`, `DetailsRoute` bez `onBack`); test zapisuje obecne zachowanie, decyzja o zmianie należy do właściciela (checklista box).
 - Usunięto sondę `sondaFokusuPoWyborzeSekcji` i wydruki; zostaje strażnik i znaczniki etapów bez wydruków. Lokalne `detekt-cli` i `ktlint-cli` (te same wersje co CI) wyłapały błędy lintu przed pushem.
 
+## 2026-11-08 (Europe/Warsaw), domknięcie PR #11 do review
+
+- Pełne CI na `3f32752` zielone (build z 509 testami, Roborazzi verify, Lint, buildy, gitleaks, emulator); log emulatora nie wypisuje wyników per scenariusz, dowodem są artefakty i kod wyjścia skryptu.
+- Wycofane tymczasowe `--info --stacktrace` z kroku Spotless + Detekt (zgoda użytkownika); `networkTimeout` 60000 zostaje; workflow względem `dev` bez zmian.
+- Otwarte (nie zamknięte): zimny start w trybie klawiszowym, BACK ze szczegółów (test pilnuje obecnego zachowania, nie akceptuje go), LEWO na pustej Mojej liście, testy fizycznego boxa. Punkty planu wymagające boxa bez odhaczenia.
+
