@@ -63,7 +63,7 @@ class ProviderFactory
                             .sanitizeDetail(lines.joinToString(" "))
                             .take(PROBE_CHARS)
                 },
-                onFailure = { it.message ?: "błąd sieci" },
+                onFailure = { safeErrorText(it, "błąd sieci") },
             )
         }
 

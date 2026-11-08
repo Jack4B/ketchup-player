@@ -4,6 +4,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.withLock
 import pl.ketchupplayer.tv.core.common.Clock
+import pl.ketchupplayer.tv.core.common.ErrorText
+import pl.ketchupplayer.tv.core.common.Redactor
+import pl.ketchupplayer.tv.core.common.SafeErrorMessage
 import pl.ketchupplayer.tv.core.data.vod.NEW_EPISODES_WINDOW_MS
 import pl.ketchupplayer.tv.core.database.ChannelDao
 import pl.ketchupplayer.tv.core.database.ChannelFlagDao
@@ -19,6 +22,7 @@ import pl.ketchupplayer.tv.core.model.StreamSpec
 import pl.ketchupplayer.tv.core.network.TransferMeter
 import pl.ketchupplayer.tv.core.policy.EpgSourcePolicy
 import pl.ketchupplayer.tv.provider.api.Capability
+import pl.ketchupplayer.tv.provider.api.ProviderError
 import pl.ketchupplayer.tv.provider.xtream.XtreamCredentials
 import java.net.URI
 import java.util.UUID
@@ -48,7 +52,8 @@ class RoomCatalogRepository
                         urlHost = hostOf(e.url),
                         channelCount = channelDao.count(e.id),
                         lastRefreshMs = e.lastRefreshMs,
-                        lastError = e.lastError,
+                        // Wpisy zapisane przed poprawką #12 mogły zawierać adresy: maskujemy także przy odczycie.
+                        lastError = e.lastError?.let { Redactor.redact(it) },
                     )
                 }
             }
@@ -141,7 +146,12 @@ class RoomCatalogRepository
         private suspend fun added(id: ProviderId): AddProviderResult =
             refresh(id).fold(
                 onSuccess = { AddProviderResult.Added(id, it) },
-                onFailure = { AddProviderResult.SavedWithError(id, it.message ?: "Błąd pobierania listy") },
+                onFailure = {
+                    AddProviderResult.SavedWithError(
+                        id,
+                        ErrorText.safe(it.message, "Błąd pobierania listy"),
+                    )
+                },
             )
 
         private val status = kotlinx.coroutines.flow.MutableStateFlow<ImportStatus?>(null)
@@ -183,18 +193,28 @@ class RoomCatalogRepository
                     Result.success(channels.size)
                 },
                 onFailure = { e ->
-                    val friendly = friendlyImportError(e.message)
+                    val friendly = friendlyImportError(importErrorSource(e))
                     providerDao.markRefreshed(id.value, now, friendly, null)
                     Result.failure(IllegalStateException(friendly, e))
                 },
             )
         }
 
+        /** Tekst wejściowy dla [friendlyImportError]: znane nośniki bezpiecznych komunikatów lub kod z nazwą klasy. */
+        private fun importErrorSource(e: Throwable): String? =
+            if (e is SafeErrorMessage ||
+                e is ProviderError
+            ) {
+                e.message
+            } else {
+                safeErrorText(e, "Nie udało się pobrać listy")
+            }
+
         private suspend fun loadChannelsSafely(provider: pl.ketchupplayer.tv.provider.api.IptvProvider) =
             try {
                 provider.loadChannels()
             } catch (e: OutOfMemoryError) {
-                Result.failure(IllegalStateException("Za mało pamięci na tak dużą listę", e))
+                Result.failure(UserFacingException("Za mało pamięci na tak dużą listę", e))
             }
 
         /** Zwraca notatkę dla użytkownika, gdy katalog filmów i seriali trzeba było pominąć; null = bez uwag. */

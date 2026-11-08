@@ -1,10 +1,13 @@
 package pl.ketchupplayer.tv.core.network
 
+import pl.ketchupplayer.tv.core.common.SafeErrorMessage
+
 /** Błąd pobierania: kod HTTP, IO albo zbyt duża odpowiedź. Komunikaty nie zawierają URL-i (sekrety). */
 sealed class NetworkException(
     message: String,
     cause: Throwable? = null,
-) : Exception(message, cause) {
+) : Exception(message, cause),
+    SafeErrorMessage {
     /** Odpowiedź z błędem; [detail] to skrócona, oczyszczona treść/nagłówki serwera (pomaga rozpoznać blokadę). */
     class Http(
         val code: Int,

@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -158,6 +159,54 @@ class CatalogRepositoryTest {
                     .first()
                     .single()
                     .lastError,
+            )
+        }
+
+    private val secretUrl = "http://srv.example.invalid:8080/user123/pass456/77.ts"
+
+    private fun assertNoSecret(out: String?) =
+        assertFalse(out, out != null && (out.contains("user123") || out.contains("pass456")))
+
+    @Test
+    fun `wyjatek z adresem danych dostepu nie trafia do UI ani do bazy (issue 12)`() =
+        runTest {
+            response = Result.failure(IllegalArgumentException("unexpected url: $secretUrl"))
+            val repo = repo()
+            val r = repo.addM3u("A", "http://a.example.invalid/x")
+            assertTrue(r is AddProviderResult.SavedWithError)
+            val message = (r as AddProviderResult.SavedWithError).message
+            val stored =
+                repo.providers
+                    .first()
+                    .single()
+                    .lastError
+            assertNoSecret(message)
+            assertNoSecret(stored)
+            assertTrue(message, message.contains("IllegalArgumentException"))
+            assertNoSecret(db.providers().get(r.id.value)?.lastError)
+        }
+
+    @Test
+    fun `stary wpis lastError z adresem jest maskowany przy odczycie, a w bazie zostaje do nadpisania (issue 12)`() =
+        runTest {
+            response = Result.success(list)
+            val repo = repo()
+            val id = (repo.addM3u("A", "http://a.example.invalid/x") as AddProviderResult.Added).id
+            db.providers().markRefreshed(id.value, now, "unexpected url: $secretUrl", null)
+            assertNoSecret(
+                repo.providers
+                    .first()
+                    .single()
+                    .lastError,
+            )
+            // Nie czyścimy bazy masowo: wcześniejszy wpis może nadal zawierać dane do następnego odświeżenia listy.
+            assertTrue(
+                db
+                    .providers()
+                    .get(id.value)
+                    ?.lastError
+                    .orEmpty()
+                    .contains("pass456"),
             )
         }
 

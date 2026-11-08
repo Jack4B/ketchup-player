@@ -1,5 +1,6 @@
 package pl.ketchupplayer.tv.core.data.metadata
 
+import pl.ketchupplayer.tv.core.data.catalog.safeErrorText
 import pl.ketchupplayer.tv.core.network.NetworkException
 import pl.ketchupplayer.tv.core.network.TextFetcher
 import javax.inject.Inject
@@ -69,7 +70,12 @@ class KeyProbe
                         HTTP_TOO_MANY -> KeyCheck(source, KeyStatus.LIMIT, "HTTP ${e.code}")
                         else -> KeyCheck(source, KeyStatus.ERROR, "HTTP ${e.code}")
                     }
-                else -> KeyCheck(source, KeyStatus.ERROR, e?.message.orEmpty().take(MAX_DETAIL))
+                else ->
+                    KeyCheck(
+                        source,
+                        KeyStatus.ERROR,
+                        e?.let { safeErrorText(it, "błąd").take(MAX_DETAIL) }.orEmpty(),
+                    )
             }
         }
 

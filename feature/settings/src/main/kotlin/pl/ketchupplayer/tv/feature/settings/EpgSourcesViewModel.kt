@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import pl.ketchupplayer.tv.core.common.ErrorText
 import pl.ketchupplayer.tv.core.data.epg.AddSourceResult
 import pl.ketchupplayer.tv.core.data.epg.EpgSourcesRepository
 import javax.inject.Inject
@@ -53,7 +54,7 @@ class EpgSourcesViewModel
                 val text =
                     result.fold(
                         onSuccess = { "Zaimportowano ${it.programmes} audycji dla ${it.matchedChannels} kanałów." },
-                        onFailure = { "Błąd: ${it.message ?: "nie udało się pobrać EPG"}" },
+                        onFailure = { "Błąd: ${ErrorText.safe(it.message, "nie udało się pobrać EPG")}" },
                     )
                 refresh.value = false to text
             }

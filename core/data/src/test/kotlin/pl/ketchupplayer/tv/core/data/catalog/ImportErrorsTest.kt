@@ -1,5 +1,6 @@
 package pl.ketchupplayer.tv.core.data.catalog
 
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -43,5 +44,32 @@ class ImportErrorsTest {
     fun `komunikat HTTP zawiera odpowiedz serwera`() {
         val msg = friendlyImportError("HTTP 513 · serwer: nginx, «Too many connections»")
         assertTrue("HTTP 513" in msg && "Too many connections" in msg && "nginx" in msg)
+    }
+
+    // --- Issue #12: dane dostępu w tekście błędu (wyłącznie fikcyjne). ---
+
+    private val secretUrl = "http://srv.example.invalid:8080/user123/pass456/77.ts"
+
+    private fun assertNoSecret(out: String) = assertFalse(out, out.contains("user123") || out.contains("pass456"))
+
+    @Test
+    fun `nieznany tekst z adresem danych dostepu jest maskowany`() {
+        val out = msg("unexpected url: $secretUrl")
+        assertNoSecret(out)
+        assertTrue(out.startsWith("unexpected url: "))
+    }
+
+    @Test
+    fun `odpowiedz serwera z adresem w komunikacie HTTP jest maskowana`() {
+        val out = msg("HTTP 404 · serwer: nginx, «nie znaleziono $secretUrl»")
+        assertNoSecret(out)
+        assertTrue("HTTP 404" in out || "404" in out)
+    }
+
+    @Test
+    fun `dlugi nieznany tekst jest przyciety po maskowaniu`() {
+        val out = msg("x".repeat(230) + " $secretUrl")
+        assertTrue(out.length <= 240)
+        assertNoSecret(out)
     }
 }

@@ -1,5 +1,8 @@
 package pl.ketchupplayer.tv.core.data.catalog
 
+import pl.ketchupplayer.tv.core.common.ErrorText
+import pl.ketchupplayer.tv.core.common.Redactor
+
 private const val HTTP_UNAUTHORIZED = 401
 private const val HTTP_FORBIDDEN = 403
 private const val HTTP_NOT_FOUND = 404
@@ -35,7 +38,7 @@ fun friendlyImportError(raw: String?): String {
         }
         "nie zawiera żadnych kanałów" in text ->
             "Serwer odpowiedział, ale to nie jest lista kanałów. Konto może być nieaktywne albo adres błędny."
-        else -> networkMessage(text) ?: text
+        else -> networkMessage(text) ?: ErrorText.safe(text, "Nieznany błąd pobierania listy.")
     }
 }
 
@@ -43,7 +46,7 @@ fun friendlyImportError(raw: String?): String {
 private fun serverDetail(text: String): String {
     val i = text.indexOf(" · ")
     if (i < 0) return ""
-    val detail = text.substring(i + 3).trim().take(DETAIL_MAX)
+    val detail = Redactor.redact(text.substring(i + 3)).trim().take(DETAIL_MAX)
     return if (detail.isEmpty()) "" else "\nOdpowiedź serwera: $detail"
 }
 

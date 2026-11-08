@@ -1,6 +1,7 @@
 package pl.ketchupplayer.tv.core.network
 
 import okhttp3.Response
+import pl.ketchupplayer.tv.core.common.Redactor
 
 private const val DETAIL_BODY_BYTES = 512L
 private const val DETAIL_MAX_CHARS = 160
@@ -19,12 +20,17 @@ internal fun Response.toHttpFailure(): NetworkException.Http {
     return NetworkException.Http(code, parts.joinToString(", ").ifEmpty { message.ifBlank { null } })
 }
 
-/** Usuwa znaczniki HTML, białe znaki i wszystko, co przypomina login/hasło/token; przycina do kilku zdań. */
+/**
+ * Usuwa znaczniki HTML, białe znaki i wszystko, co przypomina login/hasło/token (także adresy z danymi dostępu w
+ * treści odpowiedzi, przez [Redactor]); przycina do kilku zdań. Przycięcie następuje PO maskowaniu.
+ */
 fun sanitizeDetail(raw: String): String =
-    raw
-        .replace(TAGS, " ")
-        .replace(SECRET_PARAM) { "${it.groupValues[1]}=***" }
-        .replace(URL_USERINFO, "://***@")
-        .replace(SPACES, " ")
-        .trim()
-        .take(DETAIL_MAX_CHARS)
+    Redactor
+        .redact(
+            raw
+                .replace(TAGS, " ")
+                .replace(SECRET_PARAM) { "${it.groupValues[1]}=***" }
+                .replace(URL_USERINFO, "://***@")
+                .replace(SPACES, " ")
+                .trim(),
+        ).take(DETAIL_MAX_CHARS)
