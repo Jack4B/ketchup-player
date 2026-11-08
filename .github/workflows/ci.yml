@@ -25,7 +25,7 @@ jobs:
       - name: Reguły zależności modułów
         run: ./gradlew verifyModuleDependencies
       - name: Spotless + Detekt
-        run: ./gradlew spotlessCheck detekt
+        run: ./gradlew spotlessCheck detekt --info --stacktrace
       - name: Testy jednostkowe
         run: ./gradlew testDebugUnitTest :core:model:test :core:policy:test :epg:radar:test :provider:api:test
       - name: "Raporty JUnit XML (etap: testy jednostkowe)"
