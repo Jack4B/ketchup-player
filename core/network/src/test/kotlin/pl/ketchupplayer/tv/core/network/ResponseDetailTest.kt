@@ -35,9 +35,10 @@ class ResponseDetailTest {
 
     @Test
     fun `wyjatki sieciowe sa oznaczone jako bezpieczne, a ich tekst nie zawiera adresu`() {
-        assertTrue(NetworkException.Http(404) is SafeErrorMessage)
+        // Przypisanie do typu SafeErrorMessage sprawdza supertyp w czasie kompilacji (bez ostrzeżenia „is always true”).
+        val http: SafeErrorMessage = NetworkException.Http(404)
+        assertEquals("HTTP 404", ErrorText.of(http as Throwable, "x"))
         val io = NetworkException.Io(IllegalArgumentException("unexpected url: $host/user123/pass456/77.ts"))
-        assertTrue(io is SafeErrorMessage)
         assertEquals("Błąd sieci: IllegalArgumentException", ErrorText.of(io, "x"))
         assertEquals("HTTP 503", ErrorText.of(NetworkException.Http(503), "x"))
     }
