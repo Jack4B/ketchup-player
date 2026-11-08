@@ -27,7 +27,12 @@ jobs:
       - name: Spotless + Detekt
         run: ./gradlew spotlessCheck detekt
       - name: Testy jednostkowe
-        run: ./gradlew testDebugUnitTest :core:model:test :core:policy:test :epg:radar:test :provider:api:test
+        run: |
+          # --continue: porażka jednego modułu nie ukrywa wyników pozostałych (kod wyjścia nadal niezerowy).
+          # Moduły JVM core:common, core:network, epg:xmltv, provider:m3u i provider:xtream były wcześniej pominięte
+          # (m.in. testy Redactora i komunikatów błędów); raporty trafiają do artefaktu junit-unit (if: always()).
+          ./gradlew testDebugUnitTest :core:model:test :core:policy:test :epg:radar:test :provider:api:test \
+            :core:common:test :core:network:test :epg:xmltv:test :provider:m3u:test :provider:xtream:test --continue
       - name: "Raporty JUnit XML (etap: testy jednostkowe)"
         if: always()
         run: |
