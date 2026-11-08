@@ -1243,6 +1243,12 @@ class ScenariosTest {
             runCatching { openSectionWithRemote(label) }
                 .onFailure { println("SONDA $label: nie wybrano: ${it.message?.take(SONDA_MSG)}") }
             sampleFocus("$label pilotem")
+            pressKeys(listOf(Key.DirectionRight))
+            println("SONDA $label po PRAWO: ${focusedDescriptions()}")
+            pressKeys(listOf(Key.DirectionCenter))
+            val details = compose.onAllNodesWithText("FILM").fetchSemanticsNodes().size
+            println("SONDA $label po PRAWO+OK: szczegolyFilmu=$details fokus=${focusedDescriptions()}")
+            if (details > 0) back()
         }
     }
 

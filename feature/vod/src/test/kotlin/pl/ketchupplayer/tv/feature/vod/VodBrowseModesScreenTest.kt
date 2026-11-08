@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.input.InputModeManager
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.platform.LocalInputModeManager
@@ -236,24 +237,41 @@ class VodBrowseModesScreenTest {
 
     @Test
     fun sondaTrybuWejscia() {
-        val requester = FocusRequester()
+        val a = FocusRequester()
+        val b = FocusRequester()
+        var clicks = ""
         var modes: InputModeManager? = null
         compose.setContent {
             KetchupTheme(device = DeviceClass.TV) {
                 modes = LocalInputModeManager.current
-                Column { FocusItem({}, focusRequester = requester) { Text("A") } }
+                Column {
+                    FocusItem({ clicks += "A" }, focusRequester = a) { Text("A") }
+                    FocusItem({ clicks += "B" }, focusRequester = b) { Text("B") }
+                }
             }
         }
         compose.waitForIdle()
 
-        fun state(label: String) = println("SONDA1 $label: tryb=${modes?.inputMode} fokus=${focused()}")
+        fun state(label: String) {
+            println("SONDA1 $label: tryb=${modes?.inputMode} fokus=${focused()} klikniecia='$clicks'")
+        }
+
         state("start")
-        compose.runOnIdle { println("SONDA1 requestFocus w trybie dotyku: ${requester.requestFocus()}") }
-        state("po requestFocus (dotyk)")
+        compose.runOnIdle { println("SONDA1 requestFocus A: ${a.requestFocus()}") }
+        state("po requestFocus A")
+        press(Key.DirectionCenter)
+        state("po OK")
         press(Key.ShiftLeft)
         state("po ShiftLeft")
-        compose.runOnIdle { println("SONDA1 requestFocus w trybie klawiatury: ${requester.requestFocus()}") }
-        state("po requestFocus (klawiatura)")
+        press(Key.DirectionDown)
+        press(Key.DirectionCenter)
+        state("po DOL+OK")
+        val switched = compose.runOnIdle { modes?.requestInputMode(InputMode.Keyboard) }
+        state("po requestInputMode(Keyboard)=$switched")
+        compose.runOnIdle { println("SONDA1 requestFocus B: ${b.requestFocus()}") }
+        state("po requestFocus B")
+        press(Key.DirectionCenter)
+        state("po OK na B")
     }
 
     @Test
@@ -264,6 +282,8 @@ class VodBrowseModesScreenTest {
         println("SONDA2 po ShiftLeft: ${focused()}")
         press(Key.DirectionRight)
         println("SONDA2 po PRAWO: ${focused()}")
+        press(Key.DirectionCenter)
+        println("SONDA2 po OK: otwarto=$opened")
         press(Key.DirectionLeft)
         println("SONDA2 po LEWO: ${focused()}")
     }
