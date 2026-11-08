@@ -1,7 +1,6 @@
 package pl.ketchupplayer.tv
 
 import android.os.Looper
-import android.view.ViewTreeObserver
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -1036,21 +1035,16 @@ class ScenariosTest {
     private fun categoryFocused() = focusedDescriptions().any { d -> VOD_CATEGORIES.any { d == "tekst=$it" } }
 
     /**
-     * Na TV pierwszy klawisz pilota przełącza okno w tryb nie-dotykowy (Compose: `InputMode.Keyboard`). Robolectric
-     * tego nie robi: `performKeyInput` zostawia tryb dotykowy, a w nim `FocusItem` (clickable) nie pokazuje fokusu w
-     * semantyce, choć D-pad działa (kliknięcie trafia w element, do którego fokus doszedł; potwierdza to
-     * `FocusItemTest` w :core:designsystem). Odtwarzamy to, co robi system (powiadomienie o zmianie trybu dotyku
-     * okna), niczego nie wymuszając na fokusie: ścieżkę do elementu nadal przechodzi pilot.
+     * Kontrola, że test oznaczony [StartsInRemoteMode] naprawdę ma okno w trybie nie-dotykowym (jak TV). Bez tego
+     * semantyka fokusu `FocusItem` jest pusta i asercje pilota byłyby ślepe, więc przy niepowodzeniu przerywamy z
+     * jasnym komunikatem zamiast jechać dalej tak, jakby przełączenie się udało.
      */
-    private fun enterRemoteMode() {
-        compose.runOnUiThread {
-            val observer = compose.activity.window.decorView.viewTreeObserver
-            ViewTreeObserver::class.java
-                .getDeclaredMethod("dispatchOnTouchModeChanged", Boolean::class.javaPrimitiveType)
-                .apply { isAccessible = true }
-                .invoke(observer, false)
+    private fun requireRemoteMode() {
+        val inTouchMode = compose.activity.window.decorView.isInTouchMode
+        check(!inTouchMode) {
+            "Okno jest w trybie dotyku: TvBoxRule z @StartsInRemoteMode nie przełączyła go " +
+                "(Instrumentation.setInTouchMode(false) przed startem aktywności); asercje fokusu pilota byłyby ślepe"
         }
-        compose.waitForIdle()
     }
 
     /**
@@ -1058,7 +1052,7 @@ class ScenariosTest {
      * na boxie (fokus po wyborze sekcji zostaje na szynie albo przechodzi na treść, więc LEWO powtarzamy do skutku).
      */
     private fun openSectionWithRemote(label: String) {
-        enterRemoteMode()
+        requireRemoteMode()
         pressKeys(listOf(Key.ShiftLeft))
         repeat(REMOTE_STEPS) { if (!railFocused()) pressKeys(listOf(Key.DirectionLeft)) }
         check(railFocused()) { "LEWO nie doprowadziło na szynę, fokus: ${focusedDescriptions()}" }
@@ -1196,6 +1190,7 @@ class ScenariosTest {
      * (`performTextInput`) w polu, do którego fokus doszedł klawiszem.
      */
     @Test
+    @StartsInRemoteMode
     fun mojaListaISzukajDzialajaSamymPilotem() {
         serveXtreamVod()
         addXtreamViaUi("dobre-haslo")
@@ -1248,6 +1243,7 @@ class ScenariosTest {
 
     /** SONDA (tymczasowa, diagnostyka): gdzie jest fokus po wejściu w sekcję dotykiem i pilotem (co 100 ms). */
     @Test
+    @StartsInRemoteMode
     fun sondaFokusuPoWyborzeSekcji() {
         serveXtreamVod()
         addXtreamViaUi("dobre-haslo")

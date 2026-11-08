@@ -99,6 +99,7 @@ class VodBrowseModesScreenTest {
     @get:Rule
     val compose = createAndroidComposeRule<ComponentActivity>()
 
+    private var inputModes: InputModeManager? = null
     private val opened = mutableListOf<String>()
     private val queries = mutableListOf<String>()
     private var providers = 0
@@ -126,6 +127,7 @@ class VodBrowseModesScreenTest {
                 // pokazuje fokusu w semantyce, więc test byłby ślepy. Przełączenie w SideEffect następuje przed
                 // pierwszym żądaniem fokusu ekranu (efekty startują po zastosowaniu kompozycji).
                 val modes = LocalInputModeManager.current
+                inputModes = modes
                 SideEffect { modes.requestInputMode(InputMode.Keyboard) }
                 var state by remember { mutableStateOf(initial) }
                 ShellPreview(railId) {
@@ -145,6 +147,10 @@ class VodBrowseModesScreenTest {
         }
         // Bez przesuwania zegara: początkowy fokus ekran ponawia przez kilkanaście klatek.
         compose.waitForIdle()
+        // Kontrola przełączenia: bez trybu klawiszowego semantyka fokusu FocusItem jest pusta, a asercje ślepe.
+        check(inputModes?.inputMode == InputMode.Keyboard) {
+            "Tryb wejścia po show() to ${inputModes?.inputMode}, oczekiwano Keyboard (jak TV)"
+        }
     }
 
     private fun settle() {
