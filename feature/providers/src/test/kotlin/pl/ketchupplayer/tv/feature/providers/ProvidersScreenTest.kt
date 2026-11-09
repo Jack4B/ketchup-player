@@ -3,12 +3,14 @@ package pl.ketchupplayer.tv.feature.providers
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.pressKey
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Assert.assertEquals
@@ -25,6 +27,7 @@ import pl.ketchupplayer.tv.core.designsystem.UiClock
 import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.ProviderInfo
 import pl.ketchupplayer.tv.core.model.ProviderType
+import pl.ketchupplayer.tv.core.model.RequestMethod
 import pl.ketchupplayer.tv.core.testing.assertNoHorizontalOverflow
 
 @OptIn(ExperimentalTestApi::class)
@@ -150,6 +153,34 @@ class ProvidersScreenTest {
         compose.onNodeWithText("VLC").performClick()
         assertEquals(listOf<ProvidersEvent>(ProvidersEvent.SelectUserAgent("vlc")), events)
     }
-}
 
-private const val MS_PER_DAY = 86_400_000L
+    /** Kreator: pole „Metoda zapytania” (GET domyślnie, POST) działa dotykiem. */
+    @Test
+    fun wyborMetodyPostDotykiem() {
+        val events = mutableListOf<ProvidersEvent>()
+        show(ProvidersUiState(form = ProviderForm()), events)
+        compose.onNodeWithText("Metoda zapytania", substring = true).assertExists()
+        compose.onNodeWithText("POST").performClick()
+        compose.onNodeWithText("GET").performClick()
+        assertEquals(
+            listOf<ProvidersEvent>(
+                ProvidersEvent.SelectRequestMethod(RequestMethod.POST),
+                ProvidersEvent.SelectRequestMethod(RequestMethod.GET),
+            ),
+            events,
+        )
+    }
+
+    /** Kreator: ten sam wybór D-padem (fokus na przycisku + OK), także dla formularza Xtream. */
+    @Test
+    fun wyborMetodyPostDpadem() {
+        for (kind in ProviderKind.entries) {
+            val events = mutableListOf<ProvidersEvent>()
+            show(ProvidersUiState(form = ProviderForm(kind = kind)), events)
+            compose.onNodeWithText("POST").performSemanticsAction(SemanticsActions.RequestFocus)
+            compose.waitForIdle()
+            key(Key.DirectionCenter)
+            assertEquals(listOf<ProvidersEvent>(ProvidersEvent.SelectRequestMethod(RequestMethod.POST)), events)
+        }
+    }
+}

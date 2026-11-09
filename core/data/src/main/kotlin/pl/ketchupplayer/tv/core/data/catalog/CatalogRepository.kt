@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import pl.ketchupplayer.tv.core.model.Channel
 import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.ProviderInfo
+import pl.ketchupplayer.tv.core.model.RequestMethod
 import pl.ketchupplayer.tv.core.model.StreamSpec
 
 enum class AddProviderError { INVALID_NAME, INVALID_URL, INVALID_CREDENTIALS }
@@ -53,6 +54,7 @@ interface CatalogRepository {
         name: String,
         url: String,
         userAgentId: String? = null,
+        requestMethod: RequestMethod = RequestMethod.GET,
     ): AddProviderResult
 
     suspend fun addXtream(
@@ -61,7 +63,14 @@ interface CatalogRepository {
         username: String,
         password: String,
         userAgentId: String? = null,
+        requestMethod: RequestMethod = RequestMethod.GET,
     ): AddProviderResult
+
+    /** Zmienia metodę żądania listy (GET/POST) zapisaną dla dostawcy; działa od następnego pobrania. */
+    suspend fun setRequestMethod(
+        id: ProviderId,
+        method: RequestMethod,
+    ) = Unit
 
     /** Adres XMLTV dostawcy (może zawierać dane logowania; trzymany w `SecretStore`). */
     suspend fun epgUrl(id: ProviderId): String?

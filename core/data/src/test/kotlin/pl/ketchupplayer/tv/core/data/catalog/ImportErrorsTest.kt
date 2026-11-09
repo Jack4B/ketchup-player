@@ -3,6 +3,7 @@ package pl.ketchupplayer.tv.core.data.catalog
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import pl.ketchupplayer.tv.core.model.RequestMethod
 
 class ImportErrorsTest {
     private fun msg(raw: String?) = friendlyImportError(raw)
@@ -86,5 +87,32 @@ class ImportErrorsTest {
         val out = msg("x".repeat(230) + " $secretUrl")
         assertTrue(out.length <= 240)
         assertNoSecret(out)
+    }
+
+    // --- Metoda żądania (GET/POST): podpowiedź przy odmowie lub awarii, bez automatycznego przełączania ---
+
+    @Test
+    fun `podpowiedz POST przy 403 405 i 5xx dla GET`() {
+        listOf(403, 405, 500, 502, 504, 513).forEach {
+            val out = friendlyImportError("HTTP $it")
+            assertTrue("kod $it: $out", POST_HINT in out)
+        }
+    }
+
+    @Test
+    fun `brak podpowiedzi POST przy 401 404 i innych kodach, oraz gdy lista juz idzie przez POST`() {
+        listOf(400, 401, 404, 429).forEach { assertFalse("kod $it", POST_HINT in friendlyImportError("HTTP $it")) }
+        listOf(403, 405, 504).forEach {
+            assertFalse(POST_HINT in friendlyImportError("HTTP $it", RequestMethod.POST))
+        }
+    }
+
+    @Test
+    fun `podpowiedz POST wspolistnieje z czasem oczekiwania i nie ujawnia danych`() {
+        val out = friendlyImportError("HTTP 504 · ponów po: 120 s")
+        assertTrue(out, "ponów po: 120 s" in out && POST_HINT in out)
+        val leaky = friendlyImportError("HTTP 504 · ponów po: 120 s, http://h.example.invalid/get.php?username=user123")
+        assertTrue(leaky, POST_HINT in leaky)
+        assertNoSecret(leaky)
     }
 }

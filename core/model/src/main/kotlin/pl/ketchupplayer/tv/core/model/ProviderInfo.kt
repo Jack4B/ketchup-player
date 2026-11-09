@@ -9,4 +9,6 @@ data class ProviderInfo(
     val channelCount: Int,
     val lastRefreshMs: Long?,
     val lastError: String?,
+    /** Metoda żądania listy ustawiona dla tej listy (dotychczasowe listy: GET). */
+    val requestMethod: RequestMethod = RequestMethod.GET,
 )

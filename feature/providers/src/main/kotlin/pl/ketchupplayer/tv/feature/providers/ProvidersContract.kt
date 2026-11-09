@@ -2,6 +2,7 @@ package pl.ketchupplayer.tv.feature.providers
 
 import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.ProviderInfo
+import pl.ketchupplayer.tv.core.model.RequestMethod
 
 enum class ProviderKind { M3U, XTREAM }
 
@@ -17,6 +18,8 @@ data class ProviderForm(
     val credentialsError: Boolean = false,
     /** Wybrany nagłówek połączenia (id z puli); „auto” = domyślny OTT Navigator. */
     val userAgentId: String = "auto",
+    /** Metoda żądania listy: GET (domyślnie) albo POST (dane w ciele, adres bez loginu i hasła). */
+    val requestMethod: RequestMethod = RequestMethod.GET,
 )
 
 data class ProvidersUiState(
@@ -67,6 +70,11 @@ sealed interface ProvidersEvent {
     /** Wybór User-Agenta z listy w formularzu (ptaszek przy zaznaczonym). */
     data class SelectUserAgent(
         val id: String,
+    ) : ProvidersEvent
+
+    /** Wybór metody żądania listy w formularzu (GET/POST). */
+    data class SelectRequestMethod(
+        val method: RequestMethod,
     ) : ProvidersEvent
 
     data class Toggle(

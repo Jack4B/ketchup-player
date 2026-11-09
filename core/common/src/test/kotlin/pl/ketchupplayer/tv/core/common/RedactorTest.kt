@@ -240,4 +240,24 @@ class RedactorTest {
         assertNoSecret(out)
         assertTrue("maskowanie trwało $ms ms", ms < 10_000)
     }
+
+    // --- Ciało żądania POST (form-urlencoded) ---
+
+    @Test
+    fun `cialo formularza z danymi dostepu jest maskowane takze poza adresem`() {
+        val body = "username=user123&password=pass456&type=m3u_plus&output=ts"
+        val out = Redactor.redact("Błąd odpowiedzi na POST: $body")
+        assertFalse(out, out.contains("user123") || out.contains("pass456"))
+        assertTrue(out, out.contains("type=m3u_plus"))
+        // Aplikacja wysyła w ciele tylko username i password; inne nazwy (login, pwd) maskujemy wyłącznie w adresach.
+        val api = Redactor.redact("username=user123&password=pass456&action=get_live_streams")
+        assertFalse(api, api.contains("user123") || api.contains("pass456"))
+        assertTrue(api, api.contains("action=get_live_streams"))
+    }
+
+    @Test
+    fun `maskowanie ciala jest idempotentne`() {
+        val once = Redactor.redact("username=user123&password=pass456")
+        assertEquals(once, Redactor.redact(once))
+    }
 }

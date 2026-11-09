@@ -5,6 +5,7 @@ import pl.ketchupplayer.tv.core.model.Channel
 import pl.ketchupplayer.tv.core.model.Episode
 import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.ProviderType
+import pl.ketchupplayer.tv.core.model.RequestMethod
 import pl.ketchupplayer.tv.core.model.StreamSpec
 import pl.ketchupplayer.tv.core.model.VodCatalog
 import pl.ketchupplayer.tv.core.model.VodInfo
@@ -21,6 +22,7 @@ class XtreamProvider(
     override val id: ProviderId,
     private val credentials: XtreamCredentials,
     private val fetcher: TextFetcher,
+    private val method: RequestMethod = RequestMethod.GET,
 ) : IptvProvider {
     override val type: ProviderType = ProviderType.XTREAM
     override val capabilities: Set<Capability> =
@@ -30,14 +32,14 @@ class XtreamProvider(
         authenticate().fold(onSuccess = { fetchLive() }, onFailure = { Result.failure(it) })
 
     override suspend fun accountInfo(): Result<AccountInfo> {
-        val body = fetch(credentials.apiUrl()).getOrElse { return Result.failure(it) }
+        val body = fetch(api()).getOrElse { return Result.failure(it) }
         val a =
             XtreamParser.account(body) ?: return Result.failure(ProviderError.BadResponse("Nieprawidłowa odpowiedź"))
         return Result.success(AccountInfo(a.active, a.expiresEpochSec, a.activeConnections, a.maxConnections, a.trial))
     }
 
     private suspend fun authenticate(): Result<Unit> {
-        val body = fetch(credentials.apiUrl()).getOrElse { return Result.failure(it) }
+        val body = fetch(api()).getOrElse { return Result.failure(it) }
         val account = XtreamParser.account(body)
         return when {
             account == null -> Result.failure(ProviderError.BadResponse("Nieprawidłowa odpowiedź serwera"))
@@ -48,8 +50,8 @@ class XtreamProvider(
     }
 
     private suspend fun fetchLive(): Result<List<Channel>> {
-        val categoriesBody = fetch(credentials.apiUrl("get_live_categories")).getOrElse { return Result.failure(it) }
-        val streamsBody = fetch(credentials.apiUrl("get_live_streams")).getOrElse { return Result.failure(it) }
+        val categoriesBody = fetch(api("get_live_categories")).getOrElse { return Result.failure(it) }
+        val streamsBody = fetch(api("get_live_streams")).getOrElse { return Result.failure(it) }
         val channels = XtreamParser.liveChannels(id, streamsBody, XtreamParser.categories(categoriesBody).orEmpty())
         return when {
             channels == null -> Result.failure(ProviderError.BadResponse("Nieprawidłowa lista kanałów"))
@@ -68,18 +70,16 @@ class XtreamProvider(
     override suspend fun loadVod(): Result<VodCatalog> {
         val movieCats =
             fetch(
-                credentials.apiUrl("get_vod_categories"),
+                api("get_vod_categories"),
             ).getOrNull()?.let(XtreamParser::categories).orEmpty()
         val seriesCats =
-            fetch(credentials.apiUrl("get_series_categories")).getOrNull()?.let(XtreamParser::categories).orEmpty()
+            fetch(api("get_series_categories")).getOrNull()?.let(XtreamParser::categories).orEmpty()
         // Katalogi mają dziesiątki MB: czytane strumieniowo, element po elemencie (bez całego tekstu i drzewa JSON).
         val movies =
-            fetcher
-                .fetchStream(credentials.apiUrl("get_vod_streams")) { XtreamVodParser.movies(id, it, movieCats) }
+            fetchStream(api("get_vod_streams")) { XtreamVodParser.movies(id, it, movieCats) }
                 .getOrElse { return Result.failure(it.toProviderError()) }
         val series =
-            fetcher
-                .fetchStream(credentials.apiUrl("get_series")) { XtreamVodParser.series(id, it, seriesCats) }
+            fetchStream(api("get_series")) { XtreamVodParser.series(id, it, seriesCats) }
                 .getOrElse { return Result.failure(it.toProviderError()) }
         return Result.success(VodCatalog(movies + series))
     }
@@ -87,7 +87,7 @@ class XtreamProvider(
     override suspend fun loadEpisodes(series: VodItem): Result<List<Episode>> {
         val seriesId = series.ref.removePrefix("xtream:series:")
         val body =
-            fetch(credentials.apiUrl("get_series_info", mapOf("series_id" to seriesId))).getOrElse {
+            fetch(api("get_series_info", mapOf("series_id" to seriesId))).getOrElse {
                 return Result.failure(it)
             }
         return XtreamVodParser.episodes(series, body)?.let { Result.success(it) }
@@ -97,12 +97,12 @@ class XtreamProvider(
     override suspend fun loadVodInfo(item: VodItem): Result<VodInfo> {
         val url =
             if (item.kind == VodKind.SERIES) {
-                credentials.apiUrl("get_series_info", mapOf("series_id" to item.ref.removePrefix("xtream:series:")))
+                api("get_series_info", mapOf("series_id" to item.ref.removePrefix("xtream:series:")))
             } else {
                 val vodId =
                     XtreamVodParser.parseVodRef(item.ref)?.second
                         ?: return Result.failure(ProviderError.BadResponse("Nieznane odwołanie"))
-                credentials.apiUrl("get_vod_info", mapOf("vod_id" to vodId))
+                api("get_vod_info", mapOf("vod_id" to vodId))
             }
         val body = fetch(url).getOrElse { return Result.failure(it) }
         return XtreamVodParser.info(body)?.let { Result.success(it) }
@@ -117,8 +117,20 @@ class XtreamProvider(
 
     override suspend fun epgUrl(): String = credentials.xmltvUrl()
 
-    private suspend fun fetch(url: String): Result<String> =
-        fetcher.fetch(url).fold(
+    private suspend fun <T> fetchStream(
+        request: ApiRequest,
+        block: (java.io.InputStream) -> T,
+    ): Result<T> =
+        request.body?.let { fetcher.fetchStreamWithBody(request.url, it, block) }
+            ?: fetcher.fetchStream(request.url, block)
+
+    private fun api(
+        action: String? = null,
+        extra: Map<String, String> = emptyMap(),
+    ): ApiRequest = credentials.apiRequest(method, action, extra)
+
+    private suspend fun fetch(request: ApiRequest): Result<String> =
+        (request.body?.let { fetcher.fetchWithBody(request.url, it) } ?: fetcher.fetch(request.url)).fold(
             onSuccess = { Result.success(it) },
             onFailure = { Result.failure(it.toProviderError()) },
         )

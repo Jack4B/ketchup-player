@@ -52,6 +52,31 @@ fun interface TextFetcher {
         block: (java.io.InputStream) -> T,
     ): Result<T> = fetch(url).map { block(it.byteInputStream()) }
 
+    /**
+     * Jak [fetch], ale metodą POST z ciałem [body] (adres bez danych dostępu). Implementacje bez obsługi POST zwracają
+     * błąd; [OkHttpTextFetcher] wysyła prawdziwe żądanie.
+     */
+    suspend fun fetchWithBody(
+        url: String,
+        body: FormBody,
+    ): Result<String> = Result.failure(UnsupportedOperationException(POST_UNSUPPORTED))
+
+    /** Jak [fetchLines], ale metodą POST z ciałem [body]. */
+    suspend fun <T> fetchLinesWithBody(
+        url: String,
+        body: FormBody,
+        block: (Sequence<String>) -> T,
+    ): Result<T> = fetchWithBody(url, body).map { block(it.lineSequence()) }
+
+    /** Jak [fetchStream], ale metodą POST z ciałem [body]. */
+    suspend fun <T> fetchStreamWithBody(
+        url: String,
+        body: FormBody,
+        block: (java.io.InputStream) -> T,
+    ): Result<T> = fetchWithBody(url, body).map { block(it.byteInputStream()) }
+
     /** Kopia pobierająca z podanym User-Agent (np. wybór użytkownika). Domyślnie bez zmian. */
     fun withUserAgent(userAgent: String): TextFetcher = this
 }
+
+private const val POST_UNSUPPORTED = "POST nie jest obsługiwany przez ten pobieracz"

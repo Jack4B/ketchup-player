@@ -34,6 +34,7 @@ import pl.ketchupplayer.tv.core.designsystem.SettingsListItem
 import pl.ketchupplayer.tv.core.designsystem.TextInputField
 import pl.ketchupplayer.tv.core.designsystem.requestFocusWhenPlaced
 import pl.ketchupplayer.tv.core.model.ProviderInfo
+import pl.ketchupplayer.tv.core.model.RequestMethod
 
 @Composable
 fun ProvidersRoute(
@@ -213,6 +214,20 @@ internal fun AddForm(
                 pickingAgent = false
             },
             onDismiss = { pickingAgent = false },
+        )
+    }
+    // Metoda zapytania: GET (domyślnie) albo POST dla dostawców, którzy odrzucają GET (D-pad: LEWO/PRAWO, OK; dotyk).
+    Text(stringResource(R.string.providers_method_label), color = KetchupTheme.colors.textSecondary, fontSize = 16.sp)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        KetchupButton(
+            stringResource(R.string.providers_method_get),
+            { onEvent(ProvidersEvent.SelectRequestMethod(RequestMethod.GET)) },
+            primary = form.requestMethod == RequestMethod.GET,
+        )
+        KetchupButton(
+            stringResource(R.string.providers_method_post),
+            { onEvent(ProvidersEvent.SelectRequestMethod(RequestMethod.POST)) },
+            primary = form.requestMethod == RequestMethod.POST,
         )
     }
     if (showActions) {
