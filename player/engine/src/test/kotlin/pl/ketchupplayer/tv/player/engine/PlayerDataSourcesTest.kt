@@ -93,8 +93,9 @@ class PlayerDataSourcesTest {
     @Test
     fun `przewijanie i zakresy wyliczone przez Media3 zostaja bez zmian`() {
         val url = panel.url("/live/user123/pass456/101.ts")
-        panel.enqueue(MockResponse().setBody("x"))
-        panel.enqueue(MockResponse().setBody("x"))
+        // Serwer zwraca 200 z dość długą treścią: Media3 pomija pierwsze 1000 bajtów przy żądaniu od pozycji 1000.
+        panel.enqueue(MockResponse().setBody("x".repeat(BODY)))
+        panel.enqueue(MockResponse().setBody("x".repeat(BODY)))
         val spec = StreamSpec(url.toString())
         val uri = Uri.parse(url.toString())
         PlayerDataSources.factory(NetworkClients.player(), spec).createDataSource().apply {
@@ -146,5 +147,6 @@ class PlayerDataSourcesTest {
 
     private companion object {
         const val C_UNSET = -1L
+        const val BODY = 4_000
     }
 }

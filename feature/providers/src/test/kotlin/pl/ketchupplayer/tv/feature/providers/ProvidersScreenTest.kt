@@ -172,7 +172,7 @@ class ProvidersScreenTest {
         if (compose.onAllNodes(hasText("Własny…")).fetchSemanticsNodes().isEmpty()) {
             compose.onAllNodes(hasScrollAction()).onLast().performScrollToNode(hasText("Własny…"))
         }
-        compose.onNodeWithText("Własny…").performClick()
+        compose.onNodeWithText("Własny…").performSemanticsAction(SemanticsActions.OnClick)
         assertEquals(listOf<ProvidersEvent>(ProvidersEvent.SelectUserAgent("custom:")), events)
     }
 

@@ -2,6 +2,7 @@ package pl.ketchupplayer.tv.feature.settings
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
@@ -15,6 +16,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.pressKey
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -67,7 +69,8 @@ class NetworkSettingsScreenTest {
         if (compose.onAllNodes(hasText("Własny…")).fetchSemanticsNodes().isEmpty()) {
             compose.onAllNodes(hasScrollAction()).onLast().performScrollToNode(hasText("Własny…"))
         }
-        compose.onNodeWithText("Własny…").performClick()
+        // Akcja kliknięcia zamiast dotyku: pozycja po przewinięciu może leżeć na krawędzi okna (poza polem dotyku).
+        compose.onNodeWithText("Własny…").performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
     }
 
