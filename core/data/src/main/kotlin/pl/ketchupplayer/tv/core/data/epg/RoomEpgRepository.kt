@@ -82,12 +82,17 @@ class RoomEpgRepository
                     streams.open(url) { input ->
                         // Czeka lista z tego samego konta: EPG oddaje połączenie i spróbuje później.
                         val count =
-                            importStream(input, matcher, now, matched) {
-                                (
-                                    context.isActive &&
-                                        !pl.ketchupplayer.tv.core.network.HostGate
-                                            .contended(url)
-                                ).also { ok -> if (!ok) yielded = true }
+                            try {
+                                importStream(input, matcher, now, matched) {
+                                    (
+                                        context.isActive &&
+                                            !pl.ketchupplayer.tv.core.network.HostGate
+                                                .contended(url)
+                                    ).also { ok -> if (!ok) yielded = true }
+                                }
+                            } catch (e: org.xmlpull.v1.XmlPullParserException) {
+                                // Źródło oddało nie-XMLTV (np. JSON): porażka źródła, nie awaria aplikacji.
+                                throw java.io.IOException("Odpowiedź źródła EPG nie jest XMLTV", e)
                             }
                         if (yielded) throw java.io.IOException("EPG ustępuje liście z tego samego konta")
                         count

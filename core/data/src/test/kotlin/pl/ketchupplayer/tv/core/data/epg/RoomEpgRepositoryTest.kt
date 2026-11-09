@@ -151,6 +151,18 @@ class RoomEpgRepositoryTest {
             assertEquals(2, r.range("p:1", now - 2 * hour, now + 3 * hour).size)
         }
 
+    /**
+     * Błąd z emulatora (panel za Cloudflare): `xmltv.php` oddał JSON zamiast XML, a `XmlPullParserException` (nie
+     * `IOException`) wychodził poza pobieranie i wywalał aplikację. Źródło z nieprawidłową treścią to zwykła porażka.
+     */
+    @Test
+    fun `zrodlo oddajace JSON zamiast XMLTV konczy sie porazka a nie wyjatkiem`() =
+        runTest {
+            seedChannel()
+            val json = """{"user_info":{"auth":1,"status":"Active"},"server_info":{}}"""
+            assertTrue(repo(FakeStreams(mapOf(ovh to json))).refresh().isFailure)
+        }
+
     @Test
     fun `audycje spoza horyzontu sa odrzucane`() =
         runTest {
