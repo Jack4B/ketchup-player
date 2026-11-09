@@ -118,7 +118,19 @@ class XtreamFirstImportTest {
             assertEquals("http://i.example.invalid/1.png", channels.first().logo)
             assertTrue("get.php nie powinien być pobierany", requests.none { it.path.orEmpty().startsWith("/get.php") })
             val actions = requests.map { Regex("action=([a-z_]+)").find(it.path.orEmpty())?.groupValues?.get(1) }
-            assertEquals(listOf(null, "get_live_categories", "get_live_streams"), actions)
+            // Cały import w kolejności IPTV Extreme: konto, kanały, potem filmy i seriale.
+            assertEquals(
+                listOf(
+                    null,
+                    "get_live_categories",
+                    "get_live_streams",
+                    "get_vod_categories",
+                    "get_vod_streams",
+                    "get_series_categories",
+                    "get_series",
+                ),
+                actions,
+            )
         }
 
     @Test
