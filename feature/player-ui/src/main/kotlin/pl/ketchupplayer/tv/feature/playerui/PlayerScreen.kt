@@ -3,11 +3,13 @@ package pl.ketchupplayer.tv.feature.playerui
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -31,6 +33,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -172,6 +175,10 @@ fun PlayerScreen(
     var scrubUi by remember { mutableStateOf<ScrubUi?>(null) }
     var scrubActive by remember { mutableStateOf(false) }
     var flash by remember { mutableStateOf<Boolean?>(null) }
+    // Dotyk (telefon): osobny tryb wejścia; na TV zostaje nieaktywny i nic nie zmienia (patrz TouchControls.kt).
+    val touchMode = remember { TouchMode() }
+    var touchDragging by remember { mutableStateOf(false) }
+    var touchDragFromMs by remember { mutableLongStateOf(0L) }
     LaunchedEffect(scrubActive) {
         // Przewijanie: pętla co kilkadziesiąt ms przesuwa cel; seek jest jeden, po puszczeniu klawisza.
         if (!scrubActive) return@LaunchedEffect
@@ -192,7 +199,7 @@ fun PlayerScreen(
     LaunchedEffect(playback.isPlaying) {
         if (playback.isPlaying != wasPlaying) {
             wasPlaying = playback.isPlaying
-            if (vodTitle != null) {
+            if (vodTitle != null && !touchMode.active) {
                 flash = playback.isPlaying
                 delay(FLASH_MS)
                 flash = null
@@ -205,7 +212,7 @@ fun PlayerScreen(
         osdVisible = true
         delay(OSD_MS)
         // Przy otwartych opcjach pasek zostaje: zamykają je BACK albo GÓRA.
-        if (!chipsOpen && panel == null) osdVisible = false
+        if (!chipsOpen && panel == null && !touchDragging) osdVisible = false
     }
     LaunchedEffect(Unit) { rootFocus.requestWhenReady() }
     LaunchedEffect(chipsOpen) { if (chipsOpen) chipFocus.getValue(PlayerPanel.AUDIO).requestWhenReady() }
@@ -231,6 +238,34 @@ fun PlayerScreen(
         closed?.let { runCatching { chipFocus.getValue(it).requestFocus() } }
     }
     val failed = ui is PlayerUiState.Failed || playback.status == PlaybackStatus.ERROR
+    val touchSeekable = vodTitle != null && (playback.durationMs ?: 0L) > 0L
+    val touchSeek =
+        if (touchMode.active && touchSeekable && !failed) {
+            val duration = playback.durationMs ?: 0L
+            TouchSeek(
+                onScrub = { fraction ->
+                    if (!touchDragging) {
+                        touchDragging = true
+                        touchDragFromMs = playback.positionMs
+                    }
+                    val target = (fraction * duration).toLong()
+                    scrubUi = ScrubUi(target, target - touchDragFromMs)
+                },
+                onCommit = { fraction ->
+                    controller.seekTo((fraction * duration).toLong())
+                    scrubUi = null
+                    touchDragging = false
+                    osdTick++
+                },
+                onCancel = {
+                    scrubUi = null
+                    touchDragging = false
+                    osdTick++
+                },
+            )
+        } else {
+            null
+        }
     if (vodTitle != null) {
         // Pozycja płynie bez zdarzeń odtwarzacza: odświeżamy ją, dopóki ekran jest otwarty.
         LaunchedEffect(Unit) {
@@ -244,7 +279,19 @@ fun PlayerScreen(
         Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .onPreviewKeyEvent { event ->
+            .trackTouchMode(touchMode) { osdTick++ }
+            .pointerInput(failed) {
+                // Stuknięcie w pusty obszar pokazuje albo chowa OSD; tylko w trybie dotyku.
+                detectTapGestures(
+                    onTap = {
+                        val canToggle = touchMode.active && !touchMode.consumeSwallowedTap()
+                        val blocked = failed || chipsOpen || panel != null || listOpen
+                        if (canToggle && !blocked) {
+                            if (osdVisible) osdVisible = false else osdTick++
+                        }
+                    },
+                )
+            }.onPreviewKeyEvent { event ->
                 osdTick++
                 val down = event.type == KeyEventType.KeyDown
                 val dir = seekDirection(event.key)
@@ -316,11 +363,30 @@ fun PlayerScreen(
             VodInfoCard(vodInfo, Modifier.align(Alignment.BottomStart).padding(start = 32.dp, bottom = INFO_BOTTOM))
         }
         if (osdVisible && vodTitle != null) {
-            VodOsd(vodTitle, vodInfo, playback, scrubUi, Modifier.align(Alignment.BottomCenter))
-        } else if (osdVisible && name.isNotEmpty()) {
+            VodOsd(vodTitle, vodInfo, playback, scrubUi, Modifier.align(Alignment.BottomCenter), touchSeek)
+        } else if (osdVisible && name.isNotEmpty() && !touchMode.active) {
             Osd(name, Modifier.align(Alignment.TopStart))
         }
         flash?.let { PlayPauseBadge(it, FLASH_SIZE, Modifier.align(Alignment.Center)) }
+        if (osdVisible && touchMode.active && !failed) {
+            TouchTopBar(if (vodTitle == null) name else null, onBack, Modifier.align(Alignment.TopStart))
+            TouchTransport(
+                isPlaying = playback.isPlaying,
+                seekable = touchSeekable,
+                onPlayPause = {
+                    if (controller.state.value.isPlaying) controller.pause() else controller.resume()
+                    osdTick++
+                },
+                onSkip = { seconds ->
+                    controller.poll()
+                    val now = controller.state.value
+                    val end = now.durationMs?.takeIf { it > 0 } ?: Long.MAX_VALUE
+                    controller.seekTo((now.positionMs + seconds * MS_PER_SECOND).coerceIn(0L, end))
+                    osdTick++
+                },
+                modifier = Modifier.align(Alignment.Center).offset(y = TRANSPORT_LIFT),
+            )
+        }
         if (listOpen) {
             ChannelZapList(
                 zapChannels,
@@ -536,6 +602,9 @@ private fun ErrorPanel(
 }
 
 private const val OSD_MS = 4_000L
+
+/** Pas przycisków dotykowych leży nad środkiem, żeby „Buforowanie…” nie nachodziło na przyciski. */
+private val TRANSPORT_LIFT = (-64).dp
 private const val MS_PER_MINUTE = 60_000L
 private val SUBTITLE_LIFT = 130.dp
 private val SUBTITLE_BOTTOM = 40.dp

@@ -74,6 +74,12 @@ Krótkie wpisy dopisywane chronologicznie (nowe na końcu); starych nie przepisu
 - PR #15 (issue #12) scalony (fc1d30e) i wydane testowe 0.9.11-rc2 z tagu rc-0.9.11-rc2 (push rcbuild na commit bota z [skip ci] nie uruchamia rc.yml; sesja ma 403 przy pushu tagów; dwa pierwsze biegi RC padły na 504 przy pobieraniu pluginu Kotlin, trzeci przeszedł). Zgłoszenie z telefonu: 504 przy imporcie get.php, brak OSD/dotyku w odtwarzaczu, oceny IMDb nie dla wszystkich filmów. Plan zaakceptowany: PR #16 (diagnostyka listy: skrypt curl bez ADB), równolegle czyszczenie tytułów i ocen; poprawka 504 dopiero po diag.md, dotyk po nich.
 - PR #17 (czyszczenie tytułów VOD i dopasowanie ocen IMDb): wzorce nazw z paneli (rok bez nawiasów, [rok], .rok., sufiksy, platformy, [ENG]/DUAL) wcześniej dawały 0% trafień w indeksie; zawężony shortTag przestał obcinać "Saw:"/"Rio -"/"Ice:"/"Up:"; bez roku wybieramy tylko wyraźnego lidera. Pomiar na syntetycznych nazwach z indeksu (nie prawdziwa lista). Komunikat commita z dosłownym znacznikiem pomijającym CI nie uruchamia biegu (PR #16 stracił tak jeden bieg): w komunikatach nie wolno go cytować.
 
+## 2026-11-09 (Europe/Warsaw): analiza 504 (PR #19) i dotyk w odtwarzaczu (PR #20)
+
+- rc3 (tag `rc-0.9.11-rc3` na `2e3e35e`, bieg 42619214582) przyjęty; korekta wpisu o rc2: rc2 jednak wyszedł (bieg 42569216056, trzecia próba).
+- PR #19: notatka `docs/analiza-504-playery.md` (OwnTV, StreamVault, trzy mniejsze playery; hipotezy 504, plan PR 1b); tylko dokumentacja.
+- PR #20: dotyk w odtwarzaczu (telefon, minimalnie). Pierwszy bieg CI padł na brakujących importach `click`/`swipe` w teście, drugi na brakujących zrzutach bazowych Roborazzi (zrzuty z artefaktu, obejrzane). Merge tylko po zgodzie właściciela.
+
 ## 2026-11-09 (Europe/Warsaw), po przechwycie IPTV Extreme: Xtream przez player_api.php i UA (PR #21)
 
 - Przechwyt właściciela (PCAPdroid): w IPTV Extreme lista działa; wszystkie zapytania `GET player_api.php` z czterema nagłówkami i UA `okhttp/4.10.0`, kolejność: konto, live kategorie i strumienie, vod kategorie i strumienie, seriale kategorie i seriale. Nasz UA OTT Navigator dostaje 520 (Cloudflare).
@@ -82,3 +88,8 @@ Krótkie wpisy dopisywane chronologicznie (nowe na końcu); starych nie przepisu
 - Emulator (nowy scenariusz panelu) znalazł błąd: treść odpowiedzi tekstowych (`fetch`, `fetchWithBody`) była czytana na wątku głównym, więc import konta Xtream kończył się `NetworkOnMainThreadException`. Test z udawanym wątkiem głównym czerwony przed poprawką, zielony po; poprawka: `withContext(Dispatchers.IO)`.
 - Ten sam scenariusz znalazł drugi błąd: źródło EPG zwracające nie-XML (JSON z `xmltv.php`) kończyło aplikację `XmlPullParserException` (nie `IOException`). Test czerwony przed poprawką; teraz porażka źródła EPG.
 - Poprawki po przeglądzie właściciela (PR #21): własny UA w kreatorze i w Sieci (per lista, SecretStore), UA listy w EPG i osłona przy przekierowaniu na inny host, migracja starego DataStore, przenoszenie ulubionych i filmów po numerze strumienia przy zmianie trybu M3U ↔ API (seriale zostają pod starymi id), kontrolowany fallback do get.php z Retry-After i cooldownem, odtwarzacz: Accept-Language i początkowy Range tylko dla bezpośredniego .ts, testy przez prawdziwą fabrykę Media3. Działanie na prawdziwym panelu czeka na test właściciela.
+
+## 2026-11-09 (Europe/Warsaw): aktualizacja gałęzi dotyku (PR #20) po PR #21
+
+- PR #21 (poprawka importu: player_api.php, UA, tożsamość kanałów) scalony do `dev` (`d8091a1`, CI push zielone); `dev` ma jeszcze commit bota `4acd3fb` (tylko `docs/qa/emulator`).
+- `feat/player-dotyk` zaktualizowana zwykłym merge `origin/dev` (bez rebase i force-push). Konflikty tylko w `docs/HANDOFF.md` i `docs/HISTORIA-SESJI.md`, rozwiązane z zachowaniem informacji obu stron; kod i testy bez konfliktów. Dotyk nie jest scalony, merge PR #20 wymaga osobnej zgody.
