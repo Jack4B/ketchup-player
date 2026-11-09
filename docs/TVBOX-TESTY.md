@@ -102,6 +102,40 @@ Za mało zdarzeń sprzętu = MANUAL_REQUIRED (`TOO_FEW_PRESSES`). Kompletna diag
 `DROPPED_BY_FILTER`). Duplikaty przyjęte przez aplikację = FAIL (`DUPLICATES_ACCEPTED`: zwiększ Czułość pilota w Ustawieniach,
 Odtwarzanie). ADB nie odtwarza duplikatów fizycznego pilota; scenariusz tego nie udaje.
 
+## Diagnostyka listy (telefon, Termux, bez ADB)
+`tools/tvbox/ketchup_list_diag.sh` sprawdza z telefonu, jak panel odpowiada na pobranie listy (np. gdy aplikacja pokazuje HTTP 504, a inne
+odtwarzacze działają). To samodzielny plik oparty wyłącznie na `curl`; **nie instaluje ani nie uruchamia aplikacji**.
+
+Przygotowanie (raz): `pkg install curl coreutils gawk sed grep gzip`, `termux-setup-storage`.
+```
+cp ~/storage/downloads/player/ketchup_list_diag.sh ~/ && sed -i 's/\r$//' ~/ketchup_list_diag.sh
+bash ~/ketchup_list_diag.sh
+```
+Skrypt zapyta o **adres listy z ukrytym wpisywaniem** (nie trafia do historii, argumentów procesów, raportu ani plików poza chwilowym
+plikiem `chmod 600`, który jest usuwany). Zamiast monitu możesz użyć `--lista-plik PLIK` (pierwsza linia pliku). Opcje: `--przerwa S`
+(domyślnie i minimum 30 s), `--max-czas S` (limit czasu jednego żądania, domyślnie 300 s), `--bez-wariantow` (tylko żądanie bazowe).
+
+Żądania (jedno bazowe i maks. 4 warianty; przed każdym kolejnym przerwa co najmniej 30 s, a gdy serwer poda `Retry-After`, np. 120, to tyle
+sekund, maks. 900):
+
+| id | żądanie |
+|---|---|
+| B | GET `get.php` z nagłówkami jak w aplikacji (User-Agent aplikacji, `Accept: */*`, `Accept-Encoding: gzip`) |
+| V1 | GET `player_api.php?action=get_live_categories` (czy API Xtream odpowiada, gdy `get.php` daje 504) |
+| V2 | POST `get.php`, w ciele `username`, `password`, `type` (`application/x-www-form-urlencoded`, bez parametrów w adresie) |
+| V3 | POST `player_api.php`, w ciele `username`, `password`, `action=get_live_categories` |
+| V4 | GET `get.php` z User-Agent VLC |
+
+Warianty V1-V4 wymagają adresu `.../get.php?username=...&password=...`; dla innych adresów skrypt wykona tylko żądanie bazowe. Dane do ciała
+POST skrypt bierze z tego adresu. Po przekierowaniu curl zachowuje POST tylko przy 307/308 (przy 301/302 zamienia na GET, jak OkHttp).
+
+Wynik: `Download/KetchupPlayerTest/diag-<data>/diag.md` (tabela: status HTTP, wersja, czasy DNS/połączenia/pierwszego bajtu/całości,
+rozmiar, liczba przekierowań, typ i kodowanie odpowiedzi, `Retry-After` jako liczba, tak/nie dla obecności pośredników `via`, `cf-ray`,
+`x-cache`, `x-served-by`, liczba pozycji M3U albo kategorii JSON oraz krótkie wskazówki). **Raport nie zawiera** adresu, hosta, loginu,
+hasła ani nagłówków `Server` i `Set-Cookie`; po złożeniu jest czyszczony literalnie i z wariantami zakodowanymi (procentowo, ponownie
+zakodowanymi i zdekodowanymi), a przy niepowodzeniu czyszczenia skrypt nie zapisuje pliku (`REDACTION_FAILED`). Do przekazania wystarczy
+`diag.md`; przejrzyj go przed wysłaniem. Czas działania: kilka minut (przerwy). Ctrl+C przerywa i zapisuje raport z tego, co zebrano.
+
 ## Testy skryptu (offline, bez urządzenia): zależności tylko deweloperskie
 Te narzędzia są potrzebne **wyłącznie** do uruchamiania testów skryptu na komputerze lub w Cloud, nie na boxie ani w Termuxie użytkownika:
 `bash` 4+, `jq` (walidacja JSON), `python3` (wysłanie prawdziwego Ctrl+C w teście), `zip`/`unzip`, `awk`, `sed`, `grep`, `coreutils`
@@ -109,6 +143,7 @@ oraz opcjonalnie **ShellCheck** (`SHELLCHECK_BIN` albo w `PATH`; bez niego kontr
 ```
 bash tools/tvbox/tests/run_tests.sh          # atrapa adb/aapt, tylko fikcyjne sekrety; ShellCheck, jeśli jest (SHELLCHECK_BIN)
 bash tools/tvbox/test_analyze_keys.sh        # analizator pilota na próbkach + zgodność z wbudowaną kopią
+bash tools/tvbox/tests/run_diag_tests.sh     # diagnostyka listy: atrapa curl, fikcyjne dane (bez sieci)
 ```
 Obecne CI tych testów **nie uruchamia**. Pokrywają: błąd instalacji (konflikt podpisu, obniżenie wersji, timeout, zły pakiet,
 niezgodna wersja), brak narzędzi i danych, utratę pierwszego planu i ADB, Ctrl+C, nieodświeżone UI, wpisywanie bez interpretacji

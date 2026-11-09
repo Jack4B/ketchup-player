@@ -110,3 +110,4 @@ jobs:
           files: |
             KetchupPlayer-${{ steps.ver.outputs.name }}-${{ steps.ver.outputs.short }}.apk
             tools/tvbox/ketchup_tvbox_test.sh
+            tools/tvbox/ketchup_list_diag.sh
