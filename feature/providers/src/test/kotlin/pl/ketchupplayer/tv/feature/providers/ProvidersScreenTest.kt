@@ -192,7 +192,7 @@ class ProvidersScreenTest {
 
     /**
      * Ekran 540 dp: formularz jest wyższy niż ekran, a „Zapisz i pobierz” leży poniżej pola „Metoda zapytania”. D-pad z
-     * przycisku metody (DÓŁ) musi dojść do „Zapisz i pobierz”, przewinąć go na ekran w całości i zatwierdzić zapis (OK).
+     * przycisku metody (DÓŁ) musi dojść do „Zapisz i pobierz”, przewinąć go na ekran i zatwierdzić zapis (OK).
      */
     @Test
     fun odPolaMetodyDpademDoZapiszIPobierzZAutomatycznymPrzewinieciem() {
