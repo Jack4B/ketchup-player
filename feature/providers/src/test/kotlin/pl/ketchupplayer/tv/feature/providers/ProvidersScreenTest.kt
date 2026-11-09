@@ -184,3 +184,5 @@ class ProvidersScreenTest {
         }
     }
 }
+
+private const val MS_PER_DAY = 86_400_000L

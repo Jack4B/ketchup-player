@@ -102,8 +102,8 @@ class NetworkSettingsScreenTest {
             }
         }
         compose.waitForIdle()
-        compose.onRoot().performKeyInput { pressKey(Key.DirectionDown) }
-        compose.onRoot().performKeyInput { pressKey(Key.DirectionDown) }
+        // Kolejność wierszy: nagłówki (2 listy), metody zapytania (2 listy), potem test połączenia pierwszej listy.
+        repeat(rows.size * 2) { compose.onRoot().performKeyInput { pressKey(Key.DirectionDown) } }
         compose.onRoot().performKeyInput { pressKey(Key.DirectionCenter) }
         assertEquals(listOf("a"), probed)
         compose.onNodeWithText("Too many connections", substring = true).assertExists()
