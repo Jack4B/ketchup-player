@@ -21,7 +21,10 @@ data class FilmRef(
 
 /** Wbudowany, offline indeks filmów i seriali od 1980 roku: tytuł (PL, EN, oryginalny) + rok -> identyfikatory. */
 fun interface FilmIndex {
-    /** Pozycja dla [title] i [year] (±1 rok); bez roku tylko wtedy, gdy tytuł jest jednoznaczny. */
+    /**
+     * Pozycja dla [title] i [year] (±1 rok). Bez roku: gdy tytuł jest jednoznaczny albo jedna pozycja jest wyraźnie
+     * najpopularniejsza ([FilmPicker]); w razie wątpliwości null (lepiej bez oceny niż z cudzą).
+     */
     fun find(
         title: String,
         year: Int?,
@@ -67,6 +70,16 @@ class SqliteFilmIndex(
         val norm = FilmTitles.normalize(title)
         if (norm.isEmpty()) return null
         val kind = if (series) 1 else 0
+        FilmPicker.pick(candidates(norm, kind), year)?.let { return it }
+        // Tytuł z liczbą podobną do roku (`Wonder Woman 1984`) bywa rozbity na tytuł i rok: próbujemy pełnej formy.
+        if (year == null) return null
+        return FilmPicker.pick(candidates(FilmTitles.normalize("$title $year"), kind), null)
+    }
+
+    private fun candidates(
+        norm: String,
+        kind: Int,
+    ): List<FilmRef> {
         val found = ArrayList<FilmRef>()
         db
             .rawQuery(
@@ -90,22 +103,46 @@ class SqliteFilmIndex(
                         )
                 }
             }
-        return pick(found, year)
+        return found
     }
-
-    private fun pick(
-        candidates: List<FilmRef>,
-        year: Int?,
-    ): FilmRef? =
-        if (year == null) {
-            candidates.singleOrNull()
-        } else {
-            candidates.filter { abs(it.year - year) <= YEAR_TOLERANCE }.minByOrNull { abs(it.year - year) }
-        }
 
     private companion object {
         const val MAX_CANDIDATES = 50
-        const val YEAR_TOLERANCE = 1
         const val TENTHS = 10.0
+    }
+}
+
+/**
+ * Wybór pozycji spośród kandydatów o tym samym tytule. Z rokiem: najbliższy (±1), a przy remisie ten z większą liczbą
+ * głosów. Bez roku: jedyny kandydat albo lider, który ma co najmniej [MIN_LEADER_VOTES] głosów i [LEADER_RATIO] razy
+ * więcej głosów niż drugi (np. nowszy, głośny remake); gdy lider nie jest wyraźnie lepszy, null zamiast zgadywania.
+ * Progi dobrane na syntetycznej próbce popularnych pozycji z indeksu: więcej trafień przy błędach poniżej 1%.
+ */
+internal object FilmPicker {
+    const val MIN_LEADER_VOTES = 10_000
+    const val LEADER_RATIO = 20
+    private const val YEAR_TOLERANCE = 1
+
+    fun pick(
+        candidates: List<FilmRef>,
+        year: Int?,
+    ): FilmRef? =
+        when {
+            candidates.isEmpty() -> null
+            year != null ->
+                candidates
+                    .filter { abs(it.year - year) <= YEAR_TOLERANCE }
+                    .sortedWith(compareBy<FilmRef> { abs(it.year - year) }.thenByDescending { it.imdbVotes ?: 0 })
+                    .firstOrNull()
+            candidates.size == 1 -> candidates.first()
+            else -> clearLeader(candidates)
+        }
+
+    private fun clearLeader(candidates: List<FilmRef>): FilmRef? {
+        val ranked = candidates.sortedByDescending { it.imdbVotes ?: 0 }
+        val leader = ranked[0]
+        val leaderVotes = leader.imdbVotes ?: 0
+        val runnerUpVotes = ranked[1].imdbVotes ?: 0
+        return leader.takeIf { leaderVotes >= MIN_LEADER_VOTES && leaderVotes >= LEADER_RATIO.toLong() * runnerUpVotes }
     }
 }
