@@ -9,14 +9,14 @@ Walidator (`python3 -B tools/handoff/validate_handoff.py`) sprawdza strukturę i
 Jeden blok ` ```handoff ` z liniami `klucz: wartość` (bez YAML). Wiersze `test:` mogą się powtarzać.
 
 ```text
-updated_at: 2026-11-08T22:11:02+01:00
+updated_at: 2026-11-09T15:40:00+01:00
 status: plan | active | blocked | ready_for_review | done
 branch / pr: nazwa gałęzi; URL PR albo none
 base_sha / verified_code_sha: pełne SHA (40 hex); verified_code_sha może być none
 dirty_tree: clean | dirty        (stan na moment pomiaru, przed zapisem handoffu)
 dirty_files: none | pełna lista zmian drzewa
 outside_handoff_changes: none | zmiany poza docs/HANDOFF.md i docs/HISTORIA-SESJI.md
-task_state: none | implemented | tested | awaiting_device | awaiting_merge
+task_state: implemented
 plan_point, done, unfinished, next_action, blockers, do_not_touch
 test: komenda lub job | PASS/FAIL/NOT_RUN | pełny SHA, working_tree lub none | dowód lub powód
 ```
@@ -36,18 +36,18 @@ Zasady:
 ```handoff
 updated_at: 2026-11-09T11:51:38+01:00
 status: active
-branch: feat/request-method
-pr: https://github.com/Jack4B/ketchup-player/pull/18
-base_sha: 75d3120f5799050c4d158824aee5e6f9069ab3b6
-verified_code_sha: 71dfc60b5f0f92220a544a6a32a03a4961ba98b9
+branch: feat/player-dotyk
+pr: https://github.com/Jack4B/ketchup-player/pull/20
+base_sha: e14d5793f24b2ce9745288f69f31e367b35b23fb
+verified_code_sha: none
 dirty_tree: clean
 dirty_files: none
 outside_handoff_changes: none
 task_state: implemented
-plan_point: Zmiana priorytetu: dostawca wymaga POST. PR 1c (metoda żądania GET/POST per lista, ta gałąź, PR #18) przed PR 3; PR 1a diagnostyka (PR #16) i PR 3 tytuły/oceny (PR #17) równolegle, PR 1b (domyślny POST/UA po diag.md) i PR 2 (dotyk w odtwarzaczu) później
-done: PR #15 (issue #12: maskowanie danych dostępu w URL, ErrorText, allow-list lastError, brak treści i nagłówków serwera w komunikatach, testy JVM core:common/network/xmltv/m3u/xtream w CI) scalony do dev (fc1d30ec5a979cd94cb9ec5c85c28acd60202a02), CI push na dev zielone; wydanie testowe 0.9.11-rc2 (versionCode 91102, pakiet pl.ketchupplayer.tv.debug, podpis kluczem debug z repo jak rc1) opublikowane z tagu rc-0.9.11-rc2 na fc1d30e (APK sha256 2321a4d795a50b25b02eabf669d127c9566b36616d9e7af53bcab5b969997084); PR #16 (ta gałąź): tools/tvbox/ketchup_list_diag.sh (curl, bez ADB; bazowe GET get.php + maks. 4 warianty: GET player_api, POST get.php, POST player_api, GET z UA VLC; przerwa >= 30 s i Retry-After; raport bez adresu/hosta/loginu/hasła/Server/Set-Cookie), atrapa curl i testy offline, jedna linia w rc.yml (skrypt w następnym RC; do rc2 pobrać z repo); PR #18 (ta gałąź): pole "Metoda zapytania" GET (domyślnie) / POST w kreatorze (M3U i Xtream) i w Ustawienia -> Sieć, Room providers.requestMethod (baza v8, AutoMigration 7->8, test migracji), M3U POST: username/password/type/output z get.php w ciele form-urlencoded (adres bez danych), Xtream POST: wszystkie wywołania player_api.php; EPG xmltv i adresy strumieni bez zmian; 307/308 zachowują POST tylko na ten sam host (PostRedirectGuard), 301/302/303 -> GET bez ciała; podpowiedź POST przy 403/405/5xx dla GET; nowe zrzuty Roborazzi z artefaktu CI; PR #17 i #16 mają zielone CI; PR #17 (tytuły i oceny) scalony do dev (cfe411ad2e7d14bde4f0d867e899732c3b5e042b), CI push na dev zielone (bieg 42597254931); PR #18: kontrola zgodności schematu Room z repo w ci.yml i artefakt room-schemas, test D-pad od pola metody do Zapisz i pobierz, opis PostRedirectGuard w KNOWN-EDGE-CASES; PR #16 (diagnostyka listy, skrypt ketchup_list_diag.sh dołączony do wydania jedną linią w rc.yml) scalony do dev (75d3120f5799050c4d158824aee5e6f9069ab3b6)
-unfinished: 8.json schematu Room (generuje KSP przy buildzie lokalnym, nie jest w repo); CI PR #18 na końcowym SHA do odczytania; wynik diagnostyki z telefonu i test prawdziwej listy (właściciel); PR 1b i PR 2 nierozpoczęte; testy fizycznego boxa po rc2 (punkt 1.3 NIEODHACZONY)
-next_action: po zielonym CI push na dev dla scalenia PR #16 i zielonym CI tej gałęzi: dodać 8.json schematu Room z artefaktu room-schemas, odświeżyć zrzuty, scalić PR #18; potem kontrola gotowości do rc3 (tag rc-0.9.11-rc3 wypycha właściciel); rc2 nie wyszedł, więc rc3 będzie pierwszym testem na boxie od rc1
+plan_point: PR 2: dotyk w odtwarzaczu (telefon, minimalnie; pełny telefon w 2.0, bez wpływu na bramkę 1.0 i decyzję tv-first); PR 1b (wyniki przechwytu IPTV Extreme: import przez player_api.php i UA okhttp) osobną gałęzią
+done: PR #15, #16, #17, #18 scalone do dev (CI push na dev zielone po każdym); wydania testowe 0.9.11-rc2 (versionCode 91102, tag rc-0.9.11-rc2 na fc1d30e, bieg 42569216056 przy trzeciej próbie: rc2 jednak wyszedł) i 0.9.11-rc3 (tag rc-0.9.11-rc3 na 2e3e35e, bieg 42619214582, APK sha256 20ed57ab…, odcisk certyfikatu bez zmian, rc3 jest pierwszym testem boxa od rc1); schemat Room 8.json jest w repo; PR #19 (docs/analiza-504-playery.md: porównanie OwnTV/StreamVault, hipotezy 504, plan PR 1b) otwarty bez merge; PR #20 (ta gałąź): tryb dotyku w odtwarzaczu (TouchMode włączany dotknięciem, wyłączany klawiszem; stuknięcie pokazuje/chowa OSD, przyciski wyjścia, odtwórz/pauza, ±10 s, pasek postępu stuknięciem i przeciągnięciem z jednym seekiem po puszczeniu; na żywo bez paska; onPreviewKeyEvent nietknięty), testy PlayerTouchTest (Compose, regresja pilota) i 3 zrzuty Roborazzi z artefaktu CI, nota w docs/adr/tv-first.md i DESIGN-LOG
+unfinished: CI PR #20 na końcowym SHA do odczytania; merge PR #19 i #20 tylko po zgodzie właściciela; PR 1b w osobnej gałęzi; wynik diagnostyki z telefonu i test prawdziwej listy (właściciel); testy fizycznego boxa po rc3 (punkt 1.3 NIEODHACZONY, zimny start w trybie klawiszowym, BACK ze szczegółów, LEWO na pustej Mojej liście, POST na własnej liście)
+next_action: po zielonym CI na końcowym SHA zgłosić PR #20 właścicielowi (merge po osobnej zgodzie); opcje audio/napisy dotykiem, układ pionowy i gesty zostają w 2.0
 blockers: brak TV-boxa (testy fizyczne po RC); push gałęzi rcbuild na commit bota z [skip ci] NIE uruchamia rc.yml (RC wypychamy na commit z kodem albo przez tag rc-*); sesja Claude dostaje 403 przy pushu tagów, więc tag tworzy właściciel; pobieranie zależności w CI bywa zawodne (rc2: dwa biegi padły na HTTP 504 przy kotlin-compiler-embeddable z github.com/JetBrains/kotlin/releases, trzeci przeszedł); RYZYKO (bez kodu teraz): przyszły mikro-PR (dopiero po RC i tylko na polecenie właściciela) może dodać filtr treści repozytoriów w settings.gradle.kts i build-logic/settings.gradle.kts (gradlePluginPortal bez grup org.jetbrains.kotlin, które mają iść z mavenCentral), bo plugins.gradle.org przekierowywał na github.com/JetBrains/kotlin/releases (504)
 do_not_touch: main; PR #5 (dev do main); PR #14 (personalizacja po pierwszym RC); lista IPTV użytkownika (adres i dane dostępu tylko w prywatnym pliku poza repo, nigdy w commitach, logach i raportach); wydawanie RC, rcbuild, tag, publikacja i instalacja APK bez decyzji; kryteria wymagające fizycznego boxa (nie odhaczać)
 test: CI PR #15 na końcowym SHA | PASS | ef3ddd4814706cbd6fb0443df6db8c62c90ef1e2 | https://github.com/Jack4B/ketchup-player/actions/runs/42523916967 ; build (testy jednostkowe 636, Roborazzi verify 321, bez porażek), gitleaks, emulator
@@ -56,8 +56,8 @@ test: Release candidate rc2 (attempt 3) | PASS | fc1d30ec5a979cd94cb9ec5c85c28ac
 test: core:network (41) i providery m3u/xtream (M3uRequestTest 8, XtreamPostTest 5), JVM z OkHttp 4.12 i MockWebServer, kompilator z dystrybucji Gradle | PASS | 71dfc60b5f0f92220a544a6a32a03a4961ba98b9 | lokalnie; ImportErrorsTest i StoredErrorsTest 20/20, RedactorTest 29/29
 test: CI PR #16 na końcowym SHA | PASS | fede0f7708c25abb232529689d2d4f033724591f | https://github.com/Jack4B/ketchup-player/actions/runs/42584678888
 test: CI PR #17 na końcowym SHA | PASS | 1b4b9a10a64c1759e104e21e76ac41cfc293df68 | https://github.com/Jack4B/ketchup-player/actions/runs/42584728704
-test: CI PR #18 na końcowym SHA | NOT_RUN | none | uruchamiany po tym wpisie; wynik w raporcie sesji i w PR, nie jest tu przewidywany
+test: CI PR #20 na końcowym SHA | NOT_RUN | none | uruchamiany po tym wpisie; wynik w raporcie sesji i w PR
 test: skrypt diagnostyczny listy na telefonie użytkownika (PR #16) i import prawdziwej listy przez POST | NOT_RUN | none | uruchamia właściciel; wynik wraca jako diag.md
-test: skrypt na TV-boxie (S00-S12) | NOT_RUN | none | po instalacji rc2; brak urządzenia
+test: skrypt na TV-boxie (S00-S12) | NOT_RUN | none | po instalacji rc3; brak urządzenia
 test: TV-box (fokus, BACK, Szukaj, Moja lista, LEWO z akcji pustej listy, BACK ze szczegółów, zimny start) | NOT_RUN | none | brak urządzenia; pozycje w docs/TEST-CHECKLIST.md
 ```
