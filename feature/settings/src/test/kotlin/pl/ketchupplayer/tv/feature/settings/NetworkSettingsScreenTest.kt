@@ -3,6 +3,8 @@ package pl.ketchupplayer.tv.feature.settings
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onLast
@@ -10,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.pressKey
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Assert.assertEquals
@@ -106,6 +109,8 @@ class NetworkSettingsScreenTest {
         // (dpadOkOtwieraListeWyboruIWybieraNaglowek, dpadWybieraMetodePostDlaListy), tu liczy się podpięcie testu.
         compose.onNodeWithText("Testuj połączenie: 365TV").performClick()
         assertEquals(listOf("a"), probed)
+        // Wyniki są pod wierszami (po dodaniu wierszy metody poza ekranem 540 dp): lista leniwa wymaga przewinięcia.
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Too many connections", substring = true))
         compose.onNodeWithText("Too many connections", substring = true).assertExists()
     }
 
