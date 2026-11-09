@@ -45,7 +45,10 @@ class OkHttpTextFetcherTest {
             server.enqueue(MockResponse().setBody("[]"))
             OkHttpTextFetcher(NetworkClients.stream()).fetch(url("/player_api.php?username=u&password=p"))
             val headers = server.takeRequest().headers
-            assertEquals(listOf("User-Agent", "Host", "Connection", "Accept-Encoding"), List(headers.size) { headers.name(it) })
+            assertEquals(
+                listOf("User-Agent", "Host", "Connection", "Accept-Encoding"),
+                List(headers.size) { headers.name(it) },
+            )
             assertEquals("okhttp/4.10.0", headers["User-Agent"])
             assertEquals("Keep-Alive", headers["Connection"])
             assertEquals("gzip", headers["Accept-Encoding"])
@@ -58,7 +61,10 @@ class OkHttpTextFetcherTest {
             server.enqueue(MockResponse().setBody("[]"))
             OkHttpTextFetcher(NetworkClients.stream()).withUserAgent("VLC/3.0.20 LibVLC/3.0.20").fetch(url())
             val headers = server.takeRequest().headers
-            assertEquals(listOf("User-Agent", "Host", "Connection", "Accept-Encoding"), List(headers.size) { headers.name(it) })
+            assertEquals(
+                listOf("User-Agent", "Host", "Connection", "Accept-Encoding"),
+                List(headers.size) { headers.name(it) },
+            )
             assertEquals("VLC/3.0.20 LibVLC/3.0.20", headers["User-Agent"])
         }
 
