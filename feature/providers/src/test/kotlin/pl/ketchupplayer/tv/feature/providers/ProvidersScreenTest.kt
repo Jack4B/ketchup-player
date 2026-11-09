@@ -14,6 +14,7 @@ import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.pressKey
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -187,6 +188,33 @@ class ProvidersScreenTest {
         compose.waitForIdle()
         key(Key.DirectionCenter)
         assertEquals(listOf<ProvidersEvent>(ProvidersEvent.SelectRequestMethod(RequestMethod.POST)), events)
+    }
+
+    /**
+     * Ekran 540 dp: formularz jest wyższy niż ekran, a „Zapisz i pobierz” leży poniżej pola „Metoda zapytania”. D-pad z
+     * przycisku metody (DÓŁ) musi dojść do „Zapisz i pobierz”, przewinąć go na ekran w całości i zatwierdzić zapis (OK).
+     */
+    @Test
+    fun odPolaMetodyDpademDoZapiszIPobierzZAutomatycznymPrzewinieciem() {
+        val events = mutableListOf<ProvidersEvent>()
+        show(ProvidersUiState(form = ProviderForm()), events)
+        compose.runOnUiThread {
+            compose.activity.window.decorView
+                .requestFocusFromTouch()
+        }
+        compose.waitForIdle()
+        compose.onNodeWithText("GET").performSemanticsAction(SemanticsActions.RequestFocus)
+        compose.waitForIdle()
+        key(Key.DirectionDown)
+        compose.waitForIdle()
+        val screen = compose.onRoot().fetchSemanticsNode().boundsInRoot
+        val save = compose.onNodeWithText("Zapisz i pobierz").fetchSemanticsNode().boundsInRoot
+        assertTrue(
+            "Zapisz i pobierz poza ekranem: $save, ekran: $screen",
+            save.top >= screen.top && save.bottom <= screen.bottom,
+        )
+        key(Key.DirectionCenter)
+        assertEquals(listOf<ProvidersEvent>(ProvidersEvent.Submit), events)
     }
 
     @Test

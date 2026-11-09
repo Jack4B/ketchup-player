@@ -56,5 +56,11 @@ dostają GET). Zasady:
   `/movie/...`; odtwarza je ExoPlayer). Brak dowodu w kodzie lub dokumentacji, że dostawcy wymagają tam POST.
 - **Przekierowania**: 307/308 zachowują POST i ciało (OkHttp), ale tylko na ten sam host i bez przejścia z HTTPS na HTTP
   (`PostRedirectGuard` zatrzymuje wysłanie loginu i hasła gdzie indziej); 301/302/303 zamieniają POST na GET bez ciała (zachowanie OkHttp).
+- **`PostRedirectGuard`** (sieciowy interceptor OkHttp, `OkHttpTextFetcher.kt`): każde żądanie z ciałem pamięta serwer, do którego
+  wysłał je użytkownik (`OriginHost`, w tagu żądania; tagi przechodzą na kolejne skoki przekierowań). Gdy po przekierowaniu 307/308
+  host jest inny (porównanie bez względu na wielkość liter) albo schemat spada z HTTPS na HTTP, interceptor rzuca
+  `PostRedirectBlockedException` i ciało (login, hasło) nigdzie nie jest wysyłane. Użytkownik widzi „Błąd sieci: PostRedirectBlockedException”.
+  Kosztem jest, że dostawca przekierowujący POST na inny host (np. na adres balansera) przestanie działać do zmiany adresu listy.
+  Testy: `OkHttpTextFetcherPostTest` (307 na inny host zatrzymane, drugie żądanie nie wychodzi; 307/308 na ten sam host zachowują POST).
 - **Podpowiedź** przy 403, 405 i 5xx dla GET: „Dostawca może wymagać metody POST — zmień w ustawieniach listy.” Bez automatycznego przełączania.
 - Ciało z hasłem nie jest logowane ani zapisywane; `FormBody.toString` go nie ujawnia, a błędy HTTP nie przepisują treści ani nagłówków.

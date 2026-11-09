@@ -112,6 +112,24 @@ jobs:
         with:
           name: apk-debug
           path: app/build/outputs/apk/debug/*.apk
+      - name: Schemat Room zgodny z plikiem w repo
+        run: |
+          # KSP zapisuje schemat bieżącej wersji bazy do core/database/schemas przy każdej kompilacji (hash tożsamości liczy
+          # Room, nie wpisujemy go ręcznie). Brak pliku albo różnica od wersji z repo = błąd: nowy plik bierzemy z artefaktu
+          # room-schemas tego biegu.
+          if [ -n "$(git status --porcelain -- core/database/schemas)" ]; then
+            git status --porcelain -- core/database/schemas
+            git add -N core/database/schemas
+            git diff --stat -- core/database/schemas
+            echo "::error::Schemat Room wyeksportowany w CI różni się od core/database/schemas w repo (dodaj lub zaktualizuj plik z artefaktu room-schemas)"
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: room-schemas
+          path: core/database/schemas
+          if-no-files-found: warn
   emulator:
     needs: build
     runs-on: ubuntu-latest
