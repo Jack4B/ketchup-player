@@ -106,6 +106,10 @@ Odtwarzanie). ADB nie odtwarza duplikatów fizycznego pilota; scenariusz tego ni
 `tools/tvbox/ketchup_list_diag.sh` sprawdza z telefonu, jak panel odpowiada na pobranie listy (np. gdy aplikacja pokazuje HTTP 504, a inne
 odtwarzacze działają). To samodzielny plik oparty wyłącznie na `curl`; **nie instaluje ani nie uruchamia aplikacji**.
 
+Skąd wziąć plik: **od następnego RC** skrypt jest w wydaniu obok `ketchup_tvbox_test.sh`. W RC 0.9.11-rc2 go nie ma: pobierz
+`tools/tvbox/ketchup_list_diag.sh` z repozytorium (gałąź `dev` po scaleniu; w GitHubie: plik → „Download raw file”) i skopiuj do
+`Download/player/`.
+
 Przygotowanie (raz): `pkg install curl coreutils gawk sed grep gzip`, `termux-setup-storage`.
 ```
 cp ~/storage/downloads/player/ketchup_list_diag.sh ~/ && sed -i 's/\r$//' ~/ketchup_list_diag.sh
