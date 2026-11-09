@@ -22,13 +22,13 @@ class KetchupApp :
     Application(),
     SingletonImageLoader.Factory {
     @Inject
-    lateinit var legacyUserAgents: LegacyUserAgentMigration
+    lateinit var legacyUserAgents: dagger.Lazy<LegacyUserAgentMigration>
 
     override fun onCreate() {
         super.onCreate()
         Timber.plant(RedactingTree())
         // Wybór User-Agent z dawnego DataStore przenosimy zanim ruszy pierwszy import (krótkie, bez sieci).
-        runCatching { runBlocking(Dispatchers.IO) { legacyUserAgents.migrate() } }
+        runCatching { runBlocking(Dispatchers.IO) { legacyUserAgents.get().migrate() } }
             .onFailure { Timber.w("Migracja wyboru User-Agent nie powiodła się: %s", it.javaClass.simpleName) }
         // Wbudowana baza logo stacji (iptv-org, ok. 25 KB); błąd odczytu nie może zatrzymać aplikacji.
         runCatching {

@@ -5,14 +5,16 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodes
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.pressKey
@@ -166,6 +168,10 @@ class ProvidersScreenTest {
         show(ProvidersUiState(form = ProviderForm()), events)
         compose.onNodeWithText("User-Agent:", substring = true).performClick()
         compose.waitForIdle()
+        // Lista wyboru jest leniwa: „Własny…” (ostatnia pozycja) może wymagać przewinięcia do widoku.
+        if (compose.onAllNodes(hasText("Własny…")).fetchSemanticsNodes().isEmpty()) {
+            compose.onAllNodes(hasScrollAction()).onLast().performScrollToNode(hasText("Własny…"))
+        }
         compose.onNodeWithText("Własny…").performClick()
         assertEquals(listOf<ProvidersEvent>(ProvidersEvent.SelectUserAgent("custom:")), events)
     }

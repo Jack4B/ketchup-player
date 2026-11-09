@@ -179,12 +179,16 @@ class ListUserAgentFlowTest {
     fun `wspolny klient nie jest zmieniany przez UA listy`() =
         runTest {
             catalog().addM3u("A", link("userA"), UserAgentProfiles.custom("AgentA/1").id)
+            val after = java.util.concurrent.CopyOnWriteArrayList<String>()
             server.dispatcher =
                 object : Dispatcher() {
-                    override fun dispatch(request: RecordedRequest) = MockResponse().setBody("x")
+                    override fun dispatch(request: RecordedRequest): MockResponse {
+                        after += request.getHeader("User-Agent").orEmpty()
+                        return MockResponse().setBody("x")
+                    }
                 }
             OkHttpTextFetcher(NetworkClients.stream()).fetch(server.url("/inna").toString())
-            assertEquals("okhttp/4.10.0", server.takeRequest().getHeader("User-Agent"))
+            assertEquals(listOf("okhttp/4.10.0"), after.toList())
         }
 
     private companion object {

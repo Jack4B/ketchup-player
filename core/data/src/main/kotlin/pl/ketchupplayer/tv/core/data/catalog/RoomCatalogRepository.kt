@@ -201,13 +201,21 @@ class RoomCatalogRepository
                 }
             }
 
-        /** Do kiedy (czas zegara) dostawca prosił o odczekanie (429 albo błąd z `Retry-After`); tylko w pamięci. */
-        private val cooldownUntilMs = java.util.concurrent.ConcurrentHashMap<String, Long>()
+        /** Prośba dostawcy o odczekanie (429 albo błąd z `Retry-After`): do kiedy i przy jakiej konfiguracji listy. */
+        private data class Cooldown(
+            val untilMs: Long,
+            val config: String,
+        )
+
+        /** Tylko w pamięci. Inna metoda żądania albo User-Agent listy to nowa konfiguracja: bez wstrzymania. */
+        private val cooldowns = java.util.concurrent.ConcurrentHashMap<String, Cooldown>()
+
+        private fun configOf(entity: ProviderEntity) = entity.requestMethod + "|" + entity.userAgent
 
         private suspend fun doRefresh(id: ProviderId): Result<Int> {
             val entity =
                 providerDao.get(id.value) ?: return Result.failure(IllegalStateException("Nie ma takiego dostawcy"))
-            remainingCooldownSeconds(id)?.let { left ->
+            remainingCooldownSeconds(entity)?.let { left ->
                 // Żadnych żądań, dopóki dostawca prosi o odczekanie (bez pętli i kaskady kolejnych prób).
                 val method = RequestMethod.parse(entity.requestMethod)
                 return Result.failure(
@@ -236,7 +244,7 @@ class RoomCatalogRepository
                     Result.success(channels.size)
                 },
                 onFailure = { e ->
-                    if (e is ProviderError.RateLimited) startCooldown(id, e.retryAfterSeconds)
+                    if (e is ProviderError.RateLimited) startCooldown(entity, e.retryAfterSeconds)
                     val friendly = friendlyImportError(importErrorSource(e), RequestMethod.parse(entity.requestMethod))
                     providerDao.markRefreshed(id.value, now, friendly, null)
                     Result.failure(IllegalStateException(friendly, e))
@@ -245,18 +253,18 @@ class RoomCatalogRepository
         }
 
         private fun startCooldown(
-            id: ProviderId,
+            entity: ProviderEntity,
             retryAfterSeconds: Long?,
         ) {
             val seconds = (retryAfterSeconds ?: DEFAULT_COOLDOWN_S).coerceIn(1, MAX_COOLDOWN_S)
-            cooldownUntilMs[id.value] = clock.nowMs() + seconds * MS_PER_SECOND
+            cooldowns[entity.id] = Cooldown(clock.nowMs() + seconds * MS_PER_SECOND, configOf(entity))
         }
 
-        private fun remainingCooldownSeconds(id: ProviderId): Long? {
-            val until = cooldownUntilMs[id.value] ?: return null
-            val left = until - clock.nowMs()
-            if (left <= 0) {
-                cooldownUntilMs.remove(id.value)
+        private fun remainingCooldownSeconds(entity: ProviderEntity): Long? {
+            val cooldown = cooldowns[entity.id] ?: return null
+            val left = cooldown.untilMs - clock.nowMs()
+            if (left <= 0 || cooldown.config != configOf(entity)) {
+                cooldowns.remove(entity.id)
                 return null
             }
             return (left + MS_PER_SECOND - 1) / MS_PER_SECOND

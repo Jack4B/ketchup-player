@@ -54,7 +54,7 @@ class PlayerDataSourcesTest {
     }
 
     @Test
-    fun `bezposredni strumien live ts: UA VLC, Accept, Accept-Language i poczatkowy Range`() {
+    fun `bezposredni strumien live ts ma UA VLC, Accept, Accept-Language i poczatkowy Range`() {
         panel.enqueue(MockResponse().setBody("ts-data"))
         val url = panel.url("/live/user123/pass456/101.ts")
         open(url)

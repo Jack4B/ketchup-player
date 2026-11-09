@@ -63,6 +63,10 @@ class NetworkSettingsScreenTest {
     private fun openCustomEditor(listName: String) {
         compose.onNodeWithText(listName).performClick()
         compose.waitForIdle()
+        // Okno wyboru to lista leniwa: „Własny…” jest ostatnią pozycją i może wymagać przewinięcia do widoku.
+        if (compose.onAllNodes(hasText("Własny…")).fetchSemanticsNodes().isEmpty()) {
+            compose.onAllNodes(hasScrollAction()).onLast().performScrollToNode(hasText("Własny…"))
+        }
         compose.onNodeWithText("Własny…").performClick()
         compose.waitForIdle()
     }
