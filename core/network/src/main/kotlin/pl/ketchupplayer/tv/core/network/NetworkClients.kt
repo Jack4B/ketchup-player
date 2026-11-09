@@ -12,18 +12,44 @@ import java.util.concurrent.TimeUnit
  */
 object NetworkClients {
     /**
-     * Domyślny nagłówek: OTT Navigator, popularny odtwarzacz IPTV, który panele przepuszczają. Można go zmienić dla
-     * każdej listy (w kreatorze przed pierwszym pobraniem i w Ustawieniach → Sieć), także na własny.
+     * Domyślny User-Agent importu (listy, API Xtream, EPG): taki sam jak u IPTV Extreme, któremu panel za Cloudflare
+     * odpowiada 200, gdy nagłówek aplikacji OTT Navigator dostaje 520. Można go zmienić dla każdej listy (w kreatorze
+     * i w Ustawieniach → Sieć), także na własny.
      */
-    const val DEFAULT_USER_AGENT = "OTT Navigator/1.7.2.1 (Linux;Android 12) ExoPlayerLib/2.19.1"
-    const val PLAYER_USER_AGENT = DEFAULT_USER_AGENT
+    const val DEFAULT_USER_AGENT = "okhttp/4.10.0"
 
+    /** Dawny domyślny nagłówek, teraz tylko jeden z gotowych profili. */
+    const val OTT_USER_AGENT = "OTT Navigator/1.7.2.1 (Linux;Android 12) ExoPlayerLib/2.19.1"
+
+    /** Domyślny User-Agent odtwarzacza strumieni (VLC, jak w przechwyceniu odtwarzania IPTV Extreme). */
+    const val PLAYER_USER_AGENT = "VLC/3.4.3 LibVLC/3.4.31"
+
+    /**
+     * Klient list i API: na drucie tylko `User-Agent`, `Host`, `Connection: Keep-Alive` i `Accept-Encoding: gzip`
+     * (w tej kolejności; dwa ostatnie i `Host` dokłada OkHttp). Nie dodajemy `Accept` ani niczego więcej.
+     */
     fun stream(userAgent: String = DEFAULT_USER_AGENT): OkHttpClient =
-        base(
-            userAgent,
-        ).connectionSpecs(
-            listOf(ConnectionSpec.MODERN_TLS, ConnectionSpec.COMPATIBLE_TLS, ConnectionSpec.CLEARTEXT),
-        ).build()
+        base(userAgent).connectionSpecs(IPTV_SPECS).build()
+
+    /**
+     * Klient odtwarzacza (Media3): User-Agent VLC i nagłówek `Accept` (dowolny typ). Przekierowania (302 na serwer
+     * strumieni) OkHttp obsługuje sam i zachowuje nagłówki ustawione na żądaniu, w tym User-Agent i Range.
+     */
+    fun player(userAgent: String = PLAYER_USER_AGENT): OkHttpClient =
+        base(userAgent)
+            .addInterceptor { chain ->
+                val req = chain.request()
+                chain.proceed(
+                    if (req.header("Accept") ==
+                        null
+                    ) {
+                        req.newBuilder().header("Accept", "*/*").build()
+                    } else {
+                        req
+                    },
+                )
+            }.connectionSpecs(IPTV_SPECS)
+            .build()
 
     fun metadata(userAgent: String = DEFAULT_USER_AGENT): OkHttpClient =
         base(userAgent).connectionSpecs(listOf(ConnectionSpec.MODERN_TLS)).build()
@@ -44,10 +70,12 @@ object NetworkClients {
                     .newBuilder()
                     .apply {
                         if (req.header("User-Agent") == null) header("User-Agent", userAgent)
-                        if (req.header("Accept") == null) header("Accept", "*/*")
                     }.build(),
             )
         }
+
+    private val IPTV_SPECS =
+        listOf(ConnectionSpec.MODERN_TLS, ConnectionSpec.COMPATIBLE_TLS, ConnectionSpec.CLEARTEXT)
 
     private const val CONNECT_TIMEOUT_S = 20L
     private const val READ_TIMEOUT_S = 60L

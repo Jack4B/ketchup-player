@@ -6,6 +6,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.decodeToSequence
 import pl.ketchupplayer.tv.core.model.Channel
 import pl.ketchupplayer.tv.core.model.ContentType
 import pl.ketchupplayer.tv.core.model.ProviderId
@@ -56,21 +57,57 @@ object XtreamParser {
     ): List<Channel>? {
         val array = parse(text) as? JsonArray ?: return null
         return array.mapNotNull { it as? JsonObject }.mapIndexedNotNull { index, o ->
-            val streamId = o.str("stream_id") ?: return@mapIndexedNotNull null
-            val name = o.str("name") ?: return@mapIndexedNotNull null
-            Channel(
-                id = "${providerId.value}:l$streamId",
-                providerId = providerId,
-                name = name,
-                streamUrl = liveRef(streamId, o.str("container_extension") ?: DEFAULT_LIVE_EXT),
-                number = o.str("num")?.toIntOrNull() ?: (index + 1),
-                epgId = o.str("epg_channel_id"),
-                logo = o.str("stream_icon"),
-                group = o.str("category_id")?.let { categories[it] },
-                type = ContentType.LIVE,
-            )
+            liveChannel(providerId, o, index, categories)
         }
     }
+
+    /**
+     * Kanały live czytane strumieniowo, element po elemencie (odpowiedź `get_live_streams` ma kilkanaście MB: bez
+     * całego tekstu i drzewa JSON w pamięci). Zwraca null, gdy odpowiedź nie jest tablicą (np. błąd autoryzacji).
+     */
+    fun liveChannels(
+        providerId: ProviderId,
+        input: java.io.InputStream,
+        categories: Map<String, String>,
+    ): List<Channel>? =
+        try {
+            // Sekwencja leniwa: każdy obiekt JSON staje się kanałem od razu, bez listy całych obiektów w pamięci.
+            objects(input).mapIndexedNotNull { index, o -> liveChannel(providerId, o, index, categories) }.toList()
+        } catch (_: kotlinx.serialization.SerializationException) {
+            null
+        } catch (_: IllegalArgumentException) {
+            null
+        }
+
+    private fun liveChannel(
+        providerId: ProviderId,
+        o: JsonObject,
+        index: Int,
+        categories: Map<String, String>,
+    ): Channel? {
+        val streamId = o.str("stream_id") ?: return null
+        val name = o.str("name") ?: return null
+        return Channel(
+            id = "${providerId.value}:l$streamId",
+            providerId = providerId,
+            name = name,
+            streamUrl = liveRef(streamId, o.str("container_extension") ?: DEFAULT_LIVE_EXT),
+            number = o.str("num")?.toIntOrNull() ?: (index + 1),
+            epgId = o.str("epg_channel_id"),
+            logo = o.str("stream_icon"),
+            group = o.str("category_id")?.let { categories[it] },
+            type = ContentType.LIVE,
+        )
+    }
+
+    /** Elementy tablicy JSON czytane leniwie ze strumienia (ARRAY_WRAPPED). */
+    @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+    internal fun objects(input: java.io.InputStream): Sequence<JsonObject> =
+        json.decodeToSequence(
+            input,
+            JsonObject.serializer(),
+            kotlinx.serialization.json.DecodeSequenceMode.ARRAY_WRAPPED,
+        )
 
     fun liveRef(
         streamId: String,

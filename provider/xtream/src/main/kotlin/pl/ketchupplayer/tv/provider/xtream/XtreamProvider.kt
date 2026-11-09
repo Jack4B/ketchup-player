@@ -51,8 +51,11 @@ class XtreamProvider(
 
     private suspend fun fetchLive(): Result<List<Channel>> {
         val categoriesBody = fetch(api("get_live_categories")).getOrElse { return Result.failure(it) }
-        val streamsBody = fetch(api("get_live_streams")).getOrElse { return Result.failure(it) }
-        val channels = XtreamParser.liveChannels(id, streamsBody, XtreamParser.categories(categoriesBody).orEmpty())
+        val categories = XtreamParser.categories(categoriesBody).orEmpty()
+        // Kilkanaście MB JSON: czytane strumieniowo, element po elemencie.
+        val channels =
+            fetchStream(api("get_live_streams")) { XtreamParser.liveChannels(id, it, categories) }
+                .getOrElse { return Result.failure(it.toProviderError()) }
         return when {
             channels == null -> Result.failure(ProviderError.BadResponse("Nieprawidłowa lista kanałów"))
             channels.isEmpty() -> Result.failure(ProviderError.BadResponse("Konto nie ma żadnych kanałów"))
@@ -68,16 +71,15 @@ class XtreamProvider(
     }
 
     override suspend fun loadVod(): Result<VodCatalog> {
+        // Kolejność jak u IPTV Extreme: kategorie filmów, filmy, kategorie seriali, seriale.
         val movieCats =
-            fetch(
-                api("get_vod_categories"),
-            ).getOrNull()?.let(XtreamParser::categories).orEmpty()
-        val seriesCats =
-            fetch(api("get_series_categories")).getOrNull()?.let(XtreamParser::categories).orEmpty()
+            fetch(api("get_vod_categories")).getOrNull()?.let(XtreamParser::categories).orEmpty()
         // Katalogi mają dziesiątki MB: czytane strumieniowo, element po elemencie (bez całego tekstu i drzewa JSON).
         val movies =
             fetchStream(api("get_vod_streams")) { XtreamVodParser.movies(id, it, movieCats) }
                 .getOrElse { return Result.failure(it.toProviderError()) }
+        val seriesCats =
+            fetch(api("get_series_categories")).getOrNull()?.let(XtreamParser::categories).orEmpty()
         val series =
             fetchStream(api("get_series")) { XtreamVodParser.series(id, it, seriesCats) }
                 .getOrElse { return Result.failure(it.toProviderError()) }

@@ -16,7 +16,7 @@ data class ProviderForm(
     val nameError: Boolean = false,
     val urlError: Boolean = false,
     val credentialsError: Boolean = false,
-    /** Wybrany nagłówek połączenia (id z puli); „auto” = domyślny OTT Navigator. */
+    /** Wybrany nagłówek połączenia (id z puli); „auto” = domyślny okhttp/4.10.0. */
     val userAgentId: String = "auto",
     /** Metoda żądania listy: GET (domyślnie) albo POST (dane w ciele, adres bez loginu i hasła). */
     val requestMethod: RequestMethod = RequestMethod.GET,

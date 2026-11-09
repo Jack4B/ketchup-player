@@ -21,7 +21,7 @@ class ExoPlayerControllerFactory
         private val buffer: BufferConfigSource,
     ) : PlayerControllerFactory {
         override fun create(): PlayerController =
-            ExoPlayerController(context, NetworkClients.stream(NetworkClients.PLAYER_USER_AGENT), buffer.current())
+            ExoPlayerController(context, NetworkClients.player(), buffer.current())
     }
 
 @Module

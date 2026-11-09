@@ -11,6 +11,7 @@ import pl.ketchupplayer.tv.core.network.UserAgentProfiles
 import pl.ketchupplayer.tv.provider.api.IptvProvider
 import pl.ketchupplayer.tv.provider.m3u.M3uProvider
 import pl.ketchupplayer.tv.provider.m3u.M3uRequest
+import pl.ketchupplayer.tv.provider.xtream.ApiRequest
 import pl.ketchupplayer.tv.provider.xtream.XtreamCredentials
 import pl.ketchupplayer.tv.provider.xtream.XtreamProvider
 import javax.inject.Inject
@@ -46,30 +47,16 @@ class ProviderFactory
         ): String {
             val id = ProviderId(entity.id)
             val f = profile.value?.let { fetcher.withUserAgent(it) } ?: fetcher
-            val post = RequestMethod.parse(entity.requestMethod) == RequestMethod.POST
+            val method = RequestMethod.parse(entity.requestMethod)
             val result =
                 when (ProviderType.valueOf(entity.type)) {
-                    ProviderType.M3U ->
-                        secrets.url(id)?.let { url ->
-                            if (post) {
-                                val req = M3uRequest.post(url)
-                                f.fetchLinesWithBody(
-                                    req.url,
-                                    requireNotNull(req.body),
-                                ) { it.take(PROBE_LINES).toList() }
-                            } else {
-                                f.fetchLines(url) { lines -> lines.take(PROBE_LINES).toList() }
-                            }
-                        }
+                    ProviderType.M3U -> secrets.url(id)?.let { probeM3u(f, it, method) }
                     ProviderType.XTREAM ->
                         secrets.login(id)?.let { (user, pass) ->
-                            val req =
-                                XtreamCredentials(entity.url, user, pass).apiRequest(
-                                    RequestMethod.parse(entity.requestMethod),
-                                    "get_live_categories",
-                                )
-                            req.body?.let { body -> f.fetchLinesWithBody(req.url, body) { it.take(1).toList() } }
-                                ?: f.fetchLines(req.url) { lines -> lines.take(1).toList() }
+                            probeApi(
+                                f,
+                                XtreamCredentials(entity.url, user, pass).apiRequest(method, "get_live_categories"),
+                            )
                         }
                     ProviderType.STALKER -> null
                 } ?: return "brak danych dostawcy"
@@ -78,6 +65,25 @@ class ProviderFactory
                 onFailure = { safeErrorText(it, "błąd sieci") },
             )
         }
+
+        /** Konto z adresu get.php sprawdzamy przez `player_api.php` (jak import), nie pobieramy całej listy. */
+        private suspend fun probeM3u(
+            f: TextFetcher,
+            url: String,
+            method: RequestMethod,
+        ): Result<List<String>> {
+            XtreamCredentials.fromPlaylistUrl(url)?.let { return probeApi(f, it.apiRequest(method, null)) }
+            if (method != RequestMethod.POST) return f.fetchLines(url) { lines -> lines.take(PROBE_LINES).toList() }
+            val req = M3uRequest.post(url)
+            return f.fetchLinesWithBody(req.url, requireNotNull(req.body)) { it.take(PROBE_LINES).toList() }
+        }
+
+        private suspend fun probeApi(
+            f: TextFetcher,
+            req: ApiRequest,
+        ): Result<List<String>> =
+            req.body?.let { body -> f.fetchLinesWithBody(req.url, body) { it.take(1).toList() } }
+                ?: f.fetchLines(req.url) { lines -> lines.take(1).toList() }
 
         suspend fun create(
             entity: ProviderEntity,
@@ -88,7 +94,14 @@ class ProviderFactory
             val method = RequestMethod.parse(entity.requestMethod)
             val fetcher = ua?.let { this.fetcher.withUserAgent(it) } ?: this.fetcher
             return when (ProviderType.valueOf(entity.type)) {
-                ProviderType.M3U -> secrets.url(id)?.let { M3uProvider(id, it, fetcher, method) }
+                ProviderType.M3U ->
+                    secrets.url(id)?.let { url ->
+                        val m3u = M3uProvider(id, url, fetcher, method)
+                        // get.php z loginem to konto Xtream: najpierw player_api.php, M3U zostaje trybem zapasowym.
+                        XtreamCredentials.fromPlaylistUrl(url)?.let { creds ->
+                            XtreamFirstProvider(XtreamProvider(id, creds, fetcher, method), m3u)
+                        } ?: m3u
+                    }
                 ProviderType.XTREAM ->
                     secrets.login(id)?.let { (user, pass) ->
                         XtreamProvider(id, XtreamCredentials(entity.url, user, pass), fetcher, method)

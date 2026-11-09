@@ -24,6 +24,15 @@ interface ProviderDao {
         method: String,
     )
 
+    @Query("UPDATE providers SET userAgent = :userAgent WHERE id = :id")
+    suspend fun setUserAgent(
+        id: String,
+        userAgent: String?,
+    )
+
+    @Query("SELECT userAgent FROM providers WHERE id = :id")
+    fun observeUserAgent(id: String): Flow<String?>
+
     @Query("DELETE FROM providers WHERE id = :id")
     suspend fun delete(id: String)
 

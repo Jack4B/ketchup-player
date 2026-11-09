@@ -30,12 +30,36 @@ class OkHttpTextFetcherTest {
     private fun url(path: String = "/list.m3u") = server.url(path).toString()
 
     @Test
-    fun `domyslny User-Agent listy to OTT Navigator`() =
+    fun `domyslny User-Agent listy to okhttp 4 10 0`() =
         runTest {
             server.enqueue(MockResponse().setBody("x"))
             OkHttpTextFetcher(NetworkClients.stream()).fetch(url())
-            assertEquals(NetworkClients.DEFAULT_USER_AGENT, server.takeRequest().getHeader("User-Agent"))
-            assertEquals(true, NetworkClients.DEFAULT_USER_AGENT.startsWith("OTT Navigator/"))
+            assertEquals("okhttp/4.10.0", server.takeRequest().getHeader("User-Agent"))
+            assertEquals("okhttp/4.10.0", NetworkClients.DEFAULT_USER_AGENT)
+        }
+
+    /** Przechwycenie IPTV Extreme: dokładnie cztery nagłówki w tej kolejności, bez `Accept` i bez niczego więcej. */
+    @Test
+    fun `import wysyla dokladnie cztery naglowki w kolejnosci IPTV Extreme`() =
+        runTest {
+            server.enqueue(MockResponse().setBody("[]"))
+            OkHttpTextFetcher(NetworkClients.stream()).fetch(url("/player_api.php?username=u&password=p"))
+            val headers = server.takeRequest().headers
+            assertEquals(listOf("User-Agent", "Host", "Connection", "Accept-Encoding"), List(headers.size) { headers.name(it) })
+            assertEquals("okhttp/4.10.0", headers["User-Agent"])
+            assertEquals("Keep-Alive", headers["Connection"])
+            assertEquals("gzip", headers["Accept-Encoding"])
+        }
+
+    /** Wybrany dla listy User-Agent zastępuje domyślny, a zestaw i kolejność nagłówków zostają te same. */
+    @Test
+    fun `User-Agent listy zastepuje domyslny bez zmiany reszty naglowkow`() =
+        runTest {
+            server.enqueue(MockResponse().setBody("[]"))
+            OkHttpTextFetcher(NetworkClients.stream()).withUserAgent("VLC/3.0.20 LibVLC/3.0.20").fetch(url())
+            val headers = server.takeRequest().headers
+            assertEquals(listOf("User-Agent", "Host", "Connection", "Accept-Encoding"), List(headers.size) { headers.name(it) })
+            assertEquals("VLC/3.0.20 LibVLC/3.0.20", headers["User-Agent"])
         }
 
     /**
