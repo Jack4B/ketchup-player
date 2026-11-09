@@ -143,39 +143,32 @@ fun NetworkSettingsScreen(
     ScreenScaffold(scrollable = false) {
         ScreenTitle(stringResource(R.string.network_title))
         Text(stringResource(R.string.network_hint), color = c.textSecondary)
+        editingCustom?.let { row ->
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.network_pick_title, row.name), color = c.textSecondary)
+                TextInputField(
+                    label = stringResource(R.string.network_custom_field),
+                    value = customDraft,
+                    onChange = {
+                        customDraft = it
+                        customInvalid = false
+                    },
+                    modifier = Modifier.requestFocusWhenPlaced(force = true),
+                    onDone = {
+                        if (onSelectCustom(row, customDraft)) {
+                            editingCustom = null
+                            customDraft = ""
+                        } else {
+                            customInvalid = true
+                        }
+                    },
+                )
+                if (customInvalid) Text(stringResource(R.string.network_custom_invalid), color = c.textSecondary)
+            }
+        }
         LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (rows.isEmpty()) {
                 item(key = "empty") { Text(stringResource(R.string.network_empty), color = c.textSecondary) }
-            }
-            editingCustom?.let { row ->
-                item(key = "custom-edit") {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(stringResource(R.string.network_pick_title, row.name), color = c.textSecondary)
-                        TextInputField(
-                            label = stringResource(R.string.network_custom_field),
-                            value = customDraft,
-                            onChange = {
-                                customDraft = it
-                                customInvalid = false
-                            },
-                            modifier = Modifier.requestFocusWhenPlaced(force = true),
-                            onDone = {
-                                if (onSelectCustom(row, customDraft)) {
-                                    editingCustom = null
-                                    customDraft = ""
-                                } else {
-                                    customInvalid = true
-                                }
-                            },
-                        )
-                        if (customInvalid) {
-                            Text(
-                                stringResource(R.string.network_custom_invalid),
-                                color = c.textSecondary,
-                            )
-                        }
-                    }
-                }
             }
             itemsIndexed(rows, key = { _, r -> r.providerId }) { i, row ->
                 val own = UserAgentProfiles.isCustom(row.profile.id)
