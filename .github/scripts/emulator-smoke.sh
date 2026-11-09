@@ -70,6 +70,8 @@ type_checked() {
     adb pull /sdcard/ui_type.xml "$OUT/ui_type.xml" >/dev/null
     if grep -qF "text=\"$xml\"" "$OUT/ui_type.xml"; then return 0; fi
     echo "wpisywanie: niezgodne pole (próba $attempt), czyszczę i powtarzam: $want" >&2
+    # Po ostatniej próbie nie czyścimy: dalszy przebieg widzi to, co faktycznie wpisano (a nie puste pole).
+    [ "$attempt" = 4 ] && break
     adb shell input keyevent KEYCODE_MOVE_END
     adb shell 'for i in $(seq 1 80); do input keyevent KEYCODE_DEL; done'
   done
@@ -350,7 +352,7 @@ adb reverse tcp:8100 tcp:8100
 tap "Dodaj dostawcę" || FAIL_PROVIDER=1
 type_checked "ListaPanel"
 key KEYCODE_ENTER
-type_checked "http://127.0.0.1:8100/get.php?username=u&password=p&type=m3u_plus"
+type_checked "http://127.0.0.1:8100/get.php?username=u&password=p"
 key KEYCODE_ENTER
 PANEL_OK=0
 for _ in $(seq 1 60); do
