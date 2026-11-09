@@ -338,7 +338,9 @@ class H(http.server.BaseHTTPRequestHandler):
 http.server.ThreadingHTTPServer(("0.0.0.0", 8100), H).serve_forever()
 """)
 PY
-(cd "$SRV" && exec python3 panel.py "$PANEL_LOG" > "$OUT/panel-stdout.log" 2>&1) &
+# Ścieżki bezwzględne: po cd do $SRV względne wskazywałyby w nieistniejące miejsce (jak przy $LOG powyżej).
+PANEL_STDOUT="$(pwd)/$OUT/panel-stdout.log"
+(cd "$SRV" && exec python3 panel.py "$PANEL_LOG" > "$PANEL_STDOUT" 2>&1) &
 PANEL_PID=$!
 for _ in $(seq 1 20); do
   curl -s -o /dev/null http://127.0.0.1:8100/get.php && break
