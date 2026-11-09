@@ -119,16 +119,21 @@ Skrypt zapyta o **adres listy z ukrytym wpisywaniem** (nie trafia do historii, a
 plikiem `chmod 600`, który jest usuwany). Zamiast monitu możesz użyć `--lista-plik PLIK` (pierwsza linia pliku). Opcje: `--przerwa S`
 (domyślnie i minimum 30 s), `--max-czas S` (limit czasu jednego żądania, domyślnie 300 s), `--bez-wariantow` (tylko żądanie bazowe).
 
-Żądania (jedno bazowe i maks. 4 warianty; przed każdym kolejnym przerwa co najmniej 30 s, a gdy serwer poda `Retry-After`, np. 120, to tyle
+Żądania (jedno bazowe i 7 wariantów; przed każdym kolejnym przerwa co najmniej 30 s, a gdy serwer poda `Retry-After`, np. 120, to tyle
 sekund, maks. 900):
 
 | id | żądanie |
 |---|---|
-| B | GET `get.php` z nagłówkami jak w aplikacji (User-Agent aplikacji, `Accept: */*`, `Accept-Encoding: gzip`) |
+| B | GET `get.php` z nagłówkami jak w aplikacji (User-Agent `okhttp/4.10.0`, `Accept-Encoding`, `Connection`, bez `Accept`, HTTP/1.1) |
 | V1 | GET `player_api.php?action=get_live_categories` (czy API Xtream odpowiada, gdy `get.php` daje 504) |
 | V2 | POST `get.php`, w ciele `username`, `password`, `type` (`application/x-www-form-urlencoded`, bez parametrów w adresie) |
 | V3 | POST `player_api.php`, w ciele `username`, `password`, `action=get_live_categories` |
 | V4 | GET `get.php` z User-Agent VLC |
+| E1 | GET `player_api.php` bez `action`, jak IPTV Extreme: UA `okhttp/4.10.0`, HTTP/1.1, tylko cztery nagłówki (User-Agent, Host, Connection, Accept-Encoding) |
+| E2 | GET `player_api.php?action=get_live_categories`, ten sam zestaw co E1 |
+| E3 | jak E2, ale z dotychczasowym UA aplikacji (OTT Navigator) i `Accept: */*`, dla porównania |
+
+Curl nie pozwala ustawić kolejności nagłówków: `Host` zawsze idzie pierwszy. Zestaw w E1/E2 jest ten sam, co w aplikacji i IPTV Extreme.
 
 Warianty V1-V4 wymagają adresu `.../get.php?username=...&password=...`; dla innych adresów skrypt wykona tylko żądanie bazowe. Dane do ciała
 POST skrypt bierze z tego adresu. Po przekierowaniu curl zachowuje POST tylko przy 307/308 (przy 301/302 zamienia na GET, jak OkHttp).

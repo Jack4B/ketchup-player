@@ -22,7 +22,7 @@ description: Pamięć projektu Ketchup Player. Użyj na początku KAŻDEJ sesji 
 - Repozytoria ze stanem (EPG, katalog) muszą być `@Singleton` w DataModule.
 - Gating fokusu szyny: GÓRA/DÓŁ w szynie obsługuje jawny handler; BACK z listy kategorii Ustawień idzie na szynę.
 - Robolectric: pierwszy klawisz po starcie to tylko zmiana trybu wejścia (ShiftLeft); `Key` nie może być vararg.
-- Sieć: User-Agent wybiera użytkownik (domyślnie OTT Navigator), lista w Ustawieniach → Sieć; własne wpisy bez rejestru (`custom:`).
+- Sieć: User-Agent wybiera użytkownik (domyślnie okhttp/4.10.0, odtwarzacz VLC), lista w Ustawieniach → Sieć; wybór w Room (`providers.userAgent`), własny UA w `SecretStore`.
 - CI: exit 134 w testach = crash runnera, nie błąd kodu; uruchom ponownie.
 - Zrzuty Roborazzi nagrywa WYŁĄCZNIE CI (push na faza-* robi `recordRoborazziDebug` i commit bota). Lokalnie wolno je
   generować tylko do obejrzenia, potem cofnąć: `git checkout -- '*/src/test/screenshots'`. Zrzuty z mojej maszyny różnią

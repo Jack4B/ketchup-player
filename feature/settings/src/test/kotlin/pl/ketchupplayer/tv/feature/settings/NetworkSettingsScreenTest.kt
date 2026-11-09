@@ -54,7 +54,7 @@ class NetworkSettingsScreenTest {
         compose.onRoot().captureRoboImage("src/test/screenshots/network_settings.png")
     }
 
-    /** D-pad: OK na liście otwiera okno wyboru z ptaszkiem; DÓŁ + OK wybiera kolejną pozycję (OTT Navigator). */
+    /** D-pad: OK na liście otwiera okno wyboru z ptaszkiem; DÓŁ + OK wybiera kolejną pozycję (VLC, zaraz po domyślnym). */
     @Test
     fun dpadOkOtwieraListeWyboruIWybieraNaglowek() {
         val picked = mutableListOf<String>()
@@ -70,7 +70,7 @@ class NetworkSettingsScreenTest {
         // Okno wyboru to osobny korzeń (Dialog): klawisze trafiają do ostatniego.
         compose.onAllNodes(isRoot()).onLast().performKeyInput { pressKey(Key.DirectionDown) }
         compose.onAllNodes(isRoot()).onLast().performKeyInput { pressKey(Key.DirectionCenter) }
-        assertEquals(listOf("a:ott"), picked)
+        assertEquals(listOf("a:vlc"), picked)
     }
 
     @Test

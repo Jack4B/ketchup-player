@@ -9,8 +9,17 @@ Stan na 1.11.2026. Każdy punkt: co się dzieje, dlaczego, co robić.
   adres, nie zmiana nagłówka. Nie dodawaj tej samej listy wielokrotnie w krótkim czasie.
 - **Jedno połączenie na konto.** Importy list idą po jednym; odtwarzanie kanału w trakcie importu tej samej listy może zostać
   odrzucone przez dostawcę z limitem 1 połączenia.
-- **Domyślny User-Agent** to OTT Navigator. Panele z białą listą nagłówków mogą wymagać innego: wybierz z listy w kreatorze
-  albo w Ustawieniach → Sieć (ptaszek przy wybranym), własne wpisy dodajesz tamże.
+- **Domyślny User-Agent importu** to `okhttp/4.10.0`, a odtwarzacza `VLC/3.4.3 LibVLC/3.4.31` (jak IPTV Extreme na przechwyceniu
+  z listy za Cloudflare, która aplikacji z nagłówkiem OTT Navigator odpowiadała 520). Import wysyła tylko cztery nagłówki w tej
+  kolejności: `User-Agent`, `Host`, `Connection: Keep-Alive`, `Accept-Encoding: gzip` (bez `Accept`). OTT Navigator, VLC, TiviMate,
+  IPTV Smarters i inne są gotowymi profilami: wybierz w kreatorze albo w Ustawieniach → Sieć (ptaszek przy wybranym). Wybór
+  listy jest w bazie (`providers.userAgent`), a **własny** User-Agent traktujemy jak dane dostępu: wartość tylko w `SecretStore`,
+  bez logów i bez eksportu. Wybór zapisany w wersjach sprzed migracji 8 -> 9 (DataStore) nie jest przenoszony: lista wraca do domyślnego.
+- **Link `get.php` z loginem to konto Xtream.** Import idzie przez `player_api.php` GET (bez `action`, `get_live_categories`,
+  `get_live_streams`, `get_vod_categories`, `get_vod_streams`, `get_series_categories`, `get_series`); gigantyczny `get.php`
+  panele za Cloudflare potrafią odrzucać (504, 520), więc jest tylko trybem zapasowym (gdy API zawiedzie, pobieramy M3U jak dotąd).
+  Odwołania do strumieni z API mają przedrostek `xtream:`; kanały z API i z M3U mają różne identyfikatory, więc przejście z jednego
+  trybu na drugi (np. po awarii API) zeruje ulubione i pozycje tej listy.
 - **EPG** pobiera się po dodaniu/odświeżeniu listy, przy starcie (starsze niż 6 h) oraz ręcznie (Telewizja → Odśwież EPG).
   Kanały bez `tvg-id` są dopasowywane po nazwie; brak dopasowania = „Brak danych przewodnika”.
 
