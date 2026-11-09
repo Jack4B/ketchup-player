@@ -102,9 +102,9 @@ class NetworkSettingsScreenTest {
             }
         }
         compose.waitForIdle()
-        // Kolejność wierszy: nagłówki (2 listy), metody zapytania (2 listy), potem test połączenia pierwszej listy.
-        repeat(rows.size * 2) { compose.onRoot().performKeyInput { pressKey(Key.DirectionDown) } }
-        compose.onRoot().performKeyInput { pressKey(Key.DirectionCenter) }
+        // Wiersze: nagłówki, metody zapytania, potem test połączenia; D-pad na wierszach jest sprawdzany osobno
+        // (dpadOkOtwieraListeWyboruIWybieraNaglowek, dpadWybieraMetodePostDlaListy), tu liczy się podpięcie testu.
+        compose.onNodeWithText("Testuj połączenie: 365TV").performClick()
         assertEquals(listOf("a"), probed)
         compose.onNodeWithText("Too many connections", substring = true).assertExists()
     }

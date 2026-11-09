@@ -171,18 +171,29 @@ class ProvidersScreenTest {
         )
     }
 
-    /** Kreator: ten sam wybór D-padem (fokus na przycisku + OK), także dla formularza Xtream. */
-    @Test
-    fun wyborMetodyPostDpadem() {
-        for (kind in ProviderKind.entries) {
-            val events = mutableListOf<ProvidersEvent>()
-            show(ProvidersUiState(form = ProviderForm(kind = kind)), events)
-            compose.onNodeWithText("POST").performSemanticsAction(SemanticsActions.RequestFocus)
-            compose.waitForIdle()
-            key(Key.DirectionCenter)
-            assertEquals(listOf<ProvidersEvent>(ProvidersEvent.SelectRequestMethod(RequestMethod.POST)), events)
+    /**
+     * Kreator: wybór metody D-padem. Okno wychodzi z trybu dotyku jak TV po pierwszym klawiszu pilota
+     * (`requestFocusFromTouch`), fokus ląduje na przycisku „POST”, a OK wysyła zdarzenie.
+     */
+    private fun postPrzezOkNaPrzyciskuPost(kind: ProviderKind) {
+        val events = mutableListOf<ProvidersEvent>()
+        show(ProvidersUiState(form = ProviderForm(kind = kind)), events)
+        compose.runOnUiThread {
+            compose.activity.window.decorView
+                .requestFocusFromTouch()
         }
+        compose.waitForIdle()
+        compose.onNodeWithText("POST").performSemanticsAction(SemanticsActions.RequestFocus)
+        compose.waitForIdle()
+        key(Key.DirectionCenter)
+        assertEquals(listOf<ProvidersEvent>(ProvidersEvent.SelectRequestMethod(RequestMethod.POST)), events)
     }
+
+    @Test
+    fun wyborMetodyPostDpademWFormularzuM3u() = postPrzezOkNaPrzyciskuPost(ProviderKind.M3U)
+
+    @Test
+    fun wyborMetodyPostDpademWFormularzuXtream() = postPrzezOkNaPrzyciskuPost(ProviderKind.XTREAM)
 }
 
 private const val MS_PER_DAY = 86_400_000L
