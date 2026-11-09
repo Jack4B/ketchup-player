@@ -343,7 +343,7 @@ PANEL_STDOUT="$(pwd)/$OUT/panel-stdout.log"
 (cd "$SRV" && exec python3 panel.py "$PANEL_LOG" > "$PANEL_STDOUT" 2>&1) &
 PANEL_PID=$!
 for _ in $(seq 1 20); do
-  curl -s -o /dev/null http://127.0.0.1:8100/get.php && break
+  curl -s -o /dev/null http://127.0.0.1:8100/ready && break
   sleep 0.5
 done
 adb reverse tcp:8100 tcp:8100
@@ -353,13 +353,13 @@ key KEYCODE_ENTER
 type_checked "http://127.0.0.1:8100/get.php?username=u&password=p&type=m3u_plus"
 key KEYCODE_ENTER
 PANEL_OK=0
-for _ in $(seq 1 20); do
+for _ in $(seq 1 60); do
   sleep 3
-  if grep -q "action=get_live_streams 200" "$PANEL_LOG" 2>/dev/null; then PANEL_OK=1; break; fi
+  if grep -q "action=get_series 200" "$PANEL_LOG" 2>/dev/null; then PANEL_OK=1; break; fi
 done
 shot 22_panel_cloudflare
 if [ "$PANEL_OK" != 1 ]; then
-  echo "=== Panel za Cloudflare: aplikacja nie pobrała get_live_streams z poprawnymi nagłówkami (log serwera): ===" >&2
+  echo "=== Panel za Cloudflare: aplikacja nie przeszła całej sekwencji player_api (do get_series) z poprawnymi nagłówkami (log serwera): ===" >&2
   cat "$PANEL_LOG" >&2 || true
   FAIL_PROVIDER=1
 fi

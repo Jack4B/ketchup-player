@@ -85,6 +85,14 @@ class OkHttpTextFetcher(
         headers: Map<String, String>,
         body: FormBody?,
     ): Result<String> =
+        // Treść czytamy na IO: wołający bywa na wątku głównym (NetworkOnMainThreadException przy imporcie konta Xtream).
+        withContext(Dispatchers.IO) { fetchTextOnIo(url, headers, body) }
+
+    private suspend fun fetchTextOnIo(
+        url: String,
+        headers: Map<String, String>,
+        body: FormBody?,
+    ): Result<String> =
         try {
             val request = buildRequest(url, headers, body)
             (if (body != null) postClient else client).newCall(request).await().use { response ->

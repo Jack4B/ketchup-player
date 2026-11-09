@@ -1,16 +1,23 @@
 package pl.ketchupplayer.tv.core.network
 
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import okhttp3.ResponseBody.Companion.asResponseBody
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.SocketPolicy
 import okio.Buffer
+import okio.ForwardingSource
+import okio.buffer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.io.ByteArrayOutputStream
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.Executors
 import java.util.zip.GZIPOutputStream
 
 class OkHttpTextFetcherTest {
@@ -296,4 +303,41 @@ class OkHttpTextFetcherTest {
                 assertEquals(value, "HTTP 503", msg)
             }
         }
+
+    /**
+     * Błąd z emulatora (import konta Xtream wywalał aplikację): treść odpowiedzi tekstowej (`fetch`, `fetchWithBody`)
+     * była czytana na wątku wołającego, czyli głównym (`NetworkOnMainThreadException`). Wołający udaje wątek główny.
+     */
+    @Test
+    fun `cialo odpowiedzi tekstowej nie jest czytane na watku wolajacego`() {
+        server.enqueue(MockResponse().setBody("[1,2,3]"))
+        val readers = ConcurrentLinkedQueue<String>()
+        val spying =
+            NetworkClients
+                .stream()
+                .newBuilder()
+                .addInterceptor { chain ->
+                    val response = chain.proceed(chain.request())
+                    val body = requireNotNull(response.body)
+                    val spy =
+                        object : ForwardingSource(body.source()) {
+                            override fun read(
+                                sink: Buffer,
+                                byteCount: Long,
+                            ): Long {
+                                readers += Thread.currentThread().name
+                                return super.read(sink, byteCount)
+                            }
+                        }.buffer()
+                    response.newBuilder().body(spy.asResponseBody(body.contentType(), body.contentLength())).build()
+                }.build()
+        val caller = Executors.newSingleThreadExecutor { Thread(it, "fake-main") }
+        try {
+            val text = runBlocking(caller.asCoroutineDispatcher()) { OkHttpTextFetcher(spying).fetch(url()) }
+            assertEquals("[1,2,3]", text.getOrThrow())
+        } finally {
+            caller.shutdown()
+        }
+        assertTrue(readers.toString(), readers.isNotEmpty() && readers.none { it == "fake-main" })
+    }
 }
