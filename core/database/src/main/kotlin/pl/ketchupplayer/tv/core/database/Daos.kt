@@ -7,6 +7,12 @@ import androidx.room.Query
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
+/** Id i odwołanie do strumienia (adres z listy M3U albo `xtream:...`); wynik zapytań o tożsamość strumienia. */
+data class ChannelRef(
+    val id: String,
+    val ref: String?,
+)
+
 @Dao
 interface ProviderDao {
     @Query("SELECT * FROM providers ORDER BY sortOrder, name")
@@ -23,6 +29,15 @@ interface ProviderDao {
         id: String,
         method: String,
     )
+
+    @Query("UPDATE providers SET userAgent = :userAgent WHERE id = :id")
+    suspend fun setUserAgent(
+        id: String,
+        userAgent: String?,
+    )
+
+    @Query("SELECT userAgent FROM providers WHERE id = :id")
+    fun observeUserAgent(id: String): Flow<String?>
 
     @Query("DELETE FROM providers WHERE id = :id")
     suspend fun delete(id: String)
@@ -85,6 +100,46 @@ interface ChannelDao {
     ) {
         deleteByProvider(providerId)
         channels.chunked(INSERT_CHUNK).forEach { insertAll(it) }
+    }
+
+    @Query("SELECT id, streamUrl AS ref FROM channels WHERE providerId = :providerId")
+    suspend fun idRefs(providerId: String): List<ChannelRef>
+
+    @Query("SELECT * FROM channel_flags WHERE channelId = :channelId")
+    suspend fun flagOf(channelId: String): ChannelFlagEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun putFlag(flag: ChannelFlagEntity)
+
+    @Query("DELETE FROM channel_flags WHERE channelId = :channelId")
+    suspend fun deleteFlag(channelId: String)
+
+    /**
+     * Jak [replaceAll], ale w tej samej transakcji przenosi ulubione, ukryte i „ostatnio oglądane” ze starych id na
+     * nowe ([remap]: stare id -> nowe id, pary jednoznaczne). Gdy nowe id ma już własne znaczniki, łączymy je (suma
+     * ulubionych i ukrytych, nowsza pozycja oglądania). Stary wpis znika dopiero po zapisaniu nowego; id bez pary
+     * zostają nietknięte.
+     */
+    @Transaction
+    suspend fun replaceAllRemapping(
+        providerId: String,
+        channels: List<ChannelEntity>,
+        remap: Map<String, String>,
+    ) {
+        for ((oldId, newId) in remap) {
+            val old = flagOf(oldId) ?: continue
+            val current = flagOf(newId)
+            putFlag(
+                ChannelFlagEntity(
+                    channelId = newId,
+                    favorite = old.favorite || current?.favorite == true,
+                    hidden = old.hidden || current?.hidden == true,
+                    lastWatchedMs = listOfNotNull(old.lastWatchedMs, current?.lastWatchedMs).maxOrNull(),
+                ),
+            )
+            deleteFlag(oldId)
+        }
+        replaceAll(providerId, channels)
     }
 
     private companion object {
@@ -244,6 +299,62 @@ interface VodDao {
         deleteByProvider(providerId)
         items.chunked(INSERT_CHUNK).forEach { insertAll(it) }
         episodes.chunked(INSERT_CHUNK).forEach { insertEpisodes(it) }
+    }
+
+    @Query("SELECT id, ref FROM vod_items WHERE providerId = :providerId AND kind = 'MOVIE'")
+    suspend fun movieRefs(providerId: String): List<ChannelRef>
+
+    @Query("SELECT * FROM vod_state WHERE itemId = :itemId")
+    suspend fun stateOf(itemId: String): VodStateEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun putState(state: VodStateEntity)
+
+    @Query("DELETE FROM vod_state WHERE itemId = :itemId")
+    suspend fun deleteState(itemId: String)
+
+    @Query("SELECT * FROM vod_meta WHERE itemId = :itemId")
+    suspend fun metaOf(itemId: String): VodMetaEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun putMeta(meta: VodMetaEntity)
+
+    @Query("DELETE FROM vod_meta WHERE itemId = :itemId")
+    suspend fun deleteMeta(itemId: String)
+
+    /**
+     * Jak [replaceAll], z przeniesieniem „Mojej listy”, postępu oglądania i ocen filmów ze starych id na nowe
+     * ([remap], pary jednoznaczne po numerze strumienia filmu). Seriale i odcinki nie mają bezpiecznego odpowiednika
+     * bez dodatkowych zapytań do dostawcy, więc ich dane zostają pod starymi id (nic nie jest kasowane).
+     */
+    @Transaction
+    suspend fun replaceAllRemapping(
+        providerId: String,
+        items: List<VodItemEntity>,
+        episodes: List<EpisodeEntity>,
+        remap: Map<String, String>,
+    ) {
+        for ((oldId, newId) in remap) {
+            stateOf(oldId)?.let { old ->
+                val current = stateOf(newId)
+                val newer = if ((current?.updatedMs ?: -1L) >= (old.updatedMs ?: -1L)) current else old
+                putState(
+                    VodStateEntity(
+                        itemId = newId,
+                        myList = old.myList || current?.myList == true,
+                        positionMs = newer?.positionMs ?: 0,
+                        durationMs = newer?.durationMs ?: 0,
+                        updatedMs = listOfNotNull(old.updatedMs, current?.updatedMs).maxOrNull(),
+                    ),
+                )
+                deleteState(oldId)
+            }
+            metaOf(oldId)?.let { old ->
+                if (metaOf(newId) == null) putMeta(old.copy(itemId = newId))
+                deleteMeta(oldId)
+            }
+        }
+        replaceAll(providerId, items, episodes)
     }
 
     /**

@@ -43,7 +43,7 @@ class OkHttpTextFetcherPostTest {
             assertEquals(body.encoded, request.body.readUtf8())
             assertEquals("/get.php", request.path)
             assertEquals("TestUA/1", request.getHeader("User-Agent"))
-            assertEquals("*/*", request.getHeader("Accept"))
+            assertNull(request.getHeader("Accept")) // klient list nie dodaje Accept (jak IPTV Extreme)
         }
 
     @Test

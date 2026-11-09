@@ -4,7 +4,6 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.decodeToSequence
 import pl.ketchupplayer.tv.core.model.Episode
 import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.VodInfo
@@ -16,16 +15,8 @@ import pl.ketchupplayer.tv.provider.xtream.XtreamParser.str
 /** Parser filmów, seriali i odcinków Xtream (osobno od kanałów live). */
 @Suppress("TooManyFunctions") // wariant tekstowy (testy) i strumieniowy (produkcja) tych samych parserów
 object XtreamVodParser {
-    private val streamJson = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
-
     /** Elementy tablicy JSON czytane leniwie ze strumienia (katalogi mają dziesiątki MB; bez drzewa w pamięci). */
-    @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
-    private fun objects(input: java.io.InputStream): Sequence<JsonObject> =
-        streamJson.decodeToSequence(
-            input,
-            JsonObject.serializer(),
-            kotlinx.serialization.json.DecodeSequenceMode.ARRAY_WRAPPED,
-        )
+    private fun objects(input: java.io.InputStream): Sequence<JsonObject> = XtreamParser.objects(input)
 
     fun movies(
         providerId: ProviderId,

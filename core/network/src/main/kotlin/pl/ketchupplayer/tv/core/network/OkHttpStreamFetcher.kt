@@ -37,6 +37,21 @@ class OkHttpStreamFetcher(
             }
         }
 
+    override fun withUserAgent(userAgent: String): StreamFetcher =
+        OkHttpStreamFetcher(
+            client
+                .newBuilder()
+                .addInterceptor { chain ->
+                    chain.proceed(
+                        chain
+                            .request()
+                            .newBuilder()
+                            .header("User-Agent", userAgent)
+                            .build(),
+                    )
+                }.build(),
+        )
+
     private fun maybeGunzip(input: BufferedInputStream): InputStream {
         input.mark(MAGIC_BYTES)
         val b1 = input.read()

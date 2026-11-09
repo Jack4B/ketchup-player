@@ -45,7 +45,11 @@
     <string name="providers_method_label">Metoda zapytania (POST tylko gdy dostawca tego wymaga)</string>
     <string name="providers_method_get">GET</string>
     <string name="providers_method_post">POST</string>
-    <string name="providers_ua_auto_hint">Domyślny: OTT Navigator</string>
+    <string name="providers_ua_auto_hint">Domyślny: okhttp/4.10.0</string>
+    <string name="providers_ua_custom_label">Własny</string>
+    <string name="providers_ua_custom_hint">Wpisz własny nagłówek</string>
+    <string name="providers_ua_custom_field">Własny User-Agent (np. Wink/1.31.1)</string>
+    <string name="providers_ua_custom_invalid">Niepoprawny: tylko drukowalne znaki ASCII, do 512 znaków.</string>
     <string name="providers_health_ok">Sprawna</string>
     <string name="providers_health_stale">Nieaktualna, odśwież</string>
     <string name="providers_health_error">Błąd pobierania, napraw lub odśwież</string>

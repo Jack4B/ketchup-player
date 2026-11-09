@@ -47,7 +47,12 @@ private class FakeStreams(
     ): Result<T> {
         opened += url
         val body = bodies[url] ?: return Result.failure(NetworkException.Http(404))
-        return Result.success(block(body.byteInputStream()))
+        // Jak prawdziwy OkHttpStreamFetcher: błąd IO w trakcie czytania to porażka pobrania, nie wyjątek.
+        return try {
+            Result.success(block(body.byteInputStream()))
+        } catch (e: java.io.IOException) {
+            Result.failure(NetworkException.Io(e))
+        }
     }
 }
 
@@ -149,6 +154,18 @@ class RoomEpgRepositoryTest {
                     .title,
             )
             assertEquals(2, r.range("p:1", now - 2 * hour, now + 3 * hour).size)
+        }
+
+    /**
+     * Błąd z emulatora (panel za Cloudflare): `xmltv.php` oddał JSON zamiast XML, a `XmlPullParserException` (nie
+     * `IOException`) wychodził poza pobieranie i wywalał aplikację. Źródło z nieprawidłową treścią to zwykła porażka.
+     */
+    @Test
+    fun `zrodlo oddajace JSON zamiast XMLTV konczy sie porazka a nie wyjatkiem`() =
+        runTest {
+            seedChannel()
+            val json = """{"user_info":{"auth":1,"status":"Active"},"server_info":{}}"""
+            assertTrue(repo(FakeStreams(mapOf(ovh to json))).refresh().isFailure)
         }
 
     @Test

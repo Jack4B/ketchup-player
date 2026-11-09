@@ -79,3 +79,17 @@ Krótkie wpisy dopisywane chronologicznie (nowe na końcu); starych nie przepisu
 - rc3 (tag `rc-0.9.11-rc3` na `2e3e35e`, bieg 42619214582) przyjęty; korekta wpisu o rc2: rc2 jednak wyszedł (bieg 42569216056, trzecia próba).
 - PR #19: notatka `docs/analiza-504-playery.md` (OwnTV, StreamVault, trzy mniejsze playery; hipotezy 504, plan PR 1b); tylko dokumentacja.
 - PR #20: dotyk w odtwarzaczu (telefon, minimalnie). Pierwszy bieg CI padł na brakujących importach `click`/`swipe` w teście, drugi na brakujących zrzutach bazowych Roborazzi (zrzuty z artefaktu, obejrzane). Merge tylko po zgodzie właściciela.
+
+## 2026-11-09 (Europe/Warsaw), po przechwycie IPTV Extreme: Xtream przez player_api.php i UA (PR #21)
+
+- Przechwyt właściciela (PCAPdroid): w IPTV Extreme lista działa; wszystkie zapytania `GET player_api.php` z czterema nagłówkami i UA `okhttp/4.10.0`, kolejność: konto, live kategorie i strumienie, vod kategorie i strumienie, seriale kategorie i seriale. Nasz UA OTT Navigator dostaje 520 (Cloudflare).
+- PR #21: domyślny UA okhttp/4.10.0 i cztery nagłówki w tej kolejności (test z prawdziwym OkHttp), UA odtwarzacza VLC/3.4.3, link get.php z loginem jako konto Xtream (get.php zapasowo), Room `providers.userAgent` (8 -> 9), własny UA w SecretStore, warianty E1-E3 w diagnostyce, scenariusz emulatora z panelem odpowiadającym 520 na obce nagłówki.
+- CI: spotless/detekt (formatowanie i długość linii), oczekiwania testów po zmianie nagłówków i pełnej sekwencji import, 9.json i zrzuty Roborazzi z artefaktu CI (obejrzane).
+- Emulator (nowy scenariusz panelu) znalazł błąd: treść odpowiedzi tekstowych (`fetch`, `fetchWithBody`) była czytana na wątku głównym, więc import konta Xtream kończył się `NetworkOnMainThreadException`. Test z udawanym wątkiem głównym czerwony przed poprawką, zielony po; poprawka: `withContext(Dispatchers.IO)`.
+- Ten sam scenariusz znalazł drugi błąd: źródło EPG zwracające nie-XML (JSON z `xmltv.php`) kończyło aplikację `XmlPullParserException` (nie `IOException`). Test czerwony przed poprawką; teraz porażka źródła EPG.
+- Poprawki po przeglądzie właściciela (PR #21): własny UA w kreatorze i w Sieci (per lista, SecretStore), UA listy w EPG i osłona przy przekierowaniu na inny host, migracja starego DataStore, przenoszenie ulubionych i filmów po numerze strumienia przy zmianie trybu M3U ↔ API (seriale zostają pod starymi id), kontrolowany fallback do get.php z Retry-After i cooldownem, odtwarzacz: Accept-Language i początkowy Range tylko dla bezpośredniego .ts, testy przez prawdziwą fabrykę Media3. Działanie na prawdziwym panelu czeka na test właściciela.
+
+## 2026-11-09 (Europe/Warsaw): aktualizacja gałęzi dotyku (PR #20) po PR #21
+
+- PR #21 (poprawka importu: player_api.php, UA, tożsamość kanałów) scalony do `dev` (`d8091a1`, CI push zielone); `dev` ma jeszcze commit bota `4acd3fb` (tylko `docs/qa/emulator`).
+- `feat/player-dotyk` zaktualizowana zwykłym merge `origin/dev` (bez rebase i force-push). Konflikty tylko w `docs/HANDOFF.md` i `docs/HISTORIA-SESJI.md`, rozwiązane z zachowaniem informacji obu stron; kod i testy bez konfliktów. Dotyk nie jest scalony, merge PR #20 wymaga osobnej zgody.

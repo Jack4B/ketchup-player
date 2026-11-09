@@ -123,7 +123,8 @@ class RequestMethodImportTest {
             serve { playlist }
             val result = repo().addM3u("Panel POST", getPhp, null, RequestMethod.POST)
             assertTrue(result.toString(), result is AddProviderResult.Added)
-            val post = requests.single { it.first == "POST" }
+            // Najpierw próba przez player_api.php (konto Xtream), potem get.php jako tryb zapasowy.
+            val post = requests.single { it.first == "POST" && it.second == "/get.php" }
             assertEquals("/get.php", post.second)
             assertEquals("username=user123&password=pass456&type=m3u_plus&output=ts", post.third)
             assertTrue(requests.none { it.first == "GET" })

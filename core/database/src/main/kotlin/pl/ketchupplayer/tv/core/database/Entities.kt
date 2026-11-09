@@ -20,6 +20,11 @@ data class ProviderEntity(
     val lastError: String? = null,
     /** Metoda żądania listy: `GET` (domyślnie, także dla list sprzed migracji 7 -> 8) albo `POST`. */
     @ColumnInfo(defaultValue = "GET") val requestMethod: String = "GET",
+    /**
+     * Profil User-Agent listy: id gotowego profilu (`vlc`, `tivimate`…), `custom` dla własnego (jego wartość jest
+     * w `SecretStore`, nie tutaj) albo `null` = domyślny. Wpisy sprzed migracji 8 -> 9 mają `null`.
+     */
+    val userAgent: String? = null,
 )
 
 @Entity(
