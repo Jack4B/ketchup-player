@@ -41,6 +41,29 @@ Wiersz listy Na żywo czasem zostawał bez tytułu „teraz leci”, choć panel
 ładował audycje sam (`produceState`) i gubił wynik po imporcie EPG. Teraz `GuideViewModel` daje jedną mapę
 „co leci teraz” z bazy (`epg.onAir`, odświeżana po imporcie i co minutę), a wiersze tylko ją czytają.
 
+## Metoda żądania listy: GET (domyślnie) albo POST (per lista)
+
+Niektórzy dostawcy odrzucają GET dla `get.php` i `player_api.php` (np. 504 z `Retry-After`), a przyjmują POST. Metoda jest polem
+listy (kreator „Dodaj listę” i Ustawienia → Sieć), zapisanym w Room (`providers.requestMethod`, migracja 7 → 8; dotychczasowe listy
+dostają GET). Zasady:
+
+- **M3U z `get.php`** (i każdy adres z `username` i `password` w zapytaniu): `username`, `password`, `type`, `output` idą w ciele
+  `application/x-www-form-urlencoded`, adres zostaje bez nich (pozostałe parametry zostają w adresie). Inne adresy: POST z pustym ciałem
+  i adresem bez zmian.
+- **Xtream**: wszystkie wywołania `player_api.php` (uwierzytelnienie, kategorie, kanały, katalogi VOD i seriale, informacje o koncie,
+  odcinki) idą POST-em z `username`, `password`, `action` i parametrami w ciele.
+- **Bez zmian niezależnie od metody**: EPG (`xmltv.php`, osobny import z zapisanego adresu) i adresy strumieni (`/live/...`,
+  `/movie/...`; odtwarza je ExoPlayer). Brak dowodu w kodzie lub dokumentacji, że dostawcy wymagają tam POST.
+- **Przekierowania**: 307/308 zachowują POST i ciało (OkHttp), ale tylko na ten sam host i bez przejścia z HTTPS na HTTP
+  (`PostRedirectGuard` zatrzymuje wysłanie loginu i hasła gdzie indziej); 301/302/303 zamieniają POST na GET bez ciała (zachowanie OkHttp).
+- **`PostRedirectGuard`** (sieciowy interceptor OkHttp, `OkHttpTextFetcher.kt`): każde żądanie z ciałem pamięta serwer, do którego
+  wysłał je użytkownik (`OriginHost`, w tagu żądania; tagi przechodzą na kolejne skoki przekierowań). Gdy po przekierowaniu 307/308
+  host jest inny (porównanie bez względu na wielkość liter) albo schemat spada z HTTPS na HTTP, interceptor rzuca
+  `PostRedirectBlockedException` i ciało (login, hasło) nigdzie nie jest wysyłane. Użytkownik widzi „Błąd sieci: PostRedirectBlockedException”.
+  Kosztem jest, że dostawca przekierowujący POST na inny host (np. na adres balansera) przestanie działać do zmiany adresu listy.
+  Testy: `OkHttpTextFetcherPostTest` (307 na inny host zatrzymane, drugie żądanie nie wychodzi; 307/308 na ten sam host zachowują POST).
+- **Podpowiedź** przy 403, 405 i 5xx dla GET: „Dostawca może wymagać metody POST — zmień w ustawieniach listy.” Bez automatycznego przełączania.
+- Ciało z hasłem nie jest logowane ani zapisywane; `FormBody.toString` go nie ujawnia, a błędy HTTP nie przepisują treści ani nagłówków.
 ## Tytuły VOD z paneli: czyszczenie i oceny IMDb (zgłoszenie z telefonu)
 
 Oceny z wbudowanego indeksu (`film_index.db`) zależą od tytułu i roku wyciągniętych z nazwy w liście. `VodTitle.parse` usuwa

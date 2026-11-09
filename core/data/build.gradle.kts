@@ -19,6 +19,7 @@ dependencies {
     implementation(libs.serialization.json)
     implementation(libs.coroutines.core)
     testImplementation(libs.coroutines.test)
+    testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.kxml2)

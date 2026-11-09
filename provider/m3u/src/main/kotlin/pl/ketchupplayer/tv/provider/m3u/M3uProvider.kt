@@ -4,6 +4,7 @@ import pl.ketchupplayer.tv.core.model.Channel
 import pl.ketchupplayer.tv.core.model.Episode
 import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.ProviderType
+import pl.ketchupplayer.tv.core.model.RequestMethod
 import pl.ketchupplayer.tv.core.model.StreamSpec
 import pl.ketchupplayer.tv.core.model.VodCatalog
 import pl.ketchupplayer.tv.core.model.VodItem
@@ -18,7 +19,11 @@ class M3uProvider(
     override val id: ProviderId,
     private val url: String,
     private val fetcher: TextFetcher,
+    private val method: RequestMethod = RequestMethod.GET,
 ) : IptvProvider {
+    /** GET (domyślnie); osobny konstruktor zachowuje zapis z końcową lambdą pobieracza w testach. */
+    constructor(id: ProviderId, url: String, fetcher: TextFetcher) : this(id, url, fetcher, RequestMethod.GET)
+
     override val type: ProviderType = ProviderType.M3U
     override val capabilities: Set<Capability> =
         setOf(Capability.LIVE, Capability.VOD, Capability.SERIES, Capability.EPG_URL)
@@ -30,26 +35,34 @@ class M3uProvider(
     private var lastVod: VodCatalog? = null
 
     override suspend fun loadChannels(): Result<List<Channel>> =
-        fetcher
-            .fetchLines(url) { lines ->
-                // Filmy i seriale zbieramy w tym samym przebiegu (lista bywa 30 MB: jedno pobranie).
-                val collector = M3uVodCollector(id)
-                val playlist = M3uParser.parse(id, lines, liveOnly = true, vod = collector)
-                lastVod = if (collector.isEmpty) null else collector.build()
-                playlist
-            }.fold(
-                onSuccess = { playlist ->
-                    lastEpgUrl = playlist.epgUrl ?: XmltvFromGetPhp.derive(url)
-                    when {
-                        // Lista tylko z filmami i serialami jest poprawna: kanałów na żywo po prostu nie ma.
-                        playlist.channels.isEmpty() && lastVod != null -> Result.success(emptyList())
-                        playlist.channels.isEmpty() ->
-                            Result.failure(ProviderError.BadResponse("Lista nie zawiera żadnych kanałów ani filmów"))
-                        else -> Result.success(playlist.channels)
-                    }
-                },
-                onFailure = { Result.failure(it.toProviderError()) },
-            )
+        fetchPlaylist { lines ->
+            // Filmy i seriale zbieramy w tym samym przebiegu (lista bywa 30 MB: jedno pobranie).
+            val collector = M3uVodCollector(id)
+            val playlist = M3uParser.parse(id, lines, liveOnly = true, vod = collector)
+            lastVod = if (collector.isEmpty) null else collector.build()
+            playlist
+        }.fold(
+            onSuccess = { playlist ->
+                lastEpgUrl = playlist.epgUrl ?: XmltvFromGetPhp.derive(url)
+                when {
+                    // Lista tylko z filmami i serialami jest poprawna: kanałów na żywo po prostu nie ma.
+                    playlist.channels.isEmpty() && lastVod != null -> Result.success(emptyList())
+                    playlist.channels.isEmpty() ->
+                        Result.failure(ProviderError.BadResponse("Lista nie zawiera żadnych kanałów ani filmów"))
+                    else -> Result.success(playlist.channels)
+                }
+            },
+            onFailure = { Result.failure(it.toProviderError()) },
+        )
+
+    /** GET adresu listy albo POST z danymi w ciele (tryb wybierany per lista). */
+    private suspend fun <T> fetchPlaylist(block: (Sequence<String>) -> T): Result<T> =
+        if (method == RequestMethod.POST) {
+            val request = M3uRequest.post(url)
+            fetcher.fetchLinesWithBody(request.url, requireNotNull(request.body), block)
+        } else {
+            fetcher.fetchLines(url, block)
+        }
 
     override suspend fun loadVod(): Result<VodCatalog> =
         lastVod?.let { Result.success(it) }

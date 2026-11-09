@@ -3,12 +3,16 @@ package pl.ketchupplayer.tv.feature.settings
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.pressKey
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Assert.assertEquals
@@ -20,6 +24,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import pl.ketchupplayer.tv.core.designsystem.DeviceClass
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
+import pl.ketchupplayer.tv.core.model.RequestMethod
 import pl.ketchupplayer.tv.core.network.UserAgentProfiles
 
 @OptIn(ExperimentalTestApi::class)
@@ -100,10 +105,74 @@ class NetworkSettingsScreenTest {
             }
         }
         compose.waitForIdle()
-        compose.onRoot().performKeyInput { pressKey(Key.DirectionDown) }
-        compose.onRoot().performKeyInput { pressKey(Key.DirectionDown) }
-        compose.onRoot().performKeyInput { pressKey(Key.DirectionCenter) }
+        // Wiersze: nagłówki, metody zapytania, potem test połączenia; D-pad na wierszach jest sprawdzany osobno
+        // (dpadOkOtwieraListeWyboruIWybieraNaglowek, dpadWybieraMetodePostDlaListy), tu liczy się podpięcie testu.
+        compose.onNodeWithText("Testuj połączenie: 365TV").performClick()
         assertEquals(listOf("a"), probed)
+        // Wyniki są pod wierszami (po dodaniu wierszy metody poza ekranem 540 dp): lista leniwa wymaga przewinięcia.
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Too many connections", substring = true))
         compose.onNodeWithText("Too many connections", substring = true).assertExists()
+    }
+
+    /** Ustawienia listy: wiersz „Metoda zapytania” otwiera wybór GET/POST; D-pad: DÓŁ do wiersza, OK, DÓŁ, OK. */
+    @Test
+    fun dpadWybieraMetodePostDlaListy() {
+        val picked = mutableListOf<String>()
+        compose.setContent {
+            KetchupTheme(device = DeviceClass.TV) {
+                NetworkSettingsScreen(
+                    rows,
+                    customs,
+                    { _, _ -> },
+                    { true },
+                    {},
+                    {},
+                    onSelectMethod = { r, m -> picked += r.providerId + ":" + m },
+                )
+            }
+        }
+        compose.waitForIdle()
+        repeat(rows.size) { compose.onRoot().performKeyInput { pressKey(Key.DirectionDown) } }
+        compose.onRoot().performKeyInput { pressKey(Key.DirectionCenter) }
+        compose.waitForIdle()
+        compose.onNodeWithText("✓").assertExists()
+        compose.onAllNodes(isRoot()).onLast().performKeyInput { pressKey(Key.DirectionDown) }
+        compose.onAllNodes(isRoot()).onLast().performKeyInput { pressKey(Key.DirectionCenter) }
+        assertEquals(listOf("a:POST"), picked)
+    }
+
+    @Test
+    fun dotykWybieraMetodePostDlaListy() {
+        val picked = mutableListOf<String>()
+        compose.setContent {
+            KetchupTheme(device = DeviceClass.TV) {
+                NetworkSettingsScreen(
+                    rows,
+                    customs,
+                    { _, _ -> },
+                    { true },
+                    {},
+                    {},
+                    onSelectMethod = { r, m -> picked += r.providerId + ":" + m },
+                )
+            }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithText("Metoda zapytania: Lista PL").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("POST").performClick()
+        assertEquals(listOf("b:POST"), picked)
+    }
+
+    @Test
+    fun wierszMetodyPokazujeZapisanaMetode() {
+        val postRows = listOf(ProviderHeaderRow("a", "365TV", UserAgentProfiles.AUTO, RequestMethod.POST))
+        compose.setContent {
+            KetchupTheme(
+                device = DeviceClass.TV,
+            ) { NetworkSettingsScreen(postRows, customs, { _, _ -> }, { true }, {}, {}) }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithText("POST").assertExists()
     }
 }

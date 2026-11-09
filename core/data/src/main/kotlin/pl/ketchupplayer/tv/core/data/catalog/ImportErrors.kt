@@ -1,10 +1,12 @@
 package pl.ketchupplayer.tv.core.data.catalog
 
 import pl.ketchupplayer.tv.core.common.ErrorText
+import pl.ketchupplayer.tv.core.model.RequestMethod
 
 private const val HTTP_UNAUTHORIZED = 401
 private const val HTTP_FORBIDDEN = 403
 private const val HTTP_NOT_FOUND = 404
+private const val HTTP_METHOD_NOT_ALLOWED = 405
 private const val HTTP_SERVER_ERROR = 500
 private const val BYTES_PER_MB = 1024 * 1024
 private val HTTP_CODE = Regex("""HTTP (\d{3})""")
@@ -14,7 +16,10 @@ private val LIMIT_BYTES = Regex("""większa niż (\d+) B""")
  * Zamienia techniczny błąd pobierania listy na komunikat zrozumiały dla użytkownika: co się stało i co zrobić.
  * Dostawcy opakowują błędy sieci we własne wyjątki, więc rozpoznajemy je po treści, nie po typie.
  */
-fun friendlyImportError(raw: String?): String {
+fun friendlyImportError(
+    raw: String?,
+    method: RequestMethod = RequestMethod.GET,
+): String {
     val text = raw.orEmpty()
     val code =
         HTTP_CODE
@@ -23,7 +28,7 @@ fun friendlyImportError(raw: String?): String {
             ?.get(1)
             ?.toInt()
     return when {
-        code != null -> httpMessage(code) + serverDetail(text)
+        code != null -> httpMessage(code) + postHint(code, method) + serverDetail(text)
         text.isBlank() -> MSG_UNKNOWN
         "większa niż" in text -> {
             val mb =
@@ -64,6 +69,17 @@ internal const val DETAIL_PREFIX = "Odpowiedź serwera: "
 /** Własny format części szczegółu: stała podpowiedź z `bodyHint` albo odczekanie z `Retry-After` w sekundach. */
 internal val SAFE_DETAIL_PART =
     Regex("""«(zbyt wiele połączeń|dostęp zablokowany|nie znaleziono zasobu)»|ponów po: \d{1,6} s""")
+
+/** Podpowiedź przy odmowie lub awarii serwera, gdy lista idzie metodą GET (bez automatycznego przełączania). */
+internal const val POST_HINT = "Dostawca może wymagać metody POST — zmień w ustawieniach listy."
+
+internal fun postHintApplies(code: Int): Boolean =
+    code == HTTP_FORBIDDEN || code == HTTP_METHOD_NOT_ALLOWED || code >= HTTP_SERVER_ERROR
+
+private fun postHint(
+    code: Int,
+    method: RequestMethod,
+): String = if (method == RequestMethod.GET && postHintApplies(code)) " $POST_HINT" else ""
 
 internal fun httpMessage(code: Int): String =
     when {

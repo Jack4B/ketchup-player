@@ -33,7 +33,10 @@ private val KNOWN_MESSAGES: Set<String> =
         "Konto nie ma żadnych kanałów",
         "Lista nie zawiera żadnych kanałów ani filmów",
         "Lista nie zawiera filmów ani seriali",
-    ) + (MIN_HTTP_CODE..MAX_HTTP_CODE).map(::httpMessage)
+    ) +
+        (MIN_HTTP_CODE..MAX_HTTP_CODE).flatMap { code ->
+            listOfNotNull(httpMessage(code), if (postHintApplies(code)) "${httpMessage(code)} $POST_HINT" else null)
+        }
 
 private fun isKnownMessage(head: String): Boolean =
     head in KNOWN_MESSAGES ||

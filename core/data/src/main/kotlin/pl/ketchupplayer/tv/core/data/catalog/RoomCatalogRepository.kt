@@ -17,6 +17,7 @@ import pl.ketchupplayer.tv.core.model.ContentType
 import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.ProviderInfo
 import pl.ketchupplayer.tv.core.model.ProviderType
+import pl.ketchupplayer.tv.core.model.RequestMethod
 import pl.ketchupplayer.tv.core.model.StreamSpec
 import pl.ketchupplayer.tv.core.network.TransferMeter
 import pl.ketchupplayer.tv.core.policy.EpgSourcePolicy
@@ -54,6 +55,7 @@ class RoomCatalogRepository
                         // Wpisy sprzed poprawki #12 mogły zawierać adresy lub tekst serwera: do UI idą tylko rozpoznane
                         // komunikaty, reszta jako ogólna informacja (baza bez zmian).
                         lastError = presentStoredError(e.lastError),
+                        requestMethod = RequestMethod.parse(e.requestMethod),
                     )
                 }
             }
@@ -67,6 +69,7 @@ class RoomCatalogRepository
             name: String,
             url: String,
             userAgentId: String?,
+            requestMethod: RequestMethod,
         ): AddProviderResult {
             val cleanName = EpgSourcePolicy.validateName(name) ?: return invalid(AddProviderError.INVALID_NAME)
             val valid =
@@ -82,6 +85,7 @@ class RoomCatalogRepository
                     ProviderType.M3U.name,
                     displayUrl(valid.normalized),
                     secretRef = secrets.ref(id),
+                    requestMethod = requestMethod.name,
                 ),
             )
             rememberUserAgent(id, userAgentId)
@@ -94,6 +98,7 @@ class RoomCatalogRepository
             username: String,
             password: String,
             userAgentId: String?,
+            requestMethod: RequestMethod,
         ): AddProviderResult {
             val cleanName = EpgSourcePolicy.validateName(name) ?: return invalid(AddProviderError.INVALID_NAME)
             val normalized = XtreamCredentials.normalizeServer(server) ?: return invalid(AddProviderError.INVALID_URL)
@@ -101,11 +106,23 @@ class RoomCatalogRepository
             val id = ProviderId(UUID.randomUUID().toString())
             secrets.putLogin(id, username.trim(), password)
             providerDao.upsert(
-                ProviderEntity(id.value, cleanName, ProviderType.XTREAM.name, normalized, secretRef = secrets.ref(id)),
+                ProviderEntity(
+                    id.value,
+                    cleanName,
+                    ProviderType.XTREAM.name,
+                    normalized,
+                    secretRef = secrets.ref(id),
+                    requestMethod = requestMethod.name,
+                ),
             )
             rememberUserAgent(id, userAgentId)
             return added(id)
         }
+
+        override suspend fun setRequestMethod(
+            id: ProviderId,
+            method: RequestMethod,
+        ) = providerDao.setRequestMethod(id.value, method.name)
 
         override suspend fun probeConnection(
             id: ProviderId,
@@ -193,7 +210,7 @@ class RoomCatalogRepository
                     Result.success(channels.size)
                 },
                 onFailure = { e ->
-                    val friendly = friendlyImportError(importErrorSource(e))
+                    val friendly = friendlyImportError(importErrorSource(e), RequestMethod.parse(entity.requestMethod))
                     providerDao.markRefreshed(id.value, now, friendly, null)
                     Result.failure(IllegalStateException(friendly, e))
                 },

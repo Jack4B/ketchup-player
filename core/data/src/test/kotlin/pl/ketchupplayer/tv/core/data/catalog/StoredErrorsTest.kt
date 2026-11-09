@@ -58,6 +58,8 @@ class StoredErrorsTest {
             "Nieprawidłowy login lub hasło",
             "Za mało pamięci na tak dużą listę",
             httpMessage(513) + "\nOdpowiedź serwera: ponów po: 30 s, «zbyt wiele połączeń»",
+            httpMessage(504) + " " + POST_HINT,
+            httpMessage(403) + " " + POST_HINT + "\nOdpowiedź serwera: ponów po: 120 s",
         ).forEach { assertEquals(it, presentStoredError(it)) }
     }
 
@@ -76,6 +78,8 @@ class StoredErrorsTest {
             "Błąd sieci: ConnectException",
             "Nie udało się pobrać listy (IllegalStateException)",
             "Nieprawidłowa odpowiedź serwera",
+            "HTTP 504 · ponów po: 120 s",
+            "HTTP 403",
             "Konto nieaktywne lub wygasłe",
             "Za mało pamięci na tak dużą listę",
         ).forEach {

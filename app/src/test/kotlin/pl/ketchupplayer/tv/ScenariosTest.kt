@@ -276,12 +276,14 @@ class ScenariosTest {
     private fun addProviderViaUi(
         name: String,
         url: String,
+        post: Boolean = false,
     ) {
         settingsPage("Dostawcy")
         click("Dodaj dostawcę")
         waitForText("Zapisz i pobierz")
         compose.onAllNodes(hasSetTextAction())[0].performTextInput(name)
         compose.onAllNodes(hasSetTextAction())[1].performTextInput(url)
+        if (post) compose.onNodeWithText("POST").performScrollTo().performClick()
         compose.onNodeWithText("Zapisz i pobierz").performScrollTo().performClick()
     }
 
@@ -412,6 +414,44 @@ class ScenariosTest {
         waitForText("NASTĘPNIE")
         waitForText("Dzień na świecie")
         waitForText("jeszcze", substring = true)
+    }
+
+    /**
+     * Dostawca odrzuca GET (5xx), a lista działa tylko metodą POST: w kreatorze wybieramy „POST”, aplikacja wysyła
+     * dane z get.php w ciele (adres bez loginu i hasła), importuje listę i zapisuje metodę przy liście.
+     */
+    @Test
+    fun listaWymagajacaPostImportujeSiePrzezKreatorZPolemMetody() {
+        val host = "http://127.0.0.1:${server.port}"
+        val methods = java.util.concurrent.CopyOnWriteArrayList<String>()
+        val bodies = java.util.concurrent.CopyOnWriteArrayList<String>()
+        server.serveRequest("/get.php") { req ->
+            methods += req.method.orEmpty()
+            check(req.method == "POST") { "GET odrzucony" }
+            bodies += req.body.readUtf8()
+            "#EXTM3U\n#EXTINF:-1 group-title=\"Info\",TVN 24\n$host/tvn24.m3u8\n"
+        }
+        addProviderViaUi(
+            "Panel POST",
+            server.url("/get.php?username=user123&password=pass456&type=m3u_plus"),
+            post = true,
+        )
+        waitForText("Kanały: 1", substring = true)
+        assertEquals(listOf("POST"), methods.toList())
+        assertEquals(listOf("username=user123&password=pass456&type=m3u_plus"), bodies.toList())
+        val saved = runBlocking { catalog.providers.first().single() }
+        assertEquals(pl.ketchupplayer.tv.core.model.RequestMethod.POST, saved.requestMethod)
+    }
+
+    /** Domyślne GET dostaje 5xx: komunikat błędu podpowiada metodę POST (bez automatycznego przełączania). */
+    @Test
+    fun blad5xxPrzyGetPodpowiadaMetodePostWUstawieniachListy() {
+        server.serve("/get.php") { error("serwer odrzuca GET") }
+        addProviderViaUi("Panel GET", server.url("/get.php?username=user123&password=pass456"))
+        waitForText("Dostawca może wymagać metody POST", substring = true)
+        val saved = runBlocking { catalog.providers.first().single() }
+        assertEquals(pl.ketchupplayer.tv.core.model.RequestMethod.GET, saved.requestMethod)
+        assertTrue(saved.lastError.orEmpty().contains("POST"))
     }
 
     /**

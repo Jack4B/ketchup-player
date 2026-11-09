@@ -4,11 +4,13 @@ import pl.ketchupplayer.tv.core.data.network.ProviderHeadersRepository
 import pl.ketchupplayer.tv.core.database.ProviderEntity
 import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.ProviderType
+import pl.ketchupplayer.tv.core.model.RequestMethod
 import pl.ketchupplayer.tv.core.network.TextFetcher
 import pl.ketchupplayer.tv.core.network.UserAgentProfile
 import pl.ketchupplayer.tv.core.network.UserAgentProfiles
 import pl.ketchupplayer.tv.provider.api.IptvProvider
 import pl.ketchupplayer.tv.provider.m3u.M3uProvider
+import pl.ketchupplayer.tv.provider.m3u.M3uRequest
 import pl.ketchupplayer.tv.provider.xtream.XtreamCredentials
 import pl.ketchupplayer.tv.provider.xtream.XtreamProvider
 import javax.inject.Inject
@@ -44,14 +46,30 @@ class ProviderFactory
         ): String {
             val id = ProviderId(entity.id)
             val f = profile.value?.let { fetcher.withUserAgent(it) } ?: fetcher
+            val post = RequestMethod.parse(entity.requestMethod) == RequestMethod.POST
             val result =
                 when (ProviderType.valueOf(entity.type)) {
                     ProviderType.M3U ->
-                        secrets.url(id)?.let { url -> f.fetchLines(url) { lines -> lines.take(PROBE_LINES).toList() } }
+                        secrets.url(id)?.let { url ->
+                            if (post) {
+                                val req = M3uRequest.post(url)
+                                f.fetchLinesWithBody(
+                                    req.url,
+                                    requireNotNull(req.body),
+                                ) { it.take(PROBE_LINES).toList() }
+                            } else {
+                                f.fetchLines(url) { lines -> lines.take(PROBE_LINES).toList() }
+                            }
+                        }
                     ProviderType.XTREAM ->
                         secrets.login(id)?.let { (user, pass) ->
-                            val api = XtreamCredentials(entity.url, user, pass).apiUrl("get_live_categories")
-                            f.fetchLines(api) { lines -> lines.take(1).toList() }
+                            val req =
+                                XtreamCredentials(entity.url, user, pass).apiRequest(
+                                    RequestMethod.parse(entity.requestMethod),
+                                    "get_live_categories",
+                                )
+                            req.body?.let { body -> f.fetchLinesWithBody(req.url, body) { it.take(1).toList() } }
+                                ?: f.fetchLines(req.url) { lines -> lines.take(1).toList() }
                         }
                     ProviderType.STALKER -> null
                 } ?: return "brak danych dostawcy"
@@ -67,12 +85,13 @@ class ProviderFactory
         ): IptvProvider? {
             val id = ProviderId(entity.id)
             val ua = (override ?: profile(entity.id)).value
+            val method = RequestMethod.parse(entity.requestMethod)
             val fetcher = ua?.let { this.fetcher.withUserAgent(it) } ?: this.fetcher
             return when (ProviderType.valueOf(entity.type)) {
-                ProviderType.M3U -> secrets.url(id)?.let { M3uProvider(id, it, fetcher) }
+                ProviderType.M3U -> secrets.url(id)?.let { M3uProvider(id, it, fetcher, method) }
                 ProviderType.XTREAM ->
                     secrets.login(id)?.let { (user, pass) ->
-                        XtreamProvider(id, XtreamCredentials(entity.url, user, pass), fetcher)
+                        XtreamProvider(id, XtreamCredentials(entity.url, user, pass), fetcher, method)
                     }
                 ProviderType.STALKER -> error("Stalker nie jest jeszcze obsługiwany")
             }

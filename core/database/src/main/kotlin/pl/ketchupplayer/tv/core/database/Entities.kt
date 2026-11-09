@@ -1,5 +1,6 @@
 package pl.ketchupplayer.tv.core.database
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -17,6 +18,8 @@ data class ProviderEntity(
     val sortOrder: Int = 0,
     val lastRefreshMs: Long? = null,
     val lastError: String? = null,
+    /** Metoda żądania listy: `GET` (domyślnie, także dla list sprzed migracji 7 -> 8) albo `POST`. */
+    @ColumnInfo(defaultValue = "GET") val requestMethod: String = "GET",
 )
 
 @Entity(

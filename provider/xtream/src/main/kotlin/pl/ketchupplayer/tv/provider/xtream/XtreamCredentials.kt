@@ -1,5 +1,7 @@
 package pl.ketchupplayer.tv.provider.xtream
 
+import pl.ketchupplayer.tv.core.model.RequestMethod
+import pl.ketchupplayer.tv.core.network.FormBody
 import java.net.URI
 import java.net.URLEncoder
 
@@ -23,6 +25,26 @@ data class XtreamCredentials(
                 extra.forEach { (k, v) -> add(k to v) }
             }
         return "$server/player_api.php?" + params.joinToString("&") { (k, v) -> "$k=${enc(v)}" }
+    }
+
+    /**
+     * Żądanie API w wybranej metodzie. GET: dane dostępu i akcja w adresie ([apiUrl]). POST: adres `player_api.php`
+     * bez danych, a `username`, `password`, `action` i parametry dodatkowe w ciele form-urlencoded ([FormBody]).
+     */
+    fun apiRequest(
+        method: RequestMethod,
+        action: String? = null,
+        extra: Map<String, String> = emptyMap(),
+    ): ApiRequest {
+        if (method == RequestMethod.GET) return ApiRequest(apiUrl(action, extra), null)
+        val params =
+            buildList {
+                add("username" to username)
+                add("password" to password)
+                if (action != null) add("action" to action)
+                extra.forEach { (k, v) -> add(k to v) }
+            }
+        return ApiRequest("$server/player_api.php", FormBody(params.joinToString("&") { (k, v) -> "$k=${enc(v)}" }))
     }
 
     fun xmltvUrl(): String = "$server/xmltv.php?username=${enc(username)}&password=${enc(password)}"
@@ -67,3 +89,9 @@ data class XtreamCredentials(
         }
     }
 }
+
+/** Adres i (przy POST) ciało żądania API; ciało zawiera dane dostępu i nie jest nigdzie logowane. */
+class ApiRequest(
+    val url: String,
+    val body: FormBody?,
+)

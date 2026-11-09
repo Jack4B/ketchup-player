@@ -18,6 +18,12 @@ interface ProviderDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(provider: ProviderEntity)
 
+    @Query("UPDATE providers SET requestMethod = :method WHERE id = :id")
+    suspend fun setRequestMethod(
+        id: String,
+        method: String,
+    )
+
     @Query("DELETE FROM providers WHERE id = :id")
     suspend fun delete(id: String)
 
