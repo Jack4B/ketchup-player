@@ -85,7 +85,7 @@ class OkHttpTextFetcher(
         headers: Map<String, String>,
         body: FormBody?,
     ): Result<String> =
-        // Treść czytamy na IO: wołający bywa na wątku głównym (NetworkOnMainThreadException przy imporcie konta Xtream).
+        // Treść czytamy na IO: wołający bywa na wątku głównym (NetworkOnMainThreadException, import Xtream).
         withContext(Dispatchers.IO) { fetchTextOnIo(url, headers, body) }
 
     private suspend fun fetchTextOnIo(
