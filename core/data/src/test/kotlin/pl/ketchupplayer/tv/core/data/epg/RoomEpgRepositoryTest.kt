@@ -47,7 +47,12 @@ private class FakeStreams(
     ): Result<T> {
         opened += url
         val body = bodies[url] ?: return Result.failure(NetworkException.Http(404))
-        return Result.success(block(body.byteInputStream()))
+        // Jak prawdziwy OkHttpStreamFetcher: błąd IO w trakcie czytania to porażka pobrania, nie wyjątek.
+        return try {
+            Result.success(block(body.byteInputStream()))
+        } catch (e: java.io.IOException) {
+            Result.failure(NetworkException.Io(e))
+        }
     }
 }
 
