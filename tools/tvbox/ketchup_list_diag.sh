@@ -14,15 +14,19 @@
 #    V2  POST get.php, dane w ciele          (username, password, type; bez parametrów w adresie)
 #    V3  POST player_api.php, dane w ciele   (username, password, action=get_live_categories)
 #    V4  GET  get.php                        inny User-Agent (VLC)
+#    E1  GET  player_api.php bez action      jak IPTV Extreme: UA okhttp/4.10.0, HTTP/1.1, tylko Host, Connection, Accept-Encoding
+#    E2  GET  player_api.php get_live_categories  jak E1 (ten sam zestaw czterech nagłówków)
+#    E3  GET  player_api.php get_live_categories  dotychczasowy UA aplikacji (OTT Navigator) i Accept, dla porównania z E2
 #  Wynik: <Download>/KetchupPlayerTest/diag-<data>/diag.md. Raport NIE zawiera adresu, hosta, loginu, hasła, nagłówków
 #  Server ani Set-Cookie; po złożeniu raport jest czyszczony literalnie i w wariantach zakodowanych. Dane idą do curl
 #  przez plik konfiguracyjny i plik ciała (chmod 600), nigdy w argumentach procesu.
 # =============================================================================
 set -u -o pipefail
 
-KD_VERSION="diag-1"
-# Muszą zgadzać się z NetworkClients.DEFAULT_USER_AGENT i UserAgentProfiles.VLC (test w tools/tvbox/tests).
-UA_APP="OTT Navigator/1.7.2.1 (Linux;Android 12) ExoPlayerLib/2.19.1"
+KD_VERSION="diag-2"
+# Muszą zgadzać się z NetworkClients.DEFAULT_USER_AGENT / OTT_USER_AGENT i UserAgentProfiles.VLC (test w tools/tvbox/tests).
+UA_APP="okhttp/4.10.0"
+UA_OTT="OTT Navigator/1.7.2.1 (Linux;Android 12) ExoPlayerLib/2.19.1"
 UA_VLC="VLC/3.0.20 LibVLC/3.0.20"
 MIN_PAUSE=30
 MAX_WAIT=900
@@ -270,14 +274,20 @@ curl_exit_text() {
 
 # do_request ID OPIS METODA URL UA [PLIK_CIAŁA] [LIMIT_BAJTÓW]
 do_request() {
-  local id=$1 desc=$2 method=$3 url=$4 ua=$5 body=${6:-} limit=${7:-0}
+  local id=$1 desc=$2 method=$3 url=$4 ua=$5 body=${6:-} limit=${7:-0} style=${8:-full}
   local cfg="$WORK/cfg.$id" hdr="$WORK/hdr.$id" out="$WORK/body.$id" wfile="$WORK/w.$id"
   : >"$cfg"
   chmod 600 "$cfg"
   {
     printf 'url = "%s"\n' "$url"
     printf 'user-agent = "%s"\n' "$ua"
-    printf 'header = "Accept: */*"\n'
+    if [[ $style == minimal ]]; then
+      # Zestaw jak w aplikacji i w IPTV Extreme: User-Agent, Host, Connection, Accept-Encoding (bez Accept).
+      printf 'http1.1\n'
+      printf 'header = "Accept:"\n'
+    else
+      printf 'header = "Accept: */*"\n'
+    fi
     printf 'header = "Accept-Encoding: gzip"\n'
     printf 'header = "Connection: Keep-Alive"\n'
     printf 'location\n'
@@ -389,8 +399,9 @@ build_report() {
 }
 
 hints() {
-  local b v1 v2 v3 v4 line=0 r ttfb
+  local b v1 v2 v3 v4 e1 e2 e3 line=0 r ttfb
   b=$(status_of B) v1=$(status_of V1) v2=$(status_of V2) v3=$(status_of V3) v4=$(status_of V4)
+  e1=$(status_of E1) e2=$(status_of E2) e3=$(status_of E3)
   if [[ -n "$b" ]] && ! is_ok "$b"; then
     printf -- '- GET get.php (żądanie bazowe) zwraca HTTP %s.\n' "$b"
     line=1
@@ -414,6 +425,19 @@ hints() {
       printf -- '- Wynik zależy od User-Agent (aplikacja: %s, VLC: %s).\n' "$b" "$v4"
       line=1
     fi
+  fi
+  if is_ok "${e1:-}" || is_ok "${e2:-}"; then
+    printf -- '- API z nagłówkami jak IPTV Extreme działa (konto: %s, kategorie: %s): import przez player_api.php ma sens.\n' \
+      "${e1:--}" "${e2:--}"
+    line=1
+  fi
+  if [[ -n "${e2:-}" && -n "${e3:-}" ]] && is_ok "$e2" && ! is_ok "$e3"; then
+    printf -- '- Ten sam adres z dotychczasowym UA OTT Navigator i Accept dostaje HTTP %s, a z zestawem IPTV Extreme HTTP %s: przyczyną jest User-Agent lub nagłówki.\n' "$e3" "$e2"
+    line=1
+  fi
+  if [[ -n "${e2:-}" && -n "${v1:-}" ]] && is_ok "$e2" && ! is_ok "$v1"; then
+    printf -- '- Różnica między E2 i V1 to tylko Accept i HTTP/1.1: serwer reaguje na te nagłówki (V1: %s, E2: %s).\n' "$v1" "$e2"
+    line=1
   fi
   for r in "${RESULTS[@]}"; do
     if [[ $(field 1 "$r") == B ]]; then
@@ -481,7 +505,7 @@ main() {
   if [[ $IS_GETPHP == 1 ]]; then api_base="${BASE}${PATH_PART%get.php}"; fi
 
   say "Żądanie bazowe (jak aplikacja):"
-  do_request B "GET get.php (UA aplikacji)" GET "$URL" "$UA_APP"
+  do_request B "GET get.php (UA aplikacji)" GET "$URL" "$UA_APP" "" 0 minimal
   LAST_RETRY=$R_RETRY
 
   if ((NO_VARIANTS == 0)) && ((INTERRUPTED == 0)); then
@@ -495,7 +519,7 @@ main() {
       )
       chmod 600 "$body_get" "$body_api"
       local step
-      for step in V1 V2 V3 V4; do
+      for step in V1 V2 V3 V4 E1 E2 E3; do
         ((INTERRUPTED == 0)) || break
         wait_before_next
         case $step in
@@ -504,6 +528,14 @@ main() {
           V2) do_request V2 "POST get.php (dane w ciele)" POST "$URL_NOQUERY" "$UA_APP" "$body_get" "$VARIANT_MAX_BYTES" ;;
           V3) do_request V3 "POST player_api.php (dane w ciele)" POST "${api_base}player_api.php" "$UA_APP" "$body_api" "$VARIANT_MAX_BYTES" ;;
           V4) do_request V4 "GET get.php (UA VLC)" GET "$URL" "$UA_VLC" "" "$VARIANT_MAX_BYTES" ;;
+          E1) do_request E1 "GET player_api.php bez action (jak IPTV Extreme)" GET \
+            "${api_base}player_api.php?username=${Q_USER}&password=${Q_PASS}" "$UA_APP" "" "$VARIANT_MAX_BYTES" minimal ;;
+          E2) do_request E2 "GET player_api.php get_live_categories (jak IPTV Extreme)" GET \
+            "${api_base}player_api.php?username=${Q_USER}&password=${Q_PASS}&action=get_live_categories" \
+            "$UA_APP" "" "$VARIANT_MAX_BYTES" minimal ;;
+          E3) do_request E3 "GET player_api.php get_live_categories (UA OTT Navigator, Accept)" GET \
+            "${api_base}player_api.php?username=${Q_USER}&password=${Q_PASS}&action=get_live_categories" \
+            "$UA_OTT" "" "$VARIANT_MAX_BYTES" ;;
         esac
         LAST_RETRY=$R_RETRY
       done

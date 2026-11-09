@@ -7,7 +7,7 @@ Zakres 1.0: TV poziomo, D-pad + OK + BACK. Poza zakresem na stałe: Debrid, scra
 **Potwierdzone na boxie (raporty użytkownika):** import list M3U/Xtream (do ~100 tys. pozycji, ~80 s), kreator, Na żywo z EPG
 i grupami, Radar i Zainteresowania, Filmy, Seriale, Szczegóły (opis, obsada, ocena z dostawcy), odtwarzacz z OSD (audio, napisy,
 przesunięcia, tempo, proporcje, uśpienie, zegar), failover, 3 motywy + akcent, ustawienia dwupoziomowe, skrypt diagnostyczny.
-**Zrobione w kodzie, jeszcze nieprzetestowane na boxie:** User-Agent wybierany w kreatorze (domyślnie OTT Navigator) i edytowalna
+**Zrobione w kodzie, jeszcze nieprzetestowane na boxie:** User-Agent wybierany w kreatorze (domyślnie okhttp/4.10.0, OTT Navigator jako profil) i edytowalna
 lista w Ustawieniach → Sieć; filtr grup/kategorii; EPG automatycznie (start, po dodaniu listy, przycisk „Odśwież EPG teraz”);
 logo kanałów (Coil); Filmy z chowanymi kategoriami i 6 kolumnami; Home z kartami poziomymi i „Nowe odcinki”; OSD filmu z kartą
 „O FILMIE”; pauza po wyjściu z aplikacji; przyspieszone przewijanie; filtr zbyt gęstych naciśnięć pilota; szyna z jawną nawigacją.

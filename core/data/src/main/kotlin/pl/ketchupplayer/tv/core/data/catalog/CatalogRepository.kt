@@ -7,7 +7,7 @@ import pl.ketchupplayer.tv.core.model.ProviderInfo
 import pl.ketchupplayer.tv.core.model.RequestMethod
 import pl.ketchupplayer.tv.core.model.StreamSpec
 
-enum class AddProviderError { INVALID_NAME, INVALID_URL, INVALID_CREDENTIALS }
+enum class AddProviderError { INVALID_NAME, INVALID_URL, INVALID_CREDENTIALS, INVALID_USER_AGENT }
 
 /** Wynik dodania dostawcy: id albo błąd walidacji/pobrania. */
 sealed interface AddProviderResult {

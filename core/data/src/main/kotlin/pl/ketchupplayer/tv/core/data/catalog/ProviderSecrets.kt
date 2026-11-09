@@ -5,6 +5,7 @@ import pl.ketchupplayer.tv.core.security.SecretStore
 import javax.inject.Inject
 
 /** Dane dostawcy, które nie mogą trafić do bazy: pełny adres listy, login/hasło, adres EPG z danymi logowania. */
+@Suppress("TooManyFunctions") // jeden punkt dostępu do sekretów dostawcy
 class ProviderSecrets
     @Inject
     constructor(
@@ -41,7 +42,27 @@ class ProviderSecrets
 
         suspend fun epg(id: ProviderId): String? = store.get(key(id, EPG))
 
-        suspend fun clear(id: ProviderId) = listOf(URL, USER, PASS, EPG).forEach { store.remove(key(id, it)) }
+        /** Własny User-Agent listy: traktowany jak dane dostępu (nie trafia do bazy, logów ani eksportu). */
+        suspend fun putUserAgent(
+            id: ProviderId,
+            value: String,
+        ) = store.put(key(id, UA), value)
+
+        suspend fun userAgent(id: ProviderId): String? = store.get(key(id, UA))
+
+        suspend fun removeUserAgent(id: ProviderId) = store.remove(key(id, UA))
+
+        /** Zapisane własne User-Agenty użytkownika (jeden wpis na linię), do wyboru dla każdej listy. */
+        suspend fun customUserAgents(): List<String> =
+            store
+                .get(CUSTOMS)
+                .orEmpty()
+                .split('\n')
+                .filter { it.isNotBlank() }
+
+        suspend fun putCustomUserAgents(values: List<String>) = store.put(CUSTOMS, values.joinToString("\n"))
+
+        suspend fun clear(id: ProviderId) = listOf(URL, USER, PASS, EPG, UA).forEach { store.remove(key(id, it)) }
 
         private fun key(
             id: ProviderId,
@@ -53,5 +74,7 @@ class ProviderSecrets
             const val USER = "user"
             const val PASS = "pass"
             const val EPG = "epg"
+            const val UA = "ua"
+            const val CUSTOMS = "ua.customs"
         }
     }

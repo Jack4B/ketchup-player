@@ -12,4 +12,7 @@ interface StreamFetcher {
         url: String,
         block: (InputStream) -> T,
     ): Result<T>
+
+    /** Kopia z innym User-Agent (np. wybranym dla listy); wspólny klient i jego konfiguracja nie są zmieniane. */
+    fun withUserAgent(userAgent: String): StreamFetcher = this
 }

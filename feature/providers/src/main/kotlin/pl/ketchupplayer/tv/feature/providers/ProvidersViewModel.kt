@@ -66,7 +66,11 @@ class ProvidersViewModel
                 is ProvidersEvent.UrlChanged,
                 -> local.update { it.copy(form = it.form?.let { f -> edited(f, event) }) }
                 is ProvidersEvent.SelectUserAgent ->
-                    local.update { it.copy(form = it.form?.copy(userAgentId = event.id)) }
+                    local.update { it.copy(form = it.form?.copy(userAgentId = event.id, userAgentError = false)) }
+                is ProvidersEvent.UserAgentTextChanged ->
+                    local.update {
+                        it.copy(form = it.form?.copy(userAgentId = "custom:" + event.value, userAgentError = false))
+                    }
                 is ProvidersEvent.SelectRequestMethod ->
                     local.update { it.copy(form = it.form?.copy(requestMethod = event.method)) }
                 ProvidersEvent.Submit -> submit()
@@ -131,6 +135,7 @@ class ProvidersViewModel
                                         nameError = r.error == AddProviderError.INVALID_NAME,
                                         urlError = r.error == AddProviderError.INVALID_URL,
                                         credentialsError = r.error == AddProviderError.INVALID_CREDENTIALS,
+                                        userAgentError = r.error == AddProviderError.INVALID_USER_AGENT,
                                     ),
                             )
                         }

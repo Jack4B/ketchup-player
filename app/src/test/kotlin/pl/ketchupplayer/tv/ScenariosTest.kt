@@ -985,18 +985,18 @@ class ScenariosTest {
         assertEquals(listOf("$host/tvn24.m3u8"), FakePlayers.played.toList())
     }
 
-    /** Scenariusz: domyślnie lista idzie z nagłówkiem OTT Navigator; panel odrzuca inne (404). */
+    /** Scenariusz: domyślnie lista idzie z nagłówkiem okhttp/4.10.0 (jak IPTV Extreme); panel odrzuca inne (404). */
     @Test
-    fun listaPobieranaDomyslnieZNaglowkiemOtt() {
+    fun listaPobieranaDomyslnieZNaglowkiemOkhttp() {
         val host = "http://127.0.0.1:${server.port}"
         server.serveRequest("/ott.m3u") { req ->
-            if (req.getHeader("User-Agent").orEmpty().startsWith("OTT Navigator/")) {
+            if (req.getHeader("User-Agent") == "okhttp/4.10.0") {
                 "#EXTM3U\n#EXTINF:-1 group-title=\"PL | Info\",TVN 24\n$host/tvn24.m3u8\n"
             } else {
                 ProviderServer.NOT_FOUND
             }
         }
-        runBlocking { catalog.addM3u("Domyślny OTT", server.url("/ott.m3u")) }
+        runBlocking { catalog.addM3u("Domyślny okhttp", server.url("/ott.m3u")) }
         nav("Na żywo")
         waitForText("TVN 24", timeoutMs = BIG_WAIT_MS)
     }

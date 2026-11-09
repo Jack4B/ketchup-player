@@ -16,7 +16,20 @@ enum class Capability { LIVE, VOD, SERIES, CATCHUP, EPG_URL, ACCOUNT_INFO }
 sealed class ProviderError(
     message: String,
 ) : Exception(message) {
+    /** Błąd sieci albo serwera; [httpCode] ustawiony tylko dla odpowiedzi HTTP z błędem 5xx (bez `Retry-After`). */
     class Network(
+        message: String,
+        val httpCode: Int? = null,
+    ) : ProviderError(message)
+
+    /** Dostawca prosi o odczekanie (429 albo błąd serwera z `Retry-After`): nie ponawiamy ani nie przełączamy trybu. */
+    class RateLimited(
+        message: String,
+        val retryAfterSeconds: Long?,
+    ) : ProviderError(message)
+
+    /** Dostawca nie obsługuje tego interfejsu (404, 405, 410, 501, inny 4xx poza dostępem i limitem). */
+    class NotSupported(
         message: String,
     ) : ProviderError(message)
 

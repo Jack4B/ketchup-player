@@ -20,7 +20,7 @@ nowa aplikacja jeszcze nie robi. Każda wartość ma w KDoc źródło w starej k
 | `PlaybackStabilityPolicy.retryHttpStatus` | MAMY | `FailFastLoadPolicy` (4xx kończy od razu, wyjątki 408/429): świadomie szybsze niż stare ponawianie |
 | `BkTvFailoverMatch`, `BkVodFailoverMatch` | MAMY | `catalog.equivalents` po znormalizowanej nazwie + `FailoverCoordinator`; do porównania na prawdziwych listach |
 | `BkFailoverPolicy`, termin przełączenia TV | MAMY | `core:policy` (`BkFailoverPolicy`), opóźnienie 5/10/15/25 s w Ustawieniach |
-| `StreamUserAgent`, `NetworkRoutePolicy` (tylko UA) | MAMY | profile User-Agent z wyborem; domyślny OTT |
+| `StreamUserAgent`, `NetworkRoutePolicy` (tylko UA) | MAMY | profile User-Agent z wyborem; domyślny okhttp/4.10.0 (import), VLC (odtwarzacz) |
 | `StreamRecoveryPolicy` (klasyfikacja zacięcia: sieć/dekoder, progi 12/19/28 s) | ZOSTAWIAMY | Media3 + ponowienia failoveru pokrywają przypadek; bez danych z boxa brak dowodu, że klasyfikacja coś poprawi |
 | `NetworkRoutePolicy` (miękkie/twarde ponowne łączenie po zmianie Wi-Fi/VPN) | ZOSTAWIAMY | VPN jest w planie 1.1; wymaga testu na urządzeniu |
 | `TvBufferSessionPolicy`, `PlaybackStabilityPolicy.canReuse/currentOwner` | NIE | zależą od współdzielenia dekodera starego odtwarzacza; nowy tworzy kontroler per ekran |

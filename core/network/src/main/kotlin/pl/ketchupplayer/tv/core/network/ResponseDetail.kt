@@ -25,9 +25,10 @@ private val SPACES = Regex("\\s+")
 internal fun Response.toHttpFailure(now: Instant = Instant.now()): NetworkException.Http {
     val body = runCatching { peekBody(DETAIL_BODY_BYTES).string() }.getOrDefault("")
     val parts = mutableListOf<String>()
-    header("Retry-After")?.let { parseRetryAfter(it, now) }?.let { parts += "ponów po: $it s" }
+    val retryAfter = header("Retry-After")?.let { parseRetryAfter(it, now) }
+    retryAfter?.let { parts += "ponów po: $it s" }
     bodyHint(body)?.let { parts += "«$it»" }
-    return NetworkException.Http(code, parts.joinToString(", ").ifEmpty { null })
+    return NetworkException.Http(code, parts.joinToString(", ").ifEmpty { null }, retryAfter)
 }
 
 /**

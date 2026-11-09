@@ -70,7 +70,7 @@ abstract class DataModule {
 
     @Binds
     abstract fun bindProviderHeaders(
-        impl: pl.ketchupplayer.tv.core.data.network.DataStoreProviderHeadersRepository,
+        impl: pl.ketchupplayer.tv.core.data.network.RoomProviderHeadersRepository,
     ): pl.ketchupplayer.tv.core.data.network.ProviderHeadersRepository
 
     @Binds

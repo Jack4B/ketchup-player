@@ -190,25 +190,55 @@ internal fun AddForm(
         }
     }
     // Wybór nagłówka przed pierwszym pobraniem: panele często odrzucają (404) nieznane aplikacje.
+    val customAgent =
+        pl.ketchupplayer.tv.core.network.UserAgentProfiles
+            .isCustom(form.userAgentId)
     KetchupButton(
         stringResource(
             R.string.providers_user_agent,
-            pl.ketchupplayer.tv.core.network.UserAgentProfiles
-                .byId(form.userAgentId)
-                .label,
+            if (customAgent) {
+                stringResource(R.string.providers_ua_custom_label)
+            } else {
+                pl.ketchupplayer.tv.core.network.UserAgentProfiles
+                    .byId(form.userAgentId)
+                    .label
+            },
         ),
         { pickingAgent = true },
     )
+    // Własny User-Agent wpisujemy tutaj, bez wcześniejszego dodawania w Ustawieniach; wartość trafia do SecretStore.
+    if (customAgent) {
+        TextInputField(
+            stringResource(R.string.providers_ua_custom_field),
+            pl.ketchupplayer.tv.core.network.UserAgentProfiles
+                .customValue(form.userAgentId),
+            { onEvent(ProvidersEvent.UserAgentTextChanged(it)) },
+        )
+        if (form.userAgentError) {
+            Text(stringResource(R.string.providers_ua_custom_invalid), color = ERROR_COLOR, fontSize = 16.sp)
+        }
+    }
     if (pickingAgent) {
         val auto = stringResource(R.string.providers_ua_auto_hint)
+        val ownHint = stringResource(R.string.providers_ua_custom_hint)
         pl.ketchupplayer.tv.core.designsystem.ChoiceDialog(
             title = stringResource(R.string.providers_ua_pick),
             choices =
                 (pl.ketchupplayer.tv.core.network.UserAgentProfiles.ALL + customAgents).map {
                     pl.ketchupplayer.tv.core.designsystem
                         .Choice(it.id, it.label, it.value ?: auto)
+                } +
+                    pl.ketchupplayer.tv.core.designsystem.Choice(
+                        pl.ketchupplayer.tv.core.network.UserAgentProfiles.CUSTOM_ENTRY.id,
+                        pl.ketchupplayer.tv.core.network.UserAgentProfiles.CUSTOM_ENTRY.label,
+                        ownHint,
+                    ),
+            selectedId =
+                if (customAgent && customAgents.none { it.id == form.userAgentId }) {
+                    pl.ketchupplayer.tv.core.network.UserAgentProfiles.CUSTOM_ENTRY.id
+                } else {
+                    form.userAgentId
                 },
-            selectedId = form.userAgentId,
             onSelect = {
                 onEvent(ProvidersEvent.SelectUserAgent(it))
                 pickingAgent = false

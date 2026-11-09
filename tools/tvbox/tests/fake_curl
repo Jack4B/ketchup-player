@@ -2,7 +2,7 @@
 # Atrapa curl do testów ketchup_list_diag.sh (offline, wyłącznie fikcyjne dane). Zapisuje do $FAKE_CURL_LOG:
 #   argv.log (argumenty każdego wywołania), env.log (środowisko), cfg.N (kopia pliku -K), post.N (tryb i treść pliku ciała).
 # Odpowiedzi z $FAKE_CURL_SCENARIO: linie "klucz status retry-after exit rodzaj_ciała ttfb [content-type]",
-# klucz = METODA:get|api[:vlc] (np. GET:get, POST:api, GET:get:vlc).
+# klucz = METODA:get|api[:vlc|:ott] (np. GET:get, POST:api, GET:get:vlc, GET:api:ott).
 set -u
 log="${FAKE_CURL_LOG:?}"
 n=$(($(cat "$log/count" 2>/dev/null || echo 0) + 1))
@@ -39,6 +39,7 @@ kind='get'
 [[ "${url%%\?*}" == */player_api.php ]] && kind=api
 key="$method:$kind"
 [[ "$ua" == VLC* ]] && key="$key:vlc"
+[[ "$ua" == OTT* ]] && key="$key:ott"
 line=$(grep "^$key " "$FAKE_CURL_SCENARIO" | head -n1)
 [[ -n "$line" ]] || { echo "brak scenariusza dla $key" >&2; exit 99; }
 read -r _ status retry code bodykind ttfb ctype <<<"$line"

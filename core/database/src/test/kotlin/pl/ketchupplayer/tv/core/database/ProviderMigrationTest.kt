@@ -8,6 +8,7 @@ import kotlinx.coroutines.test.runTest
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -15,17 +16,21 @@ import org.robolectric.annotation.Config
 import java.io.File
 
 /**
- * Migracja 7 -> 8 (kolumna `requestMethod` w `providers`): baza utworzona według zapisanego schematu 7 z istniejącą
+ * Migracje 7 -> 8 (kolumna `requestMethod`) i 8 -> 9 (kolumna `userAgent`) w `providers`: baza utworzona według
+ * zapisanego schematu 7 z istniejącą
  * listą jest otwierana przez Room w wersji 8 (automatyczna migracja + walidacja schematu); dotychczasowe listy dostają
  * GET. Dane wyłącznie fikcyjne.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class ProviderMigrationTest {
-    private val schema7 = File("schemas/pl.ketchupplayer.tv.core.database.KetchupDatabase/7.json")
+    private fun schema(version: Int) = File("schemas/pl.ketchupplayer.tv.core.database.KetchupDatabase/$version.json")
 
-    private fun createVersion7(file: File) {
-        val database = JSONObject(schema7.readText()).getJSONObject("database")
+    private fun createVersion(
+        file: File,
+        version: Int,
+    ) {
+        val database = JSONObject(schema(version).readText()).getJSONObject("database")
         val raw = SQLiteDatabase.openOrCreateDatabase(file, null)
         val entities = database.getJSONArray("entities")
         for (i in 0 until entities.length()) {
@@ -43,7 +48,7 @@ class ProviderMigrationTest {
             "INSERT INTO providers (id, name, type, url, sortOrder) " +
                 "VALUES ('old', 'Stara lista', 'M3U', 'http://l.example.invalid/x.m3u', 0)",
         )
-        raw.version = 7
+        raw.version = version
         raw.close()
     }
 
@@ -55,7 +60,7 @@ class ProviderMigrationTest {
             context.deleteDatabase(name)
             val file = context.getDatabasePath(name)
             file.parentFile?.mkdirs()
-            createVersion7(file)
+            createVersion(file, 7)
 
             val db = Room.databaseBuilder(context, KetchupDatabase::class.java, name).allowMainThreadQueries().build()
             try {
@@ -68,6 +73,31 @@ class ProviderMigrationTest {
                 // Nowa lista bez jawnej metody też dostaje GET.
                 db.providers().upsert(ProviderEntity("new", "Nowa", "M3U", "http://l.example.invalid/y.m3u"))
                 assertEquals("GET", db.providers().get("new")?.requestMethod)
+            } finally {
+                db.close()
+                context.deleteDatabase(name)
+            }
+        }
+
+    /** 8 -> 9: dotychczasowe listy mają User-Agent `null` (domyślny okhttp/4.10.0), wybór da się zapisać. */
+    @Test
+    fun `lista z wersji 8 dostaje domyslny User-Agent po migracji, a profil mozna zmienic`() =
+        runTest {
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            val name = "migration-8-9.db"
+            context.deleteDatabase(name)
+            val file = context.getDatabasePath(name)
+            file.parentFile?.mkdirs()
+            createVersion(file, 8)
+
+            val db = Room.databaseBuilder(context, KetchupDatabase::class.java, name).allowMainThreadQueries().build()
+            try {
+                val migrated = db.providers().get("old")
+                assertNotNull(migrated)
+                assertEquals("Stara lista", migrated?.name)
+                assertNull(migrated?.userAgent)
+                db.providers().setUserAgent("old", "vlc")
+                assertEquals("vlc", db.providers().get("old")?.userAgent)
             } finally {
                 db.close()
                 context.deleteDatabase(name)

@@ -12,6 +12,8 @@ sealed class NetworkException(
     class Http(
         val code: Int,
         val detail: String? = null,
+        /** `Retry-After` z odpowiedzi (sekundy, już sparsowane); null = serwer nic nie podał. */
+        val retryAfterSeconds: Long? = null,
     ) : NetworkException("HTTP $code" + (detail?.let { " · $it" } ?: ""))
 
     class Io(
