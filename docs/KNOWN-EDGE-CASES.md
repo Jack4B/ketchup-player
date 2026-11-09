@@ -64,3 +64,19 @@ dostają GET). Zasady:
   Testy: `OkHttpTextFetcherPostTest` (307 na inny host zatrzymane, drugie żądanie nie wychodzi; 307/308 na ten sam host zachowują POST).
 - **Podpowiedź** przy 403, 405 i 5xx dla GET: „Dostawca może wymagać metody POST — zmień w ustawieniach listy.” Bez automatycznego przełączania.
 - Ciało z hasłem nie jest logowane ani zapisywane; `FormBody.toString` go nie ujawnia, a błędy HTTP nie przepisują treści ani nagłówków.
+## Tytuły VOD z paneli: czyszczenie i oceny IMDb (zgłoszenie z telefonu)
+
+Oceny z wbudowanego indeksu (`film_index.db`) zależą od tytułu i roku wyciągniętych z nazwy w liście. `VodTitle.parse` usuwa
+przedrostki języka i platform (`|PL|`, `PL -`, `A+ -`, `NETFLIX -`, `HBO |`), znaczniki w nawiasach (`[4K]`, `(MULTI SUB)`, `[ENG]`,
+`DUAL`), znaczniki bez nawiasów z końca nazwy tylko WIELKIMI literami (`PL`, `HD`, `4K UHD`, `1080p BluRay x264`) oraz rok
+(`(1999)`, `[1999]`, `Tytuł 1999`, `Tytuł.1999.1080p`). Znane koszty i granice:
+
+- Tytuł kończący się liczbą z zakresu 1900-2029 (`Wonder Woman 1984`) jest rozbijany na tytuł i rok; indeks próbuje wtedy też pełnej
+  formy, ale wyszukiwanie w TMDB/OMDb może wtedy nie trafić. Liczby spoza zakresu (`Blade Runner 2049`) i sam rok (`1917`) zostają.
+- Przedrostek z dwukropkiem (`Saw: Spiral`, `Ice: Age`) zostaje. Przedrostek WIELKIMI literami z myślnikiem lub `|` (`ICE - Age`) jest
+  uznawany za znacznik języka lub platformy i usuwany.
+- Bez roku indeks wybiera tylko jedyną pozycję albo wyraźnego lidera (≥ 10 000 głosów i ≥ 20 razy więcej niż drugi); remake o zbliżonej
+  popularności zostaje bez oceny zamiast z cudzą.
+- Tytuły w tłumaczeniu różniącym się od etykiet Wikidata (pl/en) nadal nie trafią; indeks ma pozycje od 1980 roku.
+- Pomiar regresji: `TitleMatchingRegressionTest` (syntetyczne nazwy zbudowane z popularnych pozycji indeksu; górna granica, nie pomiar
+  prawdziwej listy).
