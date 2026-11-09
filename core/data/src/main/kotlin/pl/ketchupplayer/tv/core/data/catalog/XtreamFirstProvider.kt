@@ -11,6 +11,7 @@ import pl.ketchupplayer.tv.core.model.VodInfo
 import pl.ketchupplayer.tv.core.model.VodItem
 import pl.ketchupplayer.tv.provider.api.Capability
 import pl.ketchupplayer.tv.provider.api.IptvProvider
+import pl.ketchupplayer.tv.provider.api.ProviderError
 
 /**
  * Lista „M3U” z adresu `get.php?username=…&password=…` to w rzeczywistości konto Xtream. Importujemy ją przez
@@ -37,10 +38,10 @@ internal class XtreamFirstProvider(
             viaXtream = true
             return api
         }
+        // Tylko brak obsługi API uruchamia get.php; odmowa dostępu, limity i błędy z Retry-After kończą import tutaj.
+        if (!allowsM3uFallback(api.exceptionOrNull())) return api
         viaXtream = false
-        val fallback = m3u.loadChannels()
-        // Gdy zawiodły obie drogi, użytkownik widzi powód z listy M3U (to ona była dotąd domyślna).
-        return fallback
+        return m3u.loadChannels()
     }
 
     override suspend fun resolveStream(channel: Channel): Result<StreamSpec> =
@@ -65,7 +66,23 @@ internal class XtreamFirstProvider(
 
     override suspend fun accountInfo(): Result<AccountInfo> = xtream.accountInfo()
 
-    private companion object {
+    internal companion object {
         const val XTREAM_PREFIX = "xtream:"
+
+        /**
+         * Kiedy po porażce API wolno pobrać `get.php` (jedno dodatkowe żądanie, bez pętli):
+         * - API nie istnieje albo odpowiada czymś innym niż Xtream (404, 405, 410, 501, inny 4xx, 200 z treścią spoza
+         *   API): tak;
+         * - zwykły błąd serwera 5xx bez `Retry-After` (osobny skrypt może działać): tak;
+         * - 401/403, błędne dane, konto nieaktywne lub wygasłe: nie (get.php odmówi tak samo);
+         * - 429 i każdy błąd z `Retry-After`: nie (serwer prosi o odczekanie, a nie o kolejne żądania);
+         * - błąd sieci bez odpowiedzi (brak połączenia, timeout), pusta lub zepsuta lista kanałów: nie.
+         */
+        fun allowsM3uFallback(error: Throwable?): Boolean =
+            when (error) {
+                is ProviderError.NotSupported -> true
+                is ProviderError.Network -> error.httpCode != null
+                else -> false
+            }
     }
 }

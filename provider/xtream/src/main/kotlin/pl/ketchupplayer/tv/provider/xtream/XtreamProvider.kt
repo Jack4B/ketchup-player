@@ -42,7 +42,8 @@ class XtreamProvider(
         val body = fetch(api()).getOrElse { return Result.failure(it) }
         val account = XtreamParser.account(body)
         return when {
-            account == null -> Result.failure(ProviderError.BadResponse("Nieprawidłowa odpowiedź serwera"))
+            // 200, ale nie JSON konta Xtream (np. strona HTML): ten adres nie jest API Xtream.
+            account == null -> Result.failure(ProviderError.NotSupported("Odpowiedź serwera nie jest API Xtream"))
             !account.authorized -> Result.failure(ProviderError.Unauthorized("Nieprawidłowy login lub hasło"))
             !account.active -> Result.failure(ProviderError.Unauthorized("Konto nieaktywne lub wygasłe"))
             else -> Result.success(Unit)
@@ -139,18 +140,32 @@ class XtreamProvider(
 
     private fun Throwable.toProviderError(): Throwable =
         when (this) {
-            is NetworkException.Http ->
-                if (code == HTTP_UNAUTHORIZED || code == HTTP_FORBIDDEN) {
-                    ProviderError.Unauthorized(message ?: "Serwer odmówił dostępu (HTTP $code)")
-                } else {
-                    ProviderError.Network(message ?: "HTTP $code")
-                }
+            is NetworkException.Http -> httpToProviderError()
             is NetworkException -> ProviderError.Network(message ?: "Błąd sieci")
             else -> this
         }
 
+    /**
+     * Klasyfikacja odpowiedzi z błędem (od niej zależy, czy wolno przełączyć się na `get.php`): 401/403 to odmowa
+     * dostępu, 429 i każdy błąd z `Retry-After` to prośba o odczekanie, 5xx bez `Retry-After` to zwykły błąd serwera,
+     * pozostałe 4xx (404, 405, 410...) to brak obsługi API.
+     */
+    private fun NetworkException.Http.httpToProviderError(): Throwable {
+        val text = message ?: "HTTP $code"
+        return when {
+            code == HTTP_UNAUTHORIZED || code == HTTP_FORBIDDEN ->
+                ProviderError.Unauthorized(message ?: "Serwer odmówił dostępu (HTTP $code)")
+            code == HTTP_TOO_MANY || (retryAfterSeconds != null && code >= HTTP_SERVER_ERROR) ->
+                ProviderError.RateLimited(text, retryAfterSeconds)
+            code >= HTTP_SERVER_ERROR -> ProviderError.Network(text, code)
+            else -> ProviderError.NotSupported(text)
+        }
+    }
+
     private companion object {
         const val HTTP_UNAUTHORIZED = 401
         const val HTTP_FORBIDDEN = 403
+        const val HTTP_TOO_MANY = 429
+        const val HTTP_SERVER_ERROR = 500
     }
 }

@@ -18,6 +18,8 @@ data class ProviderForm(
     val credentialsError: Boolean = false,
     /** Wybrany nagłówek połączenia (id z puli); „auto” = domyślny okhttp/4.10.0. */
     val userAgentId: String = "auto",
+    /** Własny User-Agent zawiera niedozwolone znaki (puste, spoza ASCII, ponad 512 znaków). */
+    val userAgentError: Boolean = false,
     /** Metoda żądania listy: GET (domyślnie) albo POST (dane w ciele, adres bez loginu i hasła). */
     val requestMethod: RequestMethod = RequestMethod.GET,
 )
@@ -70,6 +72,11 @@ sealed interface ProvidersEvent {
     /** Wybór User-Agenta z listy w formularzu (ptaszek przy zaznaczonym). */
     data class SelectUserAgent(
         val id: String,
+    ) : ProvidersEvent
+
+    /** Wpisanie własnego User-Agent w formularzu; wartość trafia do SecretStore dopiero przy zapisie listy. */
+    data class UserAgentTextChanged(
+        val value: String,
     ) : ProvidersEvent
 
     /** Wybór metody żądania listy w formularzu (GET/POST). */

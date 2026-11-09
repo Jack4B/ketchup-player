@@ -39,6 +39,15 @@ object UserAgentProfiles {
 
     private const val CUSTOM_PREFIX = "custom:"
 
+    /** Pozycja „Własny…” w oknach wyboru: nie jest profilem, otwiera pole do wpisania własnej wartości dla listy. */
+    val CUSTOM_ENTRY = UserAgentProfile(CUSTOM_PREFIX, "Własny…", null)
+
+    /** Czy identyfikator oznacza własny User-Agent (wartość za prefiksem `custom:`). */
+    fun isCustom(id: String): Boolean = id.startsWith(CUSTOM_PREFIX)
+
+    /** Wartość własnego User-Agent z identyfikatora (pusta, gdy dopiero wybrano „Własny…”). */
+    fun customValue(id: String): String = id.removePrefix(CUSTOM_PREFIX)
+
     /** Własny wpis użytkownika: identyfikator niesie samą wartość, więc działa bez rejestru. */
     fun custom(value: String): UserAgentProfile = UserAgentProfile(CUSTOM_PREFIX + value, value, value)
 

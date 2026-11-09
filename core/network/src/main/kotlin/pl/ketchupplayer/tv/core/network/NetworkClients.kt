@@ -32,22 +32,18 @@ object NetworkClients {
         base(userAgent).connectionSpecs(IPTV_SPECS).build()
 
     /**
-     * Klient odtwarzacza (Media3): User-Agent VLC i nagłówek `Accept` (dowolny typ). Przekierowania (302 na serwer
-     * strumieni) OkHttp obsługuje sam i zachowuje nagłówki ustawione na żądaniu, w tym User-Agent i Range.
+     * Klient odtwarzacza (Media3): User-Agent VLC, `Accept` (dowolny typ) i `Accept-Language: en_US` jak w
+     * przechwyceniu odtwarzania. Przekierowania (302 na serwer strumieni) OkHttp obsługuje sam i zachowuje nagłówki
+     * tożsamości (User-Agent, Range), a [CrossHostGuard] nie przenosi na inny host niczego poza nimi.
      */
     fun player(userAgent: String = PLAYER_USER_AGENT): OkHttpClient =
         base(userAgent)
             .addInterceptor { chain ->
                 val req = chain.request()
-                chain.proceed(
-                    if (req.header("Accept") ==
-                        null
-                    ) {
-                        req.newBuilder().header("Accept", "*/*").build()
-                    } else {
-                        req
-                    },
-                )
+                val builder = req.newBuilder()
+                if (req.header("Accept") == null) builder.header("Accept", "*/*")
+                if (req.header("Accept-Language") == null) builder.header("Accept-Language", ACCEPT_LANGUAGE)
+                chain.proceed(builder.build())
             }.connectionSpecs(IPTV_SPECS)
             .build()
 
@@ -61,6 +57,7 @@ object NetworkClients {
             .readTimeout(READ_TIMEOUT_S, TimeUnit.SECONDS)
             .followRedirects(true)
             .addInterceptor(userAgentInterceptor(userAgent))
+            .addNetworkInterceptor(CrossHostGuard)
 
     private fun userAgentInterceptor(userAgent: String) =
         Interceptor { chain ->
@@ -77,6 +74,7 @@ object NetworkClients {
     private val IPTV_SPECS =
         listOf(ConnectionSpec.MODERN_TLS, ConnectionSpec.COMPATIBLE_TLS, ConnectionSpec.CLEARTEXT)
 
+    private const val ACCEPT_LANGUAGE = "en_US"
     private const val CONNECT_TIMEOUT_S = 20L
     private const val READ_TIMEOUT_S = 60L
 }

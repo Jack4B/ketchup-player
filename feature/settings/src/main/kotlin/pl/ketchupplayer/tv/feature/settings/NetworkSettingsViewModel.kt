@@ -76,6 +76,19 @@ class NetworkSettingsViewModel
             return valid
         }
 
+        /**
+         * Własny User-Agent tylko dla tej listy (wartość w SecretStore, bez zapisu w bazie, logach i eksporcie).
+         * false = niepoprawny (puste, ponad 512 znaków, znaki spoza ASCII) i nic nie zapisujemy.
+         */
+        fun selectCustom(
+            row: ProviderHeaderRow,
+            value: String,
+        ): Boolean {
+            val clean = UserAgentProfiles.validated(value) ?: return false
+            viewModelScope.launch { headers.set(row.providerId, UserAgentProfiles.custom(clean)) }
+            return true
+        }
+
         fun removeCustom(profile: UserAgentProfile) {
             viewModelScope.launch { headers.removeCustom(profile.value.orEmpty()) }
         }

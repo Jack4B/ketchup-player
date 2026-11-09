@@ -5,12 +5,16 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodes
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.pressKey
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Assert.assertEquals
@@ -153,6 +157,35 @@ class ProvidersScreenTest {
         compose.onNodeWithText("✓").assertExists()
         compose.onNodeWithText("VLC").performClick()
         assertEquals(listOf<ProvidersEvent>(ProvidersEvent.SelectUserAgent("vlc")), events)
+    }
+
+    /** Kreator: „Własny…” na liście wyboru wysyła zdarzenie z prefiksem, bez wpisów w ustawieniach globalnych. */
+    @Test
+    fun wyborWlasnegoUserAgentBezUstawienGlobalnych() {
+        val events = mutableListOf<ProvidersEvent>()
+        show(ProvidersUiState(form = ProviderForm()), events)
+        compose.onNodeWithText("User-Agent:", substring = true).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Własny…").performClick()
+        assertEquals(listOf<ProvidersEvent>(ProvidersEvent.SelectUserAgent("custom:")), events)
+    }
+
+    /** Własny User-Agent: pole z wpisaną wartością, przycisk bez wartości (jak dane dostępu), komunikat o błędzie. */
+    @Test
+    fun polaWlasnegoUserAgentPokazujeWartoscPrzyciskJejNieIBlad() {
+        val form = ProviderForm(userAgentId = "custom:Wink/1.31.1", userAgentError = true)
+        show(ProvidersUiState(form = form))
+        compose.onNodeWithText("Wink/1.31.1").assertExists()
+        compose.onNodeWithText("User-Agent: Własny", substring = true).assertExists()
+        compose.onNodeWithText("Niepoprawny", substring = true).assertExists()
+    }
+
+    @Test
+    fun wpisanieWlasnegoUserAgentWysylaZdarzenieZTekstem() {
+        val events = mutableListOf<ProvidersEvent>()
+        show(ProvidersUiState(form = ProviderForm(userAgentId = "custom:")), events)
+        compose.onAllNodes(hasSetTextAction()).onLast().performTextInput("MojAgent/3")
+        assertEquals(listOf<ProvidersEvent>(ProvidersEvent.UserAgentTextChanged("MojAgent/3")), events)
     }
 
     /** Kreator: pole „Metoda zapytania” (GET domyślnie, POST) działa dotykiem. */

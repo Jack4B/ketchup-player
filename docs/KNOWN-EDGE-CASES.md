@@ -12,14 +12,32 @@ Stan na 1.11.2026. Każdy punkt: co się dzieje, dlaczego, co robić.
 - **Domyślny User-Agent importu** to `okhttp/4.10.0`, a odtwarzacza `VLC/3.4.3 LibVLC/3.4.31` (jak IPTV Extreme na przechwyceniu
   z listy za Cloudflare, która aplikacji z nagłówkiem OTT Navigator odpowiadała 520). Import wysyła tylko cztery nagłówki w tej
   kolejności: `User-Agent`, `Host`, `Connection: Keep-Alive`, `Accept-Encoding: gzip` (bez `Accept`). OTT Navigator, VLC, TiviMate,
-  IPTV Smarters i inne są gotowymi profilami: wybierz w kreatorze albo w Ustawieniach → Sieć (ptaszek przy wybranym). Wybór
-  listy jest w bazie (`providers.userAgent`), a **własny** User-Agent traktujemy jak dane dostępu: wartość tylko w `SecretStore`,
-  bez logów i bez eksportu. Wybór zapisany w wersjach sprzed migracji 8 -> 9 (DataStore) nie jest przenoszony: lista wraca do domyślnego.
+  IPTV Smarters i inne są gotowymi profilami; **własny** User-Agent wpisujesz bezpośrednio w kreatorze albo w Ustawieniach → Sieć
+  (pozycja „Własny…”), osobno dla każdej listy. Wybór listy jest w bazie (`providers.userAgent`: id profilu albo `custom`),
+  a wartość własnego User-Agent tylko w `SecretStore` (traktowana jak dane dostępu: bez logów, `toString`, eksportu i raportów;
+  na liście ustawień pokazujemy „wartość ukryta”). User-Agent listy obowiązuje w całym imporcie tej listy: API, M3U, EPG,
+  ponowieniach i przekierowaniach; wspólny klient nie jest zmieniany, więc listy nie nadpisują sobie ustawień.
+  Przy przekierowaniu na **inny host** dalej idą tylko nagłówki tożsamości i zakresu (User-Agent, Accept*, Range…), a
+  `Authorization`, `Cookie` i klucze w nagłówkach zostają (`CrossHostGuard`).
+- **Migracja ustawień User-Agent.** Dawny wybór (DataStore `ua_profile_<id>`, `ua_custom_list`) jest przenoszony przy starcie
+  aplikacji: klucz oznaczał świadomy wybór (profil, także OTT Navigator, albo własny), więc przechodzi bez zmiany wartości,
+  a lista bez klucza dostaje nowy domyślny okhttp. Nowszy wybór w Room nie jest nadpisywany; klucze znikają po przeniesieniu.
 - **Link `get.php` z loginem to konto Xtream.** Import idzie przez `player_api.php` GET (bez `action`, `get_live_categories`,
-  `get_live_streams`, `get_vod_categories`, `get_vod_streams`, `get_series_categories`, `get_series`); gigantyczny `get.php`
-  panele za Cloudflare potrafią odrzucać (504, 520), więc jest tylko trybem zapasowym (gdy API zawiedzie, pobieramy M3U jak dotąd).
-  Odwołania do strumieni z API mają przedrostek `xtream:`; kanały z API i z M3U mają różne identyfikatory, więc przejście z jednego
-  trybu na drugi (np. po awarii API) zeruje ulubione i pozycje tej listy.
+  `get_live_streams`, `get_vod_categories`, `get_vod_streams`, `get_series_categories`, `get_series`). `get.php` jest tylko
+  trybem zapasowym i **tylko gdy API nie istnieje**: 404, 405, 410, 501 i inny 4xx poza dostępem i limitem, odpowiedź 200 z
+  treścią spoza API Xtream, zwykły błąd 5xx bez `Retry-After`. **Bez fallbacku:** 401/403, błędne dane, konto nieaktywne lub
+  wygasłe, 429, każdy błąd z `Retry-After`, błąd sieci bez odpowiedzi (brak połączenia, timeout) i pusta lub zepsuta lista kanałów.
+  Po 429 albo błędzie z `Retry-After` kolejne odświeżenie tej listy nic nie wysyła, dopóki nie minie podany czas (bez
+  `Retry-After` przy 429: 60 s; maks. 1 h; tylko w pamięci).
+- **Ulubione, ukryte, „ostatnio oglądane” i filmy po zmianie trybu (M3U ↔ API).** Identyfikatory kanałów różnią się między
+  trybami, więc przy udanym imporcie przenosimy `channel_flags` oraz „Moją listę”, postęp i oceny **filmów** na nowe id po
+  numerze strumienia z adresu (`/live/U/P/101.ts` ↔ `stream_id` 101), w obrębie tego samego dostawcy, nigdy po nazwie i
+  tylko dla par jednoznacznych (duplikat numeru po którejkolwiek stronie = bez zmiany). Przy nieudanym imporcie nic się nie
+  zmienia; wpisy bez pary zostają pod starymi id (nic nie kasujemy), więc wracają po powrocie do poprzedniego trybu.
+  **Ograniczenie (konkretne): seriale.** Serial z M3U (grupowany po nazwie odcinków) i serial z API (`series_id`) nie mają
+  wspólnego numeru strumienia bez osobnych zapytań o każdy serial, więc „Moja lista”, postęp odcinków i znacznik „nowe
+  odcinki” seriali zostają pod starymi id i po przejściu na API nie są widoczne (wracają po powrocie do M3U). Przewodnik EPG
+  odbudowuje się przy następnym pobraniu.
 - **EPG** pobiera się po dodaniu/odświeżeniu listy, przy starcie (starsze niż 6 h) oraz ręcznie (Telewizja → Odśwież EPG).
   Kanały bez `tvg-id` są dopasowywane po nazwie; brak dopasowania = „Brak danych przewodnika”.
 

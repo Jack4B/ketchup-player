@@ -169,19 +169,25 @@ class XtreamTest {
             assertTrue(p.loadChannels().exceptionOrNull() is ProviderError.Unauthorized)
         }
 
+    /** Klasyfikacja błędów decyduje o trybie zapasowym get.php (patrz XtreamFirstProvider.allowsM3uFallback). */
     @Test
-    fun `HTML zamiast JSON to BadResponse, 5xx to Network`() =
+    fun `klasyfikacja bledow API - brak API, serwer, odmowa dostepu i limity`() =
         runTest {
-            assertTrue(
-                provider(
-                    "player_api.php?username" to Result.success("<html>"),
-                ).loadChannels().exceptionOrNull() is ProviderError.BadResponse,
-            )
-            assertTrue(
-                provider(
-                    "player_api.php?username" to Result.failure(NetworkException.Http(502)),
-                ).loadChannels().exceptionOrNull() is ProviderError.Network,
-            )
+            suspend fun error(response: Result<String>) =
+                provider("player_api.php?username" to response).loadChannels().exceptionOrNull()
+
+            assertTrue(error(Result.success("<html>")) is ProviderError.NotSupported) // 200, ale nie API Xtream
+            assertEquals(502, (error(Result.failure(NetworkException.Http(502))) as ProviderError.Network).httpCode)
+            assertTrue(error(Result.failure(NetworkException.Http(404))) is ProviderError.NotSupported)
+            assertTrue(error(Result.failure(NetworkException.Http(405))) is ProviderError.NotSupported)
+            assertTrue(error(Result.failure(NetworkException.Http(401))) is ProviderError.Unauthorized)
+            assertTrue(error(Result.failure(NetworkException.Http(403))) is ProviderError.Unauthorized)
+            val limited = error(Result.failure(NetworkException.Http(429, "ponów po: 30 s", 30)))
+            assertEquals(30L, (limited as ProviderError.RateLimited).retryAfterSeconds)
+            val serverWait = error(Result.failure(NetworkException.Http(520, "ponów po: 120 s", 120)))
+            assertEquals(120L, (serverWait as ProviderError.RateLimited).retryAfterSeconds)
+            val io = error(Result.failure(NetworkException.Io(java.io.IOException("x"))))
+            assertNull((io as ProviderError.Network).httpCode)
         }
 
     @Test

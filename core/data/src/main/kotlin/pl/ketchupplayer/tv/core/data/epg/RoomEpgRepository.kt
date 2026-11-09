@@ -67,7 +67,8 @@ class RoomEpgRepository
         }
 
         private suspend fun import(): Result<EpgRefreshReport> {
-            val urls = urlProvider.urls()
+            val targets = urlProvider.targets()
+            val urls = targets.map { it.url }
             if (urls.isEmpty()) return Result.failure(IllegalStateException("Brak włączonych źródeł EPG"))
             val matcher = EpgMatcher(channels.liveEpgKeys())
             val now = clock.nowMs()
@@ -76,10 +77,13 @@ class RoomEpgRepository
             var failed = 0
             val matched = HashSet<String>()
             val context = currentCoroutineContext()
-            for (url in urls) {
+            for (target in targets) {
+                val url = target.url
                 var yielded = false
+                // User-Agent listy dotyczy tylko jej źródeł; wspólny klient nie jest zmieniany.
+                val fetcher = target.userAgent?.let(streams::withUserAgent) ?: streams
                 val result =
-                    streams.open(url) { input ->
+                    fetcher.open(url) { input ->
                         // Czeka lista z tego samego konta: EPG oddaje połączenie i spróbuje później.
                         val count =
                             try {

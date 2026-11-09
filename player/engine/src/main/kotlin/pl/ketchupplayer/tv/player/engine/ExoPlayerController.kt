@@ -11,7 +11,6 @@ import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.text.CueGroup
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -70,7 +69,7 @@ class ExoPlayerController(
 
     override fun play(spec: StreamSpec) {
         collector.reset()
-        val factory = OkHttpDataSource.Factory(client).apply { spec.userAgent?.let(::setUserAgent) }
+        val factory = PlayerDataSources.factory(client, spec)
         val sources = DefaultMediaSourceFactory(factory).setLoadErrorHandlingPolicy(FailFastLoadErrorHandlingPolicy())
         exo.setMediaSource(sources.createMediaSource(MediaItem.fromUri(spec.url)))
         exo.prepare()

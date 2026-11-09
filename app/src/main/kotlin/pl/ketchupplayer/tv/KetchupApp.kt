@@ -9,17 +9,27 @@ import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import pl.ketchupplayer.tv.core.data.logos.LogoIndex
+import pl.ketchupplayer.tv.core.data.network.LegacyUserAgentMigration
 import pl.ketchupplayer.tv.core.network.NetworkClients
 import timber.log.Timber
+import javax.inject.Inject
 
 @HiltAndroidApp
 class KetchupApp :
     Application(),
     SingletonImageLoader.Factory {
+    @Inject
+    lateinit var legacyUserAgents: LegacyUserAgentMigration
+
     override fun onCreate() {
         super.onCreate()
         Timber.plant(RedactingTree())
+        // Wybór User-Agent z dawnego DataStore przenosimy zanim ruszy pierwszy import (krótkie, bez sieci).
+        runCatching { runBlocking(Dispatchers.IO) { legacyUserAgents.migrate() } }
+            .onFailure { Timber.w("Migracja wyboru User-Agent nie powiodła się: %s", it.javaClass.simpleName) }
         // Wbudowana baza logo stacji (iptv-org, ok. 25 KB); błąd odczytu nie może zatrzymać aplikacji.
         runCatching {
             val tsv = assets.open("logos/iptv-org.tsv").bufferedReader().use { it.readText() }
