@@ -173,6 +173,23 @@ object TeamParser {
         return if (left.isEmpty() || right.isEmpty()) null else left to right
     }
 
+    /**
+     * Tytuł audycji do zapisania przy sesji: bez wielkich liter i znaków diakrytycznych, ale z separatorami stron
+     * („-”, „:”), żeby późniejsze parsowanie dało ten sam wynik co na oryginale.
+     */
+    fun evidenceTitle(title: String): String =
+        title
+            .replace('–', '-')
+            .replace('—', '-')
+            .split(' ')
+            .filter { it.isNotBlank() }
+            .joinToString(" ") { word ->
+                val trailingColon = word.endsWith(":")
+                val norm = if (word == "-") "-" else Channel.normalizeName(word)
+                if (trailingColon && norm.isNotEmpty()) "$norm:" else norm
+            }.replace(Regex("\\s+"), " ")
+            .trim()
+
     fun isReplay(
         title: String,
         description: String?,

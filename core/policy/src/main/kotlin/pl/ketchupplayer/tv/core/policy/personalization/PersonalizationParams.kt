@@ -37,6 +37,8 @@ data class PersonalizationParams(
     val baseFloor: Double = 0.01,
     val coldStartSessions: Int = 2,
     val followDates: Int = 3,
+    /** Krótkie zajrzenie na mecz nie jest dowodem zainteresowania drużyną. */
+    val followMinWatchMs: Long = 10 * MINUTE_MS,
     val followWindowMs: Long = 60 * DAY_MS,
     val independentGapMs: Long = 12 * HOUR_MS,
     val asymmetry: Double = 1.8,

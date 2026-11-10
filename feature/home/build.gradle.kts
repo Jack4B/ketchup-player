@@ -9,6 +9,7 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:data"))
     implementation(project(":core:common"))
+    implementation(project(":core:policy"))
     implementation(project(":core:designsystem"))
     implementation(libs.coroutines.core)
     implementation(libs.androidx.lifecycle.runtime)

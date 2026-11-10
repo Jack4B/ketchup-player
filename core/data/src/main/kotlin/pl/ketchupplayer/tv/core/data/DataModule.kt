@@ -82,6 +82,21 @@ abstract class DataModule {
     @Singleton
     abstract fun bindEpg(impl: RoomEpgRepository): EpgRepository
 
+    @Binds
+    abstract fun bindPersonalizationSettings(
+        impl: pl.ketchupplayer.tv.core.data.personalization.DataStorePersonalizationSettings,
+    ): pl.ketchupplayer.tv.core.data.personalization.PersonalizationSettings
+
+    @Binds
+    abstract fun bindPersonalization(
+        impl: pl.ketchupplayer.tv.core.data.personalization.DefaultPersonalizationRepository,
+    ): pl.ketchupplayer.tv.core.data.personalization.PersonalizationRepository
+
+    @Binds
+    abstract fun bindPlaybackObserver(
+        impl: pl.ketchupplayer.tv.core.data.personalization.SessionRecorder,
+    ): pl.ketchupplayer.tv.core.data.personalization.PlaybackObserver
+
     companion object {
         @Provides
         @Singleton
@@ -114,6 +129,13 @@ abstract class DataModule {
 
         @Provides
         fun epgDao(db: KetchupDatabase): EpgDao = db.epg()
+
+        @Provides
+        fun personalizationDao(db: KetchupDatabase): pl.ketchupplayer.tv.core.database.PersonalizationDao =
+            db.personalization()
+
+        @Provides
+        fun sportDao(db: KetchupDatabase): pl.ketchupplayer.tv.core.database.SportDao = db.sport()
 
         @Provides
         @Singleton

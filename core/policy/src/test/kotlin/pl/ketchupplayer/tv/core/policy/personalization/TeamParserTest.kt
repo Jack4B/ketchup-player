@@ -125,6 +125,27 @@ class TeamParserTest {
     }
 
     @Test
+    fun tytulZapisanyPrzySesjiParsujeSieTakSamoJakOryginal() {
+        listOf(
+            "Liga Nadmorska: Wisła Nadmorska — Hutnik Leśny",
+            "Wisła Nadmorska vs. Hutnik Leśny (na żywo)",
+            "Śląsk Testowy - Zespół Spoza Słownika",
+            "Derby Trójmiasta",
+            "Wiadomości wieczorne",
+        ).forEach { title ->
+            val stored = TeamParser.evidenceTitle(title)
+            assertEquals(title, parse(title).teams, parse(stored).teams)
+            assertEquals(title, parse(title).ambiguous, parse(stored).ambiguous)
+            assertEquals(stored, stored.lowercase())
+            assertTrue(stored.all { it.code < 128 })
+        }
+        assertEquals(
+            "liga nadmorska: wisla nadmorska - hutnik lesny",
+            TeamParser.evidenceTitle("Liga Nadmorska: Wisła Nadmorska — Hutnik Leśny"),
+        )
+    }
+
+    @Test
     fun rozgrywkiZTytuluIOdwolanie() {
         assertEquals("pl-ekstraklasa", parse("Ekstraklasa: Legia Warszawa - Lech Poznań", idx = bundled).competitionKey)
         assertEquals("uefa-cl", parse("Liga Mistrzów: Real Madryt - FC Barcelona", idx = bundled).competitionKey)

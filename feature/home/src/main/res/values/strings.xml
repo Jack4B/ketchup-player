@@ -27,4 +27,41 @@
     <string name="home_time_runtime">%1$d min · pasuje do czasu</string>
     <string name="home_time_left">Zostało %1$d min</string>
     <string name="home_time_empty">Nic nie pasuje do tego czasu. Rozpocznij film, a podpowiemy, ile zostało do końca.</string>
+    <string name="home_row_because">Bo oglądasz</string>
+    <string name="home_because_hint">Przytrzymaj OK, żeby ocenić</string>
+    <string name="home_because_explore">Dla odmiany</string>
+    <string name="home_because_liked">Lubisz to</string>
+    <string name="home_why_genre">Gatunek: %1$s</string>
+    <string name="home_why_director">Reżyser: %1$s</string>
+    <string name="home_why_cast">Obsada: %1$s</string>
+    <string name="home_feedback_like">Lubię to</string>
+    <string name="home_feedback_unlike">Cofnij „Lubię to”</string>
+    <string name="home_feedback_hide">Nie pokazuj tego</string>
+    <string name="home_feedback_details">Szczegóły</string>
+    <string name="home_feedback_why">Dlaczego to widzę: %1$s</string>
+    <string name="home_feedback_why_explore">Propozycja spoza Twoich zwykłych wyborów</string>
+    <string name="home_row_sport">Twoje drużyny</string>
+    <string name="home_sport_live">Na żywo</string>
+    <string name="home_sport_replay">Powtórka</string>
+    <string name="home_sport_canceled">Odwołany</string>
+    <string name="home_sport_postponed">Termin zmieniony</string>
+    <string name="home_sport_today">Dziś %1$s</string>
+    <string name="home_sport_tomorrow">Jutro %1$s</string>
+    <string name="home_sport_date">%1$s %2$s, %3$s</string>
+    <string name="home_sport_channel_unconfirmed">Kanał niepotwierdzony · sprawdź w Na żywo</string>
+    <string name="home_sport_pick_channel">Wybierz kanał</string>
+    <string name="home_follow_title">Obserwować drużynę?</string>
+    <string name="home_follow_reason">Na podstawie transmisji oglądanych %1$s: %2$s.</string>
+    <string name="home_follow_one">Obserwuj: %1$s</string>
+    <string name="home_follow_both">Obserwuj obie</string>
+    <string name="home_follow_no">Nie, dziękuję</string>
+    <string-array name="home_weekdays_short">
+        <item>pon.</item>
+        <item>wt.</item>
+        <item>śr.</item>
+        <item>czw.</item>
+        <item>pt.</item>
+        <item>sob.</item>
+        <item>niedz.</item>
+    </string-array>
 </resources>

@@ -16,8 +16,19 @@ import androidx.room.RoomDatabase
         VodStateEntity::class,
         VodSeenEntity::class,
         VodMetaEntity::class,
+        WatchSessionEntity::class,
+        PreferenceFeatureEntity::class,
+        ExplicitFeedbackEntity::class,
+        TeamEntity::class,
+        TeamAliasEntity::class,
+        TeamFollowEntity::class,
+        SportEventEntity::class,
+        EventAvailabilityEntity::class,
+        HomeSnapshotEntity::class,
+        PersonalizationMetaEntity::class,
+        VodFeatureEntity::class,
     ],
-    version = 9,
+    version = 10,
     autoMigrations =
         [
             AutoMigration(
@@ -34,6 +45,7 @@ import androidx.room.RoomDatabase
                 to = 5,
             ), AutoMigration(from = 5, to = 6), AutoMigration(from = 6, to = 7), AutoMigration(from = 7, to = 8),
             AutoMigration(from = 8, to = 9),
+            AutoMigration(from = 9, to = 10),
         ],
     exportSchema = true,
 )
@@ -47,4 +59,8 @@ abstract class KetchupDatabase : RoomDatabase() {
     abstract fun epg(): EpgDao
 
     abstract fun vod(): VodDao
+
+    abstract fun personalization(): PersonalizationDao
+
+    abstract fun sport(): SportDao
 }

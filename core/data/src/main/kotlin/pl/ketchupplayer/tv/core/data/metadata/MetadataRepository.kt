@@ -73,7 +73,22 @@ class MetadataRepository
             }
             val r = result.ratings
             dao.upsertMeta(
-                VodMetaEntity(itemId, r.tmdb, r.imdb, r.rtPercent, now, found = true, r.metacritic, r.trakt, deepMs),
+                VodMetaEntity(
+                    itemId,
+                    r.tmdb,
+                    r.imdb,
+                    r.rtPercent,
+                    now,
+                    found = true,
+                    r.metacritic,
+                    r.trakt,
+                    deepMs,
+                    // Pola TMDB osobno od pól dostawcy: personalizacja wie, skąd pochodzi gatunek, obsada i reżyser.
+                    director = result.director ?: existing?.director,
+                    tmdbGenre = result.genre ?: existing?.tmdbGenre,
+                    tmdbCast = result.cast ?: existing?.tmdbCast,
+                    tmdbMatch = result.tmdbMatch?.name ?: existing?.tmdbMatch,
+                ),
             )
             val merged = MetadataMerge.fill(item, result)
             if (merged != item) dao.update(merged.toEntity())
