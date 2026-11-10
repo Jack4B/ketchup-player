@@ -7,7 +7,7 @@ Zakres 1.0: TV poziomo, D-pad + OK + BACK. Poza zakresem na stałe: Debrid, scra
 **Potwierdzone na boxie (raporty użytkownika):** import list M3U/Xtream (do ~100 tys. pozycji, ~80 s), kreator, Na żywo z EPG
 i grupami, Radar i Zainteresowania, Filmy, Seriale, Szczegóły (opis, obsada, ocena z dostawcy), odtwarzacz z OSD (audio, napisy,
 przesunięcia, tempo, proporcje, uśpienie, zegar), failover, 3 motywy + akcent, ustawienia dwupoziomowe, skrypt diagnostyczny.
-**Zrobione w kodzie, jeszcze nieprzetestowane na boxie:** User-Agent wybierany w kreatorze (domyślnie OTT Navigator) i edytowalna
+**Zrobione w kodzie, jeszcze nieprzetestowane na boxie:** User-Agent wybierany w kreatorze (domyślnie okhttp/4.10.0, OTT Navigator jako profil) i edytowalna
 lista w Ustawieniach → Sieć; filtr grup/kategorii; EPG automatycznie (start, po dodaniu listy, przycisk „Odśwież EPG teraz”);
 logo kanałów (Coil); Filmy z chowanymi kategoriami i 6 kolumnami; Home z kartami poziomymi i „Nowe odcinki”; OSD filmu z kartą
 „O FILMIE”; pauza po wyjściu z aplikacji; przyspieszone przewijanie; filtr zbyt gęstych naciśnięć pilota; szyna z jawną nawigacją.
@@ -20,7 +20,7 @@ Cel: wszystko, co użytkownik codziennie robi, działa na boxie bez błędów.
   - Przyczyna pustego `keyguard.txt` (rc0.8.1): log klawiszy szedł przez `Timber.d`, a `RedactingTree` przepuszcza INFO i wyżej. Naprawione
     (`KeyLog`, `Log.i`, debug). Skrypt boxa ma analizator `analyze_keys.sh` (sprzęt vs aplikacja, duplikaty, opóźnienia).
     Filtr aplikacji domyślnie 250 ms. Przyczynę skoków da się ustalić dopiero na danych z rc0.9.3+.
-- [ ] 1.3 Pełny przegląd BACK/LEWO/PRAWO na każdym ekranie + test na ekran. Zrobione: Home, Na żywo, Ustawienia (scenariusz), Filmy/Seriale (test siatki), Odtwarzacz. Szczegóły ZROBIONE (DetailsScreenTest). Do zrobienia: Szukaj, Moja lista (są scenariusze E2E, brak testów D-pad modułów)
+- [ ] 1.3 Pełny przegląd BACK/LEWO/PRAWO na każdym ekranie + test na ekran. Zrobione: Home, Na żywo, Ustawienia (scenariusz), Filmy/Seriale (test siatki), Odtwarzacz. Szczegóły ZROBIONE (DetailsScreenTest). Szukaj i Moja lista: są testy D-pad modułu (`VodBrowseModesScreenTest`) i scenariusz E2E pilota po przygotowaniu danych (`mojaListaISzukajDzialajaSamymPilotem`, PR #11). Otwarte: zimny start w trybie klawiszowym (nierozstrzygnięty), BACK ze szczegółów (test pilnuje obecnego zachowania, bez akceptacji UX), LEWO z akcji pustej Mojej listy, testy na TV-boxie (`docs/TEST-CHECKLIST.md`)
 - [x] 1.4 Ustawienia jako panel wsuwany z prawej (250 ms), nakładka na treść (22:xx 1.11, commit w gałęzi faza-d)
 - [~] 1.5 Na żywo: żywy podgląd wideo ZROBIONY (wyciszony, po 0,9 s, zwalniany przy wyjściu, przełącznik w Odtwarzaniu; nieprzetestowany na boxie). Lista kanałów w odtwarzaczu (OK) i CH+/CH− ZROBIONE; długie OK = ulubione jest w liście Na żywo
 - [x] 1.6 Jedna skala animacji: `Motion` w designsystemie (fokus 120, szyna 160, panele 220, fade 150), użyta w szynie, FocusItem, Filmach, Na żywo

@@ -11,4 +11,7 @@ dependencies {
     implementation(project(":core:network"))
     implementation(libs.coroutines.core)
     testImplementation(libs.coroutines.test)
+    testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
 }

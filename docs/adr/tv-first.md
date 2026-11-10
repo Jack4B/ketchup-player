@@ -17,3 +17,12 @@ Status: **zdecydowane przez właściciela (2026-10-31).**
 |---|---|
 | 1.0 | TV: pełny zakres wg KONSPEKT (fazy 0–Q), bez wariantu mobilnego |
 | 2.0 | Mobile: telefon/tablet (nawigacja, pion/poziom, dotyk, Cast sender) |
+
+## Uzupełnienie (2026-11-09): dotyk w odtwarzaczu
+
+Telefon: minimalna obsługa dotyku do testów; pełny telefon w 2.0. To nie zmienia decyzji tv-first ani bramki 1.0.
+
+- Odtwarzacz ma tryb dotyku (`TouchMode` w `feature/player-ui`). Włącza go dopiero dotknięcie ekranu palcem lub rysikiem, wyłącza dowolny klawisz (poza BACK i głośnością). Na TV nikt nie dotyka ekranu, więc tryb nie włącza się: przyciski dotykowe nie są nawet komponowane, a obsługa pilota (`onPreviewKeyEvent`) jest bez zmian.
+- W trybie dotyku: stuknięcie pokazuje albo chowa OSD, przyciski wyjścia, odtwórz/pauza, ±10 s i pasek postępu (stuknięcie lub przeciągnięcie, jedno przewinięcie po puszczeniu palca). Na żywo bez paska i bez skoków. OSD chowa się po tym samym czasie co dotąd, a dotyk go odświeża.
+- Poza zakresem (2.0): opcje audio/napisy/obraz dotykiem, układ pionowy, gesty (podwójne stuknięcie, jasność, głośność), strojenie rozmiarów pod małe ekrany.
+

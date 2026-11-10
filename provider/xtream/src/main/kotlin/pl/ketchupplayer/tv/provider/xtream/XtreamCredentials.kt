@@ -1,5 +1,7 @@
 package pl.ketchupplayer.tv.provider.xtream
 
+import pl.ketchupplayer.tv.core.model.RequestMethod
+import pl.ketchupplayer.tv.core.network.FormBody
 import java.net.URI
 import java.net.URLEncoder
 
@@ -25,6 +27,26 @@ data class XtreamCredentials(
         return "$server/player_api.php?" + params.joinToString("&") { (k, v) -> "$k=${enc(v)}" }
     }
 
+    /**
+     * Żądanie API w wybranej metodzie. GET: dane dostępu i akcja w adresie ([apiUrl]). POST: adres `player_api.php`
+     * bez danych, a `username`, `password`, `action` i parametry dodatkowe w ciele form-urlencoded ([FormBody]).
+     */
+    fun apiRequest(
+        method: RequestMethod,
+        action: String? = null,
+        extra: Map<String, String> = emptyMap(),
+    ): ApiRequest {
+        if (method == RequestMethod.GET) return ApiRequest(apiUrl(action, extra), null)
+        val params =
+            buildList {
+                add("username" to username)
+                add("password" to password)
+                if (action != null) add("action" to action)
+                extra.forEach { (k, v) -> add(k to v) }
+            }
+        return ApiRequest("$server/player_api.php", FormBody(params.joinToString("&") { (k, v) -> "$k=${enc(v)}" }))
+    }
+
     fun xmltvUrl(): String = "$server/xmltv.php?username=${enc(username)}&password=${enc(password)}"
 
     fun liveUrl(
@@ -41,6 +63,30 @@ data class XtreamCredentials(
     private fun enc(v: String) = URLEncoder.encode(v, Charsets.UTF_8).replace("+", "%20")
 
     companion object {
+        /**
+         * Konto Xtream z adresu listy (`.../get.php?username=U&password=P&type=m3u_plus` albo
+         * `.../player_api.php?username=U&password=P`): serwer bez ścieżki skryptu oraz login i hasło z zapytania.
+         * Null, gdy to nie jest taki adres. Dane z wyniku wolno trzymać tylko w pamięci i w `SecretStore`.
+         */
+        fun fromPlaylistUrl(url: String): XtreamCredentials? {
+            val clean = url.trim().replace("&amp;", "&", ignoreCase = true).substringBefore('#')
+            val uri = runCatching { URI(clean) }.getOrNull() ?: return null
+            val path = uri.rawPath.orEmpty().lowercase()
+            if (!path.endsWith("/get.php") && !path.endsWith("/player_api.php")) return null
+            val params =
+                uri.rawQuery
+                    .orEmpty()
+                    .split('&')
+                    .filter { '=' in it }
+                    .associate { it.substringBefore('=').lowercase() to decode(it.substringAfter('=')) }
+            val user = params["username"]?.takeIf { it.isNotBlank() } ?: return null
+            val pass = params["password"]?.takeIf { it.isNotBlank() } ?: return null
+            val server = normalizeServer(clean) ?: return null
+            return XtreamCredentials(server, user, pass)
+        }
+
+        private fun decode(v: String) = runCatching { java.net.URLDecoder.decode(v, "UTF-8") }.getOrDefault(v)
+
         private val knownSuffixes = listOf("/player_api.php", "/get.php", "/xmltv.php", "/panel_api.php", "/c", "/")
 
         /**
@@ -67,3 +113,9 @@ data class XtreamCredentials(
         }
     }
 }
+
+/** Adres i (przy POST) ciało żądania API; ciało zawiera dane dostępu i nie jest nigdzie logowane. */
+class ApiRequest(
+    val url: String,
+    val body: FormBody?,
+)

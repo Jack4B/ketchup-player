@@ -28,6 +28,7 @@ import pl.ketchupplayer.tv.core.designsystem.ScreenTitle
 import pl.ketchupplayer.tv.core.designsystem.SettingsListItem
 import pl.ketchupplayer.tv.core.designsystem.TextInputField
 import pl.ketchupplayer.tv.core.designsystem.requestFocusWhenPlaced
+import pl.ketchupplayer.tv.core.model.RequestMethod
 import pl.ketchupplayer.tv.core.network.UserAgentProfile
 import pl.ketchupplayer.tv.core.network.UserAgentProfiles
 
@@ -48,6 +49,8 @@ fun NetworkSettingsRoute(
         onBack = onBack,
         probe = probe,
         onProbe = viewModel::probeAll,
+        onSelectMethod = viewModel::selectMethod,
+        onSelectCustom = viewModel::selectCustom,
     )
 }
 
@@ -66,11 +69,18 @@ fun NetworkSettingsScreen(
     onBack: () -> Unit,
     probe: List<String> = emptyList(),
     onProbe: (ProviderHeaderRow) -> Unit = {},
+    onSelectMethod: (ProviderHeaderRow, RequestMethod) -> Unit = { _, _ -> },
+    onSelectCustom: (ProviderHeaderRow, String) -> Boolean = { _, _ -> false },
 ) {
     BackHandler(onBack = onBack)
     val c = KetchupTheme.colors
     var picking by remember { mutableStateOf<ProviderHeaderRow?>(null) }
+    var pickingMethod by remember { mutableStateOf<ProviderHeaderRow?>(null) }
     var adding by remember { mutableStateOf(false) }
+    // Własny User-Agent dla jednej listy: wartość wpisujemy tutaj, bez wcześniejszego dodawania na liście poniżej.
+    var editingCustom by remember { mutableStateOf<ProviderHeaderRow?>(null) }
+    var customDraft by remember { mutableStateOf("") }
+    var customInvalid by remember { mutableStateOf(false) }
     var draft by remember { mutableStateOf("") }
     var invalid by remember { mutableStateOf(false) }
     picking?.let { row ->
@@ -79,29 +89,114 @@ fun NetworkSettingsScreen(
             choices =
                 (UserAgentProfiles.ALL + customs).map {
                     Choice(it.id, it.label, it.value ?: stringResource(R.string.network_auto_hint))
+                } +
+                    Choice(
+                        UserAgentProfiles.CUSTOM_ENTRY.id,
+                        UserAgentProfiles.CUSTOM_ENTRY.label,
+                        stringResource(R.string.network_custom_list_hint),
+                    ),
+            selectedId =
+                if (UserAgentProfiles.isCustom(
+                        row.profile.id,
+                    )
+                ) {
+                    UserAgentProfiles.CUSTOM_ENTRY.id
+                } else {
+                    row.profile.id
                 },
-            selectedId = row.profile.id,
             onSelect = {
-                onSelect(row, it)
+                if (it == UserAgentProfiles.CUSTOM_ENTRY.id) {
+                    editingCustom = row
+                    customDraft = if (UserAgentProfiles.isCustom(row.profile.id)) row.profile.value.orEmpty() else ""
+                    customInvalid = false
+                } else {
+                    onSelect(row, it)
+                }
                 picking = null
             },
             onDismiss = { picking = null },
         )
     }
+    pickingMethod?.let { row ->
+        ChoiceDialog(
+            title = stringResource(R.string.network_method_pick_title, row.name),
+            choices =
+                RequestMethod.entries.map {
+                    val hint =
+                        if (it ==
+                            RequestMethod.POST
+                        ) {
+                            R.string.network_method_post_hint
+                        } else {
+                            R.string.network_method_get_hint
+                        }
+                    Choice(it.name, it.name, stringResource(hint))
+                },
+            selectedId = row.method.name,
+            onSelect = {
+                onSelectMethod(row, RequestMethod.parse(it))
+                pickingMethod = null
+            },
+            onDismiss = { pickingMethod = null },
+        )
+    }
     ScreenScaffold(scrollable = false) {
         ScreenTitle(stringResource(R.string.network_title))
         Text(stringResource(R.string.network_hint), color = c.textSecondary)
+        editingCustom?.let { row ->
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.network_pick_title, row.name), color = c.textSecondary)
+                TextInputField(
+                    label = stringResource(R.string.network_custom_field),
+                    value = customDraft,
+                    onChange = {
+                        customDraft = it
+                        customInvalid = false
+                    },
+                    modifier = Modifier.requestFocusWhenPlaced(force = true),
+                    onDone = {
+                        if (onSelectCustom(row, customDraft)) {
+                            editingCustom = null
+                            customDraft = ""
+                        } else {
+                            customInvalid = true
+                        }
+                    },
+                )
+                if (customInvalid) Text(stringResource(R.string.network_custom_invalid), color = c.textSecondary)
+            }
+        }
         LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (rows.isEmpty()) {
                 item(key = "empty") { Text(stringResource(R.string.network_empty), color = c.textSecondary) }
             }
             itemsIndexed(rows, key = { _, r -> r.providerId }) { i, row ->
+                val own = UserAgentProfiles.isCustom(row.profile.id)
                 SettingsListItem(
                     title = row.name,
-                    subtitle = row.profile.value ?: stringResource(R.string.network_auto_hint),
+                    subtitle =
+                        if (own) {
+                            stringResource(R.string.network_custom_hidden)
+                        } else {
+                            row.profile.value ?: stringResource(R.string.network_auto_hint)
+                        },
                     onClick = { picking = row },
-                    modifier = if (i == 0) Modifier.requestFocusWhenPlaced() else Modifier,
-                    trailing = { Text(row.profile.label, color = c.textPrimary, maxLines = 1) },
+                    modifier = if (i == 0 && editingCustom == null) Modifier.requestFocusWhenPlaced() else Modifier,
+                    trailing = {
+                        Text(
+                            if (own) stringResource(R.string.network_custom_label) else row.profile.label,
+                            color = c.textPrimary,
+                            maxLines = 1,
+                        )
+                    },
+                )
+            }
+            items(rows, key = { "method-" + it.providerId }) { row ->
+                SettingsListItem(
+                    title = stringResource(R.string.network_method_title, row.name),
+                    subtitle = stringResource(R.string.network_method_hint),
+                    onClick = { pickingMethod = row },
+                    trailing = { Text(row.method.name, color = c.textPrimary, maxLines = 1) },
                 )
             }
             items(rows, key = { "probe-" + it.providerId }) { row ->

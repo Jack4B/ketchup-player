@@ -167,4 +167,44 @@ class FilmIndexTest {
         assertEquals(2_000_000, ref?.imdbVotes)
         assertNull(index.find("Pitbull", 2005, series = false)?.imdbRating) // film bez oceny w danych
     }
+
+    // --- Czyszczenie tytułów i ocen (zgłoszenie z telefonu): fikcyjne wiersze indeksu ---
+
+    private fun addFilm(
+        id: Int,
+        imdb: String,
+        year: Int,
+        title: String,
+        votes: Int,
+    ) {
+        db.execSQL(
+            "INSERT INTO film VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+            arrayOf<Any?>(id, imdb, null, null, year, 0, title, title, null, null, 70, votes),
+        )
+        db.execSQL("INSERT INTO title VALUES(?,?)", arrayOf<Any?>(FilmTitles.normalize(title), id))
+    }
+
+    @Test
+    fun tytulKonczacySieLiczbaPodobnaDoRokuJestZnalezionyPrzezPelnaForme() {
+        addFilm(10, "tt0000010", 2020, "Wonder Woman 1984", 300_000)
+        // Czyszczenie tytułów rozbija „Wonder Woman 1984” na tytuł i rok 1984; indeks próbuje też pełnej formy.
+        assertEquals("tt0000010", index.find("Wonder Woman", 1984, false)?.imdb)
+        assertNull(index.find("Wonder Woman", null, false))
+    }
+
+    @Test
+    fun bezRokuWybieraWyraznegoLidera() {
+        addFilm(11, "tt0000011", 1984, "Dune Fikcyjna", 40_000)
+        addFilm(12, "tt0000012", 2021, "Dune Fikcyjna", 900_000)
+        assertEquals("tt0000012", index.find("Dune Fikcyjna", null, false)?.imdb)
+        assertEquals("tt0000011", index.find("Dune Fikcyjna", 1984, false)?.imdb)
+    }
+
+    @Test
+    fun bezRokuRemakeOZblizonejPopularnosciDajeNullZamiastZgadywania() {
+        addFilm(13, "tt0000013", 1990, "Remake Fikcyjny", 260_000)
+        addFilm(14, "tt0000014", 2012, "Remake Fikcyjny", 230_000)
+        assertNull(index.find("Remake Fikcyjny", null, false))
+        assertEquals("tt0000014", index.find("Remake Fikcyjny", 2012, false)?.imdb)
+    }
 }

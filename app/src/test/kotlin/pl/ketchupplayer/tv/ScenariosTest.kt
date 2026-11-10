@@ -1,7 +1,17 @@
 package pl.ketchupplayer.tv
 
 import android.os.Looper
+import android.view.View
+import android.view.ViewGroup
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.input.InputMode
+import androidx.compose.ui.input.InputModeManager
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalInputModeManager
+import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.click
@@ -9,6 +19,8 @@ import androidx.compose.ui.test.filter
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isFocused
+import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -30,6 +42,7 @@ import androidx.compose.ui.test.swipeUp
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.test.platform.app.InstrumentationRegistry
 import com.github.takahirom.roborazzi.captureRoboImage
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -79,6 +92,14 @@ class ScenariosTest {
         const val CLOCK_STEP_MS = 500L
         const val GRID_ROW = 10_000f
         const val SETTLED_READS = 3
+        const val REMOTE_STEPS = 10
+        val RAIL_LABELS = listOf("Profil", "Szukaj", "Home", "Na żywo", "Filmy", "Seriale", "Moja lista", "Ustawienia")
+        val VOD_CATEGORIES = listOf("Wszystkie", "Ostatnio dodane", "Dramat", "Komedia", "Kryminał")
+        const val RAIL_SETTLE_MS = 500L
+        const val MS_PER_S = 1_000L
+        const val WATCHDOG_MS = 60_000L
+        const val WATCHDOG_POLL_MS = 1_000L
+        const val WATCHDOG_FRAMES = 25
     }
 
     @get:Rule(order = -1)
@@ -244,18 +265,25 @@ class ScenariosTest {
                 .fetchSemanticsNodes()
                 .isNotEmpty()
         }
-        clickable(text).performScrollTo().performClick()
+        val target = clickable(text)
+        trace("click '$text': przed performScrollTo")
+        target.performScrollTo()
+        trace("click '$text': po performScrollTo, przed performClick")
+        target.performClick()
+        trace("click '$text': po performClick")
     }
 
     private fun addProviderViaUi(
         name: String,
         url: String,
+        post: Boolean = false,
     ) {
         settingsPage("Dostawcy")
         click("Dodaj dostawcę")
         waitForText("Zapisz i pobierz")
         compose.onAllNodes(hasSetTextAction())[0].performTextInput(name)
         compose.onAllNodes(hasSetTextAction())[1].performTextInput(url)
+        if (post) compose.onNodeWithText("POST").performScrollTo().performClick()
         compose.onNodeWithText("Zapisz i pobierz").performScrollTo().performClick()
     }
 
@@ -386,6 +414,44 @@ class ScenariosTest {
         waitForText("NASTĘPNIE")
         waitForText("Dzień na świecie")
         waitForText("jeszcze", substring = true)
+    }
+
+    /**
+     * Dostawca odrzuca GET (5xx), a lista działa tylko metodą POST: w kreatorze wybieramy „POST”, aplikacja wysyła
+     * dane z get.php w ciele (adres bez loginu i hasła), importuje listę i zapisuje metodę przy liście.
+     */
+    @Test
+    fun listaWymagajacaPostImportujeSiePrzezKreatorZPolemMetody() {
+        val host = "http://127.0.0.1:${server.port}"
+        val methods = java.util.concurrent.CopyOnWriteArrayList<String>()
+        val bodies = java.util.concurrent.CopyOnWriteArrayList<String>()
+        server.serveRequest("/get.php") { req ->
+            methods += req.method.orEmpty()
+            check(req.method == "POST") { "GET odrzucony" }
+            bodies += req.body.readUtf8()
+            "#EXTM3U\n#EXTINF:-1 group-title=\"Info\",TVN 24\n$host/tvn24.m3u8\n"
+        }
+        addProviderViaUi(
+            "Panel POST",
+            server.url("/get.php?username=user123&password=pass456&type=m3u_plus"),
+            post = true,
+        )
+        waitForText("Kanały: 1", substring = true)
+        assertEquals(listOf("POST"), methods.toList())
+        assertEquals(listOf("username=user123&password=pass456&type=m3u_plus"), bodies.toList())
+        val saved = runBlocking { catalog.providers.first().single() }
+        assertEquals(pl.ketchupplayer.tv.core.model.RequestMethod.POST, saved.requestMethod)
+    }
+
+    /** Domyślne GET dostaje 5xx: komunikat błędu podpowiada metodę POST (bez automatycznego przełączania). */
+    @Test
+    fun blad5xxPrzyGetPodpowiadaMetodePostWUstawieniachListy() {
+        server.serve("/get.php") { error("serwer odrzuca GET") }
+        addProviderViaUi("Panel GET", server.url("/get.php?username=user123&password=pass456"))
+        waitForText("Dostawca może wymagać metody POST", substring = true)
+        val saved = runBlocking { catalog.providers.first().single() }
+        assertEquals(pl.ketchupplayer.tv.core.model.RequestMethod.GET, saved.requestMethod)
+        assertTrue(saved.lastError.orEmpty().contains("POST"))
     }
 
     /**
@@ -919,18 +985,18 @@ class ScenariosTest {
         assertEquals(listOf("$host/tvn24.m3u8"), FakePlayers.played.toList())
     }
 
-    /** Scenariusz: domyślnie lista idzie z nagłówkiem OTT Navigator; panel odrzuca inne (404). */
+    /** Scenariusz: domyślnie lista idzie z nagłówkiem okhttp/4.10.0 (jak IPTV Extreme); panel odrzuca inne (404). */
     @Test
-    fun listaPobieranaDomyslnieZNaglowkiemOtt() {
+    fun listaPobieranaDomyslnieZNaglowkiemOkhttp() {
         val host = "http://127.0.0.1:${server.port}"
         server.serveRequest("/ott.m3u") { req ->
-            if (req.getHeader("User-Agent").orEmpty().startsWith("OTT Navigator/")) {
+            if (req.getHeader("User-Agent") == "okhttp/4.10.0") {
                 "#EXTM3U\n#EXTINF:-1 group-title=\"PL | Info\",TVN 24\n$host/tvn24.m3u8\n"
             } else {
                 ProviderServer.NOT_FOUND
             }
         }
-        runBlocking { catalog.addM3u("Domyślny OTT", server.url("/ott.m3u")) }
+        runBlocking { catalog.addM3u("Domyślny okhttp", server.url("/ott.m3u")) }
         nav("Na żywo")
         waitForText("TVN 24", timeoutMs = BIG_WAIT_MS)
     }
@@ -999,6 +1065,230 @@ class ScenariosTest {
             compose.onRoot().performKeyInput { pressKey(k) }
             compose.waitForIdle()
         }
+
+    private fun describeNode(node: SemanticsNode): String {
+        val description = node.config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString()
+        val text = node.config.getOrNull(SemanticsProperties.Text)?.joinToString { it.text }
+        val isField = node.config.contains(SemanticsProperties.EditableText)
+        return listOfNotNull(
+            description?.let { "opis=$it" },
+            text?.let { "tekst=$it" },
+            "pole".takeIf { isField },
+        ).joinToString(", ")
+    }
+
+    /** Opisy elementów z fokusem (opis dostępności i tekst), do asercji „gdzie jest fokus” bez znajomości drzewa. */
+    private fun focusedDescriptions(): List<String> {
+        val nodes = compose.onAllNodes(isFocused()).fetchSemanticsNodes()
+        return nodes.map { describeNode(it) }
+    }
+
+    private fun focusedHas(part: String) = focusedDescriptions().any { it.contains(part) }
+
+    private fun railFocused() = focusedDescriptions().any { d -> RAIL_LABELS.any { d.startsWith("opis=$it") } }
+
+    private fun categoryFocused() = focusedDescriptions().any { d -> VOD_CATEGORIES.any { d == "tekst=$it" } }
+
+    // --- Diagnostyka OOM w scenariuszach pilota (PR #11, tymczasowa) ---
+
+    @Volatile private var lastStep = "przed testem"
+
+    @Volatile private var lastStepAtMs = System.currentTimeMillis()
+
+    /** Szczegółowe znaczniki wewnątrz helperów (np. click) tylko w testach ze strażnikiem. */
+    private var tracing = false
+
+    private fun trace(name: String) {
+        if (tracing) step(name)
+    }
+
+    /** Zapamiętuje ostatni etap (bez wydruków); strażnik i błąd testu podają go, gdy test się zawiesi lub padnie. */
+    private fun step(name: String) {
+        lastStep = name
+        lastStepAtMs = System.currentTimeMillis()
+    }
+
+    private fun <T> stage(
+        name: String,
+        action: () -> T,
+    ): T {
+        step("$name: start")
+        val result = action()
+        step("$name: koniec")
+        return result
+    }
+
+    /**
+     * Strażnik: jeśli przez [WATCHDOG_MS] nie pojawi się nowy znacznik etapu, drukuje ostatni etap oraz stos wątku
+     * testu (hipoteza OOM: pętla klatek w `waitForIdle`; stos wskaże, w którym wywołaniu) i zleca głównej pętli
+     * przerwanie testu błędem z nazwą ostatniego etapu. Nie zmienia sterty, trace ani logiki testów.
+     */
+    private fun withWatchdog(block: () -> Unit) {
+        val mainThread = Looper.getMainLooper().thread
+        val finished = java.util.concurrent.CountDownLatch(1)
+        lastStepAtMs = System.currentTimeMillis()
+        tracing = true
+        var fired = false
+        kotlin.concurrent.thread(isDaemon = true, name = "straznik-e2e") {
+            while (!finished.await(WATCHDOG_POLL_MS, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+                val stalled = System.currentTimeMillis() - lastStepAtMs
+                if (!fired && stalled > WATCHDOG_MS) {
+                    fired = true
+                    val stage = lastStep
+                    println("STRAŻNIK: ${stalled / MS_PER_S}s bez etapu, ostatni: '$stage'. Stos:")
+                    val frames = mainThread.stackTrace
+                    val own = frames.filter { it.className.startsWith("pl.ketchupplayer") }
+                    (frames.take(WATCHDOG_FRAMES) + own).distinct().forEach { println("    at $it") }
+                    android.os.Handler(Looper.getMainLooper()).post {
+                        error("STRAŻNIK: ${stalled / MS_PER_S}s bez postępu, ostatni etap: '$stage'")
+                    }
+                }
+            }
+        }
+        try {
+            runCatching(block)
+                .onFailure { println("BŁĄD (${it::class.simpleName}) po etapie '$lastStep'") }
+                .getOrThrow()
+        } finally {
+            finished.countDown()
+        }
+    }
+
+    // --- Tryb pilota po przygotowaniu danych (PR #11) ---
+
+    @OptIn(ExperimentalComposeUiApi::class)
+    private var canaryModes: InputModeManager? = null
+
+    /** Kanarek w oknie; ustawiany PRZED dodaniem, żeby sprzątanie widziało też nieudaną instalację. */
+    private var canaryView: View? = null
+
+    /** Wynik ostatniego sprzątania po trybie pilota (sprawdza go test ścieżki błędu). */
+    private var cleanupReport = ""
+
+    private fun windowInTouchMode() = compose.activity.window.decorView.isInTouchMode
+
+    /**
+     * Kanarek stanu Compose: mały `ComposeView` dodany do okna PRZED przełączeniem trybu. Ma własny
+     * `InputModeManager`, ale rejestruje się w tym samym oknie co aplikacja, więc jego tryb pokazuje, czy zmiana trybu
+     * okna dotarła do Compose. Nie czyta ani nie zmienia stanu aplikacji.
+     */
+    @OptIn(ExperimentalComposeUiApi::class)
+    private fun installInputModeCanary() {
+        val canary = ComposeView(compose.activity)
+        canaryView = canary
+        compose.runOnUiThread {
+            canary.setContent { canaryModes = LocalInputModeManager.current }
+            compose.activity.addContentView(canary, ViewGroup.LayoutParams(1, 1))
+        }
+        compose.waitForIdle()
+    }
+
+    /** Idempotentnie zdejmuje kanarek z okna na wątku UI (nic nie robi, gdy go nie ma lub już zdjęto). */
+    private fun detachInputModeCanary() {
+        val canary = canaryView ?: return
+        canaryView = null
+        compose.runOnUiThread { (canary.parent as? ViewGroup)?.removeView(canary) }
+    }
+
+    /** Kanarek jest drugim korzeniem semantyki (`onRoot()` wymaga jednego), więc po odczycie trybu go usuwamy. */
+    private fun removeInputModeCanary() {
+        detachInputModeCanary()
+        compose.waitForIdle()
+        val roots = compose.onAllNodes(isRoot()).fetchSemanticsNodes().size
+        step("kanarek usunięty, korzeni semantyki: $roots")
+        check(roots == 1) { "Po usunięciu kanarka powinien zostać jeden korzeń semantyki, jest $roots" }
+    }
+
+    /**
+     * Sprzątanie w `finally`: najpierw tryb (kanarek nie może go zablokować), potem kanarek; każdy krok osobno
+     * zabezpieczony, żeby błąd sprzątania nie zamaskował pierwotnego wyjątku testu. Nie czeka na bezczynność.
+     */
+    @Suppress("DEPRECATION")
+    private fun cleanUpAfterRemoteMode() {
+        val mode = runCatching { InstrumentationRegistry.getInstrumentation().setInTouchMode(true) }
+        val canary = runCatching { detachInputModeCanary() }
+        cleanupReport =
+            "tryb=${mode.fold({ "przywrócony" }, { "BŁĄD $it" })}, " +
+            "kanarek=${canary.fold({ "usunięty" }, { "BŁĄD $it" })}"
+        if (mode.isFailure || canary.isFailure) println("Sprzątanie po trybie pilota: $cleanupReport")
+    }
+
+    /**
+     * Wykonuje [block] z oknem w trybie nie-dotykowym (jak TV po pierwszym klawiszu pilota). Dane przygotowuje się
+     * wcześniej w trybie dotyku (sprawdzone helpery UI), więc to jest test OBSŁUGI PILOTEM po przygotowaniu danych,
+     * a nie dowód poprawności zimnego startu całej aplikacji w trybie klawiszowym (zob. nierozstrzygnięte zawieszenie
+     * w HANDOFF). Przełączenie: publiczne `View.requestFocusFromTouch()` (framework wychodzi wtedy z trybu dotyku i
+     * powiadamia nasłuchujących, w tym Compose); wynik jest sprawdzany w oknie i w kanarku Compose. Kanarek jest
+     * usuwany przed [block] (jeden korzeń semantyki), a w `finally` także po błędzie instalacji, kontroli lub
+     * przełączenia ([cleanUpAfterRemoteMode]). [beforeRemoval] to punkt do wymuszenia błędu w teście sprzątania.
+     */
+    @OptIn(ExperimentalComposeUiApi::class)
+    private fun <T> inRemoteMode(
+        beforeRemoval: () -> Unit = {},
+        block: () -> T,
+    ): T {
+        try {
+            installInputModeCanary()
+            step("tryb przed przełączeniem: okno dotyk=${windowInTouchMode()}, Compose=${canaryModes?.inputMode}")
+            check(windowInTouchMode() && canaryModes?.inputMode == InputMode.Touch) {
+                "Setup w trybie dotyku: okno dotyk=${windowInTouchMode()}, Compose=${canaryModes?.inputMode}"
+            }
+            val decor = compose.activity.window.decorView
+            compose.runOnUiThread { decor.requestFocusFromTouch() }
+            compose.waitForIdle()
+            step("tryb po przełączeniu: okno dotyk=${windowInTouchMode()}, Compose=${canaryModes?.inputMode}")
+            check(!windowInTouchMode()) { "Okno nadal w trybie dotyku po requestFocusFromTouch()" }
+            check(canaryModes?.inputMode == InputMode.Keyboard) {
+                "Compose nie przeszedł w tryb klawiszowy mimo zmiany trybu okna: ${canaryModes?.inputMode}"
+            }
+            beforeRemoval()
+            removeInputModeCanary()
+            return block()
+        } finally {
+            cleanUpAfterRemoteMode()
+        }
+    }
+
+    /**
+     * Wybór sekcji samym pilotem: LEWO do szyny, GÓRA na jej początek, DÓŁ do pozycji [label], OK. Ścieżka użytkownika
+     * na boxie (fokus po wyborze sekcji zostaje na szynie albo przechodzi na treść, więc LEWO powtarzamy do skutku).
+     */
+    private fun openSectionWithRemote(label: String) {
+        check(!windowInTouchMode()) { "Ścieżka pilota wymaga okna w trybie klawiszowym (inRemoteMode)" }
+        step("$label: przed pierwszym klawiszem")
+        pressKeys(listOf(Key.ShiftLeft))
+        step("$label: po pierwszym klawiszu, fokus ${focusedDescriptions()}")
+        repeat(REMOTE_STEPS) { if (!railFocused()) pressKeys(listOf(Key.DirectionLeft)) }
+        step("$label: po LEWO do szyny, fokus ${focusedDescriptions()}")
+        check(railFocused()) { "LEWO nie doprowadziło na szynę, fokus: ${focusedDescriptions()}" }
+        // Szyna zdąży się rozwinąć (inaczej tylko aktywna pozycja przyjmuje fokus).
+        Shadows.shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(RAIL_SETTLE_MS))
+        compose.waitForIdle()
+        repeat(REMOTE_STEPS) { pressKeys(listOf(Key.DirectionUp)) }
+        repeat(REMOTE_STEPS) { if (!focusedHas("opis=$label")) pressKeys(listOf(Key.DirectionDown)) }
+        step("$label: na pozycji szyny, przed OK")
+        compose.onNodeWithContentDescription(label).assertIsFocused()
+        pressKeys(listOf(Key.DirectionCenter))
+        step("$label: po OK")
+    }
+
+    /** Z szyny i z kategorii w prawo, z reszty w dół: naturalna droga od szyny/pola szukania do wyniku. */
+    private fun walkRemoteTo(target: String) {
+        val trace = mutableListOf(focusedDescriptions().toString())
+        repeat(REMOTE_STEPS) {
+            if (!focusedHas(target)) {
+                if (focusedHas("pole")) {
+                    // Strzałki zostają w polu; wyjście to przycisk „Szukaj” klawiatury ekranowej (fokus w dół).
+                    compose.onNode(hasSetTextAction()).performImeAction()
+                    compose.waitForIdle()
+                } else {
+                    pressKeys(listOf(if (railFocused() || categoryFocused()) Key.DirectionRight else Key.DirectionDown))
+                }
+                trace += focusedDescriptions().toString()
+            }
+        }
+        check(focusedHas(target)) { "Nie dotarto do '$target': ${trace.joinToString(" -> ")}" }
+    }
 
     /** Błąd z boxa: po wejściu w Ustawienia nie dało się wrócić pilotem do szyny i innych sekcji. */
     @Test
@@ -1096,6 +1386,126 @@ class ScenariosTest {
         compose.mainClock.advanceTimeBy(500)
         compose.waitForIdle()
         compose.onNodeWithContentDescription("Na żywo").assertIsFocused()
+    }
+
+    /**
+     * Ścieżka błędu pomocnika [inRemoteMode] (PR #11): błąd wymuszony po przełączeniu trybu, przed usunięciem kanarka.
+     * `finally` ma usunąć kanarek (zostaje jeden korzeń semantyki), przywrócić tryb po stronie menedżera okien i nie
+     * zamaskować pierwotnego wyjątku; blok z ścieżką pilota nie może się wykonać.
+     */
+    @Test
+    fun pomocniczyWidokITrybSaSprzatanePoBledzieWTrybiePilota() {
+        var blockRan = false
+        val failure =
+            runCatching {
+                inRemoteMode(beforeRemoval = { error("wymuszony błąd po przełączeniu trybu") }) { blockRan = true }
+            }.exceptionOrNull()
+        compose.waitForIdle()
+        assertEquals("wymuszony błąd po przełączeniu trybu", failure?.message)
+        assertTrue("blok pilota nie powinien się wykonać po błędzie", !blockRan)
+        assertEquals("tryb=przywrócony, kanarek=usunięty", cleanupReport)
+        assertTrue("kanarek nadal w oknie", canaryView == null)
+        assertEquals(1, compose.onAllNodes(isRoot()).fetchSemanticsNodes().size)
+    }
+
+    /**
+     * Plan 1.3, Moja lista i Szukaj samym pilotem na prawdziwym grafie (Room, serwer Xtream): wejście z szyny, fokus,
+     * plakat, szczegóły, BACK do szyny i Home. Zakres: test OBSŁUGI PILOTEM po przygotowaniu danych. Dane (Pitbull na
+     * liście) przygotowane w trybie dotyku helperami UI, potem okno przechodzi w tryb klawiszowy ([inRemoteMode]) i
+     * ścieżka idzie D-pad / OK / BACK; fraza wpisana przez IME (`performTextInput`) w polu, do którego fokus doszedł
+     * klawiszem. To NIE jest dowód poprawności zimnego startu aplikacji w trybie klawiszowym (przygotowanie danych w
+     * takim oknie zawieszało się w `click`; przyczyna nierozstrzygnięta, zob. HANDOFF).
+     */
+    @Test
+    fun mojaListaISzukajDzialajaSamymPilotem() =
+        withWatchdog {
+            setUpPitbullOnMyList() // dane w trybie dotyku
+            inRemoteMode { remoteScenario() } // ścieżka wyłącznie D-pad / OK / BACK (+ IME dla frazy)
+        }
+
+    private fun setUpPitbullOnMyList() {
+        stage("serwer Xtream") { serveXtreamVod() }
+        stage("dodanie listy przez UI") { addXtreamViaUi("dobre-haslo") }
+        stage("import: Kanały: 2") { waitForText("Kanały: 2", substring = true) }
+        stage("sekcja Filmy") { nav("Filmy") }
+        stage("szczegóły Pitbull") { click("Pitbull") }
+        stage("dodanie do Mojej listy") { click("+ Moja lista") }
+        stage("potwierdzenie ✓ Moja lista") { waitForText("✓ Moja lista") }
+    }
+
+    private fun remoteScenario() {
+        openSectionWithRemote("Moja lista")
+        waitForText("Pitbull")
+        waitFor { focusedHas("tekst=Wszystkie") } // fokus na kategorii, jak w Filmach
+        step("Moja lista: fokus na kategorii Wszystkie")
+        pressKeys(listOf(Key.DirectionRight))
+        waitFor { focusedHas("Pitbull") }
+        step("Moja lista: fokus na plakacie Pitbull")
+        pressKeys(listOf(Key.DirectionCenter))
+        waitForText("FILM") // szczegóły filmu
+        waitForText("Pitbull") // tożsamość: szczegóły tego filmu, który miał fokus
+        step("Moja lista: otwarte szczegóły filmu")
+        // Obecne zachowanie (nie decyzja UX): pierwszy BACK ze szczegółów przenosi fokus na szynę, szczegóły zostają;
+        // drugi BACK z szyny prowadzi na Home. Czy BACK ma zamykać szczegóły do listy, rozstrzyga właściciel/box.
+        back()
+        waitFor { railFocused() }
+        check(compose.onAllNodesWithText("FILM").fetchSemanticsNodes().isNotEmpty()) {
+            "Po pierwszym BACK szczegóły miały zostać (obecne zachowanie), fokus: ${focusedDescriptions()}"
+        }
+        step("Szczegóły: pierwszy BACK, fokus na szynie")
+        back()
+        waitForText("Mam czas na", substring = true)
+        waitFor { compose.onAllNodesWithText("FILM").fetchSemanticsNodes().isEmpty() }
+        step("Szczegóły: drugi BACK, Home")
+
+        openSectionWithRemote("Szukaj")
+        waitForText("Seksmisja")
+        waitForText("Rodzina Kowalskich") // filmy i seriale razem
+        waitFor { focusedHas("tekst=Wszystkie") }
+        pressKeys(listOf(Key.DirectionUp))
+        compose.onNode(hasSetTextAction()).assertIsFocused()
+        step("Szukaj: fokus w polu")
+        compose.onNode(hasSetTextAction()).performTextInput("kowal")
+        waitFor { compose.onAllNodesWithText("Seksmisja").fetchSemanticsNodes().isEmpty() }
+        step("Szukaj: wyniki zawężone")
+        walkRemoteTo("Rodzina Kowalskich")
+        step("Szukaj: fokus na serialu")
+        pressKeys(listOf(Key.DirectionCenter))
+        waitForText("SERIAL") // szczegóły serialu
+        step("Szukaj: otwarte szczegóły serialu")
+    }
+
+    /**
+     * Syntetyczny katalog o cechach dużej listy (nie lista użytkownika): import z prawdziwym Room, Filmy i Seriale
+     * zgrupowane z odcinków, Szukaj we wszystkim oraz dodawanie i usuwanie z Mojej listy.
+     */
+    @Test
+    fun syntetycznyKatalogImportujeSzukaIPamietaUlubione() {
+        val host = server.baseUrl()
+        server.serve("/syn.m3u") { SyntheticCatalog.m3u(host) }
+        addProviderViaUi("Katalog syntetyczny", server.url("/syn.m3u"))
+        waitForText("Kanały: ${SyntheticCatalog.LIVE}", substring = true)
+        nav("Filmy")
+        waitForText("Burza")
+        nav("Seriale")
+        waitForText("Komisariat 7")
+        waitForText("Rodzina Kowalskich")
+        nav("Szukaj")
+        waitForText("Burza")
+        compose.onNode(hasSetTextAction()).performTextInput("komis")
+        waitFor { compose.onAllNodesWithText("Burza").fetchSemanticsNodes().isEmpty() }
+        waitForText("Komisariat 7")
+        nav("Filmy")
+        click("Burza")
+        click("+ Moja lista")
+        waitForText("✓ Moja lista")
+        nav("Moja lista")
+        waitForText("Burza")
+        click("Burza")
+        click("✓ Moja lista")
+        waitForText("+ Moja lista")
+        nav("Moja lista")
+        waitForText("Moja lista jest pusta", substring = true)
     }
 
     /** Przegląd nawigacji (plan 1.3): BACK z treści każdej sekcji przenosi fokus na jej pozycję w szynie. */
@@ -1727,6 +2137,28 @@ class ScenariosTest {
         waitForText("Lista: połączenia 1 z 2")
     }
 
+    /** Audyt układu: pusta Moja lista, Szukaj z wynikami i Szukaj bez wyników (plan 1.3). */
+    private fun auditEmptyMyListAndSearch(audit: (String) -> Unit) {
+        nav("Moja lista")
+        waitForText("Moja lista jest pusta", substring = true)
+        audit("Moja lista (pusta)")
+        nav("Szukaj")
+        waitForText("Seksmisja")
+        audit("Szukaj")
+        compose.onAllNodes(hasSetTextAction())[0].performTextInput("zzz")
+        waitForText("Brak wyników dla", substring = true)
+        audit("Szukaj (brak wyników)")
+    }
+
+    /** Audyt układu: Moja lista z pozycją dodaną na szczegółach filmu (ekran szczegółów jest otwarty). */
+    private fun auditFilledMyList(audit: (String) -> Unit) {
+        click("+ Moja lista")
+        waitForText("✓ Moja lista")
+        nav("Moja lista")
+        waitForText("Pitbull")
+        audit("Moja lista")
+    }
+
     /**
      * Audyt układu (raport 2.11: „czy nikt się nie chowa, czy jest wyśrodkowane, czy czcionki dobrze dobrane”):
      * przechodzi przez główne ekrany jako telewizor i mierzy wyjście poza ekran, minimalną czcionkę, rozmiar celów
@@ -1761,6 +2193,9 @@ class ScenariosTest {
         nav("Seriale")
         waitForText("Rodzina Kowalskich")
         audit("Seriale")
+        auditEmptyMyListAndSearch { audit(it) }
+        nav("Seriale")
+        waitForText("Rodzina Kowalskich")
         click("Pitbull".takeIf { false } ?: "Rodzina Kowalskich")
         waitForText("SERIAL")
         audit("Szczegóły serialu")
@@ -1769,6 +2204,7 @@ class ScenariosTest {
         click("Pitbull")
         waitForText("FILM")
         audit("Szczegóły filmu")
+        auditFilledMyList { audit(it) }
         listOf(
             "Dostawcy",
             "Grupy i kategorie",

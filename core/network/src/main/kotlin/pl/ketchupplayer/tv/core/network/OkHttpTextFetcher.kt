@@ -6,8 +6,12 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import okhttp3.Call
 import okhttp3.Callback
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.Interceptor
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import java.io.BufferedInputStream
 import java.io.ByteArrayOutputStream
@@ -34,6 +38,18 @@ class OkHttpTextFetcher(
         client.newBuilder().readTimeout(STREAM_READ_TIMEOUT_S, java.util.concurrent.TimeUnit.SECONDS).build()
     }
 
+    /** Klienty dla żądań z ciałem: osłona zatrzymuje przekierowanie danych POST na inny serwer. */
+    private val postClient: OkHttpClient by lazy {
+        client
+            .newBuilder()
+            .addNetworkInterceptor(
+                PostRedirectGuard,
+            ).build()
+    }
+    private val postStreamClient: OkHttpClient by lazy {
+        streamClient.newBuilder().addNetworkInterceptor(PostRedirectGuard).build()
+    }
+
     override fun withUserAgent(userAgent: String): TextFetcher =
         OkHttpTextFetcher(
             client
@@ -57,15 +73,29 @@ class OkHttpTextFetcher(
     override suspend fun fetchWithHeaders(
         url: String,
         headers: Map<String, String>,
+    ): Result<String> = fetchText(url, headers, null)
+
+    override suspend fun fetchWithBody(
+        url: String,
+        body: FormBody,
+    ): Result<String> = fetchText(url, emptyMap(), body)
+
+    private suspend fun fetchText(
+        url: String,
+        headers: Map<String, String>,
+        body: FormBody?,
+    ): Result<String> =
+        // Treść czytamy na IO: wołający bywa na wątku głównym (NetworkOnMainThreadException, import Xtream).
+        withContext(Dispatchers.IO) { fetchTextOnIo(url, headers, body) }
+
+    private suspend fun fetchTextOnIo(
+        url: String,
+        headers: Map<String, String>,
+        body: FormBody?,
     ): Result<String> =
         try {
-            val request =
-                Request
-                    .Builder()
-                    .url(url)
-                    .apply { headers.forEach { (k, v) -> header(k, v) } }
-                    .build()
-            client.newCall(request).await().use { response ->
+            val request = buildRequest(url, headers, body)
+            (if (body != null) postClient else client).newCall(request).await().use { response ->
                 if (!response.isSuccessful) return Result.failure(response.toHttpFailure())
                 Result.success(readLimited(response))
             }
@@ -82,11 +112,24 @@ class OkHttpTextFetcher(
     override suspend fun <T> fetchStream(
         url: String,
         block: (InputStream) -> T,
+    ): Result<T> = streamBytes(url, null, block)
+
+    override suspend fun <T> fetchStreamWithBody(
+        url: String,
+        body: FormBody,
+        block: (InputStream) -> T,
+    ): Result<T> = streamBytes(url, body, block)
+
+    private suspend fun <T> streamBytes(
+        url: String,
+        formBody: FormBody?,
+        block: (InputStream) -> T,
     ): Result<T> =
         HostGate.exclusive(url) {
             withContext(Dispatchers.IO) {
                 try {
-                    streamClient.newCall(Request.Builder().url(url).build()).execute().use { response ->
+                    val call = streamClientFor(formBody).newCall(buildRequest(url, emptyMap(), formBody))
+                    call.execute().use { response ->
                         if (!response.isSuccessful) return@withContext Result.failure(response.toHttpFailure())
                         val body = response.body ?: return@withContext Result.success(block("".byteInputStream()))
                         val raw =
@@ -109,11 +152,24 @@ class OkHttpTextFetcher(
     override suspend fun <T> fetchLines(
         url: String,
         block: (Sequence<String>) -> T,
+    ): Result<T> = streamLines(url, null, block)
+
+    override suspend fun <T> fetchLinesWithBody(
+        url: String,
+        body: FormBody,
+        block: (Sequence<String>) -> T,
+    ): Result<T> = streamLines(url, body, block)
+
+    private suspend fun <T> streamLines(
+        url: String,
+        formBody: FormBody?,
+        block: (Sequence<String>) -> T,
     ): Result<T> =
         HostGate.exclusive(url) {
             withContext(Dispatchers.IO) {
                 try {
-                    streamClient.newCall(Request.Builder().url(url).build()).execute().use { response ->
+                    val call = streamClientFor(formBody).newCall(buildRequest(url, emptyMap(), formBody))
+                    call.execute().use { response ->
                         if (!response.isSuccessful) return@withContext Result.failure(response.toHttpFailure())
                         val body = response.body ?: return@withContext Result.success(block(emptySequence()))
                         val raw =
@@ -136,6 +192,24 @@ class OkHttpTextFetcher(
                 }
             }
         }
+
+    private fun streamClientFor(body: FormBody?): OkHttpClient = if (body != null) postStreamClient else streamClient
+
+    /** GET albo POST (form-urlencoded); przy POST zapamiętuje serwer docelowy dla [PostRedirectGuard]. */
+    private fun buildRequest(
+        url: String,
+        headers: Map<String, String>,
+        body: FormBody?,
+    ): Request {
+        val builder = Request.Builder().url(url).apply { headers.forEach { (k, v) -> header(k, v) } }
+        if (body != null) {
+            val target = url.toHttpUrl()
+            builder
+                .post(body.encoded.toByteArray(Charsets.UTF_8).toRequestBody(FORM_MEDIA_TYPE))
+                .tag(OriginHost::class.java, OriginHost(target.host, target.isHttps))
+        }
+        return builder.build()
+    }
 
     private fun maybeGunzip(input: BufferedInputStream): InputStream {
         input.mark(2)
@@ -182,6 +256,7 @@ class OkHttpTextFetcher(
     }
 
     private companion object {
+        val FORM_MEDIA_TYPE = "application/x-www-form-urlencoded".toMediaType()
         const val DEFAULT_MAX_BYTES = 64L * 1024 * 1024
         const val DEFAULT_STREAM_MAX_BYTES = 2L * 1024 * 1024 * 1024
         const val STREAM_READ_TIMEOUT_S = 180L
@@ -279,5 +354,28 @@ private class LimitedInputStream(
     private fun add(n: Int) {
         count += n
         if (count > limit) throw NetworkException.TooLarge(limit)
+    }
+}
+
+/** Serwer, do którego użytkownik wysłał POST; po przekierowaniu dane z ciała nie mogą trafić gdzie indziej. */
+internal class OriginHost(
+    val host: String,
+    val https: Boolean,
+)
+
+/** Zatrzymuje wysłanie ciała POST (login i hasło) na inny host albo z HTTPS na HTTP po przekierowaniu 307/308. */
+internal class PostRedirectBlockedException :
+    IOException("Przekierowanie z danymi POST na inny serwer zostało zatrzymane")
+
+internal object PostRedirectGuard : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request = chain.request()
+        val origin = request.tag(OriginHost::class.java)
+        if (request.body != null && origin != null) {
+            val sameHost = request.url.host.equals(origin.host, ignoreCase = true)
+            val downgraded = origin.https && !request.url.isHttps
+            if (!sameHost || downgraded) throw PostRedirectBlockedException()
+        }
+        return chain.proceed(request)
     }
 }

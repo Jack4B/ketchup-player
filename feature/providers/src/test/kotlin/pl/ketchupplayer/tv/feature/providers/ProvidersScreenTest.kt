@@ -3,15 +3,24 @@ package pl.ketchupplayer.tv.feature.providers
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.pressKey
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -25,6 +34,7 @@ import pl.ketchupplayer.tv.core.designsystem.UiClock
 import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.model.ProviderInfo
 import pl.ketchupplayer.tv.core.model.ProviderType
+import pl.ketchupplayer.tv.core.model.RequestMethod
 import pl.ketchupplayer.tv.core.testing.assertNoHorizontalOverflow
 
 @OptIn(ExperimentalTestApi::class)
@@ -150,6 +160,107 @@ class ProvidersScreenTest {
         compose.onNodeWithText("VLC").performClick()
         assertEquals(listOf<ProvidersEvent>(ProvidersEvent.SelectUserAgent("vlc")), events)
     }
+
+    /** Kreator: „Własny…” na liście wyboru wysyła zdarzenie z prefiksem, bez wpisów w ustawieniach globalnych. */
+    @Test
+    fun wyborWlasnegoUserAgentBezUstawienGlobalnych() {
+        val events = mutableListOf<ProvidersEvent>()
+        show(ProvidersUiState(form = ProviderForm()), events)
+        compose.onNodeWithText("User-Agent:", substring = true).performClick()
+        compose.waitForIdle()
+        // Lista wyboru jest leniwa: „Własny…” (ostatnia pozycja) może wymagać przewinięcia do widoku.
+        if (compose.onAllNodes(hasText("Własny…")).fetchSemanticsNodes().isEmpty()) {
+            compose.onAllNodes(hasScrollAction()).onLast().performScrollToNode(hasText("Własny…"))
+        }
+        compose.onNodeWithText("Własny…").performSemanticsAction(SemanticsActions.OnClick)
+        assertEquals(listOf<ProvidersEvent>(ProvidersEvent.SelectUserAgent("custom:")), events)
+    }
+
+    /** Własny User-Agent: pole z wpisaną wartością, przycisk bez wartości (jak dane dostępu), komunikat o błędzie. */
+    @Test
+    fun polaWlasnegoUserAgentPokazujeWartoscPrzyciskJejNieIBlad() {
+        val form = ProviderForm(userAgentId = "custom:Wink/1.31.1", userAgentError = true)
+        show(ProvidersUiState(form = form))
+        compose.onNodeWithText("Wink/1.31.1").assertExists()
+        compose.onNodeWithText("User-Agent: Własny", substring = true).assertExists()
+        compose.onNodeWithText("Niepoprawny", substring = true).assertExists()
+    }
+
+    @Test
+    fun wpisanieWlasnegoUserAgentWysylaZdarzenieZTekstem() {
+        val events = mutableListOf<ProvidersEvent>()
+        show(ProvidersUiState(form = ProviderForm(userAgentId = "custom:")), events)
+        compose.onAllNodes(hasSetTextAction()).onLast().performTextInput("MojAgent/3")
+        assertEquals(listOf<ProvidersEvent>(ProvidersEvent.UserAgentTextChanged("MojAgent/3")), events)
+    }
+
+    /** Kreator: pole „Metoda zapytania” (GET domyślnie, POST) działa dotykiem. */
+    @Test
+    fun wyborMetodyPostDotykiem() {
+        val events = mutableListOf<ProvidersEvent>()
+        show(ProvidersUiState(form = ProviderForm()), events)
+        compose.onNodeWithText("Metoda zapytania", substring = true).assertExists()
+        compose.onNodeWithText("POST").performClick()
+        compose.onNodeWithText("GET").performClick()
+        assertEquals(
+            listOf<ProvidersEvent>(
+                ProvidersEvent.SelectRequestMethod(RequestMethod.POST),
+                ProvidersEvent.SelectRequestMethod(RequestMethod.GET),
+            ),
+            events,
+        )
+    }
+
+    /**
+     * Kreator: wybór metody D-padem. Okno wychodzi z trybu dotyku jak TV po pierwszym klawiszu pilota
+     * (`requestFocusFromTouch`), fokus ląduje na przycisku „POST”, a OK wysyła zdarzenie.
+     */
+    private fun postPrzezOkNaPrzyciskuPost(kind: ProviderKind) {
+        val events = mutableListOf<ProvidersEvent>()
+        show(ProvidersUiState(form = ProviderForm(kind = kind)), events)
+        compose.runOnUiThread {
+            compose.activity.window.decorView
+                .requestFocusFromTouch()
+        }
+        compose.waitForIdle()
+        compose.onNodeWithText("POST").performSemanticsAction(SemanticsActions.RequestFocus)
+        compose.waitForIdle()
+        key(Key.DirectionCenter)
+        assertEquals(listOf<ProvidersEvent>(ProvidersEvent.SelectRequestMethod(RequestMethod.POST)), events)
+    }
+
+    /**
+     * Ekran 540 dp: formularz jest wyższy niż ekran, a „Zapisz i pobierz” leży poniżej pola „Metoda zapytania”. D-pad z
+     * przycisku metody (DÓŁ) musi dojść do „Zapisz i pobierz”, przewinąć go na ekran i zatwierdzić zapis (OK).
+     */
+    @Test
+    fun odPolaMetodyDpademDoZapiszIPobierzZAutomatycznymPrzewinieciem() {
+        val events = mutableListOf<ProvidersEvent>()
+        show(ProvidersUiState(form = ProviderForm()), events)
+        compose.runOnUiThread {
+            compose.activity.window.decorView
+                .requestFocusFromTouch()
+        }
+        compose.waitForIdle()
+        compose.onNodeWithText("GET").performSemanticsAction(SemanticsActions.RequestFocus)
+        compose.waitForIdle()
+        key(Key.DirectionDown)
+        compose.waitForIdle()
+        val screen = compose.onRoot().fetchSemanticsNode().boundsInRoot
+        val save = compose.onNodeWithText("Zapisz i pobierz").fetchSemanticsNode().boundsInRoot
+        assertTrue(
+            "Zapisz i pobierz poza ekranem: $save, ekran: $screen",
+            save.top >= screen.top && save.bottom <= screen.bottom,
+        )
+        key(Key.DirectionCenter)
+        assertEquals(listOf<ProvidersEvent>(ProvidersEvent.Submit), events)
+    }
+
+    @Test
+    fun wyborMetodyPostDpademWFormularzuM3u() = postPrzezOkNaPrzyciskuPost(ProviderKind.M3U)
+
+    @Test
+    fun wyborMetodyPostDpademWFormularzuXtream() = postPrzezOkNaPrzyciskuPost(ProviderKind.XTREAM)
 }
 
 private const val MS_PER_DAY = 86_400_000L

@@ -49,6 +49,10 @@
     <string name="player_ends_at">koniec ok. %1$s</string>
     <string name="player_a11y_pause">Wstrzymaj</string>
     <string name="player_a11y_play">Odtwarzaj</string>
+    <string name="player_touch_back10">Wstecz o 10 sekund</string>
+    <string name="player_touch_forward10">Do przodu o 10 sekund</string>
+    <string name="player_touch_exit">Wyjdź z odtwarzacza</string>
+    <string name="player_touch_seekbar">Pasek postępu</string>
     <string name="player_diag_title">DIAGNOSTYKA</string>
     <string name="player_diag_buffer">Bufor: %1$s s</string>
     <string name="player_diag_bandwidth">Łącze: %1$s Mb/s</string>

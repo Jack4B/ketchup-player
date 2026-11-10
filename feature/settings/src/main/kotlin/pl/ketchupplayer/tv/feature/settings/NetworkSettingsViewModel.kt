@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import pl.ketchupplayer.tv.core.data.catalog.CatalogRepository
 import pl.ketchupplayer.tv.core.data.network.ProviderHeadersRepository
+import pl.ketchupplayer.tv.core.model.ProviderId
+import pl.ketchupplayer.tv.core.model.RequestMethod
 import pl.ketchupplayer.tv.core.network.UserAgentProfile
 import pl.ketchupplayer.tv.core.network.UserAgentProfiles
 import javax.inject.Inject
@@ -23,6 +25,8 @@ data class ProviderHeaderRow(
     val providerId: String,
     val name: String,
     val profile: UserAgentProfile,
+    /** Metoda żądania listy (GET/POST) zapisana dla tej listy. */
+    val method: RequestMethod = RequestMethod.GET,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -72,6 +76,19 @@ class NetworkSettingsViewModel
             return valid
         }
 
+        /**
+         * Własny User-Agent tylko dla tej listy (wartość w SecretStore, bez zapisu w bazie, logach i eksporcie).
+         * false = niepoprawny (puste, ponad 512 znaków, znaki spoza ASCII) i nic nie zapisujemy.
+         */
+        fun selectCustom(
+            row: ProviderHeaderRow,
+            value: String,
+        ): Boolean {
+            val clean = UserAgentProfiles.validated(value) ?: return false
+            viewModelScope.launch { headers.set(row.providerId, UserAgentProfiles.custom(clean)) }
+            return true
+        }
+
         fun removeCustom(profile: UserAgentProfile) {
             viewModelScope.launch { headers.removeCustom(profile.value.orEmpty()) }
         }
@@ -82,17 +99,26 @@ class NetworkSettingsViewModel
                     if (list.isEmpty()) {
                         flowOf(emptyList())
                     } else {
-                        combine(list.map { rowFlow(it.id.value, it.name) }) { it.toList() }
+                        combine(list.map { rowFlow(it.id.value, it.name, it.requestMethod) }) { it.toList() }
                     }
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_MS), emptyList())
 
         private fun rowFlow(
             id: String,
             name: String,
+            method: RequestMethod,
         ): Flow<ProviderHeaderRow> =
             headers.profile(id).let { f ->
-                combine(f, flowOf(name)) { p, n -> ProviderHeaderRow(id, n, p) }
+                combine(f, flowOf(name)) { p, n -> ProviderHeaderRow(id, n, p, method) }
             }
+
+        /** Wybór metody żądania listy (GET/POST): zapis w bazie, działa od następnego pobrania. */
+        fun selectMethod(
+            row: ProviderHeaderRow,
+            method: RequestMethod,
+        ) {
+            viewModelScope.launch { catalog.setRequestMethod(ProviderId(row.providerId), method) }
+        }
 
         /** Wybór z listy (okno z ptaszkiem): zapisuje nagłówek dla listy. */
         fun select(

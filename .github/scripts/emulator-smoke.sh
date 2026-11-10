@@ -59,14 +59,19 @@ adb reverse tcp:8099 tcp:8099
 # Wpisywanie z kontrolą: na wolnym emulatorze `input text` potrafi zgubić lub przestawić znaki (np. „127.00.1”),
 # co daje fałszywe błędy testu. Po wpisaniu sprawdzamy zawartość pola w drzewie UI, a w razie różnicy czyścimy i powtarzamy.
 type_checked() {
-  local want="$1" attempt
+  local want="$1" attempt send xml
+  # `&` jest metaznakiem powłoki urządzenia (adb shell skleja argumenty), a uiautomator zapisuje go jako `&amp;`.
+  send=$(printf '%s' "$want" | sed 's/&/\\\&/g')
+  xml=$(printf '%s' "$want" | sed 's/&/\&amp;/g')
   for attempt in 1 2 3 4; do
-    adb shell input text "$want"
+    adb shell input text "$send"
     sleep 1
     adb shell uiautomator dump /sdcard/ui_type.xml >/dev/null
     adb pull /sdcard/ui_type.xml "$OUT/ui_type.xml" >/dev/null
-    if grep -qF "text=\"$want\"" "$OUT/ui_type.xml"; then return 0; fi
+    if grep -qF "text=\"$xml\"" "$OUT/ui_type.xml"; then return 0; fi
     echo "wpisywanie: niezgodne pole (próba $attempt), czyszczę i powtarzam: $want" >&2
+    # Po ostatniej próbie nie czyścimy: dalszy przebieg widzi to, co faktycznie wpisano (a nie puste pole).
+    [ "$attempt" = 4 ] && break
     adb shell input keyevent KEYCODE_MOVE_END
     adb shell 'for i in $(seq 1 80); do input keyevent KEYCODE_DEL; done'
   done
@@ -293,6 +298,84 @@ if [ "$BIG_OK" != 1 ]; then
   adb logcat -d | grep -E "OutOfMemory|FATAL EXCEPTION|ANR in" | head -10 >&2 || true
   FAIL_PROVIDER=1
 fi
+
+# --- Regresja: panel za Cloudflare (raport z telefonu 9.11: HTTP 520 na wszystko, w IPTV Extreme lista działa) ---
+# Dane syntetyczne. Serwer odpowiada 520 na get.php oraz na każde zapytanie, którego User-Agent nie jest okhttp/4.10.0 albo
+# które ma nagłówek Accept (IPTV Extreme wysyła tylko User-Agent, Host, Connection i Accept-Encoding). Lista dodana jako
+# get.php z loginem i hasłem ma się wczytać przez player_api.php (konto Xtream), bez żadnego żądania get.php.
+PANEL_LOG="$(pwd)/$OUT/panel-server.log"
+python3 - "$SRV/panel.py" <<'PY'
+import sys
+open(sys.argv[1], "w", encoding="utf-8").write(r"""
+import http.server, json, re, sys
+LOG = open(sys.argv[1], "a", buffering=1)
+CATS = [{"category_id": "1", "category_name": "PL | Info"}]
+LIVE = [{"num": i, "name": "Panel Kanal %d" % i, "stream_id": 100 + i, "category_id": "1",
+         "stream_icon": "", "epg_channel_id": "p%d.pl" % i} for i in range(1, 4)]
+AUTH = {"user_info": {"auth": 1, "status": "Active", "exp_date": "1893456000"}, "server_info": {}}
+class H(http.server.BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+    def log_message(self, *a): pass
+    def do_GET(self):
+        ua = self.headers.get("User-Agent", "")
+        names = ",".join(self.headers.keys())
+        blocked = self.path.startswith("/get.php") or ua != "okhttp/4.10.0" or "Accept" in self.headers
+        if blocked:
+            code, body = 520, b"cf"
+        elif "action=get_live_categories" in self.path:
+            code, body = 200, json.dumps(CATS).encode()
+        elif "action=get_live_streams" in self.path:
+            code, body = 200, json.dumps(LIVE).encode()
+        elif "action=" in self.path:
+            code, body = 200, b"[]"
+        else:
+            code, body = 200, json.dumps(AUTH).encode()
+        shown = re.sub(r"password=[^&]*", "password=***", self.path)
+        LOG.write("GET %s %d ua=%s headers=%s\n" % (shown, code, ua, names))
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+http.server.ThreadingHTTPServer(("0.0.0.0", 8100), H).serve_forever()
+""")
+PY
+# Ścieżki bezwzględne: po cd do $SRV względne wskazywałyby w nieistniejące miejsce (jak przy $LOG powyżej).
+PANEL_STDOUT="$(pwd)/$OUT/panel-stdout.log"
+(cd "$SRV" && exec python3 panel.py "$PANEL_LOG" > "$PANEL_STDOUT" 2>&1) &
+PANEL_PID=$!
+for _ in $(seq 1 20); do
+  curl -s -o /dev/null http://127.0.0.1:8100/ready && break
+  sleep 0.5
+done
+adb reverse tcp:8100 tcp:8100
+tap "Dodaj dostawcę" || FAIL_PROVIDER=1
+type_checked "ListaPanel"
+key KEYCODE_ENTER
+type_checked "http://127.0.0.1:8100/get.php?username=u&password=p"
+key KEYCODE_ENTER
+PANEL_OK=0
+for _ in $(seq 1 60); do
+  sleep 3
+  if grep -q "action=get_series 200" "$PANEL_LOG" 2>/dev/null; then PANEL_OK=1; break; fi
+done
+shot 22_panel_cloudflare
+if [ "$PANEL_OK" != 1 ]; then
+  echo "=== Panel za Cloudflare: aplikacja nie przeszła całej sekwencji player_api (do get_series) z poprawnymi nagłówkami (log serwera): ===" >&2
+  cat "$PANEL_LOG" >&2 || true
+  FAIL_PROVIDER=1
+fi
+if grep -q "GET /get.php" "$PANEL_LOG" 2>/dev/null; then
+  echo "=== Panel za Cloudflare: aplikacja pobierała get.php zamiast player_api.php ===" >&2
+  cat "$PANEL_LOG" >&2 || true
+  FAIL_PROVIDER=1
+fi
+if grep -v " 200 ua=okhttp/4.10.0 headers=User-Agent,Host,Connection,Accept-Encoding" "$PANEL_LOG" 2>/dev/null | grep -q "player_api"; then
+  echo "=== Panel za Cloudflare: zapytanie z nagłówkami innymi niż IPTV Extreme (User-Agent, Host, Connection, Accept-Encoding) ===" >&2
+  cat "$PANEL_LOG" >&2 || true
+  FAIL_PROVIDER=1
+fi
+kill "$PANEL_PID" 2>/dev/null || true
 
 # --- Regresja: Ustawienia > Wygląd (raport z boxa 2.11): wszystkie motywy w panelu i LEWO wraca do kategorii ---
 # focused_text: teksty zaznaczonego elementu z drzewa UI. Compose daje tekst w węzłach potomnych, więc zbieramy

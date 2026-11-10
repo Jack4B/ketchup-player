@@ -1,12 +1,12 @@
 Events log: audio services lifecycle
-11-07 23:34:39:012 AudioService()
+11-09 21:56:34:263 AudioService()
 
 Message handler (watch for unhandled messages):
-  Handler (com.android.server.audio.AudioService$AudioHandler) {1a219f7} @ 198318
-    Looper (AudioService, tid 119) {cc11864}
+  Handler (com.android.server.audio.AudioService$AudioHandler) {2baeffd} @ 175668
+    Looper (AudioService, tid 120) {949c86}
       (Total messages: 0, polling=true, quitting=false)
 
-MediaFocusControl dump time: 11:37:26 PM
+MediaFocusControl dump time: 9:59:00 PM
 
 Audio Focus stack entries (last is top of stack):
 
@@ -277,7 +277,7 @@ Audio routes:
 
 Other state:
   mUseVolumeGroupAliases=false
-  mVolumeController=VolumeController(android.os.BinderProxy@1f88064,mVisible=false)
+  mVolumeController=VolumeController(android.os.BinderProxy@96574f2,mVisible=false)
   mEnableCsd=false
   mSafeMediaVolumeState=SAFE_MEDIA_VOLUME_ACTIVE
   mSafeMediaVolumeIndex=100
@@ -316,21 +316,21 @@ Events log: CSD updates
   mIsCallScreeningModeSupported=false
   mic mute FromSwitch=false FromRestrictions=false FromApi=false from system=false  No accessibility service Uids.
   Assistant service UIDs:
-  - 10083
+  - 10082
   supportsBluetoothVariableLatency=false
   isBluetoothVariableLatencyEnabled=true
 
 Audio policies:
 Events log: dynamic policy events (logged when command received by AudioService)
 
-PlaybackActivityMonitor dump time: 11:37:26 PM
+PlaybackActivityMonitor dump time: 9:59:00 PM
 
   playback listeners:
- (S)com.android.server.audio.PlaybackActivityMonitor$PlayMonitorClient@f4552cd (S)com.android.server.audio.PlaybackActivityMonitor$PlayMonitorClient@74ce782 (S)com.android.server.audio.PlaybackActivityMonitor$PlayMonitorClient@ad45e93 (S)com.android.server.audio.PlaybackActivityMonitor$PlayMonitorClient@9ef3ed0
+ (S)com.android.server.audio.PlaybackActivityMonitor$PlayMonitorClient@f00b743 (S)com.android.server.audio.PlaybackActivityMonitor$PlayMonitorClient@bf6a1c0 (S)com.android.server.audio.PlaybackActivityMonitor$PlayMonitorClient@7cb8ef9 (S)com.android.server.audio.PlaybackActivityMonitor$PlayMonitorClient@4d1ee3e
 
 
   players:
-(not logged)  AudioPlaybackConfiguration piid:103 deviceId:0 type:android.media.SoundPool u/pid:1000/487 state:idle attr:AudioAttributes: usage=USAGE_ASSISTANCE_SONIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null sessionId:0 mutedState:none  FormatInfo{isSpatialized=false, channelMask=0x0, sampleRate=0}
+(not logged)  AudioPlaybackConfiguration piid:95 deviceId:0 type:android.media.SoundPool u/pid:1000/483 state:idle attr:AudioAttributes: usage=USAGE_ASSISTANCE_SONIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null sessionId:0 mutedState:none  FormatInfo{isSpatialized=false, channelMask=0x0, sampleRate=0}
 
   ducked players piids:
 
@@ -348,27 +348,27 @@ PlaybackActivityMonitor dump time: 11:37:26 PM
 
 
 Events log: playback activity as reported through PlayerBase
-11-07 23:34:39:480 new player piid:103 uid/pid:1000/487 type:android.media.SoundPool attr:AudioAttributes: usage=USAGE_ASSISTANCE_SONIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null session:0
-11-07 23:37:01:853 new player piid:111 uid/pid:10122/2955 type:android.media.AudioTrack attr:AudioAttributes: usage=USAGE_MEDIA content=CONTENT_TYPE_UNKNOWN flags=0xA00 tags= bundle=null session:113
-11-07 23:37:01:853 port updated portId:16 mapped to player piid:111
-11-07 23:37:01:863 player piid:111 event:started
-11-07 23:37:01:942 player piid:111 format update:FormatInfo{isSpatialized=false, channelMask=0x1, sampleRate=44100}
-11-07 23:37:02:162 player piid:111 event:device updated deviceId:2
-11-07 23:37:22:243 player piid:111 event:paused
-11-07 23:37:22:264 player piid:111 event:stopped
-11-07 23:37:22:265 releasing player piid:111
+11-09 21:56:35:537 new player piid:95 uid/pid:1000/483 type:android.media.SoundPool attr:AudioAttributes: usage=USAGE_ASSISTANCE_SONIFICATION content=CONTENT_TYPE_SONIFICATION flags=0x800 tags= bundle=null session:0
+11-09 21:58:35:998 new player piid:103 uid/pid:10122/2824 type:android.media.AudioTrack attr:AudioAttributes: usage=USAGE_MEDIA content=CONTENT_TYPE_UNKNOWN flags=0xA00 tags= bundle=null session:105
+11-09 21:58:36:000 port updated portId:16 mapped to player piid:103
+11-09 21:58:36:002 player piid:103 event:started
+11-09 21:58:36:029 player piid:103 format update:FormatInfo{isSpatialized=false, channelMask=0x1, sampleRate=44100}
+11-09 21:58:36:183 player piid:103 event:device updated deviceId:2
+11-09 21:58:56:420 player piid:103 event:paused
+11-09 21:58:56:442 player piid:103 event:stopped
+11-09 21:58:56:442 releasing player piid:103
 
   allowed capture policies:
 
-RecordActivityMonitor dump time: 11:37:26 PM
+RecordActivityMonitor dump time: 9:59:00 PM
 
 
 Events log: recording activity received by AudioService
 
 AudioDeviceBroker:
   Message handler (watch for unhandled messages):
-    Handler (com.android.server.audio.AudioDeviceBroker$BrokerHandler) {4e14ec9} @ 198319
-      Looper (AudioDeviceBroker, tid 116) {53811a0}
+    Handler (com.android.server.audio.AudioDeviceBroker$BrokerHandler) {5ed849f} @ 175670
+      Looper (AudioDeviceBroker, tid 117) {c7ebc55}
         (Total messages: 0, polling=true, quitting=false)
 
   BECOMING_NOISY_INTENT_DEVICES_SET=
@@ -405,7 +405,7 @@ devices:
 
   mAudioModeOwner: AudioModeInfo: mMode=MODE_NORMAL, mPid=0, mUid=0
 
-  mBluetoothHeadset: android.bluetooth.BluetoothHeadset@265f9ce
+  mBluetoothHeadset: android.bluetooth.BluetoothHeadset@68419ec
   mBluetoothHeadsetDevice: null
   mScoAudioState: SCO_STATE_INACTIVE
   mScoAudioMode: SCO_MODE_VIRTUAL_CALL
@@ -413,24 +413,24 @@ devices:
   mHearingAid: null
 
   mLeAudio: null
-  mA2dp: android.bluetooth.BluetoothA2dp@adc50ef
+  mA2dp: android.bluetooth.BluetoothA2dp@ead21b5
   mAvrcpAbsVolSupported: false
 
 SoundEffects:
   Message handler (watch for unhandled messages):
-  Handler (com.android.server.audio.SoundEffectsHelper$SfxHandler) {85177fc} @ 198319
-    Looper (AS.SfxWorker, tid 118) {6270e85}
+  Handler (com.android.server.audio.SoundEffectsHelper$SfxHandler) {6fab04a} @ 175670
+    Looper (AS.SfxWorker, tid 119) {dafcbbb}
       (Total messages: 0, polling=true, quitting=false)
   Default attenuation (dB): -6
 Events log: Sound Effects Loading
-11-07 23:34:39:479 effects loading started
-11-07 23:34:39:717 effect Effect_Tick.ogg loaded
-11-07 23:34:39:772 effect KeypressStandard.ogg loaded
-11-07 23:34:39:834 effect KeypressSpacebar.ogg loaded
-11-07 23:34:39:865 effect KeypressDelete.ogg loaded
-11-07 23:34:39:890 effect KeypressReturn.ogg loaded
-11-07 23:34:39:921 effect KeypressInvalid.ogg loaded
-11-07 23:34:39:921 effects loading completed
+11-09 21:56:35:536 effects loading started
+11-09 21:56:35:837 effect Effect_Tick.ogg loaded
+11-09 21:56:35:863 effect KeypressStandard.ogg loaded
+11-09 21:56:35:888 effect KeypressSpacebar.ogg loaded
+11-09 21:56:35:907 effect KeypressDelete.ogg loaded
+11-09 21:56:35:925 effect KeypressReturn.ogg loaded
+11-09 21:56:35:970 effect KeypressInvalid.ogg loaded
+11-09 21:56:35:970 effects loading completed
 
 
 
@@ -439,34 +439,36 @@ Events log: phone state (logged after successful call to AudioSystem.setPhoneSta
 
 
 Events log: wired/A2DP/hearing aid device connection
-11-07 23:34:39:471 updateCommunicationRoute, preferredCommunicationDevice: null eventSource: resetBluetoothSco
-11-07 23:34:42:283 BT profile service: connecting A2DP profile
-11-07 23:34:42:283 BT profile service: connecting HEADSET profile
+11-09 21:56:35:529 updateCommunicationRoute, preferredCommunicationDevice: null eventSource: resetBluetoothSco
+11-09 21:56:38:528 updateCommunicationRoute, preferredCommunicationDevice: null eventSource: resetBluetoothSco
+11-09 21:56:40:165 BT profile service: connecting HEADSET profile
+11-09 21:56:40:165 BT profile service: connecting A2DP profile
 
 
 Events log: force use (logged before setForceUse() is executed)
-11-07 23:34:39:026 setForceUse(FOR_ENCODED_SURROUND, FORCE_NONE) due to readPersistedSettings
-11-07 23:34:39:028 setForceUse(FOR_DOCK, FORCE_DIGITAL_DOCK) due to readDockAudioSettings
-11-07 23:34:39:069 setForceUse(FOR_SYSTEM, FORCE_NONE) due to AudioService ctor
-11-07 23:34:39:153 setForceUse(FOR_VIBRATE_RINGING, FORCE_NONE) due to muteRingerModeStreams() from u/pid:1000/487
-11-07 23:34:39:479 setForceUse(FOR_VIBRATE_RINGING, FORCE_NONE) due to muteRingerModeStreams() from u/pid:1000/487
-11-07 23:34:40:492 setForceUse(FOR_DOCK, FORCE_DIGITAL_DOCK) due to readDockAudioSettings
-11-07 23:34:40:493 setForceUse(FOR_DOCK, FORCE_DIGITAL_DOCK) due to readDockAudioSettings
-11-07 23:34:40:493 setForceUse(FOR_DOCK, FORCE_DIGITAL_DOCK) due to readDockAudioSettings
-11-07 23:34:40:510 setForceUse(FOR_DOCK, FORCE_DIGITAL_DOCK) due to readDockAudioSettings
-11-07 23:34:40:887 setForceUse(FOR_DOCK, FORCE_DIGITAL_DOCK) due to readDockAudioSettings
-11-07 23:34:40:888 setForceUse(FOR_DOCK, FORCE_DIGITAL_DOCK) due to readDockAudioSettings
-11-07 23:34:41:003 setForceUse(FOR_DOCK, FORCE_DIGITAL_DOCK) due to readDockAudioSettings
-11-07 23:34:41:023 setForceUse(FOR_ENCODED_SURROUND, FORCE_NONE) due to readPersistedSettings
-11-07 23:34:41:213 setForceUse(FOR_VIBRATE_RINGING, FORCE_NONE) due to muteRingerModeStreams() from u/pid:1000/487
-11-07 23:36:20:121 setForceUse(FOR_DOCK, FORCE_DIGITAL_DOCK) due to readDockAudioSettings
+11-09 21:56:34:279 setForceUse(FOR_ENCODED_SURROUND, FORCE_NONE) due to readPersistedSettings
+11-09 21:56:34:280 setForceUse(FOR_DOCK, FORCE_DIGITAL_DOCK) due to readDockAudioSettings
+11-09 21:56:34:318 setForceUse(FOR_SYSTEM, FORCE_NONE) due to AudioService ctor
+11-09 21:56:34:379 setForceUse(FOR_VIBRATE_RINGING, FORCE_NONE) due to muteRingerModeStreams() from u/pid:1000/483
+11-09 21:56:35:540 setForceUse(FOR_VIBRATE_RINGING, FORCE_NONE) due to muteRingerModeStreams() from u/pid:1000/483
+11-09 21:56:36:505 setForceUse(FOR_DOCK, FORCE_DIGITAL_DOCK) due to readDockAudioSettings
+11-09 21:56:36:506 setForceUse(FOR_DOCK, FORCE_DIGITAL_DOCK) due to readDockAudioSettings
+11-09 21:56:36:506 setForceUse(FOR_DOCK, FORCE_DIGITAL_DOCK) due to readDockAudioSettings
+11-09 21:56:36:528 setForceUse(FOR_DOCK, FORCE_DIGITAL_DOCK) due to readDockAudioSettings
+11-09 21:56:37:595 setForceUse(FOR_ENCODED_SURROUND, FORCE_NONE) due to readPersistedSettings
+11-09 21:56:37:600 setForceUse(FOR_DOCK, FORCE_DIGITAL_DOCK) due to readDockAudioSettings
+11-09 21:56:37:644 setForceUse(FOR_VIBRATE_RINGING, FORCE_NONE) due to muteRingerModeStreams() from u/pid:1000/483
+11-09 21:56:37:838 setForceUse(FOR_DOCK, FORCE_DIGITAL_DOCK) due to readDockAudioSettings
+11-09 21:56:37:848 setForceUse(FOR_DOCK, FORCE_DIGITAL_DOCK) due to readDockAudioSettings
+11-09 21:56:38:529 setForceUse(FOR_VIBRATE_RINGING, FORCE_NONE) due to muteRingerModeStreams() from u/pid:1000/483
+11-09 21:58:06:376 setForceUse(FOR_DOCK, FORCE_DIGITAL_DOCK) due to readDockAudioSettings
 
 
 Events log: volume changes (logged when command received by AudioService)
 
 
 Events log: mute commands
-11-07 23:34:39:066 RingerZenMutedStreams 0x0 from onInitStreamsAndVolumes
+11-09 21:56:34:316 RingerZenMutedStreams 0x0 from onInitStreamsAndVolumes
 
 
 Supported System Usages:
@@ -489,12 +491,12 @@ SpatializerHelper:
 	supports binaural:false / transaural:false
 	mSpatOutput:0
 Events log: spatial audio
-11-07 23:34:39:068 init effectExpected=false
-11-07 23:34:39:069 init(): setting state to STATE_NOT_SUPPORTED due to effect not expected
-11-07 23:34:39:069 setFeatureEnabled(false) was featureEnabled:false
+11-09 21:56:34:317 init effectExpected=false
+11-09 21:56:34:317 init(): setting state to STATE_NOT_SUPPORTED due to effect not expected
+11-09 21:56:34:317 setFeatureEnabled(false) was featureEnabled:false
 
 AudioSystemAdapter:
- last cache clear time: 11-07 23:36:20:121
+ last cache clear time: 11-09 21:58:06:376
  mDevicesForAttrCache:
 	AudioAttributes: usage=USAGE_ASSISTANCE_SONIFICATION content=CONTENT_TYPE_UNKNOWN flags=0x800 tags= bundle=null forVolume: true stream: STREAM_SYSTEM(1)
 		AudioDeviceAttributes: role:output type:speaker addr: name: profiles:[] descriptors:[]

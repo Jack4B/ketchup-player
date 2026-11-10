@@ -23,7 +23,7 @@ Zapisz hasła i **zrób kopię pliku `ketchup-release.jks` w bezpiecznym miejscu
 
 ## 4. Przed wydaniem (lista kontrolna)
 1. CI zielony na gałęzi wydania (build, detekt, testy, Roborazzi, lint, emulator).
-2. `~/ketchup_tvbox_test.sh` na boxie: 0 FAIL, bez wyjścia na pulpit, bez crashy w logach.
+2. `~/ketchup_tvbox_test.sh "<apk>"` na boxie (docs/TVBOX-TESTY.md): 0 FAIL, każdy BLOCKED i MANUAL_REQUIRED wyjaśniony lub wykonany ręcznie, bez wyjścia na pulpit; ZIP z wynikami do analizy.
 3. Ręcznie: kreator → import własnej listy → Na żywo → grupy → Przewodnik (Siatka, Radar, Zainteresowania) → Filmy → szczegóły → odtwarzanie → OSD (audio, napisy, synchronizacja) → BACK po wszystkich ekranach.
 4. `docs/TEST-CHECKLIST.md` zaktualizowana do wersji wydania.
 

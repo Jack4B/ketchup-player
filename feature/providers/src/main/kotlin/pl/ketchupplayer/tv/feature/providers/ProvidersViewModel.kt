@@ -66,7 +66,13 @@ class ProvidersViewModel
                 is ProvidersEvent.UrlChanged,
                 -> local.update { it.copy(form = it.form?.let { f -> edited(f, event) }) }
                 is ProvidersEvent.SelectUserAgent ->
-                    local.update { it.copy(form = it.form?.copy(userAgentId = event.id)) }
+                    local.update { it.copy(form = it.form?.copy(userAgentId = event.id, userAgentError = false)) }
+                is ProvidersEvent.UserAgentTextChanged ->
+                    local.update {
+                        it.copy(form = it.form?.copy(userAgentId = "custom:" + event.value, userAgentError = false))
+                    }
+                is ProvidersEvent.SelectRequestMethod ->
+                    local.update { it.copy(form = it.form?.copy(requestMethod = event.method)) }
                 ProvidersEvent.Submit -> submit()
                 is ProvidersEvent.Toggle ->
                     local.update {
@@ -129,6 +135,7 @@ class ProvidersViewModel
                                         nameError = r.error == AddProviderError.INVALID_NAME,
                                         urlError = r.error == AddProviderError.INVALID_URL,
                                         credentialsError = r.error == AddProviderError.INVALID_CREDENTIALS,
+                                        userAgentError = r.error == AddProviderError.INVALID_USER_AGENT,
                                     ),
                             )
                         }
@@ -138,9 +145,16 @@ class ProvidersViewModel
 
         private suspend fun add(form: ProviderForm): AddProviderResult =
             when (form.kind) {
-                ProviderKind.M3U -> catalog.addM3u(form.name, form.url, form.userAgentId)
+                ProviderKind.M3U -> catalog.addM3u(form.name, form.url, form.userAgentId, form.requestMethod)
                 ProviderKind.XTREAM ->
-                    catalog.addXtream(form.name, form.url, form.username, form.password, form.userAgentId)
+                    catalog.addXtream(
+                        form.name,
+                        form.url,
+                        form.username,
+                        form.password,
+                        form.userAgentId,
+                        form.requestMethod,
+                    )
             }
 
         private suspend fun runBusy(block: suspend () -> Result<Int>) {

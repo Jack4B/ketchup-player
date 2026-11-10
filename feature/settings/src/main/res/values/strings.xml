@@ -74,9 +74,9 @@
         <item quantity="other">%1$d pozycji</item>
     </plurals>
     <string name="network_title">Nagłówek połączenia</string>
-    <string name="network_hint">Gdy lista nie chce się pobrać (404, odmowa), „Automatyczny” sam wypróbuje inne nagłówki. Tu możesz wybrać stały.</string>
+    <string name="network_hint">Domyślnie lista idzie z nagłówkiem okhttp/4.10.0 (jak IPTV Extreme). Gdy się nie pobiera (404, 520, odmowa), wybierz inny gotowy nagłówek albo własny.</string>
     <string name="network_empty">Brak list. Dodaj listę w „Listy i dostawcy”.</string>
-    <string name="network_auto_hint">Automatycznie: próbuje kolejnych przy błędzie</string>
+    <string name="network_auto_hint">Domyślny: okhttp/4.10.0 (jak IPTV Extreme)</string>
     <string name="appearance_blur">Efekt szkła (rozmycie tła)</string>
     <string name="appearance_blur_auto">Dobierz automatycznie (test płynności)</string>
     <string name="appearance_blur_auto_hint">Przez chwilę sprawdza, czy to urządzenie utrzyma płynność z rozmyciem, i ustawia przełącznik.</string>
@@ -98,6 +98,9 @@
     <string name="playback_remote_hint">Jedno wciśnięcie przeskakuje o kilka pól? Zwiększ odstęp między naciśnięciami tej samej strzałki.</string>
     <string name="playback_remote_off">Wyłączona</string>
     <string name="network_custom_title">Własne User-Agenty</string>
+    <string name="network_custom_list_hint">Wpisz własny nagłówek tylko dla tej listy</string>
+    <string name="network_custom_hidden">Własny User-Agent (wartość ukryta)</string>
+    <string name="network_custom_label">Własny</string>
     <string name="network_custom_remove">OK usuwa ten wpis z listy</string>
     <string name="network_custom_add">Dodaj własny User-Agent</string>
     <string name="network_custom_field">User-Agent (np. Wink/1.31.1)</string>
@@ -110,6 +113,11 @@
     <string name="network_probe">Testuj połączenie: %1$s</string>
     <string name="network_probe_hint">Sprawdza listę każdym nagłówkiem po kolei i pokazuje odpowiedź serwera (np. HTTP 513)</string>
     <string name="network_pick_title">User-Agent: %1$s</string>
+    <string name="network_method_title">Metoda zapytania: %1$s</string>
+    <string name="network_method_hint">GET (domyślnie) albo POST, gdy dostawca odrzuca GET; działa od następnego pobrania</string>
+    <string name="network_method_pick_title">Metoda zapytania: %1$s</string>
+    <string name="network_method_get_hint">Dane dostępu w adresie (jak dotychczas)</string>
+    <string name="network_method_post_hint">Dane dostępu w ciele żądania, adres bez loginu i hasła</string>
     <string name="playback_preview">Żywy podgląd w Na żywo</string>
     <string name="playback_preview_hint">Wyciszony obraz zaznaczonego kanału obok opisu audycji. Wyłącz na słabym urządzeniu.</string>
     <string name="metadata_title">Oceny i opisy</string>

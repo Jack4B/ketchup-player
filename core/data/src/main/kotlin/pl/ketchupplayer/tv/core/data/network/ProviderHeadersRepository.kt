@@ -1,17 +1,16 @@
 package pl.ketchupplayer.tv.core.data.network
 
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import pl.ketchupplayer.tv.core.data.catalog.ProviderSecrets
+import pl.ketchupplayer.tv.core.database.ProviderDao
+import pl.ketchupplayer.tv.core.model.ProviderId
 import pl.ketchupplayer.tv.core.network.UserAgentProfile
 import pl.ketchupplayer.tv.core.network.UserAgentProfiles
 import javax.inject.Inject
 
-/** Nagłówek User-Agent wybrany dla listy: ręcznie albo zapamiętany po udanej automatycznej próbie. */
+/** Nagłówek User-Agent wybrany dla listy: gotowy profil albo własny. Domyślny (`AUTO`) to okhttp/4.10.0. */
 interface ProviderHeadersRepository {
     fun profile(providerId: String): Flow<UserAgentProfile>
 
@@ -22,7 +21,7 @@ interface ProviderHeadersRepository {
         profile: UserAgentProfile,
     )
 
-    /** Własne User-Agenty użytkownika (kolejność dodania). */
+    /** Własne User-Agenty użytkownika (kolejność dodania); wartości są w `SecretStore`. */
     val customs: Flow<List<UserAgentProfile>>
 
     /** Dodaje wpis po walidacji (drukowalne ASCII, do 512 znaków); false = odrzucony. */
@@ -31,13 +30,20 @@ interface ProviderHeadersRepository {
     suspend fun removeCustom(value: String)
 }
 
-class DataStoreProviderHeadersRepository
+/**
+ * Wybór profilu trzyma Room (`providers.userAgent`: id profilu albo `custom`); wartość własnego User-Agenta, jako dane
+ * dostępu, tylko `SecretStore` ([ProviderSecrets]).
+ */
+class RoomProviderHeadersRepository
     @Inject
     constructor(
-        private val store: DataStore<Preferences>,
+        private val providers: ProviderDao,
+        private val secrets: ProviderSecrets,
     ) : ProviderHeadersRepository {
+        private val customChanges = kotlinx.coroutines.flow.MutableStateFlow(0)
+
         override fun profile(providerId: String): Flow<UserAgentProfile> =
-            store.data.map { UserAgentProfiles.byId(it[key(providerId)]) }
+            providers.observeUserAgent(providerId).map { resolve(providerId, it) }
 
         override suspend fun current(providerId: String): UserAgentProfile = profile(providerId).first()
 
@@ -45,39 +51,54 @@ class DataStoreProviderHeadersRepository
             providerId: String,
             profile: UserAgentProfile,
         ) {
-            store.edit {
-                if (profile == UserAgentProfiles.AUTO) it.remove(key(providerId)) else it[key(providerId)] = profile.id
+            val id = ProviderId(providerId)
+            when {
+                profile == UserAgentProfiles.AUTO -> {
+                    providers.setUserAgent(providerId, null)
+                    secrets.removeUserAgent(id)
+                }
+                profile.id.startsWith(CUSTOM) -> {
+                    val value = UserAgentProfiles.validated(profile.value.orEmpty()) ?: return
+                    secrets.putUserAgent(id, value)
+                    providers.setUserAgent(providerId, CUSTOM_MARK)
+                }
+                else -> {
+                    providers.setUserAgent(providerId, profile.id)
+                    secrets.removeUserAgent(id)
+                }
             }
         }
 
         override val customs: Flow<List<UserAgentProfile>> =
-            store.data.map { prefs ->
-                prefs[CUSTOMS]
-                    .orEmpty()
-                    .split('\n')
-                    .filter { it.isNotBlank() }
-                    .map(UserAgentProfiles::custom)
-            }
+            customChanges.map { secrets.customUserAgents().map(UserAgentProfiles::custom) }
 
         override suspend fun addCustom(value: String): Boolean {
             val clean = UserAgentProfiles.validated(value) ?: return false
-            store.edit { p ->
-                val list = p[CUSTOMS].orEmpty().split('\n').filter { it.isNotBlank() }
-                if (clean !in list) p[CUSTOMS] = (list + clean).joinToString("\n")
-            }
+            val list = secrets.customUserAgents()
+            if (clean !in list) secrets.putCustomUserAgents(list + clean)
+            customChanges.value++
             return true
         }
 
         override suspend fun removeCustom(value: String) {
-            store.edit { p ->
-                val kept = p[CUSTOMS].orEmpty().split('\n').filter { it.isNotBlank() && it != value }
-                p[CUSTOMS] = kept.joinToString("\n")
-            }
+            secrets.putCustomUserAgents(secrets.customUserAgents().filter { it != value })
+            customChanges.value++
         }
 
-        private fun key(providerId: String) = stringPreferencesKey("ua_profile_$providerId")
+        private suspend fun resolve(
+            providerId: String,
+            stored: String?,
+        ): UserAgentProfile =
+            when {
+                stored == null -> UserAgentProfiles.AUTO
+                stored == CUSTOM_MARK ->
+                    secrets.userAgent(ProviderId(providerId))?.let(UserAgentProfiles::custom)
+                        ?: UserAgentProfiles.AUTO
+                else -> UserAgentProfiles.byId(stored)
+            }
 
         private companion object {
-            val CUSTOMS = stringPreferencesKey("ua_custom_list")
+            const val CUSTOM = "custom"
+            const val CUSTOM_MARK = "custom"
         }
     }

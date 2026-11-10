@@ -1,16 +1,23 @@
 package pl.ketchupplayer.tv.core.network
 
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import okhttp3.ResponseBody.Companion.asResponseBody
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.SocketPolicy
 import okio.Buffer
+import okio.ForwardingSource
+import okio.buffer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.io.ByteArrayOutputStream
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.Executors
 import java.util.zip.GZIPOutputStream
 
 class OkHttpTextFetcherTest {
@@ -30,15 +37,48 @@ class OkHttpTextFetcherTest {
     private fun url(path: String = "/list.m3u") = server.url(path).toString()
 
     @Test
-    fun `domyslny User-Agent listy to OTT Navigator`() =
+    fun `domyslny User-Agent listy to okhttp 4 10 0`() =
         runTest {
             server.enqueue(MockResponse().setBody("x"))
             OkHttpTextFetcher(NetworkClients.stream()).fetch(url())
-            assertEquals(NetworkClients.DEFAULT_USER_AGENT, server.takeRequest().getHeader("User-Agent"))
-            assertEquals(true, NetworkClients.DEFAULT_USER_AGENT.startsWith("OTT Navigator/"))
+            assertEquals("okhttp/4.10.0", server.takeRequest().getHeader("User-Agent"))
+            assertEquals("okhttp/4.10.0", NetworkClients.DEFAULT_USER_AGENT)
         }
 
-    /** Błąd 513 (jak u dostawców blokujących łącze): wyjątek niesie serwer i oczyszczoną treść, bez haseł. */
+    /** Przechwycenie IPTV Extreme: dokładnie cztery nagłówki w tej kolejności, bez `Accept` i bez niczego więcej. */
+    @Test
+    fun `import wysyla dokladnie cztery naglowki w kolejnosci IPTV Extreme`() =
+        runTest {
+            server.enqueue(MockResponse().setBody("[]"))
+            OkHttpTextFetcher(NetworkClients.stream()).fetch(url("/player_api.php?username=u&password=p"))
+            val headers = server.takeRequest().headers
+            assertEquals(
+                listOf("User-Agent", "Host", "Connection", "Accept-Encoding"),
+                List(headers.size) { headers.name(it) },
+            )
+            assertEquals("okhttp/4.10.0", headers["User-Agent"])
+            assertEquals("Keep-Alive", headers["Connection"])
+            assertEquals("gzip", headers["Accept-Encoding"])
+        }
+
+    /** Wybrany dla listy User-Agent zastępuje domyślny, a zestaw i kolejność nagłówków zostają te same. */
+    @Test
+    fun `User-Agent listy zastepuje domyslny bez zmiany reszty naglowkow`() =
+        runTest {
+            server.enqueue(MockResponse().setBody("[]"))
+            OkHttpTextFetcher(NetworkClients.stream()).withUserAgent("VLC/3.0.20 LibVLC/3.0.20").fetch(url())
+            val headers = server.takeRequest().headers
+            assertEquals(
+                listOf("User-Agent", "Host", "Connection", "Accept-Encoding"),
+                List(headers.size) { headers.name(it) },
+            )
+            assertEquals("VLC/3.0.20 LibVLC/3.0.20", headers["User-Agent"])
+        }
+
+    /**
+     * Błąd 513 (jak u dostawców blokujących łącze): wyjątek niesie stałą podpowiedź rozpoznaną w treści, nigdy samą
+     * treść ani nagłówek `Server` (issue #12).
+     */
     @Test
     fun `blad HTTP niesie krotki opis serwera bez danych logowania`() =
         runTest {
@@ -54,8 +94,8 @@ class OkHttpTextFetcherTest {
                 ).fetch(url()).exceptionOrNull() as NetworkException.Http
             assertEquals(513, failure.code)
             val msg = failure.message.orEmpty()
-            assertEquals(true, "nginx" in msg && "Blocked" in msg && "too many connections" in msg)
-            assertEquals(false, "tajne123" in msg || "jan&" in msg)
+            assertEquals(true, "zbyt wiele połączeń" in msg)
+            assertEquals(false, "tajne123" in msg || "jan&" in msg || "Blocked" in msg || "nginx" in msg)
         }
 
     @Test
@@ -214,4 +254,90 @@ class OkHttpTextFetcherTest {
             server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST))
             assertTrue(fetcher().fetchLines(url()) { it.toList() }.isFailure)
         }
+
+    @Test
+    fun `tresc odpowiedzi serwera ze sciezka bez schematu nie trafia do wyjatku`() =
+        runTest {
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(404)
+                    .setHeader("Server", "nginx")
+                    .setBody("The requested URL /user123/pass456/77 was not found on this server"),
+            )
+            val failure = OkHttpTextFetcher(NetworkClients.stream()).fetch(url()).exceptionOrNull()
+            val msg = failure?.message.orEmpty()
+            assertEquals(false, "user123" in msg || "pass456" in msg || "requested URL" in msg)
+            assertEquals(true, "HTTP 404" in msg)
+            assertEquals(false, "nginx" in msg)
+        }
+
+    private suspend fun failureWith(
+        server: MockWebServer,
+        url: String,
+        build: MockResponse.() -> Unit,
+    ): String {
+        server.enqueue(MockResponse().setResponseCode(503).apply(build))
+        val failure = OkHttpTextFetcher(NetworkClients.stream()).fetch(url).exceptionOrNull()
+        return failure?.message.orEmpty()
+    }
+
+    @Test
+    fun `naglowek Server z danymi dostepu nie trafia do wyjatku`() =
+        runTest {
+            val msg = failureWith(server, url()) { setHeader("Server", "user123:pass456 /user123/pass456/77") }
+            assertEquals("HTTP 503", msg)
+        }
+
+    @Test
+    fun `Retry-After jest przekazywany tylko jako sparsowane sekundy`() =
+        runTest {
+            assertEquals("HTTP 503 · ponów po: 120 s", failureWith(server, url()) { setHeader("Retry-After", "120") })
+        }
+
+    @Test
+    fun `niepoprawny Retry-After z danymi dostepu jest pomijany`() =
+        runTest {
+            val bad = listOf("soon /user123/pass456/77", "120; user123:pass456", "-5", "1.5", "99999999")
+            bad.forEach { value ->
+                val msg = failureWith(server, url()) { setHeader("Retry-After", value) }
+                assertEquals(value, "HTTP 503", msg)
+            }
+        }
+
+    /**
+     * Błąd z emulatora (import konta Xtream wywalał aplikację): treść odpowiedzi tekstowej (`fetch`, `fetchWithBody`)
+     * była czytana na wątku wołającego, czyli głównym (`NetworkOnMainThreadException`). Wołający udaje wątek główny.
+     */
+    @Test
+    fun `cialo odpowiedzi tekstowej nie jest czytane na watku wolajacego`() {
+        server.enqueue(MockResponse().setBody("[1,2,3]"))
+        val readers = ConcurrentLinkedQueue<String>()
+        val spying =
+            NetworkClients
+                .stream()
+                .newBuilder()
+                .addInterceptor { chain ->
+                    val response = chain.proceed(chain.request())
+                    val body = requireNotNull(response.body)
+                    val spy =
+                        object : ForwardingSource(body.source()) {
+                            override fun read(
+                                sink: Buffer,
+                                byteCount: Long,
+                            ): Long {
+                                readers += Thread.currentThread().name
+                                return super.read(sink, byteCount)
+                            }
+                        }.buffer()
+                    response.newBuilder().body(spy.asResponseBody(body.contentType(), body.contentLength())).build()
+                }.build()
+        val caller = Executors.newSingleThreadExecutor { Thread(it, "fake-main") }
+        try {
+            val text = runBlocking(caller.asCoroutineDispatcher()) { OkHttpTextFetcher(spying).fetch(url()) }
+            assertEquals("[1,2,3]", text.getOrThrow())
+        } finally {
+            caller.shutdown()
+        }
+        assertTrue(readers.toString(), readers.isNotEmpty() && readers.none { it == "fake-main" })
+    }
 }

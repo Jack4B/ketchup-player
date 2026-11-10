@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -52,6 +53,7 @@ internal fun VodOsd(
     state: PlayerState,
     scrub: ScrubUi?,
     modifier: Modifier,
+    seek: TouchSeek? = null,
 ) {
     val c = KetchupTheme.colors
     val uiClock = LocalUiClock.current
@@ -64,7 +66,7 @@ internal fun VodOsd(
             .fillMaxWidth()
             .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = OSD_SCRIM))))
             .padding(horizontal = 32.dp)
-            .padding(top = 48.dp, bottom = 22.dp),
+            .padding(top = if (seek == null) 48.dp else 16.dp, bottom = 22.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(title, fontSize = 30.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1)
@@ -72,13 +74,13 @@ internal fun VodOsd(
         Box(Modifier.fillMaxWidth().height(BUBBLE_H)) {
             if (scrub != null) ScrubBubble(scrub, progress)
         }
-        Timeline(progress, scrubbing = scrub != null)
+        Timeline(progress, scrubbing = scrub != null, seek = seek)
         Row(
             Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            PlayPauseBadge(state.isPlaying)
+            if (seek == null) PlayPauseBadge(state.isPlaying)
             Text(clock(position), fontSize = 20.sp, fontWeight = FontWeight.Medium, color = Color.White)
             Text(
                 if (duration > 0) "/ " + clock(duration) else "",
@@ -95,7 +97,7 @@ internal fun VodOsd(
                 )
             }
         }
-        Hints()
+        if (seek == null) Hints()
     }
 }
 
@@ -127,10 +129,23 @@ private fun Hints() {
 private fun Timeline(
     progress: Float,
     scrubbing: Boolean,
+    seek: TouchSeek? = null,
 ) {
     val c = KetchupTheme.colors
+    val seekDescription = stringResource(R.string.player_touch_seekbar)
     val thumb = if (scrubbing) THUMB_ACTIVE else THUMB
-    Box(Modifier.fillMaxWidth().height(THUMB_ACTIVE)) {
+    // Dotyk: cel gestu ma min. 48 dp wysokości, tor i gałka zostają te same.
+    val touch =
+        if (seek == null) {
+            Modifier.height(THUMB_ACTIVE)
+        } else {
+            Modifier
+                .height(TOUCH_TARGET)
+                .testTag(TAG_SEEKBAR)
+                .semantics { contentDescription = seekDescription }
+                .touchSeekGestures(seek)
+        }
+    Box(Modifier.fillMaxWidth().then(touch)) {
         Box(
             Modifier
                 .fillMaxWidth()
@@ -229,6 +244,7 @@ private val BUBBLE_H = 40.dp
 private val BAR = 6.dp
 private val THUMB = 18.dp
 private val THUMB_ACTIVE = 26.dp
+private val TOUCH_TARGET = 48.dp
 private val BADGE = 40.dp
 private const val OSD_SCRIM = 0.82f
 private const val BAR_TRACK = 0.28f
