@@ -1559,3 +1559,67 @@ Funkcję można uznać za gotową do recenzji właściciela (nadal bez mergowani
 | 8 listopada 2026 | konspekt na prośbę właściciela | pierwsza wersja; oparta o stary checkout `677cddeb` |
 
 Koniec konspektu.
+
+---
+
+## 26. Stan wdrożenia MVP (A+B+C) i różnice względem projektu
+
+Stan na 11.11.2026, gałąź `docs/personalizacja-konspekt` (PR #14). To opis tego, co jest w kodzie, a nie obietnica
+jakości rekomendacji: parametry z punktu 7.2 są przyjęte bez strojenia na prawdziwych danych.
+
+### 26.1. Gdzie co jest
+
+| Obszar | Kod |
+| --- | --- |
+| Typy | `core/model/.../personalization/PersonalizationModels.kt` |
+| Formuły (czysta JVM) | `core/policy/.../personalization/` (`SessionMath`, `SessionStrength`, `PreferenceMath`, `ProfileUpdater`, `VodFeatures`, `VodRanker`, `TeamParser`, `BundledTeams`, `FollowSuggester`, `SportEvents`, `WarsawTime`) |
+| Baza | Room v10: `PersonalizationEntities.kt`, `PersonalizationDaos.kt`, automatyczna migracja 9 → 10, schemat `10.json` |
+| Dane | `core/data/.../personalization/` (`PersonalizationSettings`, `SessionRecorder`, `PersonalizationEngine`, `FeatureIndexer`, `SportStore`, `PersonalizationRepository`) |
+| Odtwarzacz | `PlayerViewModel` otwiera `PlaybackTracking` i przekazuje mu stan; nic poza tym |
+| Home | `feature/home/PersonalRows.kt` + `HomeViewModel` (czyta gotowy pas z bazy) |
+| Ustawienia | `feature/settings/PersonalizationSettingsScreen.kt` (kategoria „Personalizacja”) |
+| Szczegóły | przycisk „Lubię to” (tylko przy włączonej zgodzie) |
+
+### 26.2. Różnice względem projektu (świadome)
+
+1. **Wersja bazy.** Projekt zakładał migrację 7 → 8; na `dev` baza ma już wersję 9, więc personalizacja to 9 → 10.
+2. **Bez zgody i w trybie „nie ucz się” sesje nie są zapisywane wcale** (projekt dopuszczał zapis z flagą incognito).
+   Kolumna `incognito` zostaje w tabeli na przyszłość, ale kod jej nie ustawia.
+3. **Podgląd Na żywo nie jest podpięty do obserwatora**: nie powstaje z niego żadna sesja. Klasa
+   `AUTOPLAY_PREVIEW` i jej reguły są w formułach i testach, żeby podpięcie w przyszłości nie liczyło podglądu.
+4. **Przewinięcie** wykrywamy po skoku pozycji względem upływu czasu (kontroler odtwarzacza nie udostępnia zdarzeń
+   nieciągłości); służy tylko do diagnostyki, bo siła sesji i tak zależy wyłącznie od czasu grania.
+5. **Reżyser i pochodzenie TMDB**: nowe kolumny `vod_meta` (`director`, `tmdbGenre`, `tmdbCast`, `tmdbMatch`).
+   Dopasowanie po identyfikatorze z indeksu ma pewność 0.9, po tytule z rokiem 0.6, po samym tytule nie daje cech.
+6. **Kategoria dostawcy jako gatunek**: tylko gdy pole gatunku jest puste i kategoria zawiera nazwę ze słownika
+   („PL | Kryminał” tak, „Netflix 4K” nie), z pewnością 0.5. Bez tego większość list Xtream nie miałaby żadnych cech
+   przed otwarciem szczegółów. Gatunku z tytułu nadal nie zgadujemy.
+7. **Próg 0.4 dla uzasadnień** dotyczy pewności źródła cechy pozycji, nie pewności profilu. Przy `k_shrink = 8`
+   pewność profilu po dwóch seansach to ok. 0.18, więc scenariusz S1 (chip po dwóch filmach) byłby niewykonalny.
+8. **Korekta o ekspozycję**: prostszy wariant z punktu 8.4 (udział cechy w katalogu), bez licznika wyświetleń.
+9. **Eksploracja**: jedna pozycja „Dla odmiany” tylko w pełnym pasie (12 pozycji), wybór stały w ciągu dnia.
+10. **HIDE tylko wyklucza pozycję**; ujemny wkład ma wyłącznie DISLIKE, który jest w modelu, ale nie ma jeszcze
+    przycisku w UI.
+11. **„Lubię to” także na ekranie szczegółów** (projekt mówił o karcie): inaczej nie dałoby się spełnić warunku
+    zimnego startu „1 jawny LIKE”, bo karta istnieje dopiero, gdy jest pas.
+12. **Katalog drużyn**: wbudowany słownik nazw jest w kodzie (`BundledTeams`, 46 klubów), tabela `team_catalog`
+    trzyma tylko drużyny dodane przez użytkownika. Aliasy mają dodatkowo znacznik „słaby” (np. nazwa miasta liczy
+    się tylko w parze „A - B”).
+13. **Dowód sportowy** wymaga co najmniej 10 minut oglądania transmisji (projekt nie określał progu ponad `T_surf`).
+14. **Zawsze ta sama para** daje jedno pytanie o obie drużyny; obserwowanie rozgrywek (`COMPETITION`) nie jest
+    zaimplementowane, rozgrywki są tylko rozpoznawane w tytule.
+15. **Bez WorkManagera.** Pasy przeliczają się przy starcie aplikacji, po zamknięciu sesji (5 s), po ocenie, po
+    imporcie EPG lub listy, co 3 godziny działania i w nocnych porządkach o 3:30 czasu warszawskiego, ale tylko gdy
+    aplikacja działa. Gdy nie działa, nie ma czego liczyć: wszystko jest przeliczane przy następnym starcie.
+16. **Wydarzenia tylko z EPG** (zgodnie z MVP). Wstępny filtr SQL po tytule i opisie zawęża przewodnik do audycji,
+    które mogą dotyczyć obserwowanych drużyn; decyduje parser.
+17. **Audyt układu**: `LayoutAudit` mierzy pełną wysokość celu (kafel częściowo schowany przez przewinięcie listy
+    nie jest „małym celem”); lista kategorii Ustawień ma ciaśniejsze wiersze, żeby 9 kategorii mieściło się na 540 dp.
+
+### 26.3. Czego nie sprawdzono (NOT_RUN)
+
+- Działanie na TV-boxie i telefonie (pilot, płynność, zużycie pamięci przy dużym katalogu).
+- Jakość rekomendacji i sugestii na prawdziwej historii oglądania; trafność słownika klubów na prawdziwym EPG.
+- Indeks cech dla katalogu rzędu 30 tys. pozycji na urządzeniu (jest test 5 tys. pozycji na JVM).
+- Zachowanie przy prawdziwym ExoPlayerze poza scenariuszami emulatora (w testach JVM odtwarzacz jest atrapą).
+

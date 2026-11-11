@@ -57,6 +57,15 @@ private fun whyLabel(chip: WhyChip): String =
         else -> stringResource(R.string.home_why_genre, chip.label)
     }
 
+/** Jedna linia pod kartą (mieści się w jej szerokości): najważniejszy powód; pełne uzasadnienie jest w oknie oceny. */
+@Composable
+private fun cardReason(entry: BecauseEntry): String? =
+    when {
+        entry.liked -> stringResource(R.string.home_because_liked)
+        entry.explore -> stringResource(R.string.home_because_explore)
+        else -> entry.why.firstOrNull()?.let { whyLabel(it) }
+    }
+
 @Composable
 private fun whyText(entry: BecauseEntry): String =
     if (entry.explore) {
@@ -100,13 +109,11 @@ internal fun BecauseRow(
         }
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(entries, key = { it.entry.item.id }) { e ->
-                val why = whyText(e)
-                val liked = stringResource(R.string.home_because_liked)
                 PosterCard(
                     e.entry.item.title,
                     { onOpenDetails(e.entry.item.id) },
                     imageUrl = e.entry.item.poster,
-                    subtitle = if (e.liked) "$liked · $why".trimEnd(' ', '·') else why.ifEmpty { null },
+                    subtitle = cardReason(e),
                     cardWidth = BECAUSE_CARD_WIDTH,
                     onLongClick = { menuFor = e },
                     ratingBadge = e.entry.ratingLabel(stringResource(R.string.home_rating_provider)),
@@ -209,9 +216,14 @@ private fun SportEventCard(
 ) {
     val c = KetchupTheme.colors
     val status = sportStatus(card)
-    FocusItem(onClick, Modifier.width(SPORT_CARD_WIDTH)) {
+    FocusItem(onClick, Modifier.width(SPORT_CARD_WIDTH).height(SPORT_CARD_HEIGHT)) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            // Stała wysokość wiersza stanu: karta z plakietką („Na żywo”) jest tak samo wysoka jak bez niej.
+            Row(
+                Modifier.height(SPORT_STATUS_HEIGHT),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 if (status != null) InfoPill(status, highlight = card.live && card.statusNote.isOnSchedule())
                 Text(
                     sportWhen(card.kickoffUtcMs, nowMs),
@@ -226,6 +238,8 @@ private fun SportEventCard(
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = c.textPrimary,
+                // Zawsze miejsce na dwie linie: krótki i długi tytuł dają kartę tej samej wysokości.
+                minLines = 2,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -350,3 +364,5 @@ private const val FEEDBACK_HIDE = "hide"
 private const val FEEDBACK_DETAILS = "details"
 private val BECAUSE_CARD_WIDTH = 170.dp
 private val SPORT_CARD_WIDTH = 300.dp
+private val SPORT_CARD_HEIGHT = 136.dp
+private val SPORT_STATUS_HEIGHT = 32.dp

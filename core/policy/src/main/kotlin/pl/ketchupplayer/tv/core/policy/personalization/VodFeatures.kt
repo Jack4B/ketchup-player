@@ -13,6 +13,8 @@ enum class TmdbMatch { ID, SEARCH_WITH_YEAR, SEARCH }
 data class ItemMetadata(
     val providerGenre: String? = null,
     val providerCast: String? = null,
+    /** Kategoria z listy dostawcy (np. „PL | Kryminał”); liczy się tylko, gdy zawiera znaną nazwę gatunku. */
+    val providerCategory: String? = null,
     val tmdbGenre: String? = null,
     val tmdbCast: String? = null,
     val tmdbDirector: String? = null,
@@ -26,6 +28,7 @@ data class ItemMetadata(
  */
 object VodFeatures {
     const val PROVIDER_CONFIDENCE = 0.6
+    const val CATEGORY_CONFIDENCE = 0.5
     const val TMDB_ID_CONFIDENCE = 0.9
     const val TMDB_SEARCH_CONFIDENCE = 0.6
 
@@ -56,6 +59,9 @@ object VodFeatures {
             if (old == null || f.confidence > old.confidence) out[k] = f
         }
         genres(meta.providerGenre, Provenance.PROVIDER, PROVIDER_CONFIDENCE).forEach(::add)
+        // Kategoria dostawcy bywa jedynym opisem pozycji. Bierzemy z niej wyłącznie znane nazwy gatunków
+        // („PL | Kryminał” tak, „Netflix 4K” nie) i tylko gdy pole gatunku jest puste.
+        if (out.isEmpty()) categoryGenres(meta.providerCategory).forEach(::add)
         people(meta.providerCast, FeatureNamespace.CAST, Provenance.PROVIDER, PROVIDER_CONFIDENCE, p.castTopN)
             .forEach(::add)
         if (tmdb != null) {
@@ -75,6 +81,20 @@ object VodFeatures {
         if (labels.isEmpty()) return emptyList()
         val share = 1.0 / sqrt(labels.size.toDouble())
         return labels.map { ItemFeature(FeatureNamespace.GENRE, it.key, it.label, share, provenance, confidence) }
+    }
+
+    private fun categoryGenres(raw: String?): List<ItemFeature> {
+        val labels =
+            raw
+                .orEmpty()
+                .split('|', '/', ':', ',', ';', '-', '•')
+                .mapNotNull { GenreDictionary.known(it) }
+                .distinctBy { it.key }
+        if (labels.isEmpty()) return emptyList()
+        val share = 1.0 / sqrt(labels.size.toDouble())
+        return labels.map {
+            ItemFeature(FeatureNamespace.GENRE, it.key, it.label, share, Provenance.PROVIDER, CATEGORY_CONFIDENCE)
+        }
     }
 
     private fun people(
@@ -125,6 +145,15 @@ object GenreDictionary {
         return GenreLabel(key, LABELS.getValue(key))
     }
 
+    /** Tylko gatunek ze słownika (dla kategorii dostawcy): nieznana etykieta daje null zamiast nowego „gatunku”. */
+    fun known(raw: String): GenreLabel? {
+        val norm = Channel.normalizeName(raw)
+        val bare = CATEGORY_PREFIXES.fold(norm) { acc, prefix -> acc.removePrefix(prefix) }.trim()
+        val key = SYNONYMS[norm] ?: SYNONYMS[bare] ?: return null
+        return GenreLabel(key, LABELS.getValue(key))
+    }
+
+    private val CATEGORY_PREFIXES = listOf("filmy ", "film ", "seriale ", "serial ", "vod ", "kino ")
     private const val MIN_LABEL = 3
 
     private val LABELS =

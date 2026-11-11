@@ -93,3 +93,12 @@ Krótkie wpisy dopisywane chronologicznie (nowe na końcu); starych nie przepisu
 
 - PR #21 (poprawka importu: player_api.php, UA, tożsamość kanałów) scalony do `dev` (`d8091a1`, CI push zielone); `dev` ma jeszcze commit bota `4acd3fb` (tylko `docs/qa/emulator`).
 - `feat/player-dotyk` zaktualizowana zwykłym merge `origin/dev` (bez rebase i force-push). Konflikty tylko w `docs/HANDOFF.md` i `docs/HISTORIA-SESJI.md`, rozwiązane z zachowaniem informacji obu stron; kod i testy bez konfliktów. Dotyk nie jest scalony, merge PR #20 wymaga osobnej zgody.
+
+## 2026-11-10 i 11 (Europe/Warsaw): scalenie analizy 504 i personalizacja MVP (PR #14)
+
+- PR #19 (analiza 504) scalony do `dev` (`310ea95`). Bieg push na `dev` czerwony: w pierwszej próbie emulator przestawił znaki wpisywanego adresu, w ponowionej smoke przeszedł, a padł krok commitu zrzutów (konflikt rebase z commitem pierwszej próby). Bieg pull_request na tym samym SHA zielony.
+- Środowisko Cloud dostało `dl.google.com` (za zgodą właściciela): Android SDK i Gradle działają w sesji, więc testy Robolectric, Roborazzi i E2E uruchamiane są lokalnie przed pushem. Maven Central bywa ograniczany (429): pomaga ponowienie.
+- PR #14: pełna implementacja personalizacji MVP (A+B+C) wg konspektu: formuły w `core:policy`, Room v10, warstwa danych, obserwator odtwarzania, pasy Home, ekran Ustawień, „Lubię to” w szczegółach. Stan i różnice względem projektu: sekcja 26 konspektu.
+- Wnioski z testów: lista Home jest leniwa, więc test musi przewinąć do rzędu, zanim go szuka; zmiana treści klasy modułu Hilt w trakcie działającego Gradle zostawia nieaktualny cache KSP (pomaga ponowne uruchomienie); limit różnorodności nie może skracać pasa przy wąskim profilu (dopełnianie trafnymi pozycjami); kategoria dostawcy bywa jedynym źródłem gatunku na listach Xtream.
+- Audyt układu wykrył przyciętą pierwszą kategorię Ustawień po dodaniu dziewiątej: wiersze zagęszczone, a `LayoutAudit` mierzy pełną wysokość celu (kafel schowany przez przewinięcie nie jest małym celem).
+

@@ -44,6 +44,22 @@ class VodRankingTest {
     }
 
     @Test
+    fun kategoriaDostawcyDajeGatunekTylkoGdyToZnanaNazwa() {
+        fun keys(category: String?) = VodFeatures.extract(ItemMetadata(providerCategory = category)).map { it.key }
+        assertEquals(listOf("crime"), keys("PL | Kryminał"))
+        assertEquals(listOf("comedy"), keys("Komedia"))
+        assertEquals(listOf("action"), keys("VOD: Filmy akcji"))
+        assertEquals(listOf("drama", "comedy"), keys("Dramat / Komedia"))
+        assertTrue("nazwa serwisu to nie gatunek", keys("Netflix 4K").isEmpty())
+        assertTrue(keys("PL | Premiery 2026").isEmpty())
+        assertTrue(keys(null).isEmpty())
+        val f = VodFeatures.extract(ItemMetadata(providerCategory = "Kryminał")).single()
+        assertEquals("kategoria jest mniej pewna niż pole gatunku", 0.5, f.confidence, 0.0)
+        val both = VodFeatures.extract(ItemMetadata(providerGenre = "Thriller", providerCategory = "Komedia"))
+        assertEquals("pole gatunku ma pierwszeństwo przed kategorią", listOf("thriller"), both.map { it.key })
+    }
+
+    @Test
     fun rezyserTylkoZTmdbAWyszukiwanieBezRokuNieDajeCech() {
         val byId =
             VodFeatures.extract(
@@ -137,25 +153,28 @@ class VodRankingTest {
     }
 
     @Test
-    fun rzadMaLimitRezyseraIGatunku() {
+    fun poczatekRzeduJestRoznorodnyAWolneMiejscaDopelniajaTrafnePozycje() {
         val sameDirector = (1..5).map { candidate("r$it", "Kryminał", director = "Anna Testowa") }
         val crime = (1..6).map { candidate("k$it", "Kryminał") }
         val other = (1..4).map { candidate("t$it", "Thriller") }
         val all = sameDirector + crime + other
         val pref = mapOf("DIRECTOR:anna testowa" to 9.0, "GENRE:crime" to 3.0, "GENRE:thriller" to 1.0)
-        val cards = VodRanker.rank(all.map { it.itemId }.toSet(), all, pref, emptySet(), p)
-        val ids = cards.map { it.itemId }
-        assertEquals("najwyżej 2 pozycje jednego reżysera", 2, ids.count { it.startsWith("r") })
-        assertEquals(
-            "najwyżej 3 pozycje z tym samym głównym gatunkiem",
-            3,
-            ids.count {
-                it.startsWith("r") ||
-                    it.startsWith("k")
-            },
-        )
-        assertEquals("limit gatunku dotyczy każdego gatunku", 3, ids.count { it.startsWith("t") })
+        val ids = VodRanker.rank(all.map { it.itemId }.toSet(), all, pref, emptySet(), p).map { it.itemId }
         assertEquals("najtrafniejsza pozycja jest pierwsza", "r1", ids.first())
+        // Limity (2 pozycje reżysera, 3 z tym samym głównym gatunkiem) dają 6 pozycji; one otwierają pas.
+        val head = ids.take(6)
+        assertEquals("najwyżej 2 pozycje jednego reżysera na początku", 2, head.count { it.startsWith("r") })
+        assertEquals(3, head.count { it.startsWith("r") || it.startsWith("k") })
+        assertEquals(3, head.count { it.startsWith("t") })
+        assertEquals("pas nie jest skracany przez limity, gdy są jeszcze trafne pozycje", 12, ids.size)
+        assertEquals("bez powtórzeń", ids.size, ids.toSet().size)
+    }
+
+    @Test
+    fun waskiProfilNieSkracaPasa() {
+        val crime = (1..9).map { candidate("k$it", "Kryminał") }
+        val cards = VodRanker.rank(crime.map { it.itemId }.toSet(), crime, mapOf("GENRE:crime" to 2.0), emptySet(), p)
+        assertEquals(9, cards.size)
     }
 
     @Test

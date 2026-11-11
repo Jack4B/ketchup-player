@@ -1,6 +1,8 @@
 package pl.ketchupplayer.tv.core.data.personalization
 
 import androidx.sqlite.db.SimpleSQLiteQuery
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import pl.ketchupplayer.tv.core.database.PersonalizationDao
 import pl.ketchupplayer.tv.core.database.SportDao
 import pl.ketchupplayer.tv.core.database.TeamAliasEntity
@@ -62,6 +64,14 @@ class SportStore
             val states = sport.follows(profile).associate { it.teamId to parseState(it.state) }
             return teams().map { TeamChoice(it, states[it.id]) }
         }
+
+        /** Zmiana wyborów albo listy własnych drużyn (ekran ustawień odświeża wtedy listę). */
+        fun observeChoices(): Flow<List<TeamChoice>> =
+            combine(sport.observeFollows(profile), sport.observeTeams()) { _, _ -> choices() }
+
+        /** Wybory i własne drużyny do kopii danych (same nazwy i stany). */
+        suspend fun exportRows(): Pair<List<TeamFollowEntity>, List<TeamEntity>> =
+            sport.follows(profile) to sport.teams()
 
         suspend fun followedIds(): Set<String> =
             sport

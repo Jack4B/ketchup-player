@@ -207,6 +207,12 @@ private fun Buttons(
             stringResource(if (entry.myList) R.string.details_in_my_list else R.string.details_my_list),
             { onEvent(DetailsEvent.ToggleMyList) },
         )
+        if (state.likeVisible) {
+            KetchupButton(
+                stringResource(if (state.liked) R.string.details_liked else R.string.details_like),
+                { onEvent(DetailsEvent.ToggleLike) },
+            )
+        }
     }
 }
 

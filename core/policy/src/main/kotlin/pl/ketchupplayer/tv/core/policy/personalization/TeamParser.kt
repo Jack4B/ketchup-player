@@ -92,7 +92,7 @@ object TeamParser {
     ): TeamParse {
         val replay = isReplay(title, description)
         val competition = competition(Channel.normalizeName(title + " " + description.orEmpty()))
-        val sport = sportHint(category)
+        val sport = SportHint.of(category)
         val fromTitle = parseText(title, sport, index)
         val parsed =
             if (fromTitle.teams.isEmpty() && !fromTitle.ambiguous && !description.isNullOrBlank()) {
@@ -212,13 +212,6 @@ object TeamParser {
         }
     }
 
-    /** `true`/`false`, gdy kategoria EPG mówi, czy to sport; `null`, gdy kategorii brak. Tylko filtr, nie drużyna. */
-    fun sportHint(category: String?): Boolean? {
-        val norm = Channel.normalizeName(category.orEmpty())
-        if (norm.isEmpty()) return null
-        return SPORT_WORDS.any { it in norm }
-    }
-
     private fun competition(normalized: String): String? {
         val padded = " $normalized "
         return COMPETITIONS.firstOrNull { (alias, _) -> " $alias " in padded }?.second
@@ -231,8 +224,6 @@ object TeamParser {
     private val REPLAY_DESCRIPTION_WORDS = setOf("powtorka", "retransmisja", "replay")
     private val CANCELED_WORDS = setOf("odwolany", "odwolane", "odwolana", "canceled", "cancelled")
     private val POSTPONED_WORDS = setOf("przelozony", "przelozone", "przelozona", "postponed")
-    private val SPORT_WORDS =
-        listOf("sport", "pilka", "mecz", "liga", "football", "soccer", "futbol", "tenis", "siatkow", "koszyk", "zuzel")
     private val COMPETITIONS =
         listOf(
             "liga mistrzow" to "uefa-cl",
@@ -252,3 +243,16 @@ object TeamParser {
 }
 
 enum class ScheduleNote { POSTPONED, CANCELED }
+
+/** Czy kategoria EPG mówi, że to sport. Tylko filtr wiarygodności: nigdy nie wskazuje drużyny. */
+object SportHint {
+    /** `true`/`false`, gdy kategoria rozstrzyga; `null`, gdy kategorii brak. */
+    fun of(category: String?): Boolean? {
+        val norm = Channel.normalizeName(category.orEmpty())
+        if (norm.isEmpty()) return null
+        return SPORT_WORDS.any { it in norm }
+    }
+
+    private val SPORT_WORDS =
+        listOf("sport", "pilka", "mecz", "liga", "football", "soccer", "futbol", "tenis", "siatkow", "koszyk", "zuzel")
+}

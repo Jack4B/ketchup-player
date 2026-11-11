@@ -6,6 +6,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -33,6 +36,7 @@ import pl.ketchupplayer.tv.core.policy.personalization.VodCandidate
 import pl.ketchupplayer.tv.core.policy.personalization.VodFeatures
 import pl.ketchupplayer.tv.core.policy.personalization.VodRanker
 import pl.ketchupplayer.tv.core.policy.personalization.WarsawTime
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -260,6 +264,27 @@ class PersonalizationEngine
             if (prefs.enabled) refreshNow()
         }
 
+        /**
+         * Praca w tle na czas działania aplikacji: odświeżenie pasów po każdej zmianie [triggers] (nowy przewodnik,
+         * odświeżona lista), co kilka godzin (karty „dziś” nie mogą zostać na wczoraj) i nocne porządki o 3:30 czasu
+         * warszawskiego. Gdy aplikacja nie działa, nic nie liczymy: wszystko przelicza się przy starcie ([maintain]).
+         */
+        fun startBackground(triggers: Flow<Any>) {
+            if (!background.compareAndSet(false, true)) return
+            scope.launch { triggers.drop(1).collect { scheduleRefresh() } }
+            scope.launch {
+                while (isActive) {
+                    val now = clock.nowMs()
+                    val nightly = WarsawTime.nextAt(now, NIGHTLY_HOUR, NIGHTLY_MINUTE)
+                    val next = minOf(now + PERIODIC_MS, nightly)
+                    delay((next - now).coerceAtLeast(MIN_WAIT_MS))
+                    if (next == nightly) maintain() else refreshNow()
+                }
+            }
+        }
+
+        private val background = AtomicBoolean(false)
+
         /** Zatrzymuje zaplanowane przeliczenie (przed czyszczeniem danych). */
         fun cancelPending() {
             pending?.cancel()
@@ -273,6 +298,10 @@ class PersonalizationEngine
             const val LANE = "HOME"
             const val VOD = "VOD"
             const val REFRESH_DEBOUNCE_MS = 5_000L
+            private const val PERIODIC_MS = 3 * PersonalizationParams.HOUR_MS
+            private const val MIN_WAIT_MS = 60_000L
+            private const val NIGHTLY_HOUR = 3
+            private const val NIGHTLY_MINUTE = 30
             private const val EPSILON = 1e-9
             private const val TOP_PER_NAMESPACE = 20
             private const val CANDIDATES = 600

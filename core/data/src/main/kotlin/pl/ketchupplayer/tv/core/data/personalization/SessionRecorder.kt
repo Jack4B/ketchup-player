@@ -142,7 +142,9 @@ class SessionRecorder
             private var checkpointAt = 0L
 
             init {
-                val job = scope.launch { run(clock.nowMs()) }
+                // Czas otwarcia bierzemy od razu, w wątku wywołującego (nie dopiero, gdy ruszy korutyna).
+                val openedAt = clock.nowMs()
+                val job = scope.launch { run(openedAt) }
                 jobs += job
                 job.invokeOnCompletion { jobs -= job }
             }

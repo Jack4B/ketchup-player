@@ -26,6 +26,7 @@ data class EvidenceCount(
 data class VodFeatureSource(
     val id: String,
     val genre: String?,
+    val category: String?,
     val cast: String?,
     val tmdbGenre: String?,
     val tmdbCast: String?,
@@ -112,7 +113,8 @@ interface PersonalizationDao {
     suspend fun qualifyingVodSessions(profileId: String): Int
 
     @Query(
-        "SELECT evidenceClass, COUNT(*) AS sessions FROM watch_sessions WHERE profileId = :profileId GROUP BY evidenceClass",
+        "SELECT evidenceClass, COUNT(*) AS sessions FROM watch_sessions " +
+            "WHERE profileId = :profileId GROUP BY evidenceClass",
     )
     suspend fun evidenceCounts(profileId: String): List<EvidenceCount>
 
@@ -230,7 +232,8 @@ interface PersonalizationDao {
     ): List<String>
 
     @Query(
-        "SELECT DISTINCT itemId FROM vod_feature_index WHERE namespace = 'GENRE' AND featureKey NOT IN (:keys) LIMIT :limit",
+        "SELECT DISTINCT itemId FROM vod_feature_index " +
+            "WHERE namespace = 'GENRE' AND featureKey NOT IN (:keys) LIMIT :limit",
     )
     suspend fun itemsOutsideGenres(
         keys: List<String>,
@@ -244,7 +247,8 @@ interface PersonalizationDao {
     suspend fun indexedItems(): Int
 
     @Query(
-        "SELECT v.id AS id, v.genre AS genre, v.`cast` AS `cast`, m.tmdbGenre AS tmdbGenre, m.tmdbCast AS tmdbCast, " +
+        "SELECT v.id AS id, v.genre AS genre, v.category AS category, v.`cast` AS `cast`, " +
+            "m.tmdbGenre AS tmdbGenre, m.tmdbCast AS tmdbCast, " +
             "m.director AS director, m.tmdbMatch AS tmdbMatch FROM vod_items v " +
             "LEFT JOIN vod_meta m ON m.itemId = v.id ORDER BY v.rowid LIMIT :limit OFFSET :offset",
     )
@@ -254,14 +258,16 @@ interface PersonalizationDao {
     ): List<VodFeatureSource>
 
     @Query(
-        "SELECT v.id AS id, v.genre AS genre, v.`cast` AS `cast`, m.tmdbGenre AS tmdbGenre, m.tmdbCast AS tmdbCast, " +
+        "SELECT v.id AS id, v.genre AS genre, v.category AS category, v.`cast` AS `cast`, " +
+            "m.tmdbGenre AS tmdbGenre, m.tmdbCast AS tmdbCast, " +
             "m.director AS director, m.tmdbMatch AS tmdbMatch FROM vod_items v " +
             "JOIN vod_meta m ON m.itemId = v.id WHERE m.fetchedMs > :sinceMs OR m.deepMs > :sinceMs",
     )
     suspend fun featureSourcesChangedSince(sinceMs: Long): List<VodFeatureSource>
 
     @Query(
-        "SELECT v.id AS id, v.genre AS genre, v.`cast` AS `cast`, m.tmdbGenre AS tmdbGenre, m.tmdbCast AS tmdbCast, " +
+        "SELECT v.id AS id, v.genre AS genre, v.category AS category, v.`cast` AS `cast`, " +
+            "m.tmdbGenre AS tmdbGenre, m.tmdbCast AS tmdbCast, " +
             "m.director AS director, m.tmdbMatch AS tmdbMatch FROM vod_items v " +
             "LEFT JOIN vod_meta m ON m.itemId = v.id WHERE v.id = :itemId",
     )
@@ -272,6 +278,10 @@ interface PersonalizationDao {
 
     @Query("SELECT COALESCE(SUM(lastRefreshMs), 0) FROM providers")
     suspend fun catalogStamp(): Long
+
+    /** Zmienia się po każdym odświeżeniu, dodaniu albo usunięciu listy (sygnał do przeliczenia pasów). */
+    @Query("SELECT COALESCE(SUM(lastRefreshMs), 0) + COUNT(*) FROM providers")
+    fun observeCatalogStamp(): Flow<Long>
 
     @Query("SELECT id FROM vod_items WHERE id IN (:itemIds)")
     suspend fun existingVodItems(itemIds: List<String>): List<String>

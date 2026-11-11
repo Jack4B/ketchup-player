@@ -29,6 +29,7 @@ enum class SettingsPage(
     PLAYBACK("settings/playback"),
     APPEARANCE("settings/look"),
     METADATA("settings/meta"),
+    PERSONALIZATION("settings/personal"),
 }
 
 object Routes {

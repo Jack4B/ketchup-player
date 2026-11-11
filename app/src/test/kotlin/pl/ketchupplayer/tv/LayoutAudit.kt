@@ -85,7 +85,9 @@ object LayoutAudit {
                     .getOrNull(SemanticsProperties.ContentDescription)
                     ?.joinToString()
                     .orEmpty()
-            checkBounds(label, clickable, b, s)
+            // Rozmiar celu to jego pełna wysokość: element częściowo schowany przez przewinięcie listy (u góry albo
+            // u dołu) ma w `boundsInRoot` tylko widoczny fragment, a to nie jest „mały cel”.
+            checkBounds(label, clickable, b, s, fullHeight = maxOf(b.height, n.size.height.toFloat()))
         }
         if (text != null && n.children.none { it.config.contains(SemanticsProperties.Text) }) {
             s.texts += text to usedBounds(n, b)
@@ -98,14 +100,15 @@ object LayoutAudit {
         clickable: Boolean,
         b: Rect,
         s: Screen,
+        fullHeight: Float = b.height,
     ) {
         if (b.left < -1f || b.right > s.width + 1f) {
             s.add("poza ekranem", "'${label.take(LABEL)}' l=${b.left} r=${b.right} (ekran ${s.width})")
         }
         // Elementy przycięte dolną krawędzią (przewijana lista) mają widoczny tylko fragment: nie mierzymy.
         val clipped = b.bottom > s.height - CLIP_MARGIN_DP * s.density
-        if (clickable && !clipped && b.height < MIN_TARGET_DP * s.density) {
-            s.add("mały cel", "'${label.take(LABEL)}' ${b.height / s.density} dp wysokości, l=${b.left} t=${b.top}")
+        if (clickable && !clipped && fullHeight < MIN_TARGET_DP * s.density) {
+            s.add("mały cel", "'${label.take(LABEL)}' ${fullHeight / s.density} dp wysokości, l=${b.left} t=${b.top}")
         }
     }
 

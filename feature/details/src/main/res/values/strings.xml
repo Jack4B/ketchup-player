@@ -26,4 +26,6 @@
     <string name="details_rating_metacritic">Metacritic %1$d</string>
     <string name="details_rating_trakt">Trakt %1$s</string>
     <string name="details_sources">Źródła: %1$d</string>
+    <string name="details_like">♡ Lubię to</string>
+    <string name="details_liked">♥ Lubisz to</string>
 </resources>

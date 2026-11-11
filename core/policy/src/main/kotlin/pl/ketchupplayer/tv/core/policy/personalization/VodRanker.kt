@@ -56,20 +56,27 @@ object VodRanker {
                 .sortedWith(compareByDescending<Scored> { it.relevance }.thenBy { it.candidate.itemId })
                 .take(POOL)
         if (scored.isEmpty()) return emptyList()
+        // Jedno miejsce „dla odmiany” tylko w pełnym pasie i tylko gdy jest co pokazać (pozycja z cechami spoza
+        // profilu); inaczej całe miejsce dostają trafne pozycje.
         val exploreSlots = if (scored.size >= p.rowSize) (p.rowSize * p.exploreShare).toInt().coerceAtLeast(1) else 0
-        val picked = diversify(scored, p.rowSize - exploreSlots, p)
-        val cards = picked.map { BecauseCard(it.candidate.itemId, why(it, p)) }.toMutableList()
-        if (exploreSlots > 0) {
-            val taken = picked.map { it.candidate.itemId }.toSet()
+        val relevant = scored.map { it.candidate.itemId }.toSet()
+        val explore =
             allowed
-                .filter { it.itemId !in taken && it.features.isNotEmpty() && score(it, pref, p).relevance == 0.0 }
+                .filter { it.itemId !in relevant && it.features.isNotEmpty() && score(it, pref, p).relevance == 0.0 }
                 .sortedBy { (exploreSeed + it.itemId).hashCode() }
                 .take(exploreSlots)
-                .forEach { cards += BecauseCard(it.itemId, emptyList(), explore = true) }
-        }
+        val picked = diversify(scored, p.rowSize - explore.size, p)
+        val cards =
+            picked.map { BecauseCard(it.candidate.itemId, why(it, p)) } +
+                explore.map { BecauseCard(it.itemId, emptyList(), explore = true) }
         return cards
     }
 
+    /**
+     * Układa pas metodą MMR. Najpierw z limitami różnorodności (reżyser, główny gatunek), żeby początek pasa nie był
+     * jednym gatunkiem; jeśli zostają wolne miejsca (wąski profil, np. same kryminały), dopełnia je kolejnymi
+     * trafnymi pozycjami już bez limitów. Krótki pas z powodu limitu byłby gorszy niż pas jednorodny.
+     */
     private fun diversify(
         scored: List<Scored>,
         size: Int,
@@ -78,16 +85,18 @@ object VodRanker {
         val top = scored.first().relevance
         val remaining = scored.toMutableList()
         val selected = mutableListOf<Scored>()
-        while (selected.size < size && remaining.isNotEmpty()) {
-            val next =
-                remaining
-                    .filter { fits(it, selected, p) }
-                    .maxByOrNull { c ->
-                        val similarity = selected.maxOfOrNull { similarity(c.candidate, it.candidate) } ?: 0.0
-                        p.mmrLambda * (c.relevance / top) - (1 - p.mmrLambda) * similarity
-                    } ?: break
-            selected += next
-            remaining -= next
+        for (capped in listOf(true, false)) {
+            while (selected.size < size && remaining.isNotEmpty()) {
+                val next =
+                    remaining
+                        .filter { !capped || fits(it, selected, p) }
+                        .maxByOrNull { c ->
+                            val similarity = selected.maxOfOrNull { similarity(c.candidate, it.candidate) } ?: 0.0
+                            p.mmrLambda * (c.relevance / top) - (1 - p.mmrLambda) * similarity
+                        } ?: break
+                selected += next
+                remaining -= next
+            }
         }
         return selected
     }

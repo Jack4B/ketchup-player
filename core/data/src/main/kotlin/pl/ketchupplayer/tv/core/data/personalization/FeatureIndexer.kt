@@ -71,6 +71,7 @@ class FeatureIndexer
                 ItemMetadata(
                     providerGenre = s.genre,
                     providerCast = s.cast,
+                    providerCategory = s.category,
                     tmdbGenre = s.tmdbGenre,
                     tmdbCast = s.tmdbCast,
                     tmdbDirector = s.director,

@@ -37,8 +37,24 @@ object FakePlayers {
     /** Kontrolery utworzone i jeszcze niezwolnione: po wyjściu z odtwarzacza ma ich nie być (nic nie gra w tle). */
     val live: MutableSet<FakePlayerController> = java.util.Collections.synchronizedSet(mutableSetOf())
 
+    /**
+     * Czy gotowy odtwarzacz zgłasza „gra” (`isPlaying`). Domyślnie nie (jak dotąd); scenariusze personalizacji
+     * włączają, bo liczy się tam czas faktycznego grania.
+     */
+    @Volatile
+    var playingWhenReady: Boolean = false
+
+    /** Długość odtwarzanego materiału zgłaszana przez odtwarzacz (ms); null = nieznana. */
+    @Volatile
+    var durationMs: Long? = null
+
+    /** Przesuwa pozycję wszystkich żywych odtwarzaczy o [ms], jakby tyle zagrały. */
+    fun advance(ms: Long) = live.toList().forEach { it.advance(ms) }
+
     fun reset() {
         live.clear()
+        playingWhenReady = false
+        durationMs = null
         behaviour = { PlaybackStatus.READY }
         played.clear()
         osdCalls.clear()
@@ -102,9 +118,17 @@ class FakePlayerController : PlayerController {
         _state.value =
             pl.ketchupplayer.tv.player.engine
                 .PlayerState(PlaybackStatus.BUFFERING)
+        val status = FakePlayers.behaviour(spec.url)
         _state.value =
-            pl.ketchupplayer.tv.player.engine
-                .PlayerState(FakePlayers.behaviour(spec.url))
+            pl.ketchupplayer.tv.player.engine.PlayerState(
+                status,
+                isPlaying = FakePlayers.playingWhenReady && status == PlaybackStatus.READY,
+                durationMs = FakePlayers.durationMs,
+            )
+    }
+
+    fun advance(ms: Long) {
+        _state.value = _state.value.copy(positionMs = _state.value.positionMs + ms)
     }
 
     override fun pause() = Unit

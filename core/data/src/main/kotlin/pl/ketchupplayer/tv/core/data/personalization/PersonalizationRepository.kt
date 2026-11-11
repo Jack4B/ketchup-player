@@ -13,10 +13,9 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import pl.ketchupplayer.tv.core.common.Clock
+import pl.ketchupplayer.tv.core.data.epg.EpgRepository
 import pl.ketchupplayer.tv.core.database.PersonalizationDao
-import pl.ketchupplayer.tv.core.database.SportDao
 import pl.ketchupplayer.tv.core.model.personalization.FeedbackKind
-import pl.ketchupplayer.tv.core.model.personalization.FollowState
 import pl.ketchupplayer.tv.core.model.personalization.HOUSEHOLD_PROFILE
 import pl.ketchupplayer.tv.core.model.personalization.HomeSnapshot
 import pl.ketchupplayer.tv.core.model.personalization.Team
@@ -145,11 +144,11 @@ class DefaultPersonalizationRepository
     constructor(
         private val settings: PersonalizationSettings,
         private val dao: PersonalizationDao,
-        private val sportDao: SportDao,
         private val sport: SportStore,
         private val engine: PersonalizationEngine,
         private val recorder: SessionRecorder,
         private val clock: Clock,
+        private val epg: dagger.Lazy<EpgRepository>,
     ) : PersonalizationRepository {
         private val profile = HOUSEHOLD_PROFILE
 
@@ -190,8 +189,7 @@ class DefaultPersonalizationRepository
 
         override suspend fun hide(itemId: String) = io { engine.setFeedback(itemId, FeedbackKind.HIDE, true) }
 
-        override fun teamChoices(): Flow<List<TeamChoice>> =
-            combine(sportDao.observeFollows(profile), sportDao.observeTeams()) { _, _ -> sport.choices() }
+        override fun teamChoices(): Flow<List<TeamChoice>> = sport.observeChoices()
 
         override suspend fun follow(teamId: String) =
             io {
@@ -237,7 +235,13 @@ class DefaultPersonalizationRepository
 
         override suspend fun refresh() = io { engine.refreshNow() }
 
-        override suspend fun onAppStart() = io { engine.maintain() }
+        override suspend fun onAppStart() =
+            io {
+                engine.maintain()
+                // Nowy przewodnik albo odświeżona lista zmieniają to, co wolno pokazać (mecze, kanały, katalog).
+                val catalog = dao.observeCatalogStamp().distinctUntilChanged()
+                engine.startBackground(combine(epg.get().revision, catalog) { a, b -> a to b })
+            }
 
         override suspend fun diagnostics(): PersonalizationDiagnostics =
             io {
@@ -250,7 +254,7 @@ class DefaultPersonalizationRepository
                     failures = counts["UNKNOWN_FAILURE"] ?: 0,
                     features = features.size,
                     confidentFeatures = features.count { it.confidence > CONFIDENT },
-                    followedTeams = sportDao.follows(profile).count { it.state == FollowState.FOLLOWED.name },
+                    followedTeams = sport.followedIds().size,
                     snapshotBuiltAtMs = dao.snapshots(profile).maxOfOrNull { it.builtAtMs },
                     lastError = engine.lastError,
                 )
@@ -336,11 +340,12 @@ class DefaultPersonalizationRepository
 
         private suspend fun teamsJson(): JsonObject {
             val names = sport.teams().associate { it.id to it.name }
+            val (follows, added) = sport.exportRows()
             return buildJsonObject {
                 put(
                     "choices",
                     buildJsonArray {
-                        sportDao.follows(profile).forEach { f ->
+                        follows.forEach { f ->
                             add(
                                 buildJsonObject {
                                     put("teamId", f.teamId)
@@ -355,7 +360,7 @@ class DefaultPersonalizationRepository
                 put(
                     "added",
                     buildJsonArray {
-                        sportDao.teams().forEach { t ->
+                        added.forEach { t ->
                             add(
                                 buildJsonObject {
                                     put("teamId", t.teamId)

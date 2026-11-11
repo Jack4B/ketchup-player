@@ -8,7 +8,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import pl.ketchupplayer.tv.core.common.Clock
 import pl.ketchupplayer.tv.core.data.appearance.AppearanceRepository
 import pl.ketchupplayer.tv.core.data.appearance.DataStoreAppearanceRepository
 import pl.ketchupplayer.tv.core.data.catalog.CatalogRepository
@@ -140,9 +139,6 @@ abstract class DataModule {
         @Provides
         @Singleton
         fun streamFetcher(): StreamFetcher = OkHttpStreamFetcher(NetworkClients.stream())
-
-        @Provides
-        fun clock(): Clock = Clock.System
 
         @Provides
         @Singleton

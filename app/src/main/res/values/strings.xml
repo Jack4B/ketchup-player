@@ -25,6 +25,7 @@
     <string name="settings_cat_remote">Pilot</string>
     <string name="settings_cat_services">Usługi zewnętrzne</string>
     <string name="settings_cat_data">Dane i pamięć</string>
+    <string name="settings_cat_personalization">Personalizacja</string>
     <string name="settings_cat_about">O aplikacji</string>
     <string name="settings_about_name">Ketchup Player</string>
     <string name="settings_about_version">Wersja %1$s</string>

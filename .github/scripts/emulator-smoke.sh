@@ -454,7 +454,7 @@ case "$FOCUS_CAT" in
      FAIL_PROVIDER=1 ;;
 esac
 # PRAWO z kategorii ma wejść w opcje panelu: fokus niepusty i nie na liście kategorii (która opcja, zależy od układu).
-CATEGORY_LABELS="Listy i dostawcy|Grupy i kategorie|Odtwarzanie|Oceny i opisy|Telewizja|Sieć i VPN|O aplikacji"
+CATEGORY_LABELS="Listy i dostawcy|Grupy i kategorie|Odtwarzanie|Oceny i opisy|Telewizja|Sieć i VPN|Personalizacja|O aplikacji"
 if [ -z "$FOCUS_IN" ] || echo "$FOCUS_IN" | grep -qE "$CATEGORY_LABELS"; then
   echo "=== Wygląd: PRAWO z kategorii nie weszło w opcje (fokus: '$FOCUS_IN') ===" >&2
   # Diagnostyka #2: czy drugi klawisz PRAWO i klawisz DÓŁ cokolwiek zaznaczają (pierwszy klawisz mógł zniknąć w trybie wejścia).
@@ -477,6 +477,40 @@ PY
 fi
 if ! echo "$FOCUS_OUT" | grep -q "Wygląd"; then
   echo "=== Wygląd: LEWO z opcji nie wróciło na kategorię 'Wygląd' (fokus: '$FOCUS_OUT') ===" >&2
+  FAIL_PROVIDER=1
+fi
+# --- Personalizacja: domyślnie wyłączona, zgoda włączana świadomie w Ustawieniach, pas na Home nie udaje rekomendacji ---
+# Na czystej instalacji przełącznik jest wyłączony i widać tylko opis; po włączeniu pojawiają się kolejne opcje.
+tap "Ustawienia" || FAIL_PROVIDER=1
+sleep 2
+tap "Personalizacja" || FAIL_PROVIDER=1
+sleep 2
+shot 19_personalizacja_wylaczona
+dump ui_personalizacja_off
+if ! grep -q "Wyłączone: aplikacja nie zapisuje historii oglądania" "$OUT/ui_personalizacja_off.xml"; then
+  echo "=== Personalizacja: na czystej instalacji nie jest wyłączona (brak opisu „Wyłączone…”) ===" >&2
+  FAIL_PROVIDER=1
+fi
+if grep -q "Nie ucz się z tej sesji" "$OUT/ui_personalizacja_off.xml"; then
+  echo "=== Personalizacja: opcje nauki widoczne mimo wyłączonej zgody ===" >&2
+  FAIL_PROVIDER=1
+fi
+tap "Ucz się, co oglądam" || FAIL_PROVIDER=1
+sleep 2
+shot 20_personalizacja_wlaczona
+dump ui_personalizacja_on
+for needle in "Włączone: liczy się tylko czas faktycznego oglądania" "Nie ucz się z tej sesji" "Dodaj drużynę z listy"; do
+  if ! grep -q "$needle" "$OUT/ui_personalizacja_on.xml"; then
+    echo "=== Personalizacja: po włączeniu zgody brak „$needle” ===" >&2
+    FAIL_PROVIDER=1
+  fi
+done
+tap "Home" || FAIL_PROVIDER=1
+sleep 3
+shot 21_home_po_wlaczeniu_personalizacji
+dump ui_home_personalizacja
+if grep -q "Bo oglądasz" "$OUT/ui_home_personalizacja.xml"; then
+  echo "=== Personalizacja: pas „Bo oglądasz” widoczny bez żadnej historii oglądania (udawane rekomendacje) ===" >&2
   FAIL_PROVIDER=1
 fi
 if adb logcat -d | grep -qE "FATAL EXCEPTION|ANR in $PKG"; then
