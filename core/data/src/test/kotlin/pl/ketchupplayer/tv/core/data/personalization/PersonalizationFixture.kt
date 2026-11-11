@@ -49,7 +49,8 @@ class FakePersonalizationSettings(
 
 /**
  * Pełny tor personalizacji na prawdziwej bazie Room (w pamięci) z katalogiem zmyślonych filmów, kanałów i drużyn.
- * Adres listy i strumieni celowo zawiera „sekrety” (zmyślone), żeby testy mogły sprawdzić, że nigdzie nie wyciekają.
+ * Adres listy i strumieni celowo zawiera zmyślony login i hasło (znaczniki), żeby testy mogły sprawdzić, że nigdzie
+ * nie wyciekają.
  */
 class PersonalizationFixture(
     val db: KetchupDatabase = newDb(),
@@ -80,7 +81,7 @@ class PersonalizationFixture(
     fun restarted() = PersonalizationFixture(db, clock, settings)
 
     suspend fun seedCatalog() {
-        db.providers().upsert(ProviderEntity(PROVIDER, "Lista testowa", "XTREAM", SECRET_URL, lastRefreshMs = 1))
+        db.providers().upsert(ProviderEntity(PROVIDER, "Lista testowa", "XTREAM", MARKER_URL, lastRefreshMs = 1))
         db.vod().insertAll(
             listOf(
                 movie("film-a", "Cień nad zatoką", "Kryminał"),
@@ -139,7 +140,7 @@ class PersonalizationFixture(
         "MOVIE",
         title,
         Channel.normalizeName(title),
-        "$SECRET_URL&stream=$id",
+        "$MARKER_URL&stream=$id",
         null,
         null,
         2025,
@@ -175,7 +176,7 @@ class PersonalizationFixture(
         null,
         "Sport",
         "LIVE",
-        "$SECRET_URL&ch=$id",
+        "$MARKER_URL&ch=$id",
         null,
     )
 
@@ -288,9 +289,9 @@ class PersonalizationFixture(
         const val MIN = 60_000L
         const val STEP_MS = 30_000L
         const val FILM_MS = 100 * MIN
-        const val SECRET_USER = "USER_TAJNY_123"
-        const val SECRET_PASS = "HASLO_TAJNE_456"
-        const val SECRET_URL = "http://panel.example.invalid:8080/get.php?username=$SECRET_USER&password=$SECRET_PASS"
+        const val MARKER_LOGIN = "login-zmyslony-123"
+        const val MARKER_HASLO = "haslo-zmyslone-456"
+        const val MARKER_URL = "http://panel.example.invalid:8080/get.php?username=$MARKER_LOGIN&password=$MARKER_HASLO"
 
         /** Sobota 7.03.2026 10:00 UTC (11:00 w Warszawie). */
         val T0: Long = utc(3, 7, 10)

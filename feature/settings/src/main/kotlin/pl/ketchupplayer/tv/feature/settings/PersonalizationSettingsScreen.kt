@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -116,7 +117,14 @@ fun PersonalizationSettingsScreen(
                 subtitle = stringResource(R.string.personal_retention_hint),
                 onClick = { dialog = PersonalDialog.RETENTION },
                 trailing = {
-                    Text(stringResource(R.string.personal_days, state.prefs.retentionDays), color = c.textPrimary)
+                    Text(
+                        pluralStringResource(
+                            R.plurals.personal_days,
+                            state.prefs.retentionDays,
+                            state.prefs.retentionDays,
+                        ),
+                        color = c.textPrimary,
+                    )
                 },
             )
             TeamsSection(state.teams, actions) { dialog = PersonalDialog.TEAM }
@@ -158,7 +166,7 @@ private fun PersonalDialogs(
                 title = stringResource(R.string.personal_retention),
                 choices =
                     DataStorePersonalizationSettings.RETENTION_CHOICES.map {
-                        Choice(it.toString(), stringResource(R.string.personal_days, it))
+                        Choice(it.toString(), pluralStringResource(R.plurals.personal_days, it, it))
                     },
                 selectedId = state.prefs.retentionDays.toString(),
                 onSelect = {

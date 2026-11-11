@@ -327,7 +327,7 @@ class PersonalizationFlowTest {
             f.engine.refreshNow()
             val everything = f.dumpLearned() + "\n" + f.repo.export()
             assertTrue(everything.contains("film-a"))
-            val secrets = listOf(PersonalizationFixture.SECRET_USER, PersonalizationFixture.SECRET_PASS)
+            val secrets = listOf(PersonalizationFixture.MARKER_LOGIN, PersonalizationFixture.MARKER_HASLO)
             (secrets + listOf("http", "get.php", "password")).forEach {
                 assertFalse("wyciek: $it", everything.contains(it, ignoreCase = true))
             }

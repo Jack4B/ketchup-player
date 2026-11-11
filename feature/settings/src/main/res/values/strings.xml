@@ -151,7 +151,13 @@
     <string name="personal_incognito_hint">To, co oglądasz teraz, nie wpłynie na podpowiedzi.</string>
     <string name="personal_retention">Jak długo pamiętać</string>
     <string name="personal_retention_hint">Starsze sesje oglądania są usuwane.</string>
-    <string name="personal_days">%1$d dni</string>
+    <plurals name="personal_days">
+        <item quantity="one">%1$d dzień</item>
+        <item quantity="few">%1$d dni</item>
+        <item quantity="many">%1$d dni</item>
+        <!-- „other” obowiązuje też na urządzeniu z innym językiem systemu (np. angielskim): zostaje najczęstsza forma. -->
+        <item quantity="other">%1$d dni</item>
+    </plurals>
     <string name="personal_teams_header">Obserwowane drużyny</string>
     <string name="personal_team_add">Dodaj drużynę z listy</string>
     <string name="personal_team_add_hint">Mecze obserwowanych drużyn pojawią się na ekranie głównym.</string>

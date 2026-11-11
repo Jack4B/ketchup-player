@@ -5,3 +5,9 @@
 # są częścią publicznego adresu cudzego strumienia, nie sekretem tego projektu ani konta użytkownika.
 a99fd1848067240c6bd6902e8d8b2ff11ce1871c:app/src/test/resources/fixtures/iptv-org-pl.m3u:generic-api-key:175
 a99fd1848067240c6bd6902e8d8b2ff11ce1871c:app/src/test/resources/fixtures/iptv-org-pl.m3u:generic-api-key:177
+#
+# core/data/.../personalization/PersonalizationFixture.kt (commit 5545e35): zmyślona stała testowa udająca hasło listy
+# (wartość wymyślona na potrzeby testu „w tabelach i eksporcie personalizacji nie ma danych dostępu”). To nie jest
+# sekret żadnego konta. W kolejnym commicie stała dostała nazwę i wartość, których reguła już nie łapie; historii
+# gałęzi nie przepisujemy (zakaz force-push), więc odcisk starego commita zostaje tutaj.
+5545e3536f8b4ea18e50ae62bd5721fa0153609d:core/data/src/test/kotlin/pl/ketchupplayer/tv/core/data/personalization/PersonalizationFixture.kt:generic-api-key:292
