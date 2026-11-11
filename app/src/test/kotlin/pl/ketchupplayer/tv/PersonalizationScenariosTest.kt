@@ -278,7 +278,7 @@ class PersonalizationScenariosTest {
         val before = FakePlayers.played.size
         click("▶ Oglądaj")
         waitFor { FakePlayers.played.size > before }
-        compose.waitForIdle()
+        waitUntilPlaying()
         repeat(minutes) {
             TestClock.advance(MIN)
             FakePlayers.advance(MIN)
@@ -299,6 +299,12 @@ class PersonalizationScenariosTest {
             "diag=${personalization.diagnostics()} cechy=$features indeks=$index wykluczone=" +
                 dao.excludedVodItems("household") + " sesje=" + sessions().map { it.itemId to it.appliedStrength }
         }
+
+    /** Atrapa zgłasza „gra” dopiero w kolejnym obiegu pętli (jak prawdziwy odtwarzacz): czas liczymy od tej chwili. */
+    private fun waitUntilPlaying() {
+        waitFor { FakePlayers.live.any { it.state.value.isPlaying } }
+        compose.waitForIdle()
+    }
 
     private fun sessions() = runBlocking { db.personalization().recentSessions("household", 50) }
 
@@ -437,6 +443,7 @@ class PersonalizationScenariosTest {
         nav("Na żywo")
         click("Sport Testowy 1")
         waitFor { FakePlayers.played.isNotEmpty() }
+        waitUntilPlaying()
         repeat(30) {
             TestClock.advance(MIN)
             FakePlayers.advance(MIN) // zmiana stanu odtwarzacza = próbka dla obserwatora
