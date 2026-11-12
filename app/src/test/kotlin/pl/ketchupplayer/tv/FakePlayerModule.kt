@@ -11,6 +11,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import pl.ketchupplayer.tv.core.model.StreamSpec
 import pl.ketchupplayer.tv.player.engine.PlaybackStatus
 import pl.ketchupplayer.tv.player.engine.PlayerController
@@ -97,15 +98,27 @@ class FakePlayerController : PlayerController {
         trackFlow.value = trackFlow.value.copy(audioDelayMs = ms)
     }
 
+    /**
+     * Jak prawdziwy odtwarzacz: `play` od razu zgłasza buforowanie, a wynik (gra albo błąd) przychodzi osobno,
+     * w kolejnym obiegu pętli głównej. Gdy oba stany ustawiano w jednym wywołaniu, obserwator `StateFlow` mógł nie
+     * zobaczyć buforowania i wtedy drugi identyczny błąd (ERROR po ERROR) był dla niego „bez zmiany”: failover nie
+     * dostawał drugiego incydentu i scenariusz przełączenia na drugą listę sporadycznie stawał na ekranie błędu.
+     */
     override fun play(spec: StreamSpec) {
         FakePlayers.played += spec.url
+        result?.cancel()
         _state.value =
             pl.ketchupplayer.tv.player.engine
                 .PlayerState(PlaybackStatus.BUFFERING)
-        _state.value =
-            pl.ketchupplayer.tv.player.engine
-                .PlayerState(FakePlayers.behaviour(spec.url))
+        result =
+            scope.launch {
+                _state.value =
+                    pl.ketchupplayer.tv.player.engine
+                        .PlayerState(FakePlayers.behaviour(spec.url))
+            }
     }
+
+    private var result: kotlinx.coroutines.Job? = null
 
     override fun pause() = Unit
 
@@ -116,10 +129,6 @@ class FakePlayerController : PlayerController {
     override fun release() {
         FakePlayers.live -= this
         scope.cancel()
-    }
-
-    private companion object {
-        const val RESULT_DELAY_MS = 50L
     }
 }
 
