@@ -12,7 +12,13 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import pl.ketchupplayer.tv.core.data.catalog.PlaylistChoice
+import pl.ketchupplayer.tv.core.data.catalog.PlaylistScope
+import pl.ketchupplayer.tv.core.data.catalog.PlaylistScreen
+import pl.ketchupplayer.tv.core.data.groups.GroupKind
 import pl.ketchupplayer.tv.core.data.vod.VodEntry
 import pl.ketchupplayer.tv.core.data.vod.VodRepository
 import pl.ketchupplayer.tv.core.model.Channel
@@ -27,6 +33,7 @@ class VodBrowseViewModel
     constructor(
         private val repo: VodRepository,
         private val groups: pl.ketchupplayer.tv.core.data.groups.GroupsRepository,
+        private val playlists: pl.ketchupplayer.tv.core.data.catalog.PlaylistFilterRepository,
     ) : ViewModel() {
         private val mode = MutableStateFlow<VodMode?>(null)
         private val category = MutableStateFlow<String?>(null)
@@ -48,21 +55,31 @@ class VodBrowseViewModel
                 category,
                 query,
                 sort,
-            ) { all, m, cat, q, s -> build(all, m ?: VodMode.MOVIES, cat, q, s) }
+            ) { scoped, m, cat, q, s ->
+                build(scoped.entries, m ?: VodMode.MOVIES, cat, q, s).copy(playlist = scoped.playlist)
+            }
                 // Filtrowanie i sortowanie dużego katalogu poza głównym wątkiem (inaczej UI zamiera).
                 .flowOn(kotlinx.coroutines.Dispatchers.Default)
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_MS), VodBrowseUiState())
 
-        /** Filmy i seriale bez ukrytych kategorii; Moja lista zostaje pełna (to wybór użytkownika). */
-        private fun visibleSource(mode: VodMode): Flow<List<VodEntry>> {
-            val kind =
+        private class Scoped(
+            val entries: List<VodEntry>,
+            val playlist: PlaylistChoice = PlaylistChoice(),
+        )
+
+        /**
+         * Filmy i seriale z wybranej listy, bez ukrytych kategorii; kategoria o nazwie z kilku list jest osobna dla
+         * każdej listy (PlaylistScope). Moja lista i Szukaj zostają pełne (to wybór użytkownika / cały katalog).
+         */
+        private fun visibleSource(mode: VodMode): Flow<Scoped> {
+            val (kind, screen) =
                 when (mode) {
-                    VodMode.MOVIES -> pl.ketchupplayer.tv.core.data.groups.GroupKind.MOVIES
-                    VodMode.SERIES -> pl.ketchupplayer.tv.core.data.groups.GroupKind.SERIES
-                    else -> return source(mode)
+                    VodMode.MOVIES -> GroupKind.MOVIES to PlaylistScreen.MOVIES
+                    VodMode.SERIES -> GroupKind.SERIES to PlaylistScreen.SERIES
+                    else -> return source(mode).map { Scoped(it) }
                 }
-            return combine(source(mode), groups.hidden(kind)) { all, hidden ->
-                if (hidden.isEmpty()) all else all.filter { it.item.category !in hidden }
+            return combine(source(mode), groups.hidden(kind), playlists.choice(screen)) { all, hidden, choice ->
+                Scoped(PlaylistScope.vod(all, choice, hidden), choice)
             }
         }
 
@@ -80,8 +97,21 @@ class VodBrowseViewModel
                 is VodBrowseEvent.SelectCategory -> category.value = event.category
                 is VodBrowseEvent.Search -> query.value = event.query
                 is VodBrowseEvent.Sort -> sort.value = event.sort
+                is VodBrowseEvent.SelectPlaylist -> selectPlaylist(event.id)
                 is VodBrowseEvent.Visible -> repo.requestMeta(event.itemId)
             }
+        }
+
+        /** Zmiana listy wraca do „Wszystkie” kategorie: kategorii poprzedniej listy może tu nie być. */
+        private fun selectPlaylist(id: pl.ketchupplayer.tv.core.model.ProviderId?) {
+            val screen =
+                when (mode.value) {
+                    VodMode.MOVIES -> PlaylistScreen.MOVIES
+                    VodMode.SERIES -> PlaylistScreen.SERIES
+                    else -> return
+                }
+            category.value = null
+            viewModelScope.launch { playlists.select(screen, id) }
         }
 
         private companion object {

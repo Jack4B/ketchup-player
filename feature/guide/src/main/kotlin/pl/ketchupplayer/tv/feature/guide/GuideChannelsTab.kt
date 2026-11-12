@@ -86,7 +86,14 @@ internal fun ChannelsTab(
                 right.also { hit -> if (hit) runCatching { rows.requestFocus() } }
             },
         ) {
-            GuideGroupsPanel(state, groupsList, selectedGroupFocus, actions.onSelectGroup, Modifier.fillMaxSize())
+            GuideGroupsPanel(
+                state,
+                groupsList,
+                selectedGroupFocus,
+                actions.onSelectGroup,
+                Modifier.fillMaxSize(),
+                actions.onSelectPlaylist,
+            )
         }
         Column(Modifier.weight(LIST_WEIGHT).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(ROW_SPACING)) {
             ListHeader(state)
@@ -124,6 +131,7 @@ internal data class ChannelsActions(
     val onToggleFavorite: (String) -> Unit,
     val onSelectGroup: (GuideGroup) -> Unit,
     val onPreviewChannel: (String) -> Unit,
+    val onSelectPlaylist: (pl.ketchupplayer.tv.core.model.ProviderId?) -> Unit = {},
 )
 
 private val PANE_GAP = 14.dp

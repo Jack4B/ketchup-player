@@ -103,6 +103,7 @@ private fun ProviderList(
                     { onEvent(ProvidersEvent.Refresh(p.id)) },
                     primary = true,
                 )
+                KetchupButton(stringResource(R.string.providers_edit), { onEvent(ProvidersEvent.StartEdit(p.id)) })
                 KetchupButton(stringResource(R.string.providers_remove), { onEvent(ProvidersEvent.Remove(p.id)) })
             }
         }
@@ -144,17 +145,32 @@ internal fun AddForm(
     // Po wysłaniu chowamy klawiaturę ekranową, żeby nie zasłaniała postępu importu.
     val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
     androidx.compose.runtime.LaunchedEffect(busy) { if (busy) keyboard?.hide() }
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        KetchupButton(
-            stringResource(R.string.providers_kind_m3u),
-            { onEvent(ProvidersEvent.SelectKind(ProviderKind.M3U)) },
-            primary = !xtream,
+    // Rodzaju zapisanej listy nie zmieniamy (inny rodzaj to inna lista); w edycji tylko informacja o nim.
+    if (form.editing) {
+        Text(
+            stringResource(
+                R.string.providers_edit_title,
+                stringResource(if (xtream) R.string.providers_kind_xtream else R.string.providers_kind_m3u),
+            ),
+            fontSize = 20.sp,
+            color = KetchupTheme.colors.textPrimary,
         )
-        KetchupButton(
-            stringResource(R.string.providers_kind_xtream),
-            { onEvent(ProvidersEvent.SelectKind(ProviderKind.XTREAM)) },
-            primary = xtream,
-        )
+    } else {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            KetchupButton(
+                stringResource(R.string.providers_kind_m3u),
+                { onEvent(ProvidersEvent.SelectKind(ProviderKind.M3U)) },
+                primary = !xtream,
+            )
+            KetchupButton(
+                stringResource(R.string.providers_kind_xtream),
+                { onEvent(ProvidersEvent.SelectKind(ProviderKind.XTREAM)) },
+                primary = xtream,
+            )
+        }
     }
     TextInputField(
         stringResource(R.string.providers_field_name),
@@ -169,6 +185,14 @@ internal fun AddForm(
         { onEvent(ProvidersEvent.UrlChanged(it)) },
         onDone = if (xtream) null else submit,
     )
+    if (form.editing) {
+        // Zapisany adres bywa z loginem i hasłem, więc go nie pokazujemy: tylko host i „puste = bez zmian”.
+        Text(
+            stringResource(R.string.providers_edit_keep, form.editingHost.orEmpty()),
+            fontSize = 16.sp,
+            color = KetchupTheme.colors.textSecondary,
+        )
+    }
     if (form.urlError) Text(stringResource(R.string.providers_error_url), color = ERROR_COLOR, fontSize = 16.sp)
     if (xtream) {
         TextInputField(stringResource(R.string.providers_field_username), form.username, {
@@ -266,7 +290,7 @@ internal fun AddForm(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             KetchupButton(
-                stringResource(R.string.providers_save),
+                stringResource(if (form.editing) R.string.providers_save_edit else R.string.providers_save),
                 { if (!busy) onEvent(ProvidersEvent.Submit) },
                 primary = true,
             )

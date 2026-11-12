@@ -93,3 +93,10 @@ Krótkie wpisy dopisywane chronologicznie (nowe na końcu); starych nie przepisu
 
 - PR #21 (poprawka importu: player_api.php, UA, tożsamość kanałów) scalony do `dev` (`d8091a1`, CI push zielone); `dev` ma jeszcze commit bota `4acd3fb` (tylko `docs/qa/emulator`).
 - `feat/player-dotyk` zaktualizowana zwykłym merge `origin/dev` (bez rebase i force-push). Konflikty tylko w `docs/HANDOFF.md` i `docs/HISTORIA-SESJI.md`, rozwiązane z zachowaniem informacji obu stron; kod i testy bez konfliktów. Dotyk nie jest scalony, merge PR #20 wymaga osobnej zgody.
+
+## 2026-11-12 (Europe/Warsaw): atrapa odtwarzacza (PR #22) i poprawki z testów rc4
+
+- PR #22: poprawka atrapy odtwarzacza (wynik `play()` osobno od buforowania) do `dev`; ta sama poprawka w PR #14. CI obu zielone, bez merge.
+- Poprawki rc4 na gałęzi `fix/rc4-playlisty-osd` (od `dev`, nie od #14): przycisk Wstecz w OSD dotykowym odsunięty od pasków systemu, edycja zapisanej listy bez duplikatu i bez pokazywania danych dostępu, grupy i kolejność kanałów związane z listą, wybór listy w Na żywo, Filmach i Serialach.
+- Wniosek z testów: wstrzyknięcie `WindowInsets` przez widok w Robolectric nie dociera do Compose; odsunięcie testujemy parametrem `insets` komponentu. `upsert` (REPLACE) wiersza listy kasowałby kaskadowo kanały i VOD, dlatego edycja idzie przez `UPDATE`.
+

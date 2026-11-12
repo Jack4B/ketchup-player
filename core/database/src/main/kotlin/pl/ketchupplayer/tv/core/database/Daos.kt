@@ -24,6 +24,18 @@ interface ProviderDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(provider: ProviderEntity)
 
+    /**
+     * Edycja zapisanej listy w miejscu. Celowo `UPDATE`, nie `upsert`: zastąpienie wiersza (REPLACE) usuwa go na
+     * chwilę, a klucz obcy kasuje wtedy kaskadowo kanały, filmy i seriale tej listy.
+     */
+    @Query("UPDATE providers SET name = :name, url = :url, requestMethod = :method WHERE id = :id")
+    suspend fun updateDetails(
+        id: String,
+        name: String,
+        url: String,
+        method: String,
+    )
+
     @Query("UPDATE providers SET requestMethod = :method WHERE id = :id")
     suspend fun setRequestMethod(
         id: String,
@@ -69,6 +81,13 @@ interface ChannelDao {
             "WHERE type = :type AND groupName IS NOT NULL GROUP BY groupName ORDER BY groupName",
     )
     fun observeGroupCounts(type: String): Flow<List<NameCount>>
+
+    /** Grupy osobno dla każdej listy: ta sama nazwa u dwóch dostawców to dwie różne grupy. */
+    @Query(
+        "SELECT providerId, groupName AS name, COUNT(*) AS cnt FROM channels " +
+            "WHERE type = :type AND groupName IS NOT NULL GROUP BY providerId, groupName ORDER BY groupName",
+    )
+    fun observeProviderGroupCounts(type: String): Flow<List<ProviderNameCount>>
 
     @Query("SELECT * FROM channels WHERE id = :id")
     suspend fun get(id: String): ChannelEntity?
@@ -238,6 +257,13 @@ interface VodDao {
             "WHERE kind = :kind AND category IS NOT NULL GROUP BY category ORDER BY category",
     )
     fun observeCategoryCounts(kind: String): Flow<List<NameCount>>
+
+    /** Kategorie osobno dla każdej listy (jak [ChannelDao.observeProviderGroupCounts]). */
+    @Query(
+        "SELECT providerId, category AS name, COUNT(*) AS cnt FROM vod_items " +
+            "WHERE kind = :kind AND category IS NOT NULL GROUP BY providerId, category ORDER BY category",
+    )
+    fun observeProviderCategoryCounts(kind: String): Flow<List<ProviderNameCount>>
 
     /** Ile list (dostawców) ma ten sam tytuł: ten sam rodzaj, znormalizowana nazwa i rok. */
     @Query(
@@ -434,6 +460,13 @@ interface VodDao {
         const val INSERT_CHUNK = 500
     }
 }
+
+/** Grupa/kategoria jednej listy z liczbą pozycji. */
+data class ProviderNameCount(
+    val providerId: String,
+    val name: String,
+    val cnt: Int,
+)
 
 /** Nazwa grupy/kategorii i liczba pozycji (do ekranu wyboru grup). */
 data class NameCount(

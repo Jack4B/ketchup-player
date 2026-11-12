@@ -34,6 +34,7 @@ import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.printToString
@@ -348,6 +349,72 @@ class ScenariosTest {
         )
         waitForText("Przełączono na Lista 2 · TVN 24")
         assertTrue(compose.onAllNodesWithText("Nie udało się odtworzyć kanału").fetchSemanticsNodes().isEmpty())
+    }
+
+    /**
+     * Scenariusz rc4 na dwóch syntetycznych listach z tą samą grupą „Sport” i tymi samymi numerami kanałów: grupy
+     * są osobne dla każdej listy, wybór listy w Na żywo zawęża kanały, edycja listy w Ustawieniach zmienia tę samą
+     * listę (bez duplikatu), a po usunięciu wybranej listy ekran wraca do wszystkich list.
+     */
+    @Test
+    fun dwieListyGrupyOsobnoWyborListyIEdycja() {
+        val host = "http://127.0.0.1:${server.port}"
+
+        fun list(
+            prefix: String,
+            second: String,
+        ) = "#EXTM3U\n" +
+            "#EXTINF:-1 tvg-chno=\"1\" group-title=\"Sport\",Kanał $prefix-1\n$host/$prefix/1.ts\n" +
+            "#EXTINF:-1 tvg-chno=\"2\" group-title=\"$second\",Kanał $prefix-2\n$host/$prefix/2.ts\n"
+        server.serve("/a.m3u") { list("A", "Sport") }
+        server.serve("/b.m3u") { list("B", "Info") }
+        runBlocking {
+            assertTrue(catalog.addM3u("Lista A", server.url("/a.m3u")) is AddProviderResult.Added)
+            assertTrue(catalog.addM3u("Lista B", server.url("/b.m3u")) is AddProviderResult.Added)
+        }
+        nav("Na żywo")
+        waitForText("Kanał A-1")
+        waitForText("Sport · Lista A")
+        waitForText("Sport · Lista B")
+        issuesOf("Na żywo, dwie listy").let { assertTrue(it.joinToString("\n"), it.isEmpty()) }
+
+        // Wybór listy stoi nad grupami (poza przewijaną listą): zwykłe kliknięcie bez przewijania.
+        waitForText("Wszystkie listy")
+        clickable("Wszystkie listy").performClick()
+        waitForText("Wybierz listę")
+        clickable("Lista B").performClick()
+        compose.waitForIdle()
+        waitFor { compose.onAllNodesWithText("Kanał A-1").fetchSemanticsNodes().isEmpty() }
+        waitForText("Kanał B-1")
+        assertTrue(
+            "w jednej liście grupa bez dopisku",
+            compose.onAllNodesWithText("Sport · Lista B").fetchSemanticsNodes().isEmpty(),
+        )
+
+        settingsPage("Dostawcy")
+        click("Lista A")
+        click("Edytuj")
+        waitForText("Zapisz zmiany i pobierz")
+        compose.onAllNodes(hasSetTextAction())[0].performTextReplacement("Lista A dom")
+        compose.onNodeWithText("Zapisz zmiany i pobierz").performScrollTo().performClick()
+        waitForText("Lista A dom")
+        val providers = runBlocking { catalog.providers.first() }
+        assertEquals("edycja bez duplikatu", listOf("Lista A dom", "Lista B"), providers.map { it.name })
+
+        val b = providers.single { it.name == "Lista B" }.id
+        runBlocking { catalog.remove(b) }
+        nav("Na żywo")
+        waitForText("Kanał A-2")
+        assertTrue(
+            "usunięta wybrana lista: znowu wszystkie, wybór listy znika przy jednej liście",
+            compose.onAllNodesWithText("Wszystkie listy").fetchSemanticsNodes().isEmpty(),
+        )
+    }
+
+    private fun issuesOf(screen: String): List<LayoutAudit.Issue> {
+        compose.mainClock.advanceTimeBy(700)
+        compose.waitForIdle()
+        return LayoutAudit.run(screen, compose)
     }
 
     /** Scenariusz: wszystkie źródła kanału nie działają, użytkownik widzi panel błędu i może wrócić. */

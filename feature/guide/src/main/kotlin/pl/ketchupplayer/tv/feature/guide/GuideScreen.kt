@@ -109,6 +109,7 @@ fun GuideRoute(
         viewModel::toggleFavorite,
         preview = preview,
         onPreviewChannel = viewModel::previewChannel,
+        onSelectPlaylist = viewModel::selectPlaylist,
     )
 }
 
@@ -137,6 +138,7 @@ fun GuideScreen(
     onToggleFavorite: (String) -> Unit = {},
     preview: PreviewUi = PreviewUi(),
     onPreviewChannel: (String) -> Unit = {},
+    onSelectPlaylist: (pl.ketchupplayer.tv.core.model.ProviderId?) -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
     var tab by remember { mutableStateOf(GuideTab.LIST) }
@@ -167,6 +169,14 @@ fun GuideScreen(
             )
             when {
                 state.loading -> StateView(StateKind.LOADING, "")
+                // Wybrana lista jest pusta (np. same filmy): mówimy to wprost i dajemy powrót do wszystkich list.
+                state.channels.isEmpty() && state.playlist.selected != null ->
+                    StateView(
+                        StateKind.EMPTY,
+                        stringResource(R.string.guide_playlist_empty, state.playlist.selectedName.orEmpty()),
+                        actionLabel = stringResource(R.string.guide_playlist_show_all),
+                        onAction = { onSelectPlaylist(null) },
+                    )
                 state.channels.isEmpty() ->
                     StateView(
                         StateKind.EMPTY,
@@ -178,7 +188,13 @@ fun GuideScreen(
                     ChannelsTab(
                         state,
                         loadProgrammes,
-                        ChannelsActions(onOpenChannel, onToggleFavorite, onSelectGroup, onPreviewChannel),
+                        ChannelsActions(
+                            onOpenChannel,
+                            onToggleFavorite,
+                            onSelectGroup,
+                            onPreviewChannel,
+                            onSelectPlaylist,
+                        ),
                         rows,
                         preview,
                     )
@@ -210,6 +226,7 @@ fun GuideScreen(
                     runCatching { rows.requestFocus() }
                 },
                 Modifier.width(GROUPS_WIDTH).fillMaxHeight(),
+                onSelectPlaylist,
             )
         }
     }

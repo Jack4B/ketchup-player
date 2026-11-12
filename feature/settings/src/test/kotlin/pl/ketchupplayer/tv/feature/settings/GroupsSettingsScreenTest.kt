@@ -62,7 +62,11 @@ class GroupsSettingsScreenTest {
         key(Key.DirectionDown) // pierwsza grupa
         key(Key.DirectionCenter)
         assertEquals(listOf(true, false), all)
-        assertEquals(listOf("PL | Informacje"), toggled)
+        assertEquals(
+            "przełącza grupę konkretnej listy (klucz lista + nazwa)",
+            listOf(state.options.first().key),
+            toggled,
+        )
     }
 
     @Test
