@@ -141,6 +141,12 @@ Każdy krok: zakres, główne miejsca w kodzie, Definition of Done, testy, nakł
 - **Testy:** unit hash/verify, UI PIN, brak wycieku w `Redactor`.
 - **Nakład:** L. **Zależności:** po 1.0 (krok 4); makieta PIN już jest w v5.1.
 
+### Krok 9 — Personalizacja behawioralna (MVP A+B+C zaimplementowane w PR #14, czeka na ocenę i decyzję o scaleniu)
+- [ ] Realizacja wg `docs/design/PERSONALIZACJA-KONSPEKT.md`. Kod i testy są na gałęzi `docs/personalizacja-konspekt` (PR #14, nie scalony); stan, różnice względem projektu i testy niewykonane: sekcja 26 konspektu. Punkt zostaje nieodhaczony do scalenia przez właściciela i sprawdzenia na TV-boxie (NOT_RUN).
+- **Zakres:** lokalne na urządzeniu uczenie preferencji: sport (ulubione drużyny → najbliższy mecz i kanał z EPG na Home), VOD (gatunek, reżyser, obsada), seriale; zgoda opt-in, edycja/usuwanie profilu, incognito, retencja. Bez chmury i płatnego AI.
+- **Kolejność:** po pierwszym RC — nie czeka na 1.0, ale nie rozszerza zakresu RC ani bramek wydania. Etapy i mikro-PR-y (P0…) wg sekcji 20 konspektu; każdy osobny PR do `dev`.
+- **Uwaga:** parametry i wagi algorytmu to propozycje do kalibracji, nie wyniki pomiarów.
+
 ---
 
 ## 4. Czego ten plan świadomie nie robi

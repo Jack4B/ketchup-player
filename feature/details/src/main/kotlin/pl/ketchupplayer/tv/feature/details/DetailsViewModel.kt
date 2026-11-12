@@ -28,6 +28,7 @@ class DetailsViewModel
     constructor(
         private val repo: VodRepository,
         private val keys: pl.ketchupplayer.tv.core.data.metadata.MetadataKeys,
+        private val personalization: pl.ketchupplayer.tv.core.data.personalization.PersonalizationRepository,
     ) : ViewModel() {
         private val itemId = MutableStateFlow<String?>(null)
         private val season = MutableStateFlow<Int?>(null)
@@ -77,6 +78,8 @@ class DetailsViewModel
                     ) { entry, episodes, selected, status, sim -> build(entry, episodes, selected, status, sim) }
                         .combine(sources) { st, n -> st.copy(sources = n) }
                         .combine(keysMissing) { st, missing -> st.copy(metadataKeysMissing = missing) }
+                        .combine(personalization.prefs) { st, prefs -> st.copy(likeVisible = prefs.enabled) }
+                        .combine(personalization.liked) { st, liked -> st.copy(liked = id in liked) }
                 }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_MS), DetailsUiState())
 
         fun onEvent(event: DetailsEvent) {
@@ -84,6 +87,11 @@ class DetailsViewModel
                 is DetailsEvent.SelectSeason -> season.value = event.season
                 DetailsEvent.ToggleMyList ->
                     state.value.entry?.let { e -> viewModelScope.launch { repo.setMyList(e.item.id, !e.myList) } }
+                DetailsEvent.ToggleLike ->
+                    state.value.entry?.let { e ->
+                        val liked = state.value.liked
+                        viewModelScope.launch { personalization.setLiked(e.item.id, !liked) }
+                    }
                 DetailsEvent.RetryEpisodes ->
                     itemId.value?.let { id ->
                         viewModelScope.launch { loadEpisodesIfSeries(id) }

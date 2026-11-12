@@ -15,7 +15,13 @@ data class TmdbMeta(
     val poster: String?,
     val backdrop: String?,
     val imdbId: String?,
+    /** Reżyser z `credits.crew` (rola „Director”); null, gdy TMDB go nie podaje. Nigdy z opisu ani z tytułu. */
+    val director: String? = null,
+    /** Jak znaleziono pozycję: po identyfikatorze, po tytule z rokiem albo po samym tytule (najmniej pewne). */
+    val match: TmdbMatchKind = TmdbMatchKind.SEARCH,
 )
+
+enum class TmdbMatchKind { ID, SEARCH_WITH_YEAR, SEARCH }
 
 /** Wyszukuje film lub serial w TMDB (developer.themoviedb.org). Błąd sieci lub brak trafienia daje null. */
 class TmdbSource(
@@ -31,7 +37,8 @@ class TmdbSource(
         knownId: Long? = null,
     ): TmdbMeta? {
         val kind = if (series) "tv" else "movie"
-        val id = knownId ?: search(apiKey, kind, title, year, series) ?: return null
+        val found = knownId?.let { it to TmdbMatchKind.ID } ?: search(apiKey, kind, title, year, series) ?: return null
+        val id = found.first
         val url =
             "${endpoints.tmdb}/$kind/$id?${TmdbAuth.param(
                 apiKey,
@@ -48,6 +55,8 @@ class TmdbSource(
             poster = body.str("poster_path")?.let { IMAGE_BASE + "w500" + it },
             backdrop = body.str("backdrop_path")?.let { IMAGE_BASE + "w1280" + it },
             imdbId = body.str("imdb_id") ?: body["external_ids"].obj()?.str("imdb_id"),
+            director = directors(body),
+            match = found.second,
         )
     }
 
@@ -57,13 +66,18 @@ class TmdbSource(
         title: String,
         year: Int?,
         series: Boolean,
-    ): Long? {
+    ): Pair<Long, TmdbMatchKind>? {
         val q = URLEncoder.encode(title, "UTF-8")
         val yearParam = year?.let { if (series) "&first_air_date_year=$it" else "&year=$it" }.orEmpty()
         val base = "${endpoints.tmdb}/search/$kind?${TmdbAuth.param(apiKey)}language=pl-PL&query=$q"
         val headers = TmdbAuth.headers(apiKey)
         // Z rokiem trafniej, ale rok w nazwie bywa błędny: bez trafienia próbujemy jeszcze bez roku.
-        for (url in listOfNotNull(base + yearParam, base.takeIf { year != null })) {
+        val attempts =
+            listOfNotNull(
+                (base + yearParam) to if (year != null) TmdbMatchKind.SEARCH_WITH_YEAR else TmdbMatchKind.SEARCH,
+                base.takeIf { year != null }?.let { it to TmdbMatchKind.SEARCH },
+            )
+        for ((url, how) in attempts) {
             val first =
                 fetcher
                     .fetchWithHeaders(url, headers)
@@ -73,7 +87,7 @@ class TmdbSource(
                     .arr()
                     ?.firstOrNull()
             val id = first.obj()?.num("id")?.toLong()
-            if (id != null) return id
+            if (id != null) return id to how
         }
         return null
     }
@@ -100,7 +114,21 @@ class TmdbSource(
             ?.joinToString(", ")
             ?.ifEmpty { null }
 
+    private fun directors(body: JsonObject): String? =
+        body["credits"]
+            .obj()
+            ?.get("crew")
+            .arr()
+            ?.mapNotNull { it.obj() }
+            ?.filter { it.str("job") == "Director" }
+            ?.mapNotNull { it.str("name") }
+            ?.distinct()
+            ?.take(MAX_DIRECTORS)
+            ?.joinToString(", ")
+            ?.ifEmpty { null }
+
     private companion object {
+        const val MAX_DIRECTORS = 2
         const val IMAGE_BASE = "https://image.tmdb.org/t/p/"
         const val MAX_CAST = 6
         const val MAX_GENRES = 3

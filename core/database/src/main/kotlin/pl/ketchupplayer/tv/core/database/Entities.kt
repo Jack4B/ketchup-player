@@ -167,4 +167,11 @@ data class VodMetaEntity(
     val traktRating: Double? = null,
     /** Kiedy pobrano dane „głębokie” (ekran szczegółów: MDBList, Wikipedia); null = tylko z karty w siatce. */
     val deepMs: Long? = null,
+    /** Reżyser z TMDB (`credits.crew`, rola Director); null = brak danych, nigdy zgadywanie. */
+    val director: String? = null,
+    /** Gatunki i obsada dokładnie tak, jak podał TMDB (osobno od pól dostawcy, żeby znać pochodzenie). */
+    val tmdbGenre: String? = null,
+    val tmdbCast: String? = null,
+    /** Jak TMDB dopasował pozycję: `ID` (po identyfikatorze z indeksu), `SEARCH_WITH_YEAR` albo `SEARCH`. */
+    val tmdbMatch: String? = null,
 )

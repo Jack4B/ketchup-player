@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
@@ -87,6 +88,31 @@ class DetailsScreenTest {
     fun screenshotFilmu() {
         show(movieState)
         compose.onRoot().captureRoboImage("src/test/screenshots/details_movie.png")
+    }
+
+    /** Bez włączonej personalizacji przycisku „Lubię to” nie ma (nic by nie zapisał). */
+    @Test
+    fun lubieToNiewidoczneBezPersonalizacji() {
+        show(movieState)
+        assertEquals(0, compose.onAllNodesWithText("Lubię to", substring = true).fetchSemanticsNodes().size)
+    }
+
+    /** Pilotem: w prawo za „Moją listę”, OK przełącza „Lubię to”. */
+    @Test
+    fun lubieToDzialaPilotem() {
+        val events = mutableListOf<DetailsEvent>()
+        show(movieState.copy(likeVisible = true), events = events)
+        compose.onNodeWithText("♡ Lubię to").assertExists()
+        key(Key.ShiftLeft)
+        repeat(3) { key(Key.DirectionRight) } // Wznów, Od początku, Moja lista, Lubię to
+        key(Key.DirectionCenter)
+        assertEquals(listOf<DetailsEvent>(DetailsEvent.ToggleLike), events)
+    }
+
+    @Test
+    fun polubionyFilmPokazujeStan() {
+        show(movieState.copy(likeVisible = true, liked = true))
+        compose.onNodeWithText("♥ Lubisz to").assertExists()
     }
 
     /** D-pad: fokus startuje na głównym przycisku; OK wznawia film od zapisanej pozycji. */

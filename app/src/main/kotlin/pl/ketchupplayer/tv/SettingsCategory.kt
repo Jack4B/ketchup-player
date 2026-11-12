@@ -50,6 +50,7 @@ import pl.ketchupplayer.tv.feature.settings.EpgSourcesRoute
 import pl.ketchupplayer.tv.feature.settings.GroupsSettingsRoute
 import pl.ketchupplayer.tv.feature.settings.MetadataSettingsRoute
 import pl.ketchupplayer.tv.feature.settings.NetworkSettingsRoute
+import pl.ketchupplayer.tv.feature.settings.PersonalizationSettingsRoute
 import pl.ketchupplayer.tv.feature.settings.PlaybackSettingsRoute
 
 /** Kategorie ustawień (makieta v3 09). Te bez własnych opcji pokazują krótką informację. */
@@ -67,6 +68,7 @@ enum class SettingsCategory(
     NETWORK(R.string.settings_cat_network, SettingsPage.NETWORK),
     PROFILES(R.string.settings_cat_profiles),
     APPEARANCE(R.string.settings_cat_appearance, SettingsPage.APPEARANCE),
+    PERSONALIZATION(R.string.settings_cat_personalization, SettingsPage.PERSONALIZATION),
     REMOTE(R.string.settings_cat_remote),
     SERVICES(R.string.settings_cat_services),
     DATA(R.string.settings_cat_data),
@@ -129,7 +131,7 @@ fun SettingsScreen(
                             color = c.textPrimary,
                             maxLines = 1,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = CATEGORY_PADDING),
                         )
                     }
                 }
@@ -170,6 +172,9 @@ internal fun initialCategoryIndex(initial: SettingsPage?): Int =
 
 private val CATEGORIES_WIDTH = 250.dp
 private val CATEGORY_FONT = 20.sp
+
+// Dziewięć kategorii ma się mieścić na ekranie 540 dp bez przewijania (cel fokusu nadal ok. 49 dp).
+private val CATEGORY_PADDING = 11.dp
 private const val FOCUS_RETRIES = 20
 
 @OptIn(ExperimentalTvMaterial3Api::class)
@@ -186,6 +191,7 @@ private fun CategoryContent(
         SettingsCategory.METADATA -> MetadataSettingsRoute(onBack = onBack)
         SettingsCategory.TV -> EpgSourcesRoute(onBack = onBack)
         SettingsCategory.APPEARANCE -> AppearanceRoute(onBack = onBack)
+        SettingsCategory.PERSONALIZATION -> PersonalizationSettingsRoute(onBack = onBack)
         SettingsCategory.ABOUT -> About()
         else -> Soon(category)
     }

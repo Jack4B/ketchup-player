@@ -12,13 +12,19 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import pl.ketchupplayer.tv.core.data.catalog.CatalogRepository
+import pl.ketchupplayer.tv.core.data.personalization.PlaybackObserver
+import pl.ketchupplayer.tv.core.data.personalization.PlaybackSnapshot
+import pl.ketchupplayer.tv.core.data.personalization.PlaybackTarget
+import pl.ketchupplayer.tv.core.data.personalization.PlaybackTracking
 import pl.ketchupplayer.tv.core.data.playback.FailoverSettingsRepository
 import pl.ketchupplayer.tv.core.data.vod.VodRepository
 import pl.ketchupplayer.tv.core.model.Channel
 import pl.ketchupplayer.tv.core.policy.FailoverSettings
 import pl.ketchupplayer.tv.core.policy.ResumeRules
+import pl.ketchupplayer.tv.player.engine.PlaybackStatus
 import pl.ketchupplayer.tv.player.engine.PlayerController
 import pl.ketchupplayer.tv.player.engine.PlayerControllerFactory
+import pl.ketchupplayer.tv.player.engine.PlayerState
 import pl.ketchupplayer.tv.player.failover.FailoverCoordinator
 import pl.ketchupplayer.tv.player.failover.FailoverEvent
 import pl.ketchupplayer.tv.player.failover.FailoverState
@@ -59,6 +65,7 @@ class PlayerViewModel
         private val failoverSettings: FailoverSettingsRepository,
         prefs: pl.ketchupplayer.tv.core.data.playback.PlayerPrefsRepository,
         factory: PlayerControllerFactory,
+        private val observer: PlaybackObserver,
     ) : ViewModel() {
         /** Zegar w rogu ekranu (Ustawienia → Odtwarzanie). */
         val clockEnabled: StateFlow<Boolean> =
@@ -79,15 +86,39 @@ class PlayerViewModel
         private var currentId: String? = null
         private var channelName = ""
 
+        /**
+         * Obserwator personalizacji: tylko słucha stanu odtwarzacza (nie steruje nim i nie zmienia obsługi pilota,
+         * dotyku ani failoveru). Stan jest przekazywany dopiero, gdy gra źródło bieżącej pozycji ([trackingArmed]),
+         * żeby końcówka poprzedniego kanału nie została policzona nowemu.
+         */
+        private var tracking: PlaybackTracking = PlaybackTracking.None
+        private var trackingArmed = false
+
+        private fun track(target: PlaybackTarget) {
+            tracking.close()
+            trackingArmed = false
+            tracking = observer.open(target)
+        }
+
         init {
             viewModelScope.launch {
                 failover.state.collect { st ->
                     when (st) {
-                        is FailoverState.Playing -> _ui.value = PlayerUiState.Playing(channelName)
-                        is FailoverState.Failed -> _ui.value = PlayerUiState.Failed(channelName, unknownChannel = false)
+                        is FailoverState.Playing -> {
+                            _ui.value = PlayerUiState.Playing(channelName)
+                            trackingArmed = true
+                            tracking.onState(controller.state.value.toSnapshot())
+                        }
+                        is FailoverState.Failed -> {
+                            _ui.value = PlayerUiState.Failed(channelName, unknownChannel = false)
+                            tracking.onState(PlayerState(status = PlaybackStatus.ERROR).toSnapshot())
+                        }
                         else -> Unit
                     }
                 }
+            }
+            viewModelScope.launch {
+                controller.state.collect { if (trackingArmed) tracking.onState(it.toSnapshot()) }
             }
             viewModelScope.launch {
                 failover.events.collect { ev ->
@@ -112,6 +143,7 @@ class PlayerViewModel
             vodJob?.cancel()
             _vodTitle.value = null
             _vodInfo.value = null
+            track(PlaybackTarget.Live(channelId))
             viewModelScope.launch {
                 val channel = catalog.channel(channelId)
                 if (channel == null) {
@@ -187,6 +219,7 @@ class PlayerViewModel
                     channelName = info.title
                     _vodTitle.value = info.title
                     _vodInfo.value = VodInfoUi(info.title)
+                    track(PlaybackTarget.Vod(itemId, resumed = !fromStart && info.positionMs > 0))
                     // Opis i obsada: pobierane w tle (dostawca Xtream: get_vod_info), OSD uzupełnia się, gdy dojdą.
                     launch {
                         vod.refreshInfo(itemId)
@@ -246,6 +279,7 @@ class PlayerViewModel
             vodId?.let { startVod(it, fromStart = false, force = true) } ?: currentId?.let { start(it, force = true) }
 
         override fun onCleared() {
+            tracking.close()
             failover.stop()
             controller.release()
         }
@@ -257,6 +291,17 @@ class PlayerViewModel
     }
 
 private const val ZAP_LIMIT = 500
+
+/** Stan odtwarzacza dla obserwatora personalizacji: bez adresu strumienia, tylko „co się dzieje” i pozycja. */
+internal fun PlayerState.toSnapshot() =
+    PlaybackSnapshot(
+        playing = status == PlaybackStatus.READY && isPlaying,
+        buffering = status == PlaybackStatus.BUFFERING,
+        error = status == PlaybackStatus.ERROR,
+        ended = status == PlaybackStatus.ENDED,
+        positionMs = positionMs,
+        durationMs = durationMs,
+    )
 
 /**
  * Kanały z grupy bieżącego i z tej samej listy (bez grupy: cała ta lista), z bieżącym zawsze na liście; limit chroni

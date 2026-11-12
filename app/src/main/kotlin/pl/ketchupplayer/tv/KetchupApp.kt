@@ -9,10 +9,14 @@ import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import pl.ketchupplayer.tv.core.data.logos.LogoIndex
 import pl.ketchupplayer.tv.core.data.network.LegacyUserAgentMigration
+import pl.ketchupplayer.tv.core.data.personalization.PersonalizationRepository
 import pl.ketchupplayer.tv.core.network.NetworkClients
 import timber.log.Timber
 import javax.inject.Inject
@@ -23,6 +27,11 @@ class KetchupApp :
     SingletonImageLoader.Factory {
     @Inject
     lateinit var legacyUserAgents: dagger.Lazy<LegacyUserAgentMigration>
+
+    @Inject
+    lateinit var personalization: dagger.Lazy<PersonalizationRepository>
+
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
         super.onCreate()
@@ -35,6 +44,12 @@ class KetchupApp :
             val tsv = assets.open("logos/iptv-org.tsv").bufferedReader().use { it.readText() }
             LogoIndex.install(LogoIndex.parse(tsv))
         }.onFailure { Timber.w(it, "Brak wbudowanej bazy logo") }
+        // Personalizacja: domknięcie sesji osieroconych po zabiciu procesu, retencja i świeże pasy. W tle; bez zgody
+        // użytkownika nie liczy niczego nowego.
+        appScope.launch {
+            runCatching { personalization.get().onAppStart() }
+                .onFailure { Timber.w("Porządki personalizacji nie powiodły się: %s", it.javaClass.simpleName) }
+        }
     }
 
     /**

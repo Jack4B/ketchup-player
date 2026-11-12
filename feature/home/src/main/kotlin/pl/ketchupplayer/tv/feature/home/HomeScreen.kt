@@ -63,7 +63,16 @@ fun HomeRoute(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    HomeScreen(state, onOpenChannel, onOpenGuide, onOpenProviders, onOpenDetails, onPlayVod)
+    val personal =
+        remember(viewModel) {
+            PersonalActions(
+                onLike = viewModel::like,
+                onHide = viewModel::hide,
+                onFollow = viewModel::follow,
+                onDecline = viewModel::decline,
+            )
+        }
+    HomeScreen(state, onOpenChannel, onOpenGuide, onOpenProviders, onOpenDetails, onPlayVod, personal)
 }
 
 /**
@@ -79,6 +88,7 @@ fun HomeScreen(
     onOpenProviders: () -> Unit,
     onOpenDetails: (String) -> Unit = {},
     onPlayVod: (String) -> Unit = {},
+    personal: PersonalActions = PersonalActions(),
 ) {
     Column(Modifier.fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         ScreenTitle(stringResource(R.string.home_title))
@@ -103,6 +113,10 @@ fun HomeScreen(
                     )
                 }
             }
+            // Mecz w ciągu 48 godzin: pas drużyn idzie wysoko; dalsze terminy są niżej, pod rzędami VOD.
+            if (state.sport.isNotEmpty() && state.sportSoon) {
+                item(key = "sport") { SportRow(state.sport, state.nowMs, onOpenChannel, onOpenGuide) }
+            }
             if (state.newEpisodes.isNotEmpty()) {
                 item(key = "new-episodes") {
                     PosterRow(
@@ -118,6 +132,15 @@ fun HomeScreen(
                 item(
                     key = "my-list",
                 ) { PosterRow(stringResource(R.string.home_row_my_list), state.myList, onOpenDetails) }
+            }
+            if (state.because.isNotEmpty()) {
+                item(key = "because") { BecauseRow(state.because, onOpenDetails, personal) }
+            }
+            if (state.sport.isNotEmpty() && !state.sportSoon) {
+                item(key = "sport") { SportRow(state.sport, state.nowMs, onOpenChannel, onOpenGuide) }
+            }
+            state.followSuggestion?.let { suggestion ->
+                item(key = "sport-follow") { FollowSuggestionCard(suggestion, personal) }
             }
             if (state.recent.isNotEmpty()) {
                 item(key = "continue") {

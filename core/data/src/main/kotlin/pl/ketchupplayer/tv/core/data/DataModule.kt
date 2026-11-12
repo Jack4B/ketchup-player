@@ -8,7 +8,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import pl.ketchupplayer.tv.core.common.Clock
 import pl.ketchupplayer.tv.core.data.appearance.AppearanceRepository
 import pl.ketchupplayer.tv.core.data.appearance.DataStoreAppearanceRepository
 import pl.ketchupplayer.tv.core.data.catalog.CatalogRepository
@@ -87,6 +86,21 @@ abstract class DataModule {
     @Singleton
     abstract fun bindEpg(impl: RoomEpgRepository): EpgRepository
 
+    @Binds
+    abstract fun bindPersonalizationSettings(
+        impl: pl.ketchupplayer.tv.core.data.personalization.DataStorePersonalizationSettings,
+    ): pl.ketchupplayer.tv.core.data.personalization.PersonalizationSettings
+
+    @Binds
+    abstract fun bindPersonalization(
+        impl: pl.ketchupplayer.tv.core.data.personalization.DefaultPersonalizationRepository,
+    ): pl.ketchupplayer.tv.core.data.personalization.PersonalizationRepository
+
+    @Binds
+    abstract fun bindPlaybackObserver(
+        impl: pl.ketchupplayer.tv.core.data.personalization.SessionRecorder,
+    ): pl.ketchupplayer.tv.core.data.personalization.PlaybackObserver
+
     companion object {
         @Provides
         @Singleton
@@ -121,11 +135,15 @@ abstract class DataModule {
         fun epgDao(db: KetchupDatabase): EpgDao = db.epg()
 
         @Provides
-        @Singleton
-        fun streamFetcher(): StreamFetcher = OkHttpStreamFetcher(NetworkClients.stream())
+        fun personalizationDao(db: KetchupDatabase): pl.ketchupplayer.tv.core.database.PersonalizationDao =
+            db.personalization()
 
         @Provides
-        fun clock(): Clock = Clock.System
+        fun sportDao(db: KetchupDatabase): pl.ketchupplayer.tv.core.database.SportDao = db.sport()
+
+        @Provides
+        @Singleton
+        fun streamFetcher(): StreamFetcher = OkHttpStreamFetcher(NetworkClients.stream())
 
         @Provides
         @Singleton

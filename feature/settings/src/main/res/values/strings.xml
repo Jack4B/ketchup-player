@@ -142,5 +142,46 @@
     <string name="metadata_status_builtin">Używane są klucze wbudowane w aplikację.</string>
     <string name="metadata_status_none">Brak kluczy: oceny i opisy z zewnętrznych źródeł są wyłączone.</string>
     <string name="metadata_status_set">Klucze ustawione.</string>
+    <string name="personal_title">Personalizacja</string>
+    <string name="personal_intro">Aplikacja może uczyć się, co oglądasz, i podpowiadać filmy z Twojej listy oraz mecze Twoich drużyn. Wszystko zostaje na tym urządzeniu.</string>
+    <string name="personal_enable">Ucz się, co oglądam</string>
+    <string name="personal_enable_off">Wyłączone: aplikacja nie zapisuje historii oglądania.</string>
+    <string name="personal_enable_on">Włączone: liczy się tylko czas faktycznego oglądania.</string>
+    <string name="personal_incognito">Nie ucz się z tej sesji</string>
+    <string name="personal_incognito_hint">To, co oglądasz teraz, nie wpłynie na podpowiedzi.</string>
+    <string name="personal_retention">Jak długo pamiętać</string>
+    <string name="personal_retention_hint">Starsze sesje oglądania są usuwane.</string>
+    <plurals name="personal_days">
+        <item quantity="one">%1$d dzień</item>
+        <item quantity="few">%1$d dni</item>
+        <item quantity="many">%1$d dni</item>
+        <!-- „other” obowiązuje też na urządzeniu z innym językiem systemu (np. angielskim): zostaje najczęstsza forma. -->
+        <item quantity="other">%1$d dni</item>
+    </plurals>
+    <string name="personal_teams_header">Obserwowane drużyny</string>
+    <string name="personal_team_add">Dodaj drużynę z listy</string>
+    <string name="personal_team_add_hint">Mecze obserwowanych drużyn pojawią się na ekranie głównym.</string>
+    <string name="personal_team_pick">Wybierz drużynę</string>
+    <string name="personal_team_custom">Własna drużyna (nazwa z programu TV)</string>
+    <string name="personal_team_custom_add">Dodaj własną</string>
+    <string name="personal_team_followed">Obserwowana · OK: przestań obserwować</string>
+    <string name="personal_team_suggested">Propozycja · OK: obserwuj</string>
+    <string name="personal_team_rejected">Odrzucona · OK: obserwuj</string>
+    <string name="personal_teams_empty">Nie obserwujesz jeszcze żadnej drużyny.</string>
+    <string name="personal_export">Zapisz kopię danych</string>
+    <string name="personal_export_hint">Plik JSON bez adresów list, loginów i haseł.</string>
+    <string name="personal_export_done">Zapisano: %1$s</string>
+    <string name="personal_export_failed">Nie udało się zapisać pliku.</string>
+    <string name="personal_clear">Wyczyść dane personalizacji</string>
+    <string name="personal_clear_hint">Lista kanałów, Moja lista i postęp oglądania zostają.</string>
+    <string name="personal_clear_confirm">Usunąć historię oglądania, oceny i drużyny?</string>
+    <string name="personal_clear_yes">Tak, usuń</string>
+    <string name="personal_clear_no">Anuluj</string>
+    <string name="personal_cleared">Dane personalizacji usunięte.</string>
+    <string name="personal_stats_header">Stan</string>
+    <string name="personal_stats_sessions">Sesje: %1$d (jako oglądanie: %2$d, neutralne: %3$d, awarie: %4$d)</string>
+    <string name="personal_stats_features">Poznane cechy: %1$d (pewne: %2$d) · drużyny: %3$d</string>
+    <string name="personal_stats_built">Ostatnie przeliczenie: %1$s</string>
+    <string name="personal_stats_never">Podpowiedzi nie były jeszcze przeliczane.</string>
     <string name="groups_from_list">%1$s · lista „%2$s”</string>
 </resources>

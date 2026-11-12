@@ -12,6 +12,9 @@ data class MetaResult(
     val genre: String?,
     val poster: String?,
     val backdrop: String?,
+    /** Reżyser i sposób dopasowania z TMDB (do cech personalizacji z pochodzeniem); null bez TMDB. */
+    val director: String? = null,
+    val tmdbMatch: TmdbMatchKind? = null,
 )
 
 /** Źródła metadanych; te bez klucza użytkownika są pomijane. */
@@ -71,6 +74,8 @@ class MetadataService(
             genre = t?.genre,
             poster = t?.poster,
             backdrop = t?.backdrop,
+            director = t?.director,
+            tmdbMatch = t?.match,
         )
     }
 

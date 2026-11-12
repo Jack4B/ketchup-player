@@ -28,6 +28,9 @@ data class DetailsUiState(
     val sources: Int = 1,
     /** Brak kluczy TMDB/OMDb: opis i oceny nie mają skąd się wziąć, więc ekran podpowiada, gdzie je wpisać. */
     val metadataKeysMissing: Boolean = false,
+    /** Personalizacja włączona: ekran pokazuje „Lubię to” (bez zgody przycisku nie ma, bo nic by nie zapisał). */
+    val likeVisible: Boolean = false,
+    val liked: Boolean = false,
 ) {
     val isSeries: Boolean get() = entry?.item?.kind == pl.ketchupplayer.tv.core.model.VodKind.SERIES
 }
@@ -38,6 +41,8 @@ sealed interface DetailsEvent {
     ) : DetailsEvent
 
     data object ToggleMyList : DetailsEvent
+
+    data object ToggleLike : DetailsEvent
 
     data object RetryEpisodes : DetailsEvent
 }
