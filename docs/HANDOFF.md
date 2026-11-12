@@ -6,28 +6,8 @@ Walidator (`python3 -B tools/handoff/validate_handoff.py`) sprawdza strukturę i
 
 ## Format
 
-Jeden blok ` ```handoff
-updated_at: 2026-11-12T12:05:00+01:00
-status: ready_for_review
-branch: docs/personalizacja-konspekt
-pr: https://github.com/Jack4B/ketchup-player/pull/14
-base_sha: 2a7b74fcabd286f866fb3f3608a5570290a9aea1
-verified_code_sha: none
-dirty_tree: dirty
-dirty_files: merge dev do gałęzi w toku (FakePlayerModule.kt, PlayerViewModel.kt, feature/settings strings.xml, DESIGN-LOG, HISTORIA-SESJI, HANDOFF rozwiązane; reszta z dev)
-outside_handoff_changes: merge dev (PR #22 i #23) do docs/personalizacja-konspekt
-task_state: implemented
-plan_point: PLAN-FINALNY Krok 9: personalizacja MVP w PR #14; scalanie za zgodą właściciela w kolejności #22, #23, #14
-done: PR #22 (atrapa odtwarzacza, merge d740d43) i PR #23 (poprawki rc4: insets OSD, edycja listy, grupy per lista, wybór listy; merge 2a7b74f) scalone do dev za zgodą właściciela; dev scalony do PR #14 bez przepisywania historii; konflikty: FakePlayerModule (wersja z #22, wynik play() w osobnym obiegu, plus playingWhenReady, durationMs i advance z #14), PlayerViewModel (toSnapshot obserwatora personalizacji obok zapList ograniczonego do jednej listy), strings.xml Ustawień (personal_* i groups_from_list), DESIGN-LOG i HISTORIA-SESJI (oba wpisy chronologicznie); DataModule.kt i emulator-smoke.sh scalone automatycznie; personalizacja z #14 bez zmian funkcji
-unfinished: CI PR #14 na nowym HEAD i scalenie po zielonym CI; działanie na TV-boxie i telefonie (pilot, płynność, pamięć, prawdziwe EPG, przycisk Wstecz pod paskiem stanu na Androidzie 15) po stronie właściciela; przycisk „nie lubię” bez UI; obserwowanie rozgrywek
-next_action: po zielonym build, gitleaks i emulator na HEAD PR #14 scalić PR #14 zwykłym merge i sprawdzić CI na dev
-blockers: brak urządzeń (telefon z Androidem 15, TV-box) w sesji Cloud
-do_not_touch: main; PR #5; workflow wydania, tagi i wydania rc; rcbuild, publikacja i instalacja APK; lista IPTV użytkownika i pliki PCAP; logika failoveru; kryteria wymagające fizycznego boxa (nie odhaczać)
-test: ./gradlew testDebugUnitTest :core:model:test :core:policy:test :epg:radar:test :provider:api:test | PASS | working_tree | lokalnie 2026-11-12 na próbnym scaleniu o identycznym kodzie (różnią się tylko zrzuty bota w docs/qa/emulator), exit 0
-test: ./gradlew verifyRoborazziDebug :app:assembleDebug | PASS | working_tree | lokalnie 2026-11-12 na próbnym scaleniu, exit 0
-test: ./gradlew verifyModuleDependencies detekt :app:lintDebug | PASS | working_tree | lokalnie 2026-11-12 na próbnym scaleniu, exit 0
-test: CI PR #14 na nowym HEAD (build, gitleaks, emulator) | NOT_RUN | none | uruchamiany po wypchnięciu scalenia
-test: telefon Android 15 i TV-box | NOT_RUN | none | brak urządzenia; testy sprzętowe po stronie właściciela
+Jeden blok ` ```handoff ` z liniami `klucz: wartość` (bez YAML). Wiersze `test:` mogą się powtarzać.
+
 ```text
 updated_at: 2026-11-09T20:48:15+00:00
 status: plan | active | blocked | ready_for_review | done
@@ -54,25 +34,27 @@ Zasady:
 ## Stan
 
 ```handoff
-updated_at: 2026-11-12T11:10:45+01:00
-status: ready_for_review
-branch: fix/rc4-playlisty-osd
+updated_at: 2026-11-12T14:20:00+01:00
+status: blocked
+branch: dev
 pr: none
-base_sha: 640391b47e612eb3d1d857768f7b55f22b2a99dd
-verified_code_sha: none
+base_sha: e2855badf354ae510a4b6b308464300773d3c58b
+verified_code_sha: 81fac3b1b4f830ce63c0ad0b0d246ade53eb9c42
 dirty_tree: clean
 dirty_files: none
 outside_handoff_changes: none
-task_state: implemented
-plan_point: poprawki błędów z testów rc4 (OSD Wstecz, edycja listy, grupy przy dwóch listach, wybór listy); osobny PR do dev, merge tylko po zgodzie właściciela
-done: OSD dotykowe: pasek z przyciskiem wyjścia i dolny OSD odsunięte od pasków systemu i wycięcia aparatu (SDK 35 rysuje pod paskami na Androidzie 15); edycja zapisanej listy (CatalogRepository.update, UPDATE zamiast upsert, puste adres/login/hasło/własny UA = bez zmian, sam host na ekranie, ta sama lista bez duplikatu, przy błędzie pobrania zostają kanały); grupy i kategorie związane z listą (ProviderNameCount, HiddenGroups lista+nazwa ze zgodnością ze starymi wpisami, PlaylistScope: dopisek nazwy listy przy powtórzonej nazwie, „Wszystkie” listami bez przeplatania numerów, CH+/CH− w obrębie listy); wybór listy w Na żywo, Filmach i Serialach (PlaylistFilterRepository w DataStore per ekran, usunięta lista = wszystkie, pusta lista ze stanem i powrotem); testy jednostkowe, Room, UI z D-pad i zrzutami, scenariusz E2E na dwóch listach, scenariusz w emulator-smoke.sh; PR #22 (atrapa odtwarzacza) i PR #14 (personalizacja) mają zielone CI, nie scalone
-unfinished: CI tego PR; decyzja właściciela o scaleniu PR #22, #14 i tego PR; test na telefonie z Androidem 15 (przycisk Wstecz pod paskiem stanu) i na TV-boxie (wybór listy pilotem, dwie prawdziwe listy) po stronie właściciela; przyczyna punktu „Wstecz w OSD” ustalona z kodu (brak odsunięcia od pasków systemu przy SDK 35), bez zgłoszenia z urządzenia do porównania
-next_action: odczytać CI tego PR i zgłosić właścicielowi; nie scalać bez zgody
+task_state: awaiting_device
+plan_point: scalenie za zgodą właściciela w kolejności PR #22, #23, #14 (PLAN-FINALNY Krok 9: personalizacja MVP; poprawki z testów rc4); stan dev po scaleniu
+done: PR #22 (atrapa odtwarzacza: wynik play() w osobnym obiegu pętli) scalony jako d740d43d9e77f0b1ef2e8082aa543a48794a0ba7; PR #23 (rc4: przycisk Wstecz w OSD z odsunięciem od pasków systemu, edycja zapisanej listy, grupy i pozycje związane z listą, wybór listy w Na żywo, Filmach i Serialach) scalony jako 2a7b74fcabd286f866fb3f3608a5570290a9aea1; PR #14 (personalizacja MVP etapy A+B+C, Room 9 do 10) scalony jako 81fac3b1b4f830ce63c0ad0b0d246ade53eb9c42 po scaleniu dev do gałęzi (0ee53a1, bez przepisywania historii; konflikty FakePlayerModule, PlayerViewModel, strings.xml Ustawień, DESIGN-LOG i HISTORIA-SESJI rozwiązane z zachowaniem obu funkcji); HEAD dev e2855badf354ae510a4b6b308464300773d3c58b (po 81fac3b tylko commit bota ze zrzutami emulatora)
+unfinished: testy na urządzeniach po stronie właściciela: telefon z Androidem 15 (przycisk Wstecz w OSD pod paskiem stanu i wycięciem aparatu, dotyk) i TV-box (wybór listy pilotem przy dwóch listach, edycja listy, pasy personalizacji na Home, ekran Personalizacja, pamięć i płynność przy dużym katalogu, prawdziwe EPG); aktualizacja na wierzch poprzedniej wersji z danymi (automatyczna migracja Room 9 do 10 na urządzeniu, zachowanie list, ulubionych, Mojej listy i postępu); przycisk „nie lubię” bez UI; obserwowanie rozgrywek
+next_action: właściciel: test na telefonie z Androidem 15 i TV-boxie, w tym aktualizacja na wierzch z migracją Room 9 do 10; RC tylko na decyzję właściciela
 blockers: brak urządzeń (telefon z Androidem 15, TV-box) w sesji Cloud
-do_not_touch: main; PR #5; workflow wydania, tagi i wydania rc; lista IPTV użytkownika i pliki PCAP; logika failoveru
-test: ./gradlew testDebugUnitTest :core:model:test :core:policy:test :epg:radar:test :provider:api:test | PASS | working_tree | lokalnie 2026-11-12, exit 0, 653 testy bez porażek (przed ostatnimi poprawkami stylu; moduły po poprawkach powtórzone niżej)
-test: ./gradlew verifyRoborazziDebug i :app:assembleDebug | PASS | working_tree | lokalnie 2026-11-12, exit 0; nowe wzorce guide_playlist i providers_edit nagrane lokalnie i obejrzane
-test: ./gradlew verifyModuleDependencies detekt lintDebug + testy core:data Playlist*, feature:providers, feature:guide, feature:player-ui | PASS | working_tree | lokalnie 2026-11-12, exit 0, po ostatnich poprawkach stylu
-test: CI tego PR (build, gitleaks, emulator) | NOT_RUN | none | uruchamiany po otwarciu PR
-test: telefon Android 15 i TV-box | NOT_RUN | none | brak urządzenia; testy sprzętowe po stronie właściciela
+do_not_touch: main; PR #5; workflow wydania, tagi i wydania rc; rcbuild, publikacja i instalacja APK bez decyzji; lista IPTV użytkownika i pliki PCAP; logika failoveru; kryteria wymagające fizycznego urządzenia (nie odhaczać)
+test: CI push dev po PR #22 (build, gitleaks, emulator) | PASS | d740d43d9e77f0b1ef2e8082aa543a48794a0ba7 | https://github.com/Jack4B/ketchup-player/actions/runs/43207338517 (bieg #418)
+test: CI push dev po PR #23 (build, gitleaks, emulator) | PASS | 2a7b74fcabd286f866fb3f3608a5570290a9aea1 | https://github.com/Jack4B/ketchup-player/actions/runs/43212034452 (bieg #420)
+test: CI pull_request PR #14 po scaleniu dev (build, gitleaks, emulator) | PASS | 0ee53a11752171f235dd81e1f937e2cbfbfe363c | https://github.com/Jack4B/ketchup-player/actions/runs/43212349794 (bieg #422)
+test: CI push dev po PR #14 (build, gitleaks, emulator; w build migracja Room 9 do 10 na JVM) | PASS | 81fac3b1b4f830ce63c0ad0b0d246ade53eb9c42 | https://github.com/Jack4B/ketchup-player/actions/runs/43218278622 (bieg #423)
+test: telefon Android 15 (OSD dotykowe, przycisk Wstecz pod paskiem stanu) | NOT_RUN | none | brak urządzenia; po stronie właściciela
+test: TV-box (pilot: wybór listy, edycja listy, personalizacja, wydajność, prawdziwe EPG) | NOT_RUN | none | brak urządzenia; po stronie właściciela
+test: aktualizacja na wierzch z migracją Room 9 do 10 na urządzeniu (telefon i TV-box) | NOT_RUN | none | brak urządzenia; na JVM migracja z zachowaniem danych sprawdzona testem core:database
 ```
