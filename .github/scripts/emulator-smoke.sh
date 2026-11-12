@@ -120,6 +120,14 @@ shot 10_po_zapisie_B
 tap "Na żywo" || FAIL_PROVIDER=1   # szyna nawigacji (opis dostępności pozycji)
 sleep 3
 shot 11_na_zywo_dwa_kanaly
+# Regresja rc4: dwie listy z tą samą grupą „Test” mają w Na żywo osobne grupy (z nazwą listy) i wybór listy.
+dump ui_dwie_listy
+for needle in "Test · ListaA" "Test · ListaB" "Wszystkie listy"; do
+  if ! grep -q "$needle" "$OUT/ui_dwie_listy.xml"; then
+    echo "=== Dwie listy: w Na żywo brak „$needle” (grupy nie są związane z listą albo brak wyboru listy) ===" >&2
+    FAIL_PROVIDER=1
+  fi
+done
 HITS_BEFORE=$(wc -l < "$OUT/http-server.log")
 tap "Kanal Testowy" || FAIL_PROVIDER=1   # pierwszy kanał (Lista A, 404) -> failover na Listę B
 sleep 4

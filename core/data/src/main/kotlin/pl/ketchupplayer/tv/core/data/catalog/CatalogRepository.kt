@@ -7,7 +7,21 @@ import pl.ketchupplayer.tv.core.model.ProviderInfo
 import pl.ketchupplayer.tv.core.model.RequestMethod
 import pl.ketchupplayer.tv.core.model.StreamSpec
 
-enum class AddProviderError { INVALID_NAME, INVALID_URL, INVALID_CREDENTIALS, INVALID_USER_AGENT }
+enum class AddProviderError { INVALID_NAME, INVALID_URL, INVALID_CREDENTIALS, INVALID_USER_AGENT, NOT_FOUND }
+
+/**
+ * Zmiana zapisanej listy (ta sama lista, bez tworzenia nowej). Puste pole dostępu ([url], [username], [password])
+ * znaczy „bez zmian”: aplikacja nigdy nie pokazuje zapisanego adresu z loginem ani hasła, więc nie trzeba ich
+ * przepisywać. [userAgentId] null = nagłówek bez zmian.
+ */
+data class ProviderEdit(
+    val name: String,
+    val url: String = "",
+    val username: String = "",
+    val password: String = "",
+    val userAgentId: String? = null,
+    val requestMethod: RequestMethod = RequestMethod.GET,
+)
 
 /** Wynik dodania dostawcy: id albo błąd walidacji/pobrania. */
 sealed interface AddProviderResult {
@@ -65,6 +79,15 @@ interface CatalogRepository {
         userAgentId: String? = null,
         requestMethod: RequestMethod = RequestMethod.GET,
     ): AddProviderResult
+
+    /**
+     * Zapisuje zmiany istniejącej listy i pobiera ją ponownie. Id listy zostaje to samo, więc ulubione, ukryte grupy,
+     * Moja lista i postęp oglądania nie znikają; przy błędzie pobrania zostają też dotychczasowe kanały.
+     */
+    suspend fun update(
+        id: ProviderId,
+        edit: ProviderEdit,
+    ): AddProviderResult = AddProviderResult.Invalid(AddProviderError.NOT_FOUND)
 
     /** Zmienia metodę żądania listy (GET/POST) zapisaną dla dostawcy; działa od następnego pobrania. */
     suspend fun setRequestMethod(

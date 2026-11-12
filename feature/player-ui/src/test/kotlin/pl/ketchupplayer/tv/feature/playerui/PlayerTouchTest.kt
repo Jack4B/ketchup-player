@@ -1,6 +1,7 @@
 package pl.ketchupplayer.tv.feature.playerui
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.test.ExperimentalTestApi
@@ -13,6 +14,7 @@ import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.swipe
+import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -236,6 +238,39 @@ class PlayerTouchTest {
         assertEquals(1, c.resumes)
     }
 
+    /**
+     * rc4: na telefonie z Androidem 15 (SDK 35, rysowanie pod paskami systemu) przycisk wyjścia w lewym górnym rogu
+     * leżał pod paskiem stanu i stuknięcie trafiało w system. Pasek z przyciskiem ma zaczynać się pod paskiem stanu
+     * i obok wycięcia aparatu (poziomo), a przycisk dalej robić to samo co BACK.
+     */
+    @Test
+    fun przyciskWyjsciaOmijaPaskiSystemuIWycieciaAparatu() {
+        var exits = 0
+        compose.setContent {
+            KetchupTheme(device = DeviceClass.TV) {
+                androidx.compose.foundation.layout.Box(
+                    androidx.compose.ui.Modifier
+                        .fillMaxSize(),
+                ) {
+                    TouchTopBar(
+                        "JEDEN HD",
+                        { exits++ },
+                        insets =
+                            androidx.compose.foundation.layout
+                                .WindowInsets(left = SIDE_INSET, top = STATUS_INSET),
+                    )
+                }
+            }
+        }
+        compose.waitForIdle()
+        val exit = compose.onNodeWithTag(TAG_EXIT).fetchSemanticsNode().boundsInRoot
+        val density = compose.density.density
+        assertTrue("góra ${exit.top / density} dp", exit.top >= STATUS_INSET.value * density)
+        assertTrue("lewa ${exit.left / density} dp", exit.left >= SIDE_INSET.value * density)
+        tap(TAG_EXIT)
+        assertEquals(1, exits)
+    }
+
     @Test
     fun screenshotOsdDotykowyFilmu() {
         show(FakeController(film), vodInfo = VodInfoUi("Film", "2026 · Akcja · 104 min", null, null, null))
@@ -264,6 +299,8 @@ class PlayerTouchTest {
         const val DUR = 6_240_000L
         const val TEN_S = 10_000L
         const val OSD_HIDE_MS = 4_100L
+        val STATUS_INSET = 48.dp
+        val SIDE_INSET = 32.dp
         val ALL_TOUCH_TAGS = listOf(TAG_PLAY_PAUSE, TAG_BACK10, TAG_FORWARD10, TAG_EXIT, TAG_SEEKBAR)
     }
 }

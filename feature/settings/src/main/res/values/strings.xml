@@ -183,4 +183,5 @@
     <string name="personal_stats_features">Poznane cechy: %1$d (pewne: %2$d) · drużyny: %3$d</string>
     <string name="personal_stats_built">Ostatnie przeliczenie: %1$s</string>
     <string name="personal_stats_never">Podpowiedzi nie były jeszcze przeliczane.</string>
+    <string name="groups_from_list">%1$s · lista „%2$s”</string>
 </resources>

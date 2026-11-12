@@ -118,7 +118,7 @@ class VodBrowseModesScreenTest {
         repo: FakeVodRepo,
         query: String = "",
     ): VodBrowseUiState {
-        val vm = VodBrowseViewModel(repo, FakeGroups())
+        val vm = VodBrowseViewModel(repo, FakeGroups(), FakePlaylists())
         vm.bind(mode)
         if (query.isNotEmpty()) vm.onEvent(VodBrowseEvent.Search(query))
         return runBlocking { vm.state.first { !it.loading && it.mode == mode && it.query == query } }

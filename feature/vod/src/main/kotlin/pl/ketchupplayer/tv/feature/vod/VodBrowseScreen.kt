@@ -51,10 +51,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
 import pl.ketchupplayer.tv.core.data.vod.VodEntry
+import pl.ketchupplayer.tv.core.designsystem.Choice
 import pl.ketchupplayer.tv.core.designsystem.FocusItem
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
 import pl.ketchupplayer.tv.core.designsystem.Motion
 import pl.ketchupplayer.tv.core.designsystem.PillChip
+import pl.ketchupplayer.tv.core.designsystem.PlaylistPicker
+import pl.ketchupplayer.tv.core.designsystem.PlaylistPickerLabels
 import pl.ketchupplayer.tv.core.designsystem.PosterCard
 import pl.ketchupplayer.tv.core.designsystem.PosterImage
 import pl.ketchupplayer.tv.core.designsystem.ScreenScaffold
@@ -65,6 +68,7 @@ import pl.ketchupplayer.tv.core.designsystem.StateKind
 import pl.ketchupplayer.tv.core.designsystem.StateView
 import pl.ketchupplayer.tv.core.designsystem.glassBlur
 import pl.ketchupplayer.tv.core.designsystem.glassPanel
+import pl.ketchupplayer.tv.core.model.ProviderId
 
 @Composable
 fun VodBrowseRoute(
@@ -149,6 +153,14 @@ fun VodBrowseScreen(
             })
             when {
                 state.loading -> StateView(StateKind.LOADING, stringResource(R.string.vod_loading))
+                // Wybrana lista nie ma filmów/seriali: mówimy to wprost i dajemy powrót do wszystkich list.
+                state.total == 0 && state.playlist.selected != null ->
+                    StateView(
+                        StateKind.EMPTY,
+                        stringResource(R.string.vod_playlist_empty, state.playlist.selectedName.orEmpty()),
+                        actionLabel = stringResource(R.string.vod_playlist_show_all),
+                        onAction = { onEvent(VodBrowseEvent.SelectPlaylist(null)) },
+                    )
                 state.total == 0 ->
                     StateView(
                         StateKind.EMPTY,
@@ -249,6 +261,19 @@ private fun CategoriesPanel(
                 CATEGORY_RECENT -> 1
                 else -> (state.categories.indexOfFirst { it.first == state.category } + 2).coerceAtLeast(0)
             }
+        if (state.playlist.available) {
+            PlaylistPicker(
+                PlaylistPickerLabels(
+                    stringResource(R.string.vod_playlist_label),
+                    stringResource(R.string.vod_playlist_all),
+                    stringResource(R.string.vod_playlist_pick),
+                ),
+                state.playlist.options.map { Choice(it.id.value, it.name) },
+                state.playlist.selected?.value,
+                { id -> onEvent(VodBrowseEvent.SelectPlaylist(id?.let(::ProviderId))) },
+                Modifier.padding(bottom = 8.dp),
+            )
+        }
         LazyColumn(
             state = rememberLazyListState(initialFirstVisibleItemIndex = selectedIndex),
             verticalArrangement = Arrangement.spacedBy(4.dp),

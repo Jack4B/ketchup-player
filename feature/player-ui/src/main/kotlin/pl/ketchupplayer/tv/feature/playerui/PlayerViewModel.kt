@@ -303,12 +303,16 @@ internal fun PlayerState.toSnapshot() =
         durationMs = durationMs,
     )
 
-/** Kanały z grupy bieżącego (bez grupy: cała lista), z bieżącym zawsze na liście; limit chroni przed 5 tys. wierszy. */
+/**
+ * Kanały z grupy bieżącego i z tej samej listy (bez grupy: cała ta lista), z bieżącym zawsze na liście; limit chroni
+ * przed 5 tys. wierszy. Grupa o tej samej nazwie w innej liście to inna grupa: CH+/CH− nie przeskakuje między listami.
+ */
 internal fun zapList(
     current: Channel,
     all: List<Channel>,
 ): List<Channel> {
-    val same = all.filter { it.group == current.group }.ifEmpty { all }
+    val ownList = all.filter { it.providerId == current.providerId }.ifEmpty { all }
+    val same = ownList.filter { it.group == current.group }.ifEmpty { ownList }
     val limited = if (same.size > ZAP_LIMIT) same.take(ZAP_LIMIT) else same
     return if (limited.any { it.id == current.id }) limited else listOf(current) + limited.take(ZAP_LIMIT - 1)
 }

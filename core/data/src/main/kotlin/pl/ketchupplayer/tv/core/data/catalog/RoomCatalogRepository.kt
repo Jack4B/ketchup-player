@@ -60,6 +60,7 @@ class RoomCatalogRepository
                         // komunikaty, reszta jako ogólna informacja (baza bez zmian).
                         lastError = presentStoredError(e.lastError),
                         requestMethod = RequestMethod.parse(e.requestMethod),
+                        userAgentId = e.userAgent,
                     )
                 }
             }
@@ -123,6 +124,52 @@ class RoomCatalogRepository
             )
             rememberUserAgent(id, userAgentId)
             return added(id)
+        }
+
+        override suspend fun update(
+            id: ProviderId,
+            edit: ProviderEdit,
+        ): AddProviderResult {
+            val entity = providerDao.get(id.value) ?: return invalid(AddProviderError.NOT_FOUND)
+            val cleanName = EpgSourcePolicy.validateName(edit.name) ?: return invalid(AddProviderError.INVALID_NAME)
+            if (!userAgentAllowed(edit.userAgentId)) return invalid(AddProviderError.INVALID_USER_AGENT)
+            val url = editedUrl(id, entity, edit.url) ?: return invalid(AddProviderError.INVALID_URL)
+            if (!editLogin(id, entity, edit)) return invalid(AddProviderError.INVALID_CREDENTIALS)
+            providerDao.updateDetails(id.value, cleanName, url, edit.requestMethod.name)
+            if (edit.userAgentId != null) factory.remember(id.value, UserAgentProfiles.byId(edit.userAgentId))
+            return added(id)
+        }
+
+        /** Adres do bazy po edycji; pełny adres listy M3U (bywa z loginem) trafia tylko do SecretStore. */
+        private suspend fun editedUrl(
+            id: ProviderId,
+            entity: ProviderEntity,
+            url: String,
+        ): String? =
+            when {
+                url.isBlank() -> entity.url
+                entity.type == ProviderType.XTREAM.name -> XtreamCredentials.normalizeServer(url)
+                else ->
+                    (EpgSourcePolicy.validateUrl(url) as? EpgSourcePolicy.UrlCheck.Valid)?.let { valid ->
+                        secrets.putUrl(id, valid.normalized)
+                        displayUrl(valid.normalized)
+                    }
+            }
+
+        /** Zmiana samego hasła albo samego loginu konta Xtream: brakującą część bierzemy z zapisanych danych. */
+        private suspend fun editLogin(
+            id: ProviderId,
+            entity: ProviderEntity,
+            edit: ProviderEdit,
+        ): Boolean {
+            val changed = edit.username.isNotBlank() || edit.password.isNotBlank()
+            if (entity.type != ProviderType.XTREAM.name || !changed) return true
+            val old = secrets.login(id)
+            val user = edit.username.trim().ifEmpty { old?.first.orEmpty() }
+            val pass = edit.password.ifEmpty { old?.second.orEmpty() }
+            if (user.isEmpty() || pass.isEmpty()) return false
+            secrets.putLogin(id, user, pass)
+            return true
         }
 
         override suspend fun setRequestMethod(

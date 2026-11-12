@@ -20,9 +20,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Text
+import pl.ketchupplayer.tv.core.designsystem.Choice
 import pl.ketchupplayer.tv.core.designsystem.FocusItem
 import pl.ketchupplayer.tv.core.designsystem.KetchupTheme
+import pl.ketchupplayer.tv.core.designsystem.PlaylistPicker
+import pl.ketchupplayer.tv.core.designsystem.PlaylistPickerLabels
 import pl.ketchupplayer.tv.core.designsystem.panel
+import pl.ketchupplayer.tv.core.model.ProviderId
 
 /** Pozycje wirtualne przed grupami dostawcy: Ulubione, Ostatnie, Wszystkie. */
 internal const val VIRTUAL_GROUPS = 3
@@ -46,12 +50,26 @@ internal fun GuideGroupsPanel(
     selectedFocus: FocusRequester,
     onPick: (GuideGroup) -> Unit,
     modifier: Modifier,
+    onPickPlaylist: (ProviderId?) -> Unit = {},
 ) {
     val c = KetchupTheme.colors
     val allSelected = state.selectedGroup == null && !state.favoritesSelected && !state.recentSelected
 
     fun mark(selected: Boolean) = if (selected) Modifier.focusRequester(selectedFocus) else Modifier
     Column(modifier.panel().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // Wybór listy ma sens dopiero przy dwóch listach; przy jednej panel wygląda jak dotąd.
+        if (state.playlist.available) {
+            PlaylistPicker(
+                PlaylistPickerLabels(
+                    stringResource(R.string.guide_playlist_label),
+                    stringResource(R.string.guide_playlist_all),
+                    stringResource(R.string.guide_playlist_pick),
+                ),
+                state.playlist.options.map { Choice(it.id.value, it.name) },
+                state.playlist.selected?.value,
+                { id -> onPickPlaylist(id?.let(::ProviderId)) },
+            )
+        }
         Text(stringResource(R.string.guide_groups), fontSize = 15.sp, color = c.textSecondary)
         LazyColumn(state = listState, verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (state.favorites.isNotEmpty()) {

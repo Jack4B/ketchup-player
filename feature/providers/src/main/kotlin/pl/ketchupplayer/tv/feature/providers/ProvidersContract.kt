@@ -22,7 +22,18 @@ data class ProviderForm(
     val userAgentError: Boolean = false,
     /** Metoda żądania listy: GET (domyślnie) albo POST (dane w ciele, adres bez loginu i hasła). */
     val requestMethod: RequestMethod = RequestMethod.GET,
-)
+    /**
+     * Edycja zapisanej listy (null = dodawanie nowej). W edycji pola adresu, loginu i hasła startują puste i puste
+     * znaczą „bez zmian”: zapisany adres z danymi dostępu ani hasło nigdy nie trafiają z powrotem na ekran.
+     */
+    val editingId: ProviderId? = null,
+    /** Sam host zapisanej listy (bez danych dostępu), do podpowiedzi przy pustym polu adresu w edycji. */
+    val editingHost: String? = null,
+    /** Czy użytkownik zmienił nagłówek w edycji (bez zmiany zostaje zapisany, także własny). */
+    val userAgentChanged: Boolean = false,
+) {
+    val editing: Boolean get() = editingId != null
+}
 
 data class ProvidersUiState(
     val providers: List<ProviderInfo> = emptyList(),
@@ -41,6 +52,11 @@ data class ProvidersUiState(
 
 sealed interface ProvidersEvent {
     data object StartAdd : ProvidersEvent
+
+    /** Edycja zapisanej listy: ta sama lista, bez tworzenia nowej. */
+    data class StartEdit(
+        val id: ProviderId,
+    ) : ProvidersEvent
 
     data object Cancel : ProvidersEvent
 

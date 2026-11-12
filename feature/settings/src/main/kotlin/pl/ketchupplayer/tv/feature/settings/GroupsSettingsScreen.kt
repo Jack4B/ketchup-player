@@ -76,11 +76,14 @@ fun GroupsSettingsScreen(
             Text(stringResource(R.string.groups_empty), color = KetchupTheme.colors.textSecondary)
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                items(state.options, key = { it.name }) { option ->
+                items(state.options, key = { it.key }) { option ->
+                    val count = pluralStringResource(R.plurals.groups_count, option.count, option.count)
                     SettingsListItem(
                         title = option.name,
-                        subtitle = pluralStringResource(R.plurals.groups_count, option.count, option.count),
-                        onClick = { onToggle(option.name) },
+                        // Ta sama nazwa w dwóch listach: podpis mówi, z której listy jest ta grupa.
+                        subtitle =
+                            option.providerName?.let { stringResource(R.string.groups_from_list, count, it) } ?: count,
+                        onClick = { onToggle(option.key) },
                         trailing = { Switch(checked = option.visible, onCheckedChange = null) },
                     )
                 }

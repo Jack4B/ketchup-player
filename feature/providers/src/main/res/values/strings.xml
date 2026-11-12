@@ -69,4 +69,8 @@
     <string name="providers_account_expires">ważne do %1$s</string>
     <string name="providers_account_expired">wygasło %1$s</string>
     <string name="providers_account_trial">konto próbne</string>
+    <string name="providers_edit">Edytuj</string>
+    <string name="providers_edit_title">Edycja listy (%1$s)</string>
+    <string name="providers_edit_keep">Puste pola adresu, loginu, hasła i własnego nagłówka zostawiają zapisane dane bez zmian (serwer: %1$s).</string>
+    <string name="providers_save_edit">Zapisz zmiany i pobierz</string>
 </resources>

@@ -23,6 +23,8 @@ import pl.ketchupplayer.tv.epg.radar.RadarPolicy
 import pl.ketchupplayer.tv.epg.radar.RadarSlot
 import javax.inject.Inject
 
+// Jeden ViewModel Na żywo (kanały, siatka, Radar, zainteresowania, podgląd): zależności rosną z zakładkami.
+@Suppress("LongParameterList", "TooManyFunctions")
 @HiltViewModel
 class GuideViewModel
     @Inject
@@ -34,6 +36,7 @@ class GuideViewModel
         private val playerFactory: pl.ketchupplayer.tv.player.engine.PlayerControllerFactory,
         private val prefs: pl.ketchupplayer.tv.core.data.playback.PlayerPrefsRepository,
         private val clock: Clock,
+        private val playlists: pl.ketchupplayer.tv.core.data.catalog.PlaylistFilterRepository,
     ) : ViewModel() {
         /** Okno liczone raz na wejście do ekranu; przewijanie czasu w przód to kolejna iteracja. */
         private val windowStart = GuideGeometry.windowStart(clock.nowMs())
@@ -107,12 +110,16 @@ class GuideViewModel
             combine(
                 combine(
                     catalog.liveChannels(),
-                    catalog.liveGroups(),
+                    playlists.choice(pl.ketchupplayer.tv.core.data.catalog.PlaylistScreen.TV),
                     selection,
                     groupsRepo.hidden(pl.ketchupplayer.tv.core.data.groups.GroupKind.TV),
-                ) { c, g, sel, hidden ->
-                    // Ukryte grupy (Ustawienia → Grupy) znikają z listy kanałów i z panelu grup.
-                    Triple(c.filter { it.group !in hidden }, g.filter { it !in hidden }, sel)
+                ) { c, choice, sel, hidden ->
+                    // Wybrana lista i ukryte grupy (Ustawienia → Grupy) zawężają kanały; grupa o nazwie z kilku list
+                    // jest osobną pozycją dla każdej listy (PlaylistScope), więc „Sport” z dwóch list się nie zlewa.
+                    val scoped =
+                        pl.ketchupplayer.tv.core.data.catalog.PlaylistScope
+                            .channels(c, choice, hidden)
+                    Scoped(scoped, scoped.mapNotNull { it.group }.distinct(), sel, choice)
                 },
                 combine(
                     catalog.favoriteIds(),
@@ -122,9 +129,14 @@ class GuideViewModel
                 ) { f, r, rev, air ->
                     Aux(f, r, rev, air)
                 },
-            ) { (channels, groups, sel), aux ->
-                val favorites = aux.favorites
-                val recent = aux.recent
+            ) { scoped, aux ->
+                val channels = scoped.channels
+                val groups = scoped.groups
+                val sel = scoped.selection
+                // Ulubione i „Ostatnie” też tylko z wybranej listy (z etykietami grup jak na liście kanałów).
+                val shown = channels.associateBy { it.id }
+                val favorites = aux.favorites.filterTo(HashSet()) { it in shown }
+                val recent = aux.recent.mapNotNull { shown[it.id] }
                 val revision = aux.revision
                 val onAir = aux.onAir
                 val showFavorites = sel is GuideGroup.Favorites && favorites.isNotEmpty()
@@ -153,6 +165,7 @@ class GuideViewModel
                     totalCount = channels.size,
                     recentCount = recent.size,
                     onAir = onAir,
+                    playlist = scoped.playlist,
                 )
             }.stateIn(
                 viewModelScope,
@@ -162,6 +175,12 @@ class GuideViewModel
 
         fun selectGroup(group: GuideGroup) {
             selection.value = group
+        }
+
+        /** Wybór listy (null = wszystkie); grupa wraca do „Wszystkie”, bo grupy innej listy mogą nie istnieć. */
+        fun selectPlaylist(id: pl.ketchupplayer.tv.core.model.ProviderId?) {
+            selection.value = GuideGroup.All
+            viewModelScope.launch { playlists.select(pl.ketchupplayer.tv.core.data.catalog.PlaylistScreen.TV, id) }
         }
 
         /** Długie OK na kanale: ulubiony/nieulubiony (przeżywa odświeżenie listy dostawcy). */
@@ -247,6 +266,13 @@ private val polishGroup = Regex("^(PL|POLSKA|POLAND)([^A-Za-z]|$)", RegexOption.
 /** Grupy polskie (`PL| ...`, `Polska`) na początku, reszta alfabetycznie; sortowanie jest stabilne. */
 internal fun orderGroups(groups: List<String>): List<String> =
     groups.sortedWith(compareBy({ !polishGroup.containsMatchIn(it) }, { it.lowercase() }))
+
+private data class Scoped(
+    val channels: List<pl.ketchupplayer.tv.core.model.Channel>,
+    val groups: List<String>,
+    val selection: GuideGroup,
+    val playlist: pl.ketchupplayer.tv.core.data.catalog.PlaylistChoice,
+)
 
 private data class Aux(
     val favorites: Set<String>,

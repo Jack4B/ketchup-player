@@ -101,4 +101,9 @@ Krótkie wpisy dopisywane chronologicznie (nowe na końcu); starych nie przepisu
 - PR #14: pełna implementacja personalizacji MVP (A+B+C) wg konspektu: formuły w `core:policy`, Room v10, warstwa danych, obserwator odtwarzania, pasy Home, ekran Ustawień, „Lubię to” w szczegółach. Stan i różnice względem projektu: sekcja 26 konspektu.
 - Wnioski z testów: lista Home jest leniwa, więc test musi przewinąć do rzędu, zanim go szuka; zmiana treści klasy modułu Hilt w trakcie działającego Gradle zostawia nieaktualny cache KSP (pomaga ponowne uruchomienie); limit różnorodności nie może skracać pasa przy wąskim profilu (dopełnianie trafnymi pozycjami); kategoria dostawcy bywa jedynym źródłem gatunku na listach Xtream.
 - Audyt układu wykrył przyciętą pierwszą kategorię Ustawień po dodaniu dziewiątej: wiersze zagęszczone, a `LayoutAudit` mierzy pełną wysokość celu (kafel schowany przez przewinięcie nie jest małym celem).
+## 2026-11-12 (Europe/Warsaw): atrapa odtwarzacza (PR #22) i poprawki z testów rc4
+
+- PR #22: poprawka atrapy odtwarzacza (wynik `play()` osobno od buforowania) do `dev`; ta sama poprawka w PR #14. CI obu zielone, bez merge.
+- Poprawki rc4 na gałęzi `fix/rc4-playlisty-osd` (od `dev`, nie od #14): przycisk Wstecz w OSD dotykowym odsunięty od pasków systemu, edycja zapisanej listy bez duplikatu i bez pokazywania danych dostępu, grupy i kolejność kanałów związane z listą, wybór listy w Na żywo, Filmach i Serialach.
+- Wniosek z testów: wstrzyknięcie `WindowInsets` przez widok w Robolectric nie dociera do Compose; odsunięcie testujemy parametrem `insets` komponentu. `upsert` (REPLACE) wiersza listy kasowałby kaskadowo kanały i VOD, dlatego edycja idzie przez `UPDATE`.
 

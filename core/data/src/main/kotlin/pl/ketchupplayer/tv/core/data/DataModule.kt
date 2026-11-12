@@ -73,6 +73,11 @@ abstract class DataModule {
     ): pl.ketchupplayer.tv.core.data.network.ProviderHeadersRepository
 
     @Binds
+    abstract fun bindPlaylistFilter(
+        impl: pl.ketchupplayer.tv.core.data.catalog.DataStorePlaylistFilterRepository,
+    ): pl.ketchupplayer.tv.core.data.catalog.PlaylistFilterRepository
+
+    @Binds
     abstract fun bindGroups(
         impl: pl.ketchupplayer.tv.core.data.groups.DataStoreGroupsRepository,
     ): pl.ketchupplayer.tv.core.data.groups.GroupsRepository

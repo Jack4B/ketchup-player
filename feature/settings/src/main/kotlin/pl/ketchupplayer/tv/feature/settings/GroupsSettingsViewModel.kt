@@ -39,10 +39,11 @@ class GroupsSettingsViewModel
             kind.value = value
         }
 
-        fun toggle(name: String) {
+        /** [key] wskazuje grupę konkretnej listy (ta sama nazwa w dwóch listach to dwie pozycje). */
+        fun toggle(key: String) {
             val current = state.value
-            val visible = current.options.firstOrNull { it.name == name }?.visible ?: return
-            viewModelScope.launch { repo.setVisible(current.kind, name, !visible) }
+            val option = current.options.firstOrNull { it.key == key } ?: return
+            viewModelScope.launch { repo.setVisible(current.kind, option.providerId, option.name, !option.visible) }
         }
 
         fun setAll(visible: Boolean) {

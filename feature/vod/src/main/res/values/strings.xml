@@ -24,4 +24,9 @@
     <string name="vod_search_all">Szukaj filmów i seriali</string>
     <string name="vod_empty_mylist">Moja lista jest pusta. Dodaj filmy i seriale ze szczegółów.</string>
     <string name="vod_empty_all">Brak filmów i seriali. Dodaj dostawcę Xtream.</string>
+    <string name="vod_playlist_label">Lista</string>
+    <string name="vod_playlist_all">Wszystkie listy</string>
+    <string name="vod_playlist_pick">Wybierz listę</string>
+    <string name="vod_playlist_empty">Lista „%1$s” nie ma tu żadnych pozycji.</string>
+    <string name="vod_playlist_show_all">Pokaż wszystkie listy</string>
 </resources>

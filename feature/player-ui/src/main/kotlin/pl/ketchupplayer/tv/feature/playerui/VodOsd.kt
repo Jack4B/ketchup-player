@@ -8,11 +8,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -65,7 +70,16 @@ internal fun VodOsd(
         modifier
             .fillMaxWidth()
             .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = OSD_SCRIM))))
-            .padding(horizontal = 32.dp)
+            // Dotyk (telefon): pasek nawigacji i wycięcie nie zasłaniają paska postępu; na TV odsunięcie jest zerowe.
+            .then(
+                if (seek != null) {
+                    Modifier.windowInsetsPadding(
+                        WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal),
+                    )
+                } else {
+                    Modifier
+                },
+            ).padding(horizontal = 32.dp)
             .padding(top = if (seek == null) 48.dp else 16.dp, bottom = 22.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {

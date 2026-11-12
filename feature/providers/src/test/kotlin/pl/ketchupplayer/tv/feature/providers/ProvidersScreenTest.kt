@@ -9,6 +9,7 @@ import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -261,6 +262,39 @@ class ProvidersScreenTest {
 
     @Test
     fun wyborMetodyPostDpademWFormularzuXtream() = postPrzezOkNaPrzyciskuPost(ProviderKind.XTREAM)
+
+    /** rc4: „Edytuj” na rozwiniętej liście; formularz edycji nie pokazuje zapisanego adresu ani hasła. */
+    @Test
+    fun edycjaListyZRozwinietegoWierszaIBezUjawnianiaDanychDostepu() {
+        val events = mutableListOf<ProvidersEvent>()
+        show(ProvidersUiState(providers = listOf(p1, p2), expandedId = p1.id), events)
+        compose.onNodeWithText("Edytuj").performClick()
+        assertEquals(ProvidersEvent.StartEdit(p1.id), events.last())
+    }
+
+    @Test
+    fun formularzEdycjiNiePokazujeZapisanegoAdresuAniHasla() {
+        val events = mutableListOf<ProvidersEvent>()
+        val form =
+            ProviderForm(
+                kind = ProviderKind.XTREAM,
+                name = "Domowa lista",
+                userAgentId = "vlc",
+                requestMethod = RequestMethod.POST,
+                editingId = p1.id,
+                editingHost = "iptv.example.invalid",
+            )
+        show(ProvidersUiState(providers = listOf(p1), form = form), events)
+        compose.onNodeWithText("Edycja listy (Xtream Codes)").assertExists()
+        compose.onNodeWithText("Zapisz zmiany i pobierz").assertExists()
+        compose.onNodeWithText("serwer: iptv.example.invalid", substring = true).assertExists()
+        assertEquals(
+            "brak przełącznika rodzaju listy w edycji",
+            0,
+            compose.onAllNodesWithText("Lista M3U").fetchSemanticsNodes().size,
+        )
+        compose.onRoot().captureRoboImage("src/test/screenshots/providers_edit.png")
+    }
 }
 
 private const val MS_PER_DAY = 86_400_000L
