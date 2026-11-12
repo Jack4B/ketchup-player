@@ -14,7 +14,9 @@ import kotlinx.coroutines.launch
 import pl.ketchupplayer.tv.core.data.catalog.AddProviderError
 import pl.ketchupplayer.tv.core.data.catalog.AddProviderResult
 import pl.ketchupplayer.tv.core.data.catalog.CatalogRepository
+import pl.ketchupplayer.tv.core.data.catalog.ProviderEdit
 import pl.ketchupplayer.tv.core.model.ProviderId
+import pl.ketchupplayer.tv.core.model.ProviderType
 import javax.inject.Inject
 
 @HiltViewModel
@@ -57,6 +59,7 @@ class ProvidersViewModel
         fun onEvent(event: ProvidersEvent) {
             when (event) {
                 ProvidersEvent.StartAdd -> local.update { it.copy(form = ProviderForm(), message = null) }
+                is ProvidersEvent.StartEdit -> startEdit(event.id)
                 ProvidersEvent.Cancel -> local.update { it.copy(form = null) }
                 ProvidersEvent.RetryAdd -> retryAdd()
                 is ProvidersEvent.NameChanged,
@@ -64,15 +67,10 @@ class ProvidersViewModel
                 is ProvidersEvent.PasswordChanged,
                 is ProvidersEvent.SelectKind,
                 is ProvidersEvent.UrlChanged,
+                is ProvidersEvent.SelectUserAgent,
+                is ProvidersEvent.UserAgentTextChanged,
+                is ProvidersEvent.SelectRequestMethod,
                 -> local.update { it.copy(form = it.form?.let { f -> edited(f, event) }) }
-                is ProvidersEvent.SelectUserAgent ->
-                    local.update { it.copy(form = it.form?.copy(userAgentId = event.id, userAgentError = false)) }
-                is ProvidersEvent.UserAgentTextChanged ->
-                    local.update {
-                        it.copy(form = it.form?.copy(userAgentId = "custom:" + event.value, userAgentError = false))
-                    }
-                is ProvidersEvent.SelectRequestMethod ->
-                    local.update { it.copy(form = it.form?.copy(requestMethod = event.method)) }
                 ProvidersEvent.Submit -> submit()
                 is ProvidersEvent.Toggle ->
                     local.update {
@@ -96,6 +94,34 @@ class ProvidersViewModel
             }
         }
 
+        /**
+         * Formularz edycji zapisanej listy: nazwa, rodzaj, metoda i wybrany nagłówek z bazy. Adres, login, hasło
+         * i wartość własnego nagłówka zostają puste (to dane dostępu: nie wracają na ekran, puste = bez zmian).
+         */
+        private fun startEdit(id: ProviderId) {
+            val p = state.value.providers.firstOrNull { it.id == id } ?: return
+            val ua =
+                when (p.userAgentId) {
+                    null -> "auto"
+                    CUSTOM_STORED -> "custom:"
+                    else -> p.userAgentId ?: "auto"
+                }
+            local.update {
+                it.copy(
+                    message = null,
+                    form =
+                        ProviderForm(
+                            kind = if (p.type == ProviderType.XTREAM) ProviderKind.XTREAM else ProviderKind.M3U,
+                            name = p.name,
+                            requestMethod = p.requestMethod,
+                            userAgentId = ua,
+                            editingId = p.id,
+                            editingHost = p.urlHost,
+                        ),
+                )
+            }
+        }
+
         /** Wpisujemy inną listę po błędzie: nieudany wpis znika, żeby nie zostały duplikaty. */
         private fun retryAdd() {
             failedId?.let { id -> viewModelScope.launch { catalog.remove(id) } }
@@ -113,6 +139,11 @@ class ProvidersViewModel
                 is ProvidersEvent.PasswordChanged -> form.copy(password = event.value, credentialsError = false)
                 is ProvidersEvent.SelectKind -> form.copy(kind = event.kind)
                 is ProvidersEvent.UrlChanged -> form.copy(url = event.value, urlError = false)
+                is ProvidersEvent.SelectUserAgent ->
+                    form.copy(userAgentId = event.id, userAgentError = false, userAgentChanged = true)
+                is ProvidersEvent.UserAgentTextChanged ->
+                    form.copy(userAgentId = "custom:" + event.value, userAgentError = false, userAgentChanged = true)
+                is ProvidersEvent.SelectRequestMethod -> form.copy(requestMethod = event.method)
                 else -> form
             }
 
@@ -120,10 +151,11 @@ class ProvidersViewModel
             val form = local.value.form ?: return
             viewModelScope.launch {
                 local.update { it.copy(busy = true, lastForm = form) }
-                when (val r = add(form)) {
+                when (val r = if (form.editingId != null) update(form.editingId, form) else add(form)) {
                     is AddProviderResult.Added -> local.update { it.copy(form = null, busy = false, message = null) }
                     is AddProviderResult.SavedWithError -> {
-                        failedId = r.id
+                        // Edytowana lista istniała wcześniej: „Popraw dane” nie może jej usuwać.
+                        failedId = r.id.takeIf { form.editingId == null }
                         local.update { it.copy(form = null, busy = false, message = r.message) }
                     }
                     is AddProviderResult.Invalid ->
@@ -142,6 +174,22 @@ class ProvidersViewModel
                 }
             }
         }
+
+        private suspend fun update(
+            id: ProviderId,
+            form: ProviderForm,
+        ): AddProviderResult =
+            catalog.update(
+                id,
+                ProviderEdit(
+                    name = form.name,
+                    url = form.url,
+                    username = form.username,
+                    password = form.password,
+                    userAgentId = form.userAgentId.takeIf { form.userAgentChanged },
+                    requestMethod = form.requestMethod,
+                ),
+            )
 
         private suspend fun add(form: ProviderForm): AddProviderResult =
             when (form.kind) {
@@ -165,5 +213,8 @@ class ProvidersViewModel
 
         private companion object {
             const val STOP_TIMEOUT_MS = 5_000L
+
+            /** Znacznik zapisanego własnego nagłówka w bazie (jego wartość jest w SecretStore). */
+            const val CUSTOM_STORED = "custom"
         }
     }

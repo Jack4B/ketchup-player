@@ -11,4 +11,9 @@ data class ProviderInfo(
     val lastError: String?,
     /** Metoda żądania listy ustawiona dla tej listy (dotychczasowe listy: GET). */
     val requestMethod: RequestMethod = RequestMethod.GET,
+    /**
+     * Zapisany wybór nagłówka listy: id gotowego profilu, `custom` dla własnego (bez jego wartości: to dane dostępu)
+     * albo null = domyślny.
+     */
+    val userAgentId: String? = null,
 )

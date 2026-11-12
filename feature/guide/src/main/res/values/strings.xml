@@ -37,4 +37,9 @@
     <string name="guide_radar_empty">Brak audycji w tym oknie. Sprawdź źródła EPG w Ustawieniach.</string>
     <string name="guide_preview_loading">Ładowanie podglądu…</string>
     <string name="guide_preview_error">Podgląd niedostępny · OK otwiera kanał</string>
+    <string name="guide_playlist_label">Lista</string>
+    <string name="guide_playlist_all">Wszystkie listy</string>
+    <string name="guide_playlist_pick">Wybierz listę</string>
+    <string name="guide_playlist_empty">Lista „%1$s” nie ma kanałów.</string>
+    <string name="guide_playlist_show_all">Pokaż wszystkie listy</string>
 </resources>

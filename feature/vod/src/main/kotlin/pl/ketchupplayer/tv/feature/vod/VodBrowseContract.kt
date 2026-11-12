@@ -21,6 +21,10 @@ data class VodBrowseUiState(
     val category: String? = null,
     val query: String = "",
     val sort: VodSort = VodSort.NEWEST,
+    /** Listy do wyboru i wybrana (null = wszystkie); tylko w Filmach i Serialach. */
+    val playlist: pl.ketchupplayer.tv.core.data.catalog.PlaylistChoice =
+        pl.ketchupplayer.tv.core.data.catalog
+            .PlaylistChoice(),
 )
 
 sealed interface VodBrowseEvent {
@@ -34,6 +38,11 @@ sealed interface VodBrowseEvent {
 
     data class Sort(
         val sort: VodSort,
+    ) : VodBrowseEvent
+
+    /** Wybór listy (null = wszystkie listy). */
+    data class SelectPlaylist(
+        val id: pl.ketchupplayer.tv.core.model.ProviderId?,
     ) : VodBrowseEvent
 
     /** Karta weszła na ekran: dociągamy jej oceny z zewnętrznych źródeł (kolejka po kilka naraz). */

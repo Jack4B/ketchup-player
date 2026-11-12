@@ -24,12 +24,12 @@ class VodBrowseViewModelTest {
     fun `ukryta kategoria znika z listy i z panelu kategorii a po pokazaniu wraca`() =
         runTest {
             val groups = FakeGroups(setOf("Akcja"))
-            val vm = VodBrowseViewModel(FakeVodRepo(MOVIES), groups)
+            val vm = VodBrowseViewModel(FakeVodRepo(MOVIES), groups, FakePlaylists())
             vm.bind(VodMode.MOVIES)
             val hidden = vm.state.first { !it.loading }
             assertEquals(false, hidden.entries.any { it.item.category == "Akcja" })
             assertEquals(false, hidden.categories.any { it.first == "Akcja" })
-            groups.setVisible(pl.ketchupplayer.tv.core.data.groups.GroupKind.MOVIES, "Akcja", true)
+            groups.setVisible(pl.ketchupplayer.tv.core.data.groups.GroupKind.MOVIES, "", "Akcja", true)
             assertEquals(
                 true,
                 vm.state
@@ -40,10 +40,35 @@ class VodBrowseViewModelTest {
             )
         }
 
+    /** rc4: dwie listy z kategorią „Akcja”: osobne kategorie, wybór jednej listy, usunięta lista = wszystkie. */
+    @Test
+    fun `wybor listy i kategorie o tej samej nazwie z dwoch list`() =
+        runTest {
+            val other = PID2
+            val mixed =
+                MOVIES +
+                    MOVIES.take(2).map { e ->
+                        e.copy(item = e.item.copy(id = e.item.id + "-b", providerId = other, category = "Akcja"))
+                    }
+            val playlists = FakePlaylists(listOf(PID.value to "Dom", other.value to "Druga"))
+            val vm = VodBrowseViewModel(FakeVodRepo(mixed), FakeGroups(), playlists)
+            vm.bind(VodMode.MOVIES)
+            val all = vm.state.first { !it.loading }
+            assertEquals(true, all.playlist.available)
+            assertEquals(true, all.categories.any { it.first == "Akcja · Dom" })
+            assertEquals(true, all.categories.any { it.first == "Akcja · Druga" })
+            vm.onEvent(VodBrowseEvent.SelectPlaylist(other))
+            val only = vm.state.first { it.playlist.selected == other }
+            assertEquals(2, only.total)
+            assertEquals(listOf("Akcja" to 2), only.categories)
+            vm.onEvent(VodBrowseEvent.SelectPlaylist(null))
+            assertEquals(mixed.size, vm.state.first { it.playlist.selected == null }.total)
+        }
+
     @Test
     fun `szukanie, kategoria i sortowanie w ViewModelu`() =
         runTest {
-            val vm = VodBrowseViewModel(FakeVodRepo(MOVIES), FakeGroups())
+            val vm = VodBrowseViewModel(FakeVodRepo(MOVIES), FakeGroups(), FakePlaylists())
             vm.bind(VodMode.MOVIES)
             vm.state.first { !it.loading }
             // Pusty stan startowy zostaje zastąpiony po pierwszej emisji; sprawdzamy wyniki przez zdarzenia.
@@ -88,7 +113,7 @@ class VodBrowseViewModelTest {
         runTest {
             val noDate = MOVIES.map { it.copy(item = it.item.copy(addedMs = null)) }
             val mixed = noDate.take(2) + MOVIES.drop(2)
-            val vm = VodBrowseViewModel(FakeVodRepo(mixed), FakeGroups())
+            val vm = VodBrowseViewModel(FakeVodRepo(mixed), FakeGroups(), FakePlaylists())
             vm.bind(VodMode.MOVIES)
             val state = vm.state.first { !it.loading }
             assertEquals(MOVIES.size, state.entries.size)
@@ -115,7 +140,7 @@ class VodBrowseViewModelTest {
                         (it % 100) / 10.0,
                     )
                 }
-            val vm = VodBrowseViewModel(FakeVodRepo(big), FakeGroups())
+            val vm = VodBrowseViewModel(FakeVodRepo(big), FakeGroups(), FakePlaylists())
             vm.bind(VodMode.MOVIES)
             vm.state.first { !it.loading }
             for (sort in VodSort.entries) {

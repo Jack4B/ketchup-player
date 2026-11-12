@@ -31,6 +31,7 @@ import pl.ketchupplayer.tv.core.model.VodItem
 import pl.ketchupplayer.tv.core.model.VodKind
 
 internal val PID = ProviderId("p")
+internal val PID2 = ProviderId("q")
 
 internal fun movie(
     n: Int,
@@ -141,7 +142,7 @@ class VodBrowseScreenTest {
 
     private fun key(k: Key) = compose.onRoot().performKeyInput { pressKey(k) }
 
-    private val base get() = stateOf(VodBrowseViewModel(FakeVodRepo(MOVIES), FakeGroups()))
+    private val base get() = stateOf(VodBrowseViewModel(FakeVodRepo(MOVIES), FakeGroups(), FakePlaylists()))
 
     @Test
     fun screenshotSiatki() {

@@ -142,4 +142,5 @@
     <string name="metadata_status_builtin">Używane są klucze wbudowane w aplikację.</string>
     <string name="metadata_status_none">Brak kluczy: oceny i opisy z zewnętrznych źródeł są wyłączone.</string>
     <string name="metadata_status_set">Klucze ustawione.</string>
+    <string name="groups_from_list">%1$s · lista „%2$s”</string>
 </resources>

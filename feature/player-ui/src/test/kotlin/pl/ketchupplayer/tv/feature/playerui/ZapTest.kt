@@ -21,6 +21,16 @@ class ZapTest {
         assertEquals(listOf("b"), zapList(all[1], all).map { it.id })
     }
 
+    /** rc4: dwie listy z grupą „Sport”: CH+/CH− zostaje w liście bieżącego kanału. */
+    @Test
+    fun `ta sama nazwa grupy w innej liscie to inna grupa`() {
+        val a1 = Channel("a1", ProviderId("A"), "A1", "http://a.invalid/1", group = "Sport")
+        val a2 = Channel("a2", ProviderId("A"), "A2", "http://a.invalid/2", group = "Sport")
+        val b1 = Channel("b1", ProviderId("B"), "B1", "http://b.invalid/1", group = "Sport")
+        assertEquals(listOf("a1", "a2"), zapList(a1, listOf(a1, b1, a2)).map { it.id })
+        assertEquals(listOf("b1"), zapList(b1, listOf(a1, b1, a2)).map { it.id })
+    }
+
     @Test
     fun `kanal bez grupy dostaje cala liste`() {
         val z = zapList(ch("x", null), all)

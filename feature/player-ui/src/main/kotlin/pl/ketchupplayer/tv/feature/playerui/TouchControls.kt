@@ -7,9 +7,14 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -216,16 +221,26 @@ private fun SkipButton(
     }
 }
 
-/** Górny pas: przycisk wyjścia i (na żywo) nazwa kanału. Wyjście robi to samo co BACK. */
+/**
+ * Górny pas: przycisk wyjścia i (na żywo) nazwa kanału. Wyjście robi to samo co BACK.
+ *
+ * Odsunięty od pasków systemu i wycięcia aparatu (`safeDrawing`): aplikacja celuje w SDK 35, więc na telefonie
+ * z Androidem 15 rysuje pod paskiem stanu, a w poziomie pod wycięciem. Bez odsunięcia przycisk w lewym górnym rogu
+ * leżał pod paskiem stanu albo aparatem i stuknięcie trafiało w system, nie w przycisk. Na TV odsunięcie jest zerowe.
+ */
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 internal fun TouchTopBar(
     channelName: String?,
     onExit: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Odsunięcie od pasków systemu; testy podają stałe wartości, aplikacja bierze je z okna. */
+    insets: WindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
 ) {
     Row(
-        modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier
+            .windowInsetsPadding(insets)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
