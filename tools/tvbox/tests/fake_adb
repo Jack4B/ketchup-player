@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# Atrapa adb do testów offline (bez urządzenia). Sterowana zmiennymi FAKE_*; stan w $FAKE_DIR. Tylko fikcyjne dane.
+# Model: szyna z 8 pozycjami, strefa fokusu (rail/content), sekcja; UI generowane ze stanu.
+D="${FAKE_DIR:?}"; mkdir -p "$D/state"
+RAIL=("Profil" "Szukaj" "Home" "Na żywo" "Filmy" "Seriale" "Moja lista" "Ustawienia")
+PKG="${FAKE_PKG:-pl.ketchupplayer.tv}"
+echo "$*" >> "$D/adb.log"; env >> "$D/env.log"
+n=$(( $(cat "$D/state/calls" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$D/state/calls"
+if [ -n "${FAKE_LOSE_AFTER:-}" ] && [ "$n" -gt "$FAKE_LOSE_AFTER" ]; then
+  case "$*" in *get-state*) echo "error: device offline" >&2; exit 1;; *) echo "error: device offline" >&2; exit 255;; esac
+fi
+[ "${1:-}" = "-s" ] && shift 2
+cmd="${1:-}"; shift || true
+get() { cat "$D/state/$1" 2>/dev/null || echo "$2"; }
+marker_for() { case "$1" in "Na żywo") echo "Przewodnik";; Filmy|Seriale) echo "Najnowsze";; "Moja lista") echo "Moja lista jest pusta. Dodaj filmy i seriale ze szczegółów.";; Szukaj) echo "Szukaj filmów i seriali";; Ustawienia) echo "Listy i dostawcy";; *) echo "";; esac; }
+gen_ui() {
+  local zone idx sec i foc wiz
+  zone=$(get zone content); idx=$(get idx 2); sec=$(get section Home); wiz=$(get wiz 0)
+  printf '<?xml version="1.0" encoding="UTF-8"?><hierarchy rotation="0">'
+  printf '<node index="0" text="" class="android.widget.FrameLayout" package="%s" content-desc="" clickable="false" focused="false" bounds="[0,0][1920,1080]">' "$PKG"
+  if [ "$sec" = Wizard ]; then
+    if [ "$wiz" = 1 ]; then printf '<node text="Witaj w Ketchup Player" class="android.widget.TextView" content-desc="" clickable="false" focused="false" bounds="[300,50][900,100]" />'; fi
+    if [ "$wiz" = 2 ]; then printf '<node text="Dodaj pierwszą listę" class="android.widget.TextView" content-desc="" clickable="false" focused="false" bounds="[300,50][900,100]" />'
+      printf '<node text="%s" class="android.widget.EditText" content-desc="" clickable="true" focused="true" bounds="[300,200][1500,260]" />' "$(get field '')"; fi
+    printf '</node></hierarchy>'; return
+  fi
+  for i in "${!RAIL[@]}"; do
+    foc=false; [ "$zone" = rail ] && [ "$i" = "$idx" ] && [ -z "${FAKE_FOCUS_HIDDEN:-}" ] && foc=true
+    printf '<node index="%s" text="" class="android.view.View" content-desc="%s" clickable="true" focused="%s" bounds="[44,%s][136,%s]" />' "$i" "${RAIL[$i]}" "$foc" $((100 + i * 100)) $((190 + i * 100))
+  done
+  m=$(marker_for "$sec"); [ -n "$m" ] && printf '<node index="9" text="%s" class="android.widget.TextView" content-desc="" clickable="false" focused="false" bounds="[300,50][900,100]" />' "$m"
+  [ -f "$D/state/done" ] && printf '<node text="Lista została dodana. Kanały: 4578" class="android.widget.TextView" content-desc="" clickable="false" focused="false" bounds="[300,300][1500,360]" />'
+  printf '</node></hierarchy>'
+}
+key_event() {
+  local zone idx sec
+  zone=$(get zone content); idx=$(get idx 2); sec=$(get section Home)
+  case "$1" in
+    21) if [ "$zone" = content ]; then echo rail > "$D/state/zone"; for i in "${!RAIL[@]}"; do [ "${RAIL[$i]}" = "$sec" ] && echo "$i" > "$D/state/idx"; done; fi;;
+    19) [ "$zone" = rail ] && [ "$idx" -gt 0 ] && echo $((idx - 1)) > "$D/state/idx";;
+    20) [ "$zone" = rail ] && [ "$idx" -lt 7 ] && echo $((idx + 1)) > "$D/state/idx";;
+    23) if [ "$(get wiz 0)" = 1 ]; then echo 2 > "$D/state/wiz"; : > "$D/state/field"; : > "$D/state/fields"
+        elif [ "$zone" = rail ]; then echo "${RAIL[$idx]}" > "$D/state/section"; echo content > "$D/state/zone"; fi;;
+    66) if [ "$(get wiz 0)" = 2 ]; then cat "$D/state/field" >> "$D/state/fields"; echo >> "$D/state/fields"; : > "$D/state/field"
+          if [ "$(grep -c . "$D/state/fields")" -ge 2 ]; then echo 3 > "$D/state/wiz"; echo Home > "$D/state/section"; echo content > "$D/state/zone"; : > "$D/state/done"; fi; fi;;
+    4) if [ "$zone" = content ]; then echo rail > "$D/state/zone"; for i in "${!RAIL[@]}"; do [ "${RAIL[$i]}" = "$sec" ] && echo "$i" > "$D/state/idx"; done; fi;;
+  esac
+}
+case "$cmd" in
+  devices) printf 'List of devices attached\n%s\tdevice\n' "${FAKE_TARGET:-192.168.1.170:5555}"; [ -n "${FAKE_MULTI:-}" ] && printf '10.0.0.9:5555\tdevice\n'; echo;;
+  connect) echo "connected to $1";;
+  get-state) echo "${FAKE_STATE:-device}";;
+  install) [ -n "${FAKE_INSTALL_SLEEP:-}" ] && sleep "$FAKE_INSTALL_SLEEP"
+    if [ -n "${FAKE_INSTALL_FAIL:-}" ]; then echo "Performing Streamed Install"; echo "adb: failed to install $(basename "${*: -1}"): Failure [$FAKE_INSTALL_FAIL]"; exit 1; fi
+    echo "Performing Streamed Install"; echo "Success";;
+  exec-out) case "$1" in
+      cat) [ -f "$D/remote_ui.xml" ] && cat "$D/remote_ui.xml" || exit 1;;
+      screencap) printf '\x89PNG\r\n\x1a\nFAKE';;
+    esac;;
+  shell)
+    c="$*"
+    case "$c" in
+      "am get-current-user") echo "${FAKE_USER:-0}";;
+      "getprop ro.product.model") echo "FakeBox L1";;
+      "getprop ro.build.version.release") echo "12";;
+      "wm size") echo "Physical size: 1920x1080";;
+      "date "*) echo "2026-11-08 10:00:00";;
+      "pm list packages"*) echo "${FAKE_PACKAGES:-package:$PKG}";;
+      "dumpsys package"*) printf '  Packages:\n    versionCode=%s minSdk=26 targetSdk=34\n    versionName=%s\n' "${FAKE_INSTALLED_CODE:-100}" "${FAKE_INSTALLED_NAME:-1.0.0-rc1}";;
+      "dumpsys window"*) w=$(( $(get wq 0) + 1 )); echo $w > "$D/state/wq"
+        if [ -n "${FAKE_FG_LOST_AFTER:-}" ] && [ "$w" -gt "$FAKE_FG_LOST_AFTER" ]; then echo "  mCurrentFocus=Window{1 u0 com.android.launcher/com.android.launcher.Home}"; echo "  mFocusedApp=ActivityRecord{2 u0 com.android.launcher/.Home}"
+        else echo "  mCurrentFocus=Window{1 u0 $PKG/pl.ketchupplayer.tv.MainActivity}"; echo "  mFocusedApp=ActivityRecord{2 u0 $PKG/pl.ketchupplayer.tv.MainActivity}"; fi;;
+      "am start"*) echo "Starting: Intent { cmp=$PKG/pl.ketchupplayer.tv.MainActivity }";;
+      "am force-stop"*) : ;;
+      "pm clear"*) echo "Success"; echo clear >> "$D/destructive.log";;
+      "pidof"*) [ -f "$D/nopid" ] || echo "4242";;
+      "rm -f /sdcard/kt_ui.xml") rm -f "$D/remote_ui.xml";;
+      "uiautomator dump"*) if [ -n "${FAKE_UI_FAIL:-}" ]; then echo "ERROR: null root node returned by UiTestAutomationBridge."; [ -n "${FAKE_UI_STALE:-}" ] && echo '<hierarchy rotation="0"><node text="STARE" bounds="[0,0][1,1]" focused="true"/></hierarchy>' > "$D/remote_ui.xml"
+        else [ -n "${FAKE_UI_SLEEP:-}" ] && sleep "$FAKE_UI_SLEEP"; gen_ui > "$D/remote_ui.xml"; echo "UI hierchary dumped to: /sdcard/kt_ui.xml"; fi;;
+      "input keyevent"*) k="${c##* }"; echo "KEY $k" >> "$D/input.log"; key_event "$k";;
+      "input text"*) echo "TEXT[$c]" >> "$D/input.log"
+        # Prawdziwa powłoka sh parsuje polecenie jak urządzenie; zamiast systemowego `input` działa zaślepka zapisująca argument.
+        mkdir -p "$D/stub"
+        cat > "$D/stub/input" <<'STUB'
+#!/bin/sh
+[ "$1" = text ] || exit 0
+printf 'ARG[%s]\n' "$2" >> "$FAKE_DIR/args.log"
+printf '%s' "$2" | sed 's/%s/ /g' | tr -d '\n' >> "$FAKE_DIR/state/field"
+STUB
+        chmod +x "$D/stub/input"
+        env PATH="$D/stub:$PATH" FAKE_DIR="$D" sh -c "$c";;
+      "input tap"*) echo "TAP $c" >> "$D/input.log";;
+      "dumpsys audio"*) cat "$D/audio" 2>/dev/null;;
+      "dumpsys SurfaceFlinger"*) cat "$D/layers" 2>/dev/null;;
+      "dumpsys activity exit-info"*) cat "$D/exitinfo" 2>/dev/null;;
+      "ping "*) echo "1 packets transmitted, 1 received, 0% packet loss";;
+      "logcat -d -s KeyGuard"*) echo LOGCAT >> "$D/logcat.calls"; cat "$D/keyguard" 2>/dev/null;;
+      "logcat"*) echo LOGCAT >> "$D/logcat.calls"; cat "$D/logcat" 2>/dev/null;;
+      "getevent"*) cat "$D/getevent" 2>/dev/null;;
+      *) echo "fake_adb: nieobsłużone polecenie shell: $c" >&2;;
+    esac;;
+  *) echo "fake_adb: nieobsłużone: $cmd $*" >&2; exit 1;;
+esac

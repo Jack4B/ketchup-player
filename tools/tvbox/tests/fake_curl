@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# Atrapa curl do testów ketchup_list_diag.sh (offline, wyłącznie fikcyjne dane). Zapisuje do $FAKE_CURL_LOG:
+#   argv.log (argumenty każdego wywołania), env.log (środowisko), cfg.N (kopia pliku -K), post.N (tryb i treść pliku ciała).
+# Odpowiedzi z $FAKE_CURL_SCENARIO: linie "klucz status retry-after exit rodzaj_ciała ttfb [content-type]",
+# klucz = METODA:get|api[:vlc|:ott] (np. GET:get, POST:api, GET:get:vlc, GET:api:ott).
+set -u
+log="${FAKE_CURL_LOG:?}"
+n=$(($(cat "$log/count" 2>/dev/null || echo 0) + 1))
+echo "$n" >"$log/count"
+{
+  echo "--- wywołanie $n"
+  printf '%s\n' "$@"
+} >>"$log/argv.log"
+env >>"$log/env.log"
+
+cfg="" dump="" out="" wfmt=""
+while (($#)); do
+  case "$1" in
+    -K) cfg=$2; shift 2 ;;
+    -D) dump=$2; shift 2 ;;
+    -o) out=$2; shift 2 ;;
+    -w) wfmt=$2; shift 2 ;;
+    *) shift ;;
+  esac
+done
+cp "$cfg" "$log/cfg.$n"
+get() { sed -n "s/^$1 = \"\\(.*\\)\"\$/\\1/p" "$cfg" | head -n1; }
+url=$(get url)
+ua=$(get user-agent)
+data=$(get data)
+method=GET
+if [[ -n "$data" ]]; then
+  method=POST
+  file=${data#@}
+  printf 'mode=%s\n' "$(stat -c %a "$file")" >"$log/post.$n"
+  cat "$file" >>"$log/post.$n"
+fi
+kind='get'
+[[ "${url%%\?*}" == */player_api.php ]] && kind=api
+key="$method:$kind"
+[[ "$ua" == VLC* ]] && key="$key:vlc"
+[[ "$ua" == OTT* ]] && key="$key:ott"
+line=$(grep "^$key " "$FAKE_CURL_SCENARIO" | head -n1)
+[[ -n "$line" ]] || { echo "brak scenariusza dla $key" >&2; exit 99; }
+read -r _ status retry code bodykind ttfb ctype <<<"$line"
+ctype=${ctype:-text/plain}
+ctype=${ctype//_/ }
+{
+  echo "HTTP/1.1 $status X"
+  echo "Server: SECRETSERVER/9"
+  echo "Set-Cookie: sid=COOKIESECRET"
+  echo "Content-Type: $ctype"
+  [[ "$retry" != "-" ]] && echo "Retry-After: $retry"
+  echo "Via: 1.1 test"
+  echo
+} >"$dump"
+case "$bodykind" in
+  m3u) printf '#EXTM3U\n#EXTINF:-1,Kanal\nhttp://h/live/u/p/1.ts\n#EXTINF:-1,Film\nhttp://h/movie/u/p/2.mp4\n#EXTINF:-1,Odc\nhttp://h/series/u/p/3.mkv\n' >"$out" ;;
+  gzm3u) printf '#EXTM3U\n#EXTINF:-1,Kanal\nhttp://h/live/u/p/1.ts\n#EXTINF:-1,Film\nhttp://h/movie/u/p/2.mp4\n' | gzip -c >"$out" ;;
+  json) printf '[{"category_id":"1"},{"category_id":"2"}]' >"$out" ;;
+  html) printf '<html>The requested URL /user123/pass456/77 was not found</html>' >"$out" ;;
+  *) : >"$out" ;;
+esac
+size=$(stat -c %s "$out")
+fmt=${wfmt//%\{http_code\}/$status}
+fmt=${fmt//%\{http_version\}/1.1}
+fmt=${fmt//%\{num_redirects\}/0}
+fmt=${fmt//%\{url_effective\}/$url}
+fmt=${fmt//%\{time_namelookup\}/0.004}
+fmt=${fmt//%\{time_connect\}/0.020}
+fmt=${fmt//%\{time_appconnect\}/0.000}
+fmt=${fmt//%\{time_starttransfer\}/$ttfb}
+fmt=${fmt//%\{time_total\}/$ttfb}
+fmt=${fmt//%\{size_download\}/$size}
+fmt=${fmt//%\{content_type\}/$ctype}
+printf '%s' "$fmt"
+exit "$code"

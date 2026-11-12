@@ -1,0 +1,114 @@
+package pl.ketchupplayer.tv.feature.providers
+
+import pl.ketchupplayer.tv.core.model.ProviderId
+import pl.ketchupplayer.tv.core.model.ProviderInfo
+import pl.ketchupplayer.tv.core.model.RequestMethod
+
+enum class ProviderKind { M3U, XTREAM }
+
+data class ProviderForm(
+    val kind: ProviderKind = ProviderKind.M3U,
+    val name: String = "",
+    /** Adres listy M3U albo serwera Xtream. */
+    val url: String = "",
+    val username: String = "",
+    val password: String = "",
+    val nameError: Boolean = false,
+    val urlError: Boolean = false,
+    val credentialsError: Boolean = false,
+    /** Wybrany nagłówek połączenia (id z puli); „auto” = domyślny okhttp/4.10.0. */
+    val userAgentId: String = "auto",
+    /** Własny User-Agent zawiera niedozwolone znaki (puste, spoza ASCII, ponad 512 znaków). */
+    val userAgentError: Boolean = false,
+    /** Metoda żądania listy: GET (domyślnie) albo POST (dane w ciele, adres bez loginu i hasła). */
+    val requestMethod: RequestMethod = RequestMethod.GET,
+    /**
+     * Edycja zapisanej listy (null = dodawanie nowej). W edycji pola adresu, loginu i hasła startują puste i puste
+     * znaczą „bez zmian”: zapisany adres z danymi dostępu ani hasło nigdy nie trafiają z powrotem na ekran.
+     */
+    val editingId: ProviderId? = null,
+    /** Sam host zapisanej listy (bez danych dostępu), do podpowiedzi przy pustym polu adresu w edycji. */
+    val editingHost: String? = null,
+    /** Czy użytkownik zmienił nagłówek w edycji (bez zmiany zostaje zapisany, także własny). */
+    val userAgentChanged: Boolean = false,
+) {
+    val editing: Boolean get() = editingId != null
+}
+
+data class ProvidersUiState(
+    val providers: List<ProviderInfo> = emptyList(),
+    val expandedId: ProviderId? = null,
+    val form: ProviderForm? = null,
+    val lastForm: ProviderForm? = null,
+    val busy: Boolean = false,
+    val message: String? = null,
+    val status: pl.ketchupplayer.tv.core.data.catalog.ImportStatus? = null,
+    val downloadedBytes: Long = 0,
+    /** Własne User-Agenty użytkownika (do listy wyboru w formularzu). */
+    val customAgents: List<pl.ketchupplayer.tv.core.network.UserAgentProfile> = emptyList(),
+    /** Stan kont Xtream po id listy: połączenia w użyciu, limit, ważność (dociągany przy otwarciu ekranu). */
+    val accounts: Map<String, pl.ketchupplayer.tv.core.model.AccountInfo> = emptyMap(),
+)
+
+sealed interface ProvidersEvent {
+    data object StartAdd : ProvidersEvent
+
+    /** Edycja zapisanej listy: ta sama lista, bez tworzenia nowej. */
+    data class StartEdit(
+        val id: ProviderId,
+    ) : ProvidersEvent
+
+    data object Cancel : ProvidersEvent
+
+    /** Powrót do formularza po nieudanym dodaniu: zostają wpisane dane i komunikat błędu. */
+    data object RetryAdd : ProvidersEvent
+
+    data class NameChanged(
+        val value: String,
+    ) : ProvidersEvent
+
+    data class UrlChanged(
+        val value: String,
+    ) : ProvidersEvent
+
+    data class UsernameChanged(
+        val value: String,
+    ) : ProvidersEvent
+
+    data class PasswordChanged(
+        val value: String,
+    ) : ProvidersEvent
+
+    data class SelectKind(
+        val kind: ProviderKind,
+    ) : ProvidersEvent
+
+    data object Submit : ProvidersEvent
+
+    /** Wybór User-Agenta z listy w formularzu (ptaszek przy zaznaczonym). */
+    data class SelectUserAgent(
+        val id: String,
+    ) : ProvidersEvent
+
+    /** Wpisanie własnego User-Agent w formularzu; wartość trafia do SecretStore dopiero przy zapisie listy. */
+    data class UserAgentTextChanged(
+        val value: String,
+    ) : ProvidersEvent
+
+    /** Wybór metody żądania listy w formularzu (GET/POST). */
+    data class SelectRequestMethod(
+        val method: RequestMethod,
+    ) : ProvidersEvent
+
+    data class Toggle(
+        val id: ProviderId,
+    ) : ProvidersEvent
+
+    data class Refresh(
+        val id: ProviderId,
+    ) : ProvidersEvent
+
+    data class Remove(
+        val id: ProviderId,
+    ) : ProvidersEvent
+}

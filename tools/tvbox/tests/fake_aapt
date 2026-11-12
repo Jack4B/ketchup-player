@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Atrapa aapt: zwraca metadane z FAKE_APK_PKG/FAKE_APK_VER/FAKE_APK_CODE; FAKE_AAPT_FAIL=1 symuluje błąd.
+[ -n "${FAKE_AAPT_FAIL:-}" ] && exit 1
+echo "package: name='${FAKE_APK_PKG:-pl.ketchupplayer.tv}' versionCode='${FAKE_APK_CODE:-100}' versionName='${FAKE_APK_VER:-1.0.0-rc1}' platformBuildVersionName='12'"
+echo "launchable-activity: name='pl.ketchupplayer.tv.MainActivity'  label='' icon=''"

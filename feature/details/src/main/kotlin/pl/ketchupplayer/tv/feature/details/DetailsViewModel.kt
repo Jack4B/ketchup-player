@@ -1,0 +1,149 @@
+package pl.ketchupplayer.tv.feature.details
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import pl.ketchupplayer.tv.core.data.vod.EpisodeEntry
+import pl.ketchupplayer.tv.core.data.vod.VodEntry
+import pl.ketchupplayer.tv.core.data.vod.VodRepository
+import pl.ketchupplayer.tv.core.model.VodItem
+import pl.ketchupplayer.tv.core.model.VodKind
+import pl.ketchupplayer.tv.core.policy.ResumeRules
+import javax.inject.Inject
+
+@OptIn(ExperimentalCoroutinesApi::class)
+@HiltViewModel
+class DetailsViewModel
+    @Inject
+    constructor(
+        private val repo: VodRepository,
+        private val keys: pl.ketchupplayer.tv.core.data.metadata.MetadataKeys,
+        private val personalization: pl.ketchupplayer.tv.core.data.personalization.PersonalizationRepository,
+    ) : ViewModel() {
+        private val itemId = MutableStateFlow<String?>(null)
+        private val season = MutableStateFlow<Int?>(null)
+        private val episodesStatus = MutableStateFlow(EpisodesStatus.IDLE)
+        private val similar = MutableStateFlow<List<VodItem>>(emptyList())
+        private val sources = MutableStateFlow(1)
+        private val keysMissing = MutableStateFlow(false)
+
+        private enum class EpisodesStatus { IDLE, LOADING, FAILED }
+
+        fun bind(id: String) {
+            if (itemId.value == id) return
+            itemId.value = id
+            season.value = null
+            viewModelScope.launch { sources.value = repo.sourceCount(id) }
+            viewModelScope.launch { keysMissing.value = !keys.current().any }
+            viewModelScope.launch {
+                repo.refreshInfo(id) // opis, obsada i grafika od dostawcy; wynik wpada do bazy
+                repo.ensureMeta(id) // potem oceny i opis z TMDB/OMDb (tylko puste pola); po sobie, bez wyścigu zapisów
+            }
+            viewModelScope.launch {
+                similar.value = repo.similar(id, SIMILAR_LIMIT)
+                loadEpisodesIfSeries(id)
+            }
+        }
+
+        private suspend fun loadEpisodesIfSeries(id: String) {
+            val entry = repo.entry(id).filterNotNull().first()
+            if (entry.item.kind != VodKind.SERIES) return
+            episodesStatus.value = EpisodesStatus.LOADING
+            episodesStatus.value =
+                if (repo.refreshEpisodes(id).isSuccess) EpisodesStatus.IDLE else EpisodesStatus.FAILED
+            // Otwarcie serialu = nowe odcinki zobaczone (zielona kropka znika z plakatu i z szuflady).
+            repo.markSeen(id)
+        }
+
+        val state: StateFlow<DetailsUiState> =
+            itemId
+                .filterNotNull()
+                .flatMapLatest { id ->
+                    combine(
+                        repo.entry(id),
+                        repo.episodes(id),
+                        season,
+                        episodesStatus,
+                        similar,
+                    ) { entry, episodes, selected, status, sim -> build(entry, episodes, selected, status, sim) }
+                        .combine(sources) { st, n -> st.copy(sources = n) }
+                        .combine(keysMissing) { st, missing -> st.copy(metadataKeysMissing = missing) }
+                        .combine(personalization.prefs) { st, prefs -> st.copy(likeVisible = prefs.enabled) }
+                        .combine(personalization.liked) { st, liked -> st.copy(liked = id in liked) }
+                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_MS), DetailsUiState())
+
+        fun onEvent(event: DetailsEvent) {
+            when (event) {
+                is DetailsEvent.SelectSeason -> season.value = event.season
+                DetailsEvent.ToggleMyList ->
+                    state.value.entry?.let { e -> viewModelScope.launch { repo.setMyList(e.item.id, !e.myList) } }
+                DetailsEvent.ToggleLike ->
+                    state.value.entry?.let { e ->
+                        val liked = state.value.liked
+                        viewModelScope.launch { personalization.setLiked(e.item.id, !liked) }
+                    }
+                DetailsEvent.RetryEpisodes ->
+                    itemId.value?.let { id ->
+                        viewModelScope.launch { loadEpisodesIfSeries(id) }
+                    }
+            }
+        }
+
+        private fun build(
+            entry: VodEntry?,
+            episodes: List<EpisodeEntry>,
+            selected: Int?,
+            status: EpisodesStatus,
+            similar: List<VodItem>,
+        ): DetailsUiState {
+            if (entry == null) return DetailsUiState(loading = false)
+            if (entry.item.kind == VodKind.MOVIE) {
+                val target =
+                    PlayTarget(entry.item.id, null, ResumeRules.resumePosition(entry.positionMs, entry.durationMs))
+                return DetailsUiState(false, entry, similar = similar, target = target)
+            }
+            val seasons = episodes.map { it.episode.season }.distinct().sorted()
+            val resume = resumeEpisode(episodes)
+            val shown = selected ?: resume?.episode?.season ?: seasons.firstOrNull()
+            return DetailsUiState(
+                loading = false,
+                entry = entry,
+                seasons = seasons,
+                season = shown,
+                episodes = episodes.filter { it.episode.season == shown },
+                episodesLoading = status == EpisodesStatus.LOADING && episodes.isEmpty(),
+                episodesFailed = status == EpisodesStatus.FAILED && episodes.isEmpty(),
+                similar = similar,
+                target =
+                    resume?.let {
+                        PlayTarget(
+                            it.episode.id,
+                            "S${it.episode.season} E${it.episode.number}",
+                            ResumeRules.resumePosition(it.positionMs, it.durationMs, it.watched),
+                        )
+                    },
+            )
+        }
+
+        /** Rozpoczęty niedokończony odcinek; w przeciwnym razie pierwszy po ostatnim obejrzanym; w końcu pierwszy. */
+        private fun resumeEpisode(episodes: List<EpisodeEntry>): EpisodeEntry? {
+            episodes.firstOrNull { ResumeRules.inProgress(it.positionMs, it.durationMs, it.watched) }?.let { return it }
+            val lastWatched = episodes.indexOfLast { it.watched }
+            return episodes.getOrNull(lastWatched + 1) ?: episodes.firstOrNull()
+        }
+
+        private companion object {
+            const val STOP_MS = 5_000L
+            const val SIMILAR_LIMIT = 12
+        }
+    }

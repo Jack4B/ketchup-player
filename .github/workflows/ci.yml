@@ -1,0 +1,187 @@
+name: CI
+on:
+  push:
+    branches: [main, dev, 'faza-*', 'main-*']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Weryfikacja reguł modułów (build-logic)
+        run: ./gradlew -p build-logic :convention:test
+      - name: Reguły zależności modułów
+        run: ./gradlew verifyModuleDependencies
+      - name: Spotless + Detekt
+        run: ./gradlew spotlessCheck detekt
+      - name: Testy jednostkowe
+        run: |
+          # --continue: porażka jednego modułu nie ukrywa wyników pozostałych (kod wyjścia nadal niezerowy).
+          # Moduły JVM core:common, core:network, epg:xmltv, provider:m3u i provider:xtream były wcześniej pominięte
+          # (m.in. testy Redactora i komunikatów błędów); raporty trafiają do artefaktu junit-unit (if: always()).
+          ./gradlew testDebugUnitTest :core:model:test :core:policy:test :epg:radar:test :provider:api:test \
+            :core:common:test :core:network:test :epg:xmltv:test :provider:m3u:test :provider:xtream:test --continue
+      - name: "Raporty JUnit XML (etap: testy jednostkowe)"
+        if: always()
+        run: |
+          # Kopia samych plików TEST-*.xml z każdego modułu do katalogu etapu. Potem czyścimy wyniki testów, żeby raporty
+          # kolejnego etapu (Roborazzi) nie mieszały się z tymi, a zadania testowe wykonały się ponownie (wynik z cache
+          # lub UP-TO-DATE nie zastępuje wykonania w trybie verify).
+          mkdir -p junit-reports/unit
+          find . -path ./junit-reports -prune -o -path '*/build/test-results/*' -name 'TEST-*.xml' -print0 \
+            | xargs -0 -r cp --parents -t junit-reports/unit
+          find . -path ./junit-reports -prune -o -type d -path '*/build/test-results' -print0 | xargs -0 -r rm -rf
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: junit-unit
+          path: junit-reports/unit
+          if-no-files-found: warn
+      - name: Roborazzi (gałęzie dev, faza-* i main-* nagrywają baseline, main i inne gałęzie weryfikują)
+        id: roborazzi
+        run: |
+          # W biegu PR GITHUB_REF_NAME to „<nr>/merge”, więc nazwę gałęzi bierzemy z GITHUB_HEAD_REF. Baseline'y gałęzi
+          # faza-* zapisuje bieg push (commit bota PO zmianie UI); bieg PR porównywałby je ze starymi i zawsze padał.
+          branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          if [[ "${branch}" == faza-* || "${branch}" == main-* || "${branch}" == dev ]]; then
+            echo "mode=record" >> "${GITHUB_OUTPUT}"
+            ./gradlew recordRoborazziDebug
+          else
+            echo "mode=verify" >> "${GITHUB_OUTPUT}"
+            # --continue: zbierz porażki ze wszystkich modułów, zamiast przerywać po pierwszej (kod wyjścia nadal
+            # niezerowy przy błędach).
+            ./gradlew verifyRoborazziDebug --continue
+          fi
+      - name: Commit baseline Roborazzi (tylko gdy dopiero co nagrany)
+        if: github.event_name == 'push' && (startsWith(github.ref_name, 'faza-') || startsWith(github.ref_name, 'main-') || github.ref_name == 'dev')
+        run: |
+          git add -A -- '*/src/test/screenshots/*.png'
+          if ! git diff --cached --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore: baseline Roborazzi (CI) [skip ci]"
+            # Gałąź mogła pójść do przodu w trakcie biegu (nasz push, commit bota z emulatora): rebase i ponów.
+            git pull --rebase origin "${GITHUB_REF_NAME}" && git push || { git pull --rebase origin "${GITHUB_REF_NAME}" && git push; }
+          fi
+      - name: "Raporty JUnit XML (etap: Roborazzi)"
+        if: always() && steps.roborazzi.outcome != 'skipped'
+        run: |
+          mkdir -p junit-reports/roborazzi
+          find . -path ./junit-reports -prune -o -path '*/build/test-results/*' -name 'TEST-*.xml' -print0 \
+            | xargs -0 -r cp --parents -t junit-reports/roborazzi
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.roborazzi.outcome != 'skipped'
+        with:
+          name: junit-roborazzi-${{ steps.roborazzi.outputs.mode }}
+          path: junit-reports/roborazzi
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: |
+            **/src/test/screenshots
+            **/build/outputs/roborazzi
+      - name: Lint
+        run: ./gradlew lintDebug
+      - name: Build debug
+        run: ./gradlew :app:assembleDebug
+      - name: Podpis debug jest stały (instalacja jako aktualizacja)
+        run: |
+          # Bez stałego klucza każdy bieg CI losuje nowy, a APK z różnych biegów nie aktualizują się (UPDATE_INCOMPATIBLE).
+          apksigner="$(ls "${ANDROID_HOME}"/build-tools/*/apksigner | sort -V | tail -1)"
+          got="$("${apksigner}" verify --print-certs app/build/outputs/apk/debug/app-debug.apk | sed -n 's/.*SHA-256 digest: //p' | head -1)"
+          want="8415ad8f75cd1795a99aa1389ef92cb2c26933be25263680c9430d52458bc221"
+          echo "podpis: ${got}"
+          [ "${got}" = "${want}" ] || { echo "::error::APK debug podpisany innym kluczem niż app/ketchup-debug.keystore"; exit 1; }
+      - name: Build release (R8)
+        run: ./gradlew :app:assembleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk-debug
+          path: app/build/outputs/apk/debug/*.apk
+      - name: Schemat Room zgodny z plikiem w repo
+        run: |
+          # KSP zapisuje schemat bieżącej wersji bazy do core/database/schemas przy każdej kompilacji (hash tożsamości liczy
+          # Room, nie wpisujemy go ręcznie). Brak pliku albo różnica od wersji z repo = błąd: nowy plik bierzemy z artefaktu
+          # room-schemas tego biegu.
+          if [ -n "$(git status --porcelain -- core/database/schemas)" ]; then
+            git status --porcelain -- core/database/schemas
+            git add -N core/database/schemas
+            git diff --stat -- core/database/schemas
+            echo "::error::Schemat Room wyeksportowany w CI różni się od core/database/schemas w repo (dodaj lub zaktualizuj plik z artefaktu room-schemas)"
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: room-schemas
+          path: core/database/schemas
+          if-no-files-found: warn
+  emulator:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Włącz KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - run: ./gradlew :app:assembleDebug
+      - name: ffmpeg (strumień HLS do scenariusza odtwarzania)
+        run: |
+          if ! command -v ffmpeg >/dev/null; then sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg; fi
+      - name: Emulator Android TV (API 34) - smoke D-pad
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: android-tv
+          arch: x86
+          profile: tv_1080p
+          disable-animations: true
+          script: .github/scripts/emulator-smoke.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: emulator-screenshots
+          path: docs/qa/emulator
+      - name: Commit zrzutów z emulatora
+        if: always() && github.event_name == 'push' && (startsWith(github.ref_name, 'faza-') || startsWith(github.ref_name, 'main-') || github.ref_name == 'dev')
+        run: |
+          git add -A -- docs/qa/emulator
+          if ! git diff --cached --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore: zrzuty z emulatora Android TV (CI) [skip ci]"
+            git pull --rebase origin "${GITHUB_REF_NAME}"
+            git push
+          fi
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

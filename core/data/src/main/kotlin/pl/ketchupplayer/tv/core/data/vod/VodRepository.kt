@@ -1,0 +1,120 @@
+package pl.ketchupplayer.tv.core.data.vod
+
+import kotlinx.coroutines.flow.Flow
+import pl.ketchupplayer.tv.core.model.Episode
+import pl.ketchupplayer.tv.core.model.StreamSpec
+import pl.ketchupplayer.tv.core.model.VodItem
+import pl.ketchupplayer.tv.core.model.VodKind
+
+/** Pozycja katalogu wraz ze stanem użytkownika (Moja lista, postęp). */
+data class VodEntry(
+    val item: VodItem,
+    val myList: Boolean = false,
+    val positionMs: Long = 0,
+    val durationMs: Long = 0,
+    /** Serial z odcinkiem dodanym od ostatniego otwarcia (zielona kropka). */
+    val hasNewEpisodes: Boolean = false,
+    /** Oceny z zewnętrznych źródeł (TMDB/IMDb/RT); puste, dopóki nie zostaną pobrane. */
+    val ratings: pl.ketchupplayer.tv.core.data.metadata.Ratings =
+        pl.ketchupplayer.tv.core.data.metadata.Ratings.NONE,
+) {
+    /** Ocena do pokazania: z zewnętrznych źródeł (IMDb, TMDB), a bez niej ta od dostawcy listy. */
+    val displayRating: Double? get() = ratings.best ?: item.rating?.takeIf { it > 0.0 }
+
+    /** Podpis źródła oceny: IMDb/TMDB z metadanych, a dla oceny od dostawcy listy null (UI pisze „Lista”). */
+    val displayRatingSource: String? get() = if (ratings.best != null) ratings.bestSource else null
+
+    /** „IMDb 7,8” / „TMDB 7,1” / „<providerLabel> 7,0”: ocena z podpisem źródła; null, gdy nie ma żadnej. */
+    fun ratingLabel(providerLabel: String): String? {
+        val value =
+            displayRating?.let { String.format(java.util.Locale.forLanguageTag("pl"), "%.1f", it) } ?: return null
+        return "${displayRatingSource ?: providerLabel} $value"
+    }
+
+    val progress: Float get() = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
+}
+
+data class EpisodeEntry(
+    val episode: Episode,
+    val positionMs: Long = 0,
+    val durationMs: Long = 0,
+) {
+    val progress: Float get() = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
+    val watched: Boolean get() =
+        pl.ketchupplayer.tv.core.policy.ResumeRules
+            .completed(positionMs, durationMs)
+}
+
+/** Co potrzebne odtwarzaczowi: tytuł do OSD i zapisana pozycja. */
+data class VodPlayback(
+    val title: String,
+    val positionMs: Long,
+    val durationMs: Long,
+)
+
+/** Katalog filmów i seriali (offline-first, jak [pl.ketchupplayer.tv.core.data.catalog.CatalogRepository]). */
+interface VodRepository {
+    /** Kolejkuje pobranie ocen i opisu dla pozycji (np. karty widocznej na ekranie); domyślnie nic. */
+    fun requestMeta(itemId: String) {}
+
+    /** Pobiera oceny i opis zaraz (szczegóły); true, gdy są dane z zewnętrznych źródeł. */
+    suspend fun ensureMeta(itemId: String): Boolean = false
+
+    fun entries(kind: VodKind): Flow<List<VodEntry>>
+
+    /** Pozycje z „Mojej listy” (filmy i seriale). */
+    fun myList(): Flow<List<VodEntry>>
+
+    /** Filmy i odcinki do wznowienia (rozpoczęte, nieukończone), najnowsze pierwsze. */
+    fun continueWatching(limit: Int): Flow<List<VodEntry>>
+
+    fun entry(id: String): Flow<VodEntry?>
+
+    /** Czy jakikolwiek serial ma nowe odcinki (kropka na pozycji „Seriale” w szufladzie). */
+    fun anyNewEpisodes(): Flow<Boolean>
+
+    /** Dociąga od dostawcy opis, obsadę, ocenę i grafikę w tle (jeśli ich jeszcze nie mamy); błąd nie psuje ekranu. */
+    suspend fun refreshInfo(itemId: String)
+
+    /**
+     * Uzupełnia czas trwania najlepiej ocenianych filmów, którym go brakuje (lista Xtream go nie podaje, dopiero
+     * `get_vod_info`). Zapytania idą z przerwą, a seria błędów przerywa; zwraca liczbę uzupełnionych. Domyślnie nic.
+     */
+    suspend fun enrichDurations(limit: Int): Int = 0
+
+    /** Filmy ze znanym czasem trwania, najlepiej oceniane. Domyślnie puste. */
+    fun timedMovies(limit: Int): Flow<List<VodEntry>> = kotlinx.coroutines.flow.flowOf(emptyList())
+
+    /** Użytkownik otworzył serial: nowe odcinki uznajemy za zobaczone. */
+    suspend fun markSeen(seriesId: String)
+
+    fun episodes(seriesId: String): Flow<List<EpisodeEntry>>
+
+    /** Pobiera odcinki serialu od dostawcy i zapisuje je w bazie. */
+    suspend fun refreshEpisodes(seriesId: String): Result<Int>
+
+    suspend fun setMyList(
+        itemId: String,
+        value: Boolean,
+    )
+
+    suspend fun saveProgress(
+        itemId: String,
+        positionMs: Long,
+        durationMs: Long,
+    )
+
+    /** Podobne pozycje: ten sam rodzaj i gatunek lub kategoria. */
+    suspend fun similar(
+        id: String,
+        limit: Int,
+    ): List<VodItem>
+
+    suspend fun resolve(itemId: String): Result<StreamSpec>
+
+    /** Dane odtwarzania filmu albo odcinka (tytuł odcinka z nazwą serialu); null, gdy pozycji nie ma. */
+    suspend fun playback(itemId: String): VodPlayback?
+
+    /** W ilu listach (u ilu dostawców) jest ten sam film/serial; 1 = tylko ta. */
+    suspend fun sourceCount(itemId: String): Int = 1
+}

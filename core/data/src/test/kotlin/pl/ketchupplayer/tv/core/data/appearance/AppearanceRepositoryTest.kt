@@ -1,0 +1,85 @@
+package pl.ketchupplayer.tv.core.data.appearance
+
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Rule
+import org.junit.Test
+import org.junit.rules.TemporaryFolder
+import pl.ketchupplayer.tv.core.designsystem.AccentChoice
+import pl.ketchupplayer.tv.core.designsystem.AccentId
+import pl.ketchupplayer.tv.core.designsystem.ThemeId
+import java.io.File
+
+class AppearanceRepositoryTest {
+    @get:Rule
+    val tmp = TemporaryFolder()
+
+    private fun repo() =
+        DataStoreAppearanceRepository(
+            PreferenceDataStoreFactory.create { File(tmp.root, "a.preferences_pb") },
+        )
+
+    @Test
+    fun `domyslnie Morski z akcentem Turkus`() =
+        runTest {
+            val a = repo().appearance.first()
+            assertEquals(ThemeId.MORSKI, a.theme)
+            assertNull(a.accent)
+            assertEquals(AccentChoice.Preset(AccentId.TURKUS), a.effectiveAccent)
+        }
+
+    @Test
+    fun `zmiana motywu bez wlasnego akcentu zmienia akcent domyslny`() =
+        runTest {
+            val r = repo()
+            r.setTheme(ThemeId.CZERN)
+            assertEquals(AccentChoice.Preset(AccentId.BIEL), r.appearance.first().effectiveAccent)
+        }
+
+    @Test
+    fun `odcien motywu wlasnego jest trwaly i ograniczony do zakresu`() =
+        runTest {
+            val r = repo()
+            assertEquals(pl.ketchupplayer.tv.core.designsystem.Palettes.DEFAULT_HUE, r.appearance.first().customHue)
+            r.setCustomHue(280)
+            assertEquals(280, r.appearance.first().customHue)
+            r.setCustomHue(999)
+            assertEquals(360, r.appearance.first().customHue)
+        }
+
+    @Test
+    fun `wlasny akcent HEX jest trwaly i przezywa zmiane motywu`() =
+        runTest {
+            val r = repo()
+            r.setAccent(AccentChoice.Custom(0xFFAA33CCL))
+            r.setTheme(ThemeId.CZERN)
+            val a = r.appearance.first()
+            assertEquals(ThemeId.CZERN, a.theme)
+            assertEquals(AccentChoice.Custom(0xFFAA33CCL), a.effectiveAccent)
+        }
+
+    @Test
+    fun `preset i powrot do domyslnego`() =
+        runTest {
+            val r = repo()
+            r.setAccent(AccentChoice.Preset(AccentId.FIOLET))
+            assertEquals(AccentChoice.Preset(AccentId.FIOLET), r.appearance.first().accent)
+            r.setAccent(null)
+            assertNull(r.appearance.first().accent)
+        }
+}
+
+class ThemeMigrationTest {
+    /** Użytkownik z wersji 0.x ma zapisane stare nazwy motywów: po aktualizacji dostaje ich następców, bez crasha. */
+    @org.junit.Test
+    fun `stare nazwy motywow trafiaja na nastepcow`() {
+        org.junit.Assert.assertEquals(pl.ketchupplayer.tv.core.designsystem.ThemeId.MORSKI, themeFromStored("GRANAT"))
+        org.junit.Assert.assertEquals(pl.ketchupplayer.tv.core.designsystem.ThemeId.GRAFIT, themeFromStored("BORDO"))
+        org.junit.Assert.assertEquals(pl.ketchupplayer.tv.core.designsystem.ThemeId.CZERN, themeFromStored("CZERN"))
+        org.junit.Assert.assertEquals(pl.ketchupplayer.tv.core.designsystem.ThemeId.MORSKI, themeFromStored(null))
+        org.junit.Assert.assertEquals(pl.ketchupplayer.tv.core.designsystem.ThemeId.MORSKI, themeFromStored("???"))
+    }
+}

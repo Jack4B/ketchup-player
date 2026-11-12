@@ -1,5 +1,6 @@
 *.jks
 *.keystore
+!app/ketchup-debug.keystore
 keystore.properties
 local.properties
 .gradle/
@@ -8,3 +9,6 @@ build/
 *.iml
 .env
 .mcp.local.json
+.kotlin/
+captures/
+__pycache__/
