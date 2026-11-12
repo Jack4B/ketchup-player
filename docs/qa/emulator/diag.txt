@@ -4,4 +4,4 @@ emulator curl: ok
 index.m3u8
 index0.ts
 index1.ts
-fokus: kategoria='http://127.0.01.:8100/get.php?username=u&amp;passwo' opcje='http://127.0.01.:8100/get.php?username=u&amp;passwo' po LEWO='http://127.0.01.:8100/get.php?username=u&amp;passwo'
+fokus: kategoria='Wygląd' opcje='Auto' po LEWO='Wygląd'

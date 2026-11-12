@@ -17,3 +17,12 @@ GET /player_api.php?username=u&password=***&action=get_series_categories 200 ua=
 GET /player_api.php?username=u&password=***&action=get_series 200 ua=okhttp/4.10.0 headers=User-Agent,Host,Connection,Accept-Encoding
 GET /xmltv.php?username=u&password=*** 200 ua=okhttp/4.10.0 headers=User-Agent,Host,Connection,Accept-Encoding
 GET /ready 520 ua=curl/8.5.0 headers=Host,User-Agent,Accept
+GET /ready 520 ua=curl/8.5.0 headers=Host,User-Agent,Accept
+GET /player_api.php?username=u&password=*** 200 ua=okhttp/4.10.0 headers=User-Agent,Host,Connection,Accept-Encoding
+GET /player_api.php?username=u&password=***&action=get_live_categories 200 ua=okhttp/4.10.0 headers=User-Agent,Host,Connection,Accept-Encoding
+GET /player_api.php?username=u&password=***&action=get_live_streams 200 ua=okhttp/4.10.0 headers=User-Agent,Host,Connection,Accept-Encoding
+GET /player_api.php?username=u&password=***&action=get_vod_categories 200 ua=okhttp/4.10.0 headers=User-Agent,Host,Connection,Accept-Encoding
+GET /player_api.php?username=u&password=***&action=get_vod_streams 200 ua=okhttp/4.10.0 headers=User-Agent,Host,Connection,Accept-Encoding
+GET /player_api.php?username=u&password=***&action=get_series_categories 200 ua=okhttp/4.10.0 headers=User-Agent,Host,Connection,Accept-Encoding
+GET /player_api.php?username=u&password=***&action=get_series 200 ua=okhttp/4.10.0 headers=User-Agent,Host,Connection,Accept-Encoding
+GET /xmltv.php?username=u&password=*** 200 ua=okhttp/4.10.0 headers=User-Agent,Host,Connection,Accept-Encoding
